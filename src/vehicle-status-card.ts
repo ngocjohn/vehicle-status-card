@@ -396,7 +396,7 @@ export class VehicleStatusCard extends LitElement {
     const deviceTracker = this.getDeviceTrackerLatLong();
     if (!deviceTracker) return this._showWarning('Device tracker not found');
     const google_api_key = this._config.mini_map.google_api_key || '';
-    const darkMode = true;
+    const darkMode = this.isDark;
     const mapPopup = this._config.mini_map.enable_popup;
 
     return html`
