@@ -1,0 +1,56 @@
+name: Bug report
+description: File a bug report. 🐞
+title: "[Bug] "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! 🛠️ Please provide the details below to help us address the issue.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Short summary 📝
+      description: A short summary of the bug
+      placeholder: "e.g., The application crashes when I click on 'Submit'"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Detailed description 📋
+      description: A detailed description of the bug
+      placeholder: "Describe the bug in detail, including steps to reproduce, expected behavior, and actual behavior."
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version 📌
+      description: The version of the application where the bug was found
+      placeholder: "e.g., v1.2.3"
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment 🌐
+      description: The environment in which the bug was found (e.g., browser, OS)
+      placeholder: "e.g., Chrome on Windows 10"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots 📂
+      description: Any relevant logs or screenshots that can help identify the issue
+      placeholder: "Paste logs or upload screenshots"
+    validations:
+      required: false

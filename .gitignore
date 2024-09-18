@@ -1,0 +1,12 @@
+/node_modules/
+/.rpt2_cache/
+package-lock.json
+/dev
+/dist
+dist/
+.vscode/
+!.vscode/launch.json
+scripts/
+src/test/
+.env
+.DS_Store
