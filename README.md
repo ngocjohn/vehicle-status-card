@@ -194,6 +194,7 @@ The layout configuration controls how elements within the vehicle status card ar
 
 This configuration gives you full flexibility to design the card’s layout and optimize it for different devices or user preferences.
 
+![Config layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout.gif)
 ---
 
 ###
