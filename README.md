@@ -138,7 +138,7 @@ The button card is a core feature that provides interactive buttons to control o
 
 ## Single Button Configuration
 
-A single button allows you to represent an entity or action related to your vehicle, such as toggling a lock, turning on lights, or showing the fuel level. You can set up the button’s appearance and behavior to suit your needs.
+A single button allows you to represent an entity or action related to your vehicle. You can set up the button’s appearance and behavior to suit your needs.
 
 ### Key Features
 
