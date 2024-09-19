@@ -152,7 +152,6 @@ export class VehicleStatusCard extends LitElement {
       this._config.mini_map?.device_tracker &&
       this._config.layout_config?.hide?.mini_map !== true
     ) {
-      console.log('Map Popup enabled');
       this._configureMiniMapPopup();
     }
 
@@ -175,7 +174,6 @@ export class VehicleStatusCard extends LitElement {
     };
 
     this._mapPopupLovelace = await createCardElement(this._hass, [mapCardConfig]);
-    console.log('Map Popup:', this._mapPopupLovelace);
   }
 
   private async _configureCardPreview(): Promise<void> {
@@ -643,7 +641,6 @@ export class VehicleStatusCard extends LitElement {
   /* --------------------------- THEME CONFIGURATION -------------------------- */
   private applyTheme(theme: string): void {
     if (!this._config.layout_config?.theme_config?.theme) return;
-    console.log('Applying theme:', theme);
     const themeData = this._hass.themes.themes[theme];
     if (themeData) {
       // Filter out only top-level properties for CSS variables and the modes property

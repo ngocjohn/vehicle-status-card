@@ -64,6 +64,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         if (this._selectedConfigType) this._dispatchEvent('toggle-helper', this._selectedConfigType);
       }, 200);
     }
+    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === null) {
+      this._cleanConfig();
+    }
   }
 
   connectedCallback() {
@@ -85,6 +88,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       console.log('Cleaning config of preview keys');
       this._config = { ...this._config, btn_preview: null, card_preview: null, default_card_preview: null };
       fireEvent(this, 'config-changed', { config: this._config });
+    } else {
+      console.log('No preview keys found');
     }
   }
 
