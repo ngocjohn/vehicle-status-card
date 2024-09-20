@@ -30,6 +30,7 @@
 
 .vic-tabbar {
 	background-color: var(--mdc-button-outline-color);
+	border-bottom: 1px solid var(--divider-color);
 }
 
 .vic-tabbar .mdc-tab--active {
@@ -444,6 +445,11 @@ ha-selector#vic-boolean-selector {
 	position: relative;
 }
 
+.config-menu-wrapper .menu-info-icon-wrapper {
+	display: inline-flex;
+	gap: var(--vic-card-padding);
+	height: auto;
+}
 
 .config-menu-wrapper .menu-icon {
 	width: 36px;
@@ -500,10 +506,11 @@ ha-selector#vic-boolean-selector {
 }
 
 .menu-content-wrapper.hidden {
-	max-width: 0;
+	max-width: 0px;
 	overflow: hidden;
 	opacity: 0;
 	transition: all 400ms cubic-bezier(0.075, 0.82, 0.165, 1);
+	max-height: 0px;
 }
 
 .menu-content-wrapper .menu-label {
@@ -525,7 +532,7 @@ ha-selector#vic-boolean-selector {
 		/* text-transform: capitalize; */
 		letter-spacing: 0.5px;
 		font-size: smaller;
-		text-wrap: nowrap;
+		text-wrap: wrap;
 		line-height: 150%;
 	}
 }

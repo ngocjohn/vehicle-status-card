@@ -18,7 +18,6 @@ export class PanelImagesEditor extends LitElement {
   @property({ type: Object }) public editor?: any;
   @property({ type: Object }) public config?: VehicleStatusCardConfig;
   @property({ type: Boolean }) isDragging = false;
-  @property({ type: Array }) uploadedFiles: { url: string; name: string }[] = [];
 
   @state() _sortable: Sortable | null = null;
 
@@ -167,12 +166,13 @@ export class PanelImagesEditor extends LitElement {
   private _handleDrop(event: DragEvent) {
     event.preventDefault();
     this.isDragging = false;
-
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       this.handleFilePicked({ target: { files } });
+      console.log(event);
     }
   }
+
   private toggleAction(action: 'add' | 'showDelete' | 'delete' | 'upload', idx?: number) {
     return () => {
       const updateChanged = (update: any) => {

@@ -6,7 +6,7 @@ import { customElement, property, query, state } from 'lit/decorators';
 import { fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 
 import { HomeAssistantExtended as HomeAssistant, VehicleStatusCardConfig } from '../types';
-import { loadHaComponents, stickyPreview } from '../utils/loader';
+import { loadHaComponents, stickyPreview, getContentSlot } from '../utils/loader';
 import { CARD_VERSION } from '../const/const';
 import { CONFIG_TYPES } from './editor-const';
 
@@ -175,6 +175,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
     const selected = this._selectedConfigType;
     const CARDCONFIG = CONFIG_TYPES.options[selected];
+    const DOC_URL = CARDCONFIG.doc;
 
     const typeMap = {
       indicators: this._renderIndicators(),
@@ -208,8 +209,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
           ${isMainEditor
             ? nothing
             : html`
-                <div class="menu-info-icon">
-                  <ha-icon icon="mdi:eye" @click="${() => this._dispatchEvent('toggle-helper', selected)}"></ha-icon>
+                <div class="menu-info-icon-wrapper">
+                  <div class="menu-info-icon">
+                    <ha-icon icon="mdi:eye" @click="${() => this._dispatchEvent('toggle-helper', selected)}"></ha-icon>
+                  </div>
+                  <div class="menu-info-icon">
+                    <ha-icon icon="mdi:information" @click="${() => window.open(DOC_URL, '_blank')}"></ha-icon>
+                  </div>
                 </div>
               `}
         </div>

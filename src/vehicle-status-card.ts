@@ -686,6 +686,7 @@ export class VehicleStatusCard extends LitElement {
   name: 'Vehicle Status Card',
   preview: true,
   description: 'A custom card to track vehicle status',
+  documentationURL: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#configuration',
 });
 
 declare global {

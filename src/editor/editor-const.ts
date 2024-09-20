@@ -11,6 +11,7 @@ export const CONFIG_TYPES = {
     indicators: {
       name: 'Indicators',
       description: 'Display individual or grouped entity states on the card header.',
+      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#indicators-configuration',
       subpanels: {
         single: makePanel(
           'Single Indicators',
@@ -25,6 +26,7 @@ export const CONFIG_TYPES = {
     range: {
       name: 'Range progress bar',
       description: 'Show progress bars for fuel, battery, or any entity with a range state.',
+      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#range-info-bars',
       subpanels: {
         rangeIndicator: makePanel(
           'Range Indicator',
@@ -35,14 +37,17 @@ export const CONFIG_TYPES = {
     images: {
       name: 'Images',
       description: 'Add images for slides and set intervals for auto-changing.',
+      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#image-slides',
     },
     mini_map: {
       name: 'Mini Map',
       description: 'Track device_tracker entities on a mini map.',
+      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#mini-map',
     },
     button_card: {
       name: 'Button and Card',
       description: 'Configure button appearance, notifications, and default or custom cards.',
+      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#button-card',
       subpanels: {
         button: makePanel('Button', 'Set the value of primary, secondary, icon, and notify for the button.'),
         default_cards: makePanel('Default Card', 'Set the title and items for the default card.'),
@@ -52,6 +57,7 @@ export const CONFIG_TYPES = {
     layout_config: {
       name: 'Layout Configuration',
       description: 'Set the card’s layout, theme, rows, and swipe for button grids.',
+      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#button-card',
     },
   },
 };
