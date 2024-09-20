@@ -47,7 +47,6 @@ export const stickyPreview = () => {
   // Change the default preview element to be sticky
   const root = document.querySelector('body > home-assistant')?.shadowRoot;
   const dialog = root?.querySelector('hui-dialog-edit-card')?.shadowRoot;
-  console.log(dialog);
   const previewElement = dialog?.querySelector('ha-dialog > div.content > div.element-preview') as HTMLElement;
   if (previewElement && previewElement.style.position !== 'sticky') {
     previewElement.style.position = 'sticky';

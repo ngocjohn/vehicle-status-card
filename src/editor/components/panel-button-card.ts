@@ -9,17 +9,37 @@ import {
   ButtonConfig,
   DefaultCardConfig,
   CardItemConfig,
+  ButtonActionConfig,
+  ButtonCardConfig,
 } from '../../types';
 
 import { BUTTON_CARD_ACTIONS } from '../editor-const';
 
 import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
-import { debounce } from 'es-toolkit';
+import { debounce, head } from 'es-toolkit';
 
 import Sortable from 'sortablejs';
 
 import * as Create from '../../utils/create';
+
+const ACTIONSELECTOR = [
+  {
+    name: 'tap_action',
+    label: 'Tap action',
+    defaultAction: 'more-info',
+  },
+  {
+    name: 'hold_action',
+    label: 'Hold action',
+    defaultAction: 'none',
+  },
+  {
+    name: 'double_tap_action',
+    label: 'Double tap action',
+    defaultAction: 'none',
+  },
+];
 
 @customElement('panel-button-card')
 export class PanelButtonCard extends LitElement {
@@ -36,8 +56,14 @@ export class PanelButtonCard extends LitElement {
   @state() _isCardPreview: boolean = false;
   @state() _isDefaultCardPreview: boolean = false;
   @state() _newItemName: Map<string, string> = new Map();
+  @state() _selectedAction: string = 'tap_action';
 
   @state() _reindexing: boolean = false;
+
+  @state() _navigatePath: string = '';
+  @state() _url: string = '';
+  @state() _service: string = '';
+  @state() _serviceData: string = '';
 
   private _sortable: Sortable | null = null;
 
@@ -183,19 +209,6 @@ export class PanelButtonCard extends LitElement {
                     configValue: 'primary',
                     pickerType: 'textfield' as 'textfield',
                   })}
-                  ${Create.Picker({
-                    component: this,
-                    label: `Selected Card Type`,
-                    value: button.card_type || 'default',
-                    configType: 'base',
-                    configIndex: index,
-                    configValue: 'card_type',
-                    pickerType: 'attribute' as 'attribute',
-                    items: [
-                      { value: 'default', label: 'Default' },
-                      { value: 'custom', label: 'Custom' },
-                    ],
-                  })}
                 </div>
                 <div class="item-actions">
                   <div class="action-icon delete-icon hidden" @click="${this.toggleAction('delete-button', index)}">
@@ -229,7 +242,7 @@ export class PanelButtonCard extends LitElement {
       {
         key: `button-${buttonIndex}`,
         label: 'Button',
-        content: this._renderButtonConfig(button, buttonIndex),
+        content: this._renderButtonConfig(buttonCard, button, buttonIndex),
       },
       {
         key: `default-card-${buttonIndex}`,
@@ -281,7 +294,40 @@ export class PanelButtonCard extends LitElement {
     </div>`;
   }
 
-  private _renderButtonConfig(button: ButtonConfig, buttonIndex: number): TemplateResult {
+  private _renderButtonConfig(buttonCard: ButtonCardConfig, button: ButtonConfig, buttonIndex: number): TemplateResult {
+    const btnTypeCardType = html` ${this._renderSubHeader('Select button type, and card type', [], false)}
+      <div class="sub-content">
+        ${Create.Picker({
+          component: this,
+          label: 'Button type',
+          value: buttonCard.button_type || 'default',
+          configType: 'base_button',
+          configIndex: buttonIndex,
+          configValue: 'button_type',
+          pickerType: 'attribute' as 'attribute',
+          items: [
+            { value: 'default', label: 'Default' },
+            { value: 'action', label: 'Action' },
+          ],
+        })}
+        ${Create.Picker({
+          component: this,
+          label: 'Card type',
+          value: buttonCard.card_type || 'default',
+          configType: 'base',
+          configIndex: buttonIndex,
+          configValue: 'card_type',
+          pickerType: 'attribute' as 'attribute',
+          items: [
+            { value: 'default', label: 'Default' },
+            { value: 'custom', label: 'Custom' },
+          ],
+          options: { disabled: buttonCard.button_type === 'action' },
+        })}
+      </div>`;
+
+    const buttonType = buttonCard.button_type || 'default';
+
     const sharedConfig = {
       configType: 'button',
       configIndex: buttonIndex,
@@ -333,8 +379,28 @@ export class PanelButtonCard extends LitElement {
       },
     ];
 
-    return html`
-      <div class="sub-panel-config button-card">
+    const cardType = [
+      {
+        component: this,
+        value: buttonCard.card_type || 'default',
+        label: 'Card type',
+        configType: 'base',
+        configIndex: buttonIndex,
+        configValue: 'card_type',
+        pickerType: 'attribute' as 'attribute',
+        items: [
+          { value: 'default', label: 'Default' },
+          { value: 'custom', label: 'Custom' },
+        ],
+      },
+    ];
+
+    const content = html`
+      <div>
+        ${buttonType === 'default'
+          ? html` ${this._renderSubHeader('Select card type', [], false)}
+              <div class="sub-content">${cardType.map((config) => this._createItemPicker({ ...config }))}</div>`
+          : ''}
         ${this._renderSubHeader('Primary and icon', [
           { title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) },
         ])}
@@ -353,6 +419,69 @@ export class PanelButtonCard extends LitElement {
         )}
       </div>
     `;
+
+    const baseBtnConfig = html`${Create.ExpansionPanel({
+      content: content,
+      options: { header: 'Button Appearance', icon: 'mdi:palette' },
+    })}`;
+
+    const buttonAction = this._renderButtonActionConfig(buttonCard, buttonIndex);
+
+    return html`<div class="indicator-config">${btnTypeCardType} ${baseBtnConfig} ${buttonAction}</div>`;
+  }
+
+  private _renderButtonActionConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
+    const infoAlert = 'You are using `default` button type, select `action` to use Tap Action features';
+    const buttonAction = buttonCard.button_action || {};
+
+    // Entity Picker
+    const entityPicker = Create.Picker({
+      component: this,
+      label: 'Entity',
+      value: buttonAction.entity || '',
+      configType: 'button_action',
+      configIndex: buttonIndex,
+      configValue: 'entity',
+      pickerType: 'entity' as 'entity',
+    });
+
+    // Action selectors mapped from ACTIONSELECTOR
+    const actionSelectors = ACTIONSELECTOR.map((action) => {
+      return html`
+        <div class="select-action">
+          <ha-selector
+            .hass=${this.hass}
+            .label=${action.label}
+            .selector=${{
+              ui_action: { default_action: action.defaultAction },
+            }}
+            .value=${buttonAction[action.name] || action.defaultAction}
+            .configValue=${action.name}
+            .configType=${'button_action'}
+            @value-changed=${(ev: CustomEvent) => this._handleActionTypeChange(ev, action?.name, buttonIndex)}
+          ></ha-selector>
+        </div>
+      `;
+    });
+
+    // The complete content
+    const content = html`
+      ${this._renderSubHeader('Configure action', [], false)}
+      ${buttonCard.button_type === undefined || buttonCard.button_type === 'default'
+        ? html`<ha-alert
+            alert-type="info"
+            dismissable
+            @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
+            >${infoAlert}</ha-alert
+          >`
+        : nothing}
+      <div class="indicator-config">${entityPicker} ${actionSelectors}</div>
+    `;
+
+    return Create.ExpansionPanel({
+      content: content,
+      options: { header: 'Button Interactions', icon: 'mdi:gesture-tap' },
+    });
   }
 
   private _renderDefaultCardList(defaultCard: DefaultCardConfig[], buttonIndex: number): TemplateResult {
@@ -425,17 +554,9 @@ export class PanelButtonCard extends LitElement {
       <div class="sub-header">
         <div class="subcard-icon"><ha-icon icon="mdi:close" @click=${this.toggleAction('category-back')}></ha-icon></div>
         <div class="sub-header-title">${baseCard.title}</div>
-        <div style="display: inline-flex;">${Create.Picker({
-          component: this,
-          label: 'Collapsed items',
-          value: baseCard.collapsed_items,
-          configType: 'default_card',
-          configIndex: buttonIndex,
-          cardIndex: cardIndex,
-          configValue: 'collapsed_items',
-          pickerType: 'selectorBoolean' as 'selectorBoolean',
-        })}
-        </div>
+        <div class="subcard-icon">
+                ${this._renderPreviewButton(buttonIndex)}
+                </div>
       </div>
       <div class="default-card-list">
         ${repeat(
@@ -473,10 +594,19 @@ export class PanelButtonCard extends LitElement {
           <div class="item-content">
             <ha-entity-picker id="entity-picker-form" .hass=${this.hass} .value=${this._newItemName.get('entity')} .configValue=${'entity'} .configType=${'card_item_add'} .configIndex=${buttonIndex} .cardIndex=${cardIndex} .label=${'Add New Item'} @change=${this._handleNewItemChange} .allowCustomIcons=${true}></ha-entity-picker>
           </div>
+                  <div style="display: inline-flex;">${Create.Picker({
+                    component: this,
+                    label: 'Collapsed items',
+                    value: baseCard.collapsed_items,
+                    configType: 'default_card',
+                    configIndex: buttonIndex,
+                    cardIndex: cardIndex,
+                    configValue: 'collapsed_items',
+                    pickerType: 'selectorBoolean' as 'selectorBoolean',
+                  })}
+            </div>
         </div>
-      </div>
 
-        ${this._renderPreviewButton(buttonIndex)}
       </div
     </div>
     `;
@@ -730,10 +860,17 @@ export class PanelButtonCard extends LitElement {
             icon: 'mdi:new-box',
             notify: '',
           },
+          button_type: 'default',
           hide_button: false,
           card_type: 'default',
           default_card: [],
           custom_card: [],
+          button_action: {
+            entity: '',
+            tap_action: { action: 'more-info' },
+            hold_action: { action: 'none' },
+            double_tap_action: { action: 'none' },
+          },
         });
 
         updateChange(buttonCardConfig);
@@ -1003,6 +1140,30 @@ export class PanelButtonCard extends LitElement {
     }, 100);
   }
 
+  private _handleActionTypeChange(ev: CustomEvent, action: string, buttonIndex: number): void {
+    ev.stopPropagation();
+    const actionValue = ev.detail.value;
+    this._selectedAction = actionValue;
+
+    // Clone the button card configuration
+    let buttonCardConfig = [...(this.config.button_card || [])];
+    let buttonConfig = { ...buttonCardConfig[buttonIndex] };
+
+    // Clone the button action configuration
+    let buttonAction = { ...buttonConfig.button_action };
+
+    // Update the action value
+    buttonAction[action] = actionValue;
+
+    // Update the button action configuration
+    buttonConfig.button_action = buttonAction;
+
+    buttonCardConfig[buttonIndex] = buttonConfig;
+    this.config = { ...this.config, button_card: buttonCardConfig };
+
+    fireEvent(this, 'config-changed', { config: this.config });
+  }
+
   _valueChanged(ev: any): void {
     ev.stopPropagation();
     if (!this.config) {
@@ -1020,12 +1181,16 @@ export class PanelButtonCard extends LitElement {
     // Get the new value from the event or the target
     let newValue: any = target.value;
 
-    if (configValue === 'attribute' || configValue === 'card_type' || configValue === 'collapsed_items') {
+    if (
+      configValue === 'attribute' ||
+      configValue === 'card_type' ||
+      configValue === 'collapsed_items' ||
+      configValue === 'button_type'
+    ) {
       newValue = ev.detail.value;
     } else {
       newValue = target.value;
     }
-
     const updates: Partial<VehicleStatusCardConfig> = {};
 
     let buttonCardConfig = [...(this.config.button_card || [])];
@@ -1052,9 +1217,11 @@ export class PanelButtonCard extends LitElement {
       updates.button_card = buttonCardConfig;
       console.log('updates', updates.button_card[index].button);
     } else if (['base', 'default_card', 'card_item'].includes(configType)) {
+      console.log('Config type', configType, 'Config value', configValue, 'New value', newValue);
       const updateButtonConfig = (buttonConfig: any) => {
         if (configType === 'base') {
           buttonConfig[configValue] = newValue;
+          console.log('Button config', buttonConfig);
         } else if (configType === 'default_card') {
           let defaultCard = [...buttonConfig.default_card];
           let card = { ...defaultCard[cardIndex] };
@@ -1118,6 +1285,29 @@ export class PanelButtonCard extends LitElement {
 
         console.log('Item updated', item);
       }
+    } else if (configType === 'base_button') {
+      let buttonConfig = { ...buttonCardConfig[configIndex] };
+      buttonConfig[configValue] = newValue;
+      if (newValue === 'action') {
+        buttonConfig.button_action = {
+          entity: '',
+          tap_action: { action: 'more-info' },
+          hold_action: { action: 'none' },
+          double_tap_action: { action: 'none' },
+        };
+      }
+      buttonCardConfig[configIndex] = buttonConfig;
+      updates.button_card = buttonCardConfig;
+
+      console.log('Button config', buttonConfig);
+    } else if (configType === 'button_action') {
+      let buttonConfig = { ...buttonCardConfig[configIndex] };
+      let buttonAction = { ...buttonConfig.button_action };
+      buttonAction[configValue] = newValue;
+      buttonConfig.button_action = buttonAction;
+      buttonCardConfig[configIndex] = buttonConfig;
+      updates.button_card = buttonCardConfig;
+      console.log('Button action', buttonAction);
     }
 
     // If there are updates, update the config and fire the event
@@ -1135,5 +1325,10 @@ export class PanelButtonCard extends LitElement {
       console.log('Not copied to preview');
       return;
     }
+  }
+
+  private _handlerAlert(ev: CustomEvent): void {
+    const alert = ev.target as HTMLElement;
+    alert.style.display = 'none';
   }
 }

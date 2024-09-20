@@ -1,7 +1,47 @@
 import { TemplateResult, html } from 'lit';
-
 import { HomeAssistantExtended as HomeAssistant } from '../types';
 
+const ACTION_TYPES = [
+  {
+    label: 'More info',
+    value: 'more-info',
+  },
+  {
+    label: 'Toggle',
+    value: 'toggle',
+  },
+  {
+    label: 'Navigate',
+    value: 'navigate',
+  },
+  {
+    label: 'URL',
+    value: 'url',
+  },
+  {
+    label: 'Call service',
+    value: 'call-service',
+  },
+  {
+    label: 'No action',
+    value: 'none',
+  },
+];
+
+const ACTION_CONFIGS = [
+  {
+    value: 'tap_action',
+    label: 'Tap action',
+  },
+  {
+    value: 'hold_action',
+    label: 'Hold action',
+  },
+  {
+    value: 'double_tap_action',
+    label: 'Double tap action',
+  },
+];
 interface PickerOptions {
   component: any;
   value: string | number | boolean;
@@ -24,7 +64,8 @@ interface PickerOptions {
     | 'number'
     | 'boolean'
     | 'selectorBoolean'
-    | 'theme';
+    | 'theme'
+    | 'action';
 }
 
 export const Picker = ({
@@ -86,6 +127,7 @@ export const Picker = ({
         .configIndex=${configIndex}
         .index=${configIndex}
         .items=${items}
+        .disabled=${options?.disabled}
         @value-changed=${handleValueChange}
       ></ha-combo-box>
     `,
@@ -181,11 +223,23 @@ export const Picker = ({
         .includeDefault=${true}
         .required=${true}
         @selected=${handleValueChange}
-        @closed="$(ev:"
-        Event)=""
+        @closed="${(ev: Event) => ev.stopPropagation()}"
       >
-        ev.stopPropagation()} ></ha-theme-picker
-      >
+      </ha-theme-picker>
+    `,
+    action: html`
+      <ha-combo-box
+        .item-value-path=${'value'}
+        .item-label-path=${'label'}
+        .hass=${hass}
+        .label=${label}
+        .value=${value}
+        .configValue=${configValue}
+        .configType=${configType}
+        .configIndex=${configIndex}
+        @value-changed=${handleValueChange}
+        .items=${ACTION_CONFIGS}
+      ></ha-combo-box>
     `,
   };
 
@@ -209,5 +263,26 @@ export const TabBar = ({
     </mwc-tab-bar>
 
     <div class="tab-content">${tabs[activeTabIndex]?.content || html`<div>No content available</div>`}</div>
+  `;
+};
+
+export const ExpansionPanel = ({
+  content,
+  options,
+}: {
+  content: TemplateResult;
+  options: { header: string; expanded?: boolean; icon?: string; secondary?: string };
+}): TemplateResult => {
+  return html`
+    <ha-expansion-panel
+      .outlined=${true}
+      .expanded=${options?.expanded || false}
+      .header=${options.header}
+      .secondary=${options?.secondary || ''}
+      .leftChevron=${true}
+    >
+      ${options.icon ? html`<div slot="icons"><ha-icon icon=${options.icon}></ha-icon></div>` : ''}
+      <div class="card-config">${content}</div>
+    </ha-expansion-panel>
   `;
 };
