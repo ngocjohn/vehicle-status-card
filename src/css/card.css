@@ -30,10 +30,10 @@ ha-card.preview-card {
 }
 
 header h1 {
-  color: var(--ha-card-header-color, --primary-text-color);
+  color: var(--ha-card-header-color, var(--primary-text-color));
   font-family: var(--ha-card-header-font-family, inherit);
   font-size: var(--ha-card-header-font-size, 24px);
-  letter-spacing: -0.012em;
+  /* letter-spacing: -0.012em; */
   line-height: 48px;
   display: block;
   margin-block-start: 0px;

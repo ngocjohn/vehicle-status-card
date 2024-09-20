@@ -284,7 +284,7 @@
 
 .sub-header {
 	width: 100%;
-	padding: var(--vic-gutter-gap);
+	padding-bottom: var(--vic-gutter-gap);
 	box-sizing: border-box;
 	text-transform: uppercase;
 	height: 100%;
@@ -338,6 +338,7 @@ span.info-alert {
 .sub-panel-config.button-card {
 	border: solid 1px var(--divider-color);
 	padding: var(--vic-gutter-gap);
+	border-radius: var(--ha-card-border-radius, 12px);
 
 }
 
@@ -349,7 +350,7 @@ span.info-alert {
 
 .sub-content {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(49%, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(49%, 1fr));
 	gap: var(--vic-gutter-gap);
 	width: 100%;
 	justify-content: center;
