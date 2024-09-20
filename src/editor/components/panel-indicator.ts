@@ -264,7 +264,7 @@ export class PanelIndicator extends LitElement {
     };
 
     return html`
-      <div class="item-config-row">
+      <div class="item-config-row new-item">
         <div class="item-content">${formPicker[type]}</div>
         <div class="item-actions">
           <div class="action-icon" @click=${() => this._addNewType(type)}>

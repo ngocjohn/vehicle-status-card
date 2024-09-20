@@ -31,6 +31,7 @@
 .vic-tabbar {
 	background-color: var(--mdc-button-outline-color);
 	border-bottom: 1px solid var(--divider-color);
+	margin-bottom: var(--vic-card-padding);
 }
 
 .vic-tabbar .mdc-tab--active {
@@ -192,6 +193,11 @@
 	align-items: center;
 }
 
+.item-config-row.new-item {
+	padding-left: 36px;
+	width: calc(100% - 72px);
+}
+
 .item-config-row.not-form {
 	border-bottom: solid 1px var(--divider-color);
 }
@@ -331,7 +337,6 @@ span.info-alert {
 
 .sub-panel-config.button-card {
 	border: solid 1px var(--divider-color);
-	border-top: none;
 	padding: var(--vic-gutter-gap);
 
 }
