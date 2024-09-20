@@ -327,6 +327,7 @@ export async function getButtonCard(
       secondary: (await _getSecondaryStates(hass, button.secondary)) || '',
       icon: button.icon || '',
       notify: button.notify ? await getBooleanTemplate(hass, button.notify) : false,
+      button_action: btmCrd.button_action,
     };
 
     const defaultCard = (await getDefaultCard(hass, btmCrd.default_card)) || [];
@@ -339,6 +340,7 @@ export async function getButtonCard(
       card_type: btmCrd.card_type || 'default',
       default_card: defaultCard,
       custom_card: customCard,
+      button_type: btmCrd.button_type || 'default',
     });
   }
   return buttonCardItem;

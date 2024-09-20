@@ -1,7 +1,7 @@
 import { LitElement, css, html, TemplateResult, PropertyValues, nothing, CSSResultGroup } from 'lit';
 import { customElement, property } from 'lit/decorators';
 import { Pagination } from 'swiper/modules';
-
+import { addActions } from '../utils/tap-action';
 import Swiper from 'swiper';
 
 import {
@@ -45,11 +45,30 @@ export class VehicleButtonsGrid extends LitElement {
 
   protected firstUpdated(changeProperties: PropertyValues): void {
     super.firstUpdated(changeProperties);
+
     this.updateComplete.then(() => {
       this.initSwiper();
     });
   }
+  protected async updated(changeProperties: PropertyValues): Promise<void> {
+    super.updated(changeProperties);
 
+    // Wait for the component to complete rendering
+    await this.updateComplete;
+    const baseButtons = this.buttons.map((button) => button.button);
+
+    baseButtons.forEach((button, index) => {
+      const btnId = `button-id-${index}`;
+      const btnElt = this.shadowRoot?.getElementById(btnId);
+
+      // Only add actions if button_type is not 'default'
+      if (this.buttons[index].button_type !== 'default' && btnElt) {
+        addActions(btnElt, button.button_action);
+      } else {
+        btnElt?.addEventListener('click', () => this._handleClick(index));
+      }
+    });
+  }
   private initSwiper(): void {
     const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
     if (!swiperCon) return;
@@ -95,7 +114,7 @@ export class VehicleButtonsGrid extends LitElement {
               <div
                 id="${`button-id-${buttonIndex}`}"
                 class="grid-item click-shrink"
-                @click=${() => (this.component._activeCardIndex = buttonIndex)}
+                @click=${() => this._handleClick(buttonIndex)}
               >
                 <div class="item-icon">
                   <div class="icon-background"><ha-icon .icon="${icon}"></ha-icon></div>
@@ -148,7 +167,8 @@ export class VehicleButtonsGrid extends LitElement {
                     <div
                       id="${`button-id-${index}`}"
                       class="grid-item click-shrink"
-                      @click=${() => (this.component._activeCardIndex = index)}
+                      @click=${() => this._handleClick(index)}
+                      .
                     >
                       <div class="item-icon">
                         <div class="icon-background"><ha-icon .icon="${icon}"></ha-icon></div>
@@ -173,6 +193,20 @@ export class VehicleButtonsGrid extends LitElement {
             `}
       </section>
     `;
+  }
+
+  private _handleClick(index: number): void {
+    const button = this.buttons[index];
+    const buttonType = button.button_type;
+
+    if (buttonType === 'default') {
+      // Handle default button behavior, e.g., toggle the card or show content
+      this.component._activeCardIndex = index;
+    } else {
+      // For non-default buttons, we rely on the action handlers set in addActions
+      const action = button.button.button_action;
+      console.log('Button action:', action);
+    }
   }
 
   public showButton(index: number): void {

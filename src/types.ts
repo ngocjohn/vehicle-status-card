@@ -1,5 +1,5 @@
 // Cutom card helpers:
-import { LovelaceCardConfig, Themes, HomeAssistant, Theme } from 'custom-card-helpers';
+import { LovelaceCardConfig, Themes, HomeAssistant, Theme, ActionConfig } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
 
 export interface ModeSpecificTheme {
@@ -150,12 +150,21 @@ export interface CardItemConfig {
   state_template: string;
 }
 
+export interface ButtonActionConfig {
+  entity: string;
+  tap_action: ActionConfig;
+  hold_action: ActionConfig;
+  double_tap_action: ActionConfig;
+}
+
 export interface ButtonCardConfig {
   button: ButtonConfig;
   hide_button: boolean;
+  button_type: 'default' | 'action';
   card_type: 'default' | 'custom';
   default_card: Array<DefaultCardConfig>;
   custom_card: LovelaceCardConfig[];
+  button_action: ButtonActionConfig;
 }
 
 export interface CardItemEntity {
@@ -182,9 +191,11 @@ export type ButtonCardEntity = Array<{
     secondary: string;
     icon: string;
     notify: boolean;
+    button_action: ButtonActionConfig;
   };
   hide_button: boolean;
   card_type: 'default' | 'custom';
+  button_type: 'default' | 'action';
   default_card: Array<{
     title: string;
     collapsed_items: boolean;

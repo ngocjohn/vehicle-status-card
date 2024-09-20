@@ -6,7 +6,7 @@ import { customElement, property, query, state } from 'lit/decorators';
 import { fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 
 import { HomeAssistantExtended as HomeAssistant, VehicleStatusCardConfig } from '../types';
-import { loadHaComponents, stickyPreview, getContentSlot } from '../utils/loader';
+import { loadHaComponents, stickyPreview } from '../utils/loader';
 import { CARD_VERSION } from '../const/const';
 import { CONFIG_TYPES } from './editor-const';
 
@@ -638,13 +638,16 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         updates.layout_config = layoutConfig;
       } else if (configIndex === 'theme_config') {
         newValue = ev.detail.value ?? ev.target.value;
-        console.log('Theme Config:', configValue, newValue);
         const layoutConfig = { ...(this._config.layout_config || {}) };
         const themeConfig = { ...(layoutConfig.theme_config || {}) };
+        if (themeConfig[configValue] === newValue) {
+          return;
+        }
+
         themeConfig[configValue] = newValue;
         layoutConfig.theme_config = themeConfig;
         updates.layout_config = layoutConfig;
-        console.log('Theme Config:', layoutConfig.theme_config);
+        console.log('Theme Config:', themeConfig);
       }
     } else {
       updates[configValue] = newValue;
