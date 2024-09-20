@@ -24,6 +24,7 @@ export const DEFAULT_CONFIG = {
       },
       hide_button: false,
       card_type: 'default',
+      button_type: 'default',
       default_card: [
         {
           title: 'Default Card',
@@ -73,6 +74,7 @@ export const DEFAULT_CONFIG = {
       },
       hide_button: false,
       card_type: 'custom',
+      button_type: 'default',
       default_card: [],
       custom_card: [
         {
@@ -91,6 +93,7 @@ export const DEFAULT_CONFIG = {
       },
       hide_button: false,
       card_type: 'default',
+      button_type: 'default',
       default_card: [
         {
           title: 'Default Card',
@@ -122,6 +125,7 @@ export const DEFAULT_CONFIG = {
       },
       hide_button: false,
       card_type: 'custom',
+      button_type: 'default',
       default_card: [],
       custom_card: [
         {
@@ -140,6 +144,7 @@ export const DEFAULT_CONFIG = {
       },
       hide_button: false,
       card_type: 'default',
+      button_type: 'default',
       default_card: [
         {
           title: 'Default Card',
