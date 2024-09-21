@@ -660,11 +660,12 @@ export class PanelButtonCard extends LitElement {
           [{ action: () => (this._itemIndex = null), icon: 'mdi:close' }],
           true
         )}
+        ${this._renderPreviewButton(buttonIndex)}
+
         <div class="sub-content">
           ${pickerEntity.map((config) => this._createItemPicker({ ...config, ...sharedConfig }))}
         </div>
         ${pickerState.map((config) => this._createItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
-        ${this._renderPreviewButton(buttonIndex)}
       </div>
     `;
   }

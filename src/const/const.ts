@@ -1,33 +1,22 @@
-import { range } from 'es-toolkit';
-import { version, repository } from '../../package.json';
+import { repository, version } from '../../package.json';
 
 export const CARD_VERSION = `v${version}`;
 export const REPOSITORY = repository.repo;
 
 export const DEFAULT_CONFIG = {
-  type: 'custom:vehicle-status-card',
-  name: 'Vehicle Status Card',
-  indicators: {
-    single: [],
-    group: [],
-  },
-  range_info: [],
-  images: [],
-  mini_map: {},
   button_card: [
     {
       button: {
-        primary: 'New Button',
-        secondary: 'This is a new button',
         icon: 'mdi:new-box',
         notify: false,
+        primary: 'New Button',
+        secondary: 'This is a new button',
       },
-      hide_button: false,
-      card_type: 'default',
       button_type: 'default',
+      card_type: 'default',
+      custom_card: [],
       default_card: [
         {
-          title: 'Default Card',
           collapsed_items: false,
           items: [
             {
@@ -43,9 +32,9 @@ export const DEFAULT_CONFIG = {
               entity: 'sensor.sun_next_noon',
             },
           ],
+          title: 'Default Card',
         },
         {
-          title: 'Collapsed Card',
           collapsed_items: true,
           items: [
             {
@@ -61,42 +50,42 @@ export const DEFAULT_CONFIG = {
               entity: 'sensor.sun_next_noon',
             },
           ],
+          title: 'Collapsed Card',
         },
       ],
-      custom_card: [],
+      hide_button: false,
     },
     {
       button: {
-        primary: 'New Button',
-        secondary: 'This is a new button',
         icon: 'mdi:new-box',
         notify: false,
+        primary: 'New Button',
+        secondary: 'This is a new button',
       },
-      hide_button: false,
-      card_type: 'custom',
       button_type: 'default',
-      default_card: [],
+      card_type: 'custom',
       custom_card: [
         {
-          type: 'entities',
-          title: 'Custom Card',
           entities: ['sensor.sun_next_dawn', 'sensor.sun_next_midnight', 'sensor.sun_next_noon'],
+          title: 'Custom Card',
+          type: 'entities',
         },
       ],
+      default_card: [],
+      hide_button: false,
     },
     {
       button: {
-        primary: 'New Button',
-        secondary: 'This is a new button',
         icon: 'mdi:new-box',
         notify: false,
+        primary: 'New Button',
+        secondary: 'This is a new button',
       },
-      hide_button: false,
-      card_type: 'default',
       button_type: 'default',
+      card_type: 'default',
+      custom_card: [],
       default_card: [
         {
-          title: 'Default Card',
           collapsed_items: false,
           items: [
             {
@@ -112,42 +101,42 @@ export const DEFAULT_CONFIG = {
               entity: 'sensor.sun_next_noon',
             },
           ],
+          title: 'Default Card',
         },
       ],
-      custom_card: [],
+      hide_button: false,
     },
     {
       button: {
-        primary: 'New Button',
-        secondary: 'This is a new button',
         icon: 'mdi:new-box',
         notify: false,
+        primary: 'New Button',
+        secondary: 'This is a new button',
       },
-      hide_button: false,
-      card_type: 'custom',
       button_type: 'default',
-      default_card: [],
+      card_type: 'custom',
       custom_card: [
         {
-          type: 'entities',
-          title: 'Custom Card',
           entities: ['sensor.sun_next_dawn', 'sensor.sun_next_midnight', 'sensor.sun_next_noon'],
+          title: 'Custom Card',
+          type: 'entities',
         },
       ],
+      default_card: [],
+      hide_button: false,
     },
     {
       button: {
-        primary: 'New Button',
-        secondary: 'This is a new button',
         icon: 'mdi:new-box',
         notify: false,
+        primary: 'New Button',
+        secondary: 'This is a new button',
       },
-      hide_button: false,
-      card_type: 'default',
       button_type: 'default',
+      card_type: 'default',
+      custom_card: [],
       default_card: [
         {
-          title: 'Default Card',
           collapsed_items: false,
           items: [
             {
@@ -163,45 +152,55 @@ export const DEFAULT_CONFIG = {
               entity: 'sensor.sun_next_noon',
             },
           ],
+          title: 'Default Card',
         },
       ],
-      custom_card: [],
+      hide_button: false,
     },
     {
       button: {
-        primary: 'New Button',
-        secondary: 'This is a new button',
         icon: 'mdi:new-box',
         notify: false,
+        primary: 'New Button',
+        secondary: 'This is a new button',
       },
-      hide_button: false,
       card_type: 'custom',
-      default_card: [],
       custom_card: [
         {
-          type: 'entities',
-          title: 'Custom Card',
           entities: ['sensor.sun_next_dawn', 'sensor.sun_next_midnight', 'sensor.sun_next_noon'],
+          title: 'Custom Card',
+          type: 'entities',
         },
       ],
+      default_card: [],
+      hide_button: false,
     },
   ],
+  images: [],
+  indicators: {
+    group: [],
+    single: [],
+  },
   layout_config: {
-    theme_config: {
-      theme: 'default',
-      mode: 'auto',
-    },
     button_grid: {
       rows: 2,
       swipe: true,
     },
     hide: {
       button_notify: false,
-      mini_map: false,
       buttons: false,
-      indicators: false,
-      range_info: false,
       images: false,
+      indicators: false,
+      mini_map: false,
+      range_info: false,
+    },
+    theme_config: {
+      mode: 'auto',
+      theme: 'default',
     },
   },
+  mini_map: {},
+  name: 'Vehicle Status Card',
+  range_info: [],
+  type: 'custom:vehicle-status-card',
 };

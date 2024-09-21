@@ -1,10 +1,10 @@
 // Cutom card helpers:
-import { LovelaceCardConfig, Themes, HomeAssistant, Theme, ActionConfig } from 'custom-card-helpers';
+import { ActionConfig, HomeAssistant, LovelaceCardConfig, Theme, Themes } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
 
 export interface ModeSpecificTheme {
-  light: Partial<Theme>;
   dark: Partial<Theme>;
+  light: Partial<Theme>;
 }
 
 export interface ExtendedTheme extends Theme {
@@ -22,210 +22,212 @@ export interface ExtendedThemes extends Themes {
  * HomeAssistantExtended extends the existing HomeAssistant interface with additional properties.
  */
 
-export type HomeAssistantExtended = HomeAssistant & {
-  themes: ExtendedThemes;
-  formatEntityState: (stateObj: HassEntity) => string;
+export type HomeAssistantExtended = {
   formatAttributeName: (entityId: string, attribute: string) => string;
   formatEntityAttributeValue: (entityId: HassEntity, attribute: string) => string;
-};
+  formatEntityState: (stateObj: HassEntity) => string;
+  themes: ExtendedThemes;
+} & HomeAssistant;
 
 /* ----------------------- INDICATOR CONFIG INTERFACE ----------------------- */
 
 // Indicator configuration for a single entity
 export interface IndicatorConfig {
+  attribute?: string;
   entity: string;
   icon?: string;
-  attribute?: string;
-  state_template?: string;
   icon_template?: string;
+  state_template?: string;
 }
 
 export type IndicatorEntity = Array<{
+  entity: string;
   icon: string;
   state: string;
 }>;
 
 // IndicatorGroup configuration for a group of indicators
 export interface IndicatorGroupConfig {
-  name: string;
   icon: string;
-  visibility: string;
   items: Array<IndicatorGroupItemConfig>; // Array of group items
+  name: string;
+  visibility: string;
 }
 
 // Configuration for individual items in the indicatorGroup
 export interface IndicatorGroupItemConfig {
-  entity: string;
-  name: string;
-  icon: string;
-  state_template?: string;
-  icon_template?: string;
   attribute?: string;
+  entity: string;
+  icon: string;
+  icon_template?: string;
+  name: string;
+  state_template?: string;
 }
 
 export type IndicatorGroupEntity = Array<{
-  name: string;
   icon: string; // Group-level icon
-  visibility?: boolean;
   items: Array<{
-    name: string;
+    entity: string;
     icon: string;
+    name: string;
     state: string;
   }>; // Array of individual indicator items
+  name: string;
+  visibility?: boolean;
 }>;
 
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
 
 export interface RangeInfoConfig {
   energy_level: Array<RangeItemConfig>;
-  range_level: Array<RangeItemConfig>;
   progress_color: string;
+  range_level: Array<RangeItemConfig>;
 }
 
 export interface RangeItemConfig {
-  entity: string;
   attribute: string;
+  entity: string;
   icon?: string;
 }
 
 export type RangeInfoEntity = Array<{
   energy: string;
-  range: string;
-  progress_color: string;
   icon: string;
   level: number;
+  progress_color: string;
+  range: string;
 }>;
 
 /* ------------------------- CONFIG IMAGES INTERFACE ------------------------ */
 
 export interface ImageConfig {
-  url: string;
   title: string;
+  url: string;
 }
 
 /* ----------------------------- MINI MAP CONFIG ---------------------------- */
 
 export interface MiniMapConfig {
-  device_tracker: string;
-  hours_to_show: number;
   default_zoom: number;
-  theme_mode: 'auto' | 'light' | 'dark';
+  device_tracker: string;
   enable_popup: boolean;
   google_api_key: string;
+  hours_to_show: number;
+  theme_mode: 'auto' | 'dark' | 'light';
 }
 
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */
 
 export interface SecondaryInfoConfig {
-  entity: string;
   attribute: string;
+  entity: string;
   state_template: string;
 }
 export interface ButtonConfig {
-  primary: string;
-  secondary: Array<SecondaryInfoConfig>;
   icon: string;
   notify: string;
+  primary: string;
+  secondary: Array<SecondaryInfoConfig>;
 }
 
 export type ButtonEntity = {
-  primary: string;
-  secondary: string;
+  buttonIndex: number;
   icon: string;
   notify: boolean;
-  buttonIndex: number;
+  primary: string;
+  secondary: string;
 };
 
 export interface DefaultCardConfig {
-  title: string;
   collapsed_items: boolean;
   items: Array<CardItemConfig>;
+  title: string;
 }
 
 export interface CardItemConfig {
-  entity: string;
-  name: string;
-  icon: string;
   attribute: string;
+  entity: string;
+  icon?: string;
+  name: string;
   state_template: string;
 }
 
 export interface ButtonActionConfig {
-  entity: string;
-  tap_action: ActionConfig;
-  hold_action: ActionConfig;
   double_tap_action: ActionConfig;
+  entity: string;
+  hold_action: ActionConfig;
+  tap_action: ActionConfig;
 }
 
 export interface ButtonCardConfig {
   button: ButtonConfig;
-  hide_button: boolean;
-  button_type: 'default' | 'action';
-  card_type: 'default' | 'custom';
-  default_card: Array<DefaultCardConfig>;
-  custom_card: LovelaceCardConfig[];
   button_action: ButtonActionConfig;
+  button_type: 'action' | 'default';
+  card_type: 'custom' | 'default';
+  custom_card: LovelaceCardConfig[];
+  default_card: Array<DefaultCardConfig>;
+  hide_button: boolean;
 }
 
 export interface CardItemEntity {
   entity: string;
-  name: string;
   icon: string;
+  name: string;
   state: string;
 }
 
 export type DefaultCardEntity = {
-  title: string;
   collapsed_items: boolean;
   items: Array<{
-    name: string;
-    icon: string;
-    state: string;
     entity: string;
+    icon: string;
+    name: string;
+    state: string;
   }>;
+  title: string;
 };
 
 export type ButtonCardEntity = Array<{
   button: {
-    primary: string;
-    secondary: string;
+    button_action: ButtonActionConfig;
     icon: string;
     notify: boolean;
-    button_action: ButtonActionConfig;
+    primary: string;
+    secondary: string;
   };
-  hide_button: boolean;
-  card_type: 'default' | 'custom';
-  button_type: 'default' | 'action';
+  button_type: 'action' | 'default';
+  card_type: 'custom' | 'default';
+  custom_card: LovelaceCardConfig[];
   default_card: Array<{
-    title: string;
     collapsed_items: boolean;
     items: Array<{
-      name: string;
-      icon: string;
-      state: string;
       entity: string;
+      icon: string;
+      name: string;
+      state: string;
     }>;
+    title: string;
   }>;
-  custom_card: LovelaceCardConfig[];
+  hide_button: boolean;
 }>;
 
 export interface LayoutConfig {
-  theme_config: {
-    theme: string;
-    mode: 'auto' | 'light' | 'dark';
-  };
-
   button_grid: {
     rows: number;
     swipe: boolean;
   };
+
   hide: {
     button_notify: boolean;
-    mini_map: boolean;
     buttons: boolean;
-    indicators: boolean;
-    range_info: boolean;
     images: boolean;
+    indicators: boolean;
+    mini_map: boolean;
+    range_info: boolean;
+  };
+  theme_config: {
+    mode: 'auto' | 'dark' | 'light';
+    theme: string;
   };
 }
 
@@ -234,15 +236,15 @@ export interface LayoutConfig {
  */
 
 export interface VehicleStatusCardConfig extends LovelaceCardConfig {
-  type: string;
-  name?: string;
-  indicators: {
-    single: Array<IndicatorConfig>;
-    group: Array<IndicatorGroupConfig>;
-  };
-  range_info: Array<RangeInfoConfig>;
-  images: Array<ImageConfig>;
-  mini_map: MiniMapConfig;
   button_card: Array<ButtonCardConfig>;
+  images: Array<ImageConfig>;
+  indicators: {
+    group: Array<IndicatorGroupConfig>;
+    single: Array<IndicatorConfig>;
+  };
   layout_config: LayoutConfig;
+  mini_map: MiniMapConfig;
+  name?: string;
+  range_info: Array<RangeInfoConfig>;
+  type: string;
 }

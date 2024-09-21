@@ -1,96 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, nothing } from 'lit';
+import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
 
 // Custom card helpers
 import { fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 
-import { HomeAssistantExtended as HomeAssistant, VehicleStatusCardConfig } from '../types';
-import { loadHaComponents, stickyPreview } from '../utils/loader';
 import { CARD_VERSION } from '../const/const';
-import { CONFIG_TYPES } from './editor-const';
-
 import editorcss from '../css/editor.css';
-
+import { HomeAssistantExtended as HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { Picker, TabBar } from '../utils/create';
+import { loadHaComponents, stickyPreview } from '../utils/loader';
+import './components/panel-button-card';
+import './components/panel-images-editor';
 import './components/panel-indicator';
 import './components/panel-range-info';
-import './components/panel-images-editor';
-import './components/panel-button-card';
-
-import { Picker, TabBar } from '../utils/create';
+import { CONFIG_TYPES } from './editor-const';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
-  @property({ attribute: false }) public _hass!: HomeAssistant;
   @property() private _config!: VehicleStatusCardConfig;
+  @state() private activeTabIndex: null | number = null;
 
-  @state() private activeTabIndex: number | null = null;
-  @state() _selectedConfigType: string | null = null;
+  @query('panel-button-card') _buttonCardEditor?: any;
+  @property({ attribute: false }) public _hass!: HomeAssistant;
   @state() _helpOverlayActive: boolean = false;
 
+  @query('panel-images-editor') _imagesEditor?: any;
   @query('panel-indicator') _indicatorEditor?: any;
   @query('panel-range-info') _rangeInfoEditor?: any;
-  @query('panel-images-editor') _imagesEditor?: any;
-  @query('panel-button-card') _buttonCardEditor?: any;
+  @state() _selectedConfigType: null | string = null;
 
   constructor() {
     super();
     this._handleTabChange = this._handleTabChange.bind(this);
   }
 
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
-  }
-
-  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
-    this._config = config;
-  }
-
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
-  }
-
-  protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-    if (!this._config || !this._hass) {
-      return false;
-    }
-    return true;
-  }
-
-  protected updated(changedProps: PropertyValues): void {
-    super.updated(changedProps);
-    if (changedProps.has('_selectedConfigType') && this._selectedConfigType !== null) {
-      setTimeout(() => {
-        if (this._selectedConfigType) this._dispatchEvent('toggle-helper', this._selectedConfigType);
-      }, 200);
-    }
-    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === null) {
-      this._cleanConfig();
-    }
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    void loadHaComponents();
-    void stickyPreview();
-    if (process.env.ROLLUP_WATCH === 'true') {
-      window.EditorManager = this;
-    }
-    this._cleanConfig();
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-  }
-
-  private _cleanConfig(): void {
-    if (['btn_preview', 'card_preview', 'default_card_preview'].some((key) => this._config[key])) {
-      console.log('Cleaning config of preview keys');
-      this._config = { ...this._config, btn_preview: null, card_preview: null, default_card_preview: null };
-      fireEvent(this, 'config-changed', { config: this._config });
-    } else {
-      console.log('No preview keys found');
-    }
   }
 
   protected render(): TemplateResult {
@@ -107,52 +53,63 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     `;
   }
 
-  private _renderMainEditorPage(): TemplateResult {
-    const cardTypeSelector = this._renderConfigTypeSelector();
-
-    const menuButton = html`<div class="config-menu-wrapper">
-      <div id="menu-icon" class="menu-icon click-schrink" @click="${() => this._toggleMenu()}">
-        <div class="menu-icon-inner">
-          <ha-icon icon="mdi:menu"></ha-icon>
-        </div>
-      </div>
-      <div class="menu-wrapper">
-        <div class="menu-selector hidden">${cardTypeSelector}</div>
-        <div class="menu-content-wrapper">
-          <div class="menu-label">
-            <span class="primary">${CONFIG_TYPES.name}</span>
-            <span class="secondary">${CONFIG_TYPES.description}</span>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-    const tipsContent = this._renderTipContent(); // Tips content
-
-    const versionFooter = html` <div class="version-footer">Version: ${CARD_VERSION}</div>`;
-
-    return html` ${menuButton} ${tipsContent} ${versionFooter}`;
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+    if (changedProps.has('_selectedConfigType') && this._selectedConfigType !== null) {
+      setTimeout(() => {
+        if (this._selectedConfigType) this._dispatchEvent('toggle-helper', this._selectedConfigType);
+      }, 200);
+    }
+    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === null) {
+      this._cleanConfig();
+    }
   }
 
-  private _renderTipContent(): TemplateResult {
-    const options = CONFIG_TYPES.options;
+  private _cleanConfig(): void {
+    if (['btn_preview', 'card_preview', 'default_card_preview'].some((key) => this._config[key])) {
+      console.log('Cleaning config of preview keys');
+      this._config = { ...this._config, btn_preview: null, card_preview: null, default_card_preview: null };
+      fireEvent(this, 'config-changed', { config: this._config });
+    } else {
+      console.log('No preview keys found');
+    }
+  }
 
-    return html`<div class="tip-content">
-      ${Object.entries(options).map(
-        ([key, { name, description }]) =>
-          html`<div class="tip-item click-shrink" @click=${() => (this._selectedConfigType = key)}>
-            <div class="tip-title">${name}</div>
-            <span>${description}</span>
-          </div>`
-      )}
-    </div>`;
+  private _dispatchEvent(type: string, detail: any): void {
+    const event = new CustomEvent('editor-event', {
+      bubbles: true,
+      composed: true,
+      detail: { data: detail, type },
+    });
+    this.dispatchEvent(event);
+  }
+
+  private _handlePanelExpandedChanged(ev: Event, panelKey: string): void {
+    const panel = ev.target as HTMLElement;
+    if (panelKey === 'indicators' && (panel as any).expanded) {
+      this._indicatorEditor?._hideClearButton();
+    }
+  }
+
+  private _handleSelectedConfigType(ev: any): void {
+    this._selectedConfigType = ev.detail.value;
+    this.requestUpdate();
+  }
+
+  private _handleTabChange(index: number): void {
+    this.activeTabIndex = index;
+    this.requestUpdate();
+  }
+
+  private _renderButtonCard(): TemplateResult {
+    return html`<panel-button-card .hass=${this._hass} .editor=${this} .config=${this._config}></panel-button-card>`;
   }
 
   private _renderConfigTypeSelector(): TemplateResult {
     const OPTIONS = CONFIG_TYPES.options;
     const ITEMS = [
-      { value: '', label: 'Select Config Type' },
-      ...Object.keys(OPTIONS).map((key) => ({ value: key, label: OPTIONS[key].name })),
+      { label: 'Select Config Type', value: '' },
+      ...Object.keys(OPTIONS).map((key) => ({ label: OPTIONS[key].name, value: key })),
     ];
 
     const selectorComboBox = html`<ha-combo-box
@@ -169,83 +126,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     return selectorComboBox;
   }
 
-  private _renderSelectedType(): TemplateResult {
-    if (!this._selectedConfigType) {
-      return html``;
-    }
-    const selected = this._selectedConfigType;
-    const CARDCONFIG = CONFIG_TYPES.options[selected];
-    const DOC_URL = CARDCONFIG.doc;
-
-    const typeMap = {
-      indicators: this._renderIndicators(),
-      range: this._renderRangeInfo(),
-      images: this._renderImages(),
-      mini_map: this._renderMiniMap(),
-      button_card: this._renderButtonCard(),
-      layout_config: this._renderLayoutConfig(),
-    };
-    const cardTypeSelector = this._renderConfigTypeSelector();
-
-    const isMainEditor = ['layout_config'].includes(selected);
-
-    const menuButton = html`<div class="config-menu-wrapper">
-      <div class="menu-icon click-schrink" @click="${() => (this._selectedConfigType = null)}">
-        <div class="menu-icon-inner">
-          <ha-icon icon="mdi:home"></ha-icon>
-        </div>
-      </div>
-      <div id="menu-icon" class="menu-icon click-schrink" @click="${() => this._toggleMenu()}">
-        <div class="menu-icon-inner">
-          <ha-icon icon="mdi:menu"></ha-icon>
-        </div>
-      </div>
-      <div class="menu-wrapper">
-        <div class="menu-selector hidden">${cardTypeSelector}</div>
-        <div class="menu-content-wrapper">
-          <div class="menu-label">
-            <span class="primary">${CARDCONFIG.name}</span>
-          </div>
-          ${isMainEditor
-            ? nothing
-            : html`
-                <div class="menu-info-icon-wrapper">
-                  <div class="menu-info-icon">
-                    <ha-icon icon="mdi:eye" @click="${() => this._dispatchEvent('toggle-helper', selected)}"></ha-icon>
-                  </div>
-                  <div class="menu-info-icon">
-                    <ha-icon icon="mdi:information" @click="${() => window.open(DOC_URL, '_blank')}"></ha-icon>
-                  </div>
-                </div>
-              `}
-        </div>
-      </div>
-    </div>`;
-
-    return html`${menuButton} ${typeMap[selected]}`;
-  }
-
-  private _toggleMenu(): void {
-    const menuSelector = this.shadowRoot?.querySelector('.menu-selector') as HTMLElement;
-    const menuContent = this.shadowRoot?.querySelector('.menu-content-wrapper') as HTMLElement;
-    const menuIcon = this.shadowRoot?.getElementById('menu-icon') as HTMLElement;
-    const haIcon = menuIcon?.querySelector('ha-icon') as HTMLElement;
-    if (menuSelector && menuContent) {
-      const isHidden = menuSelector.classList.contains('hidden');
-      if (isHidden) {
-        menuIcon.classList.add('active');
-        haIcon?.setAttribute('icon', 'mdi:close');
-        menuSelector.classList.remove('hidden');
-        menuContent.classList.add('hidden');
-      } else {
-        menuSelector.classList.add('hidden');
-        haIcon?.setAttribute('icon', 'mdi:menu');
-        menuIcon.classList.remove('active');
-        setTimeout(() => {
-          menuContent.classList.remove('hidden');
-        }, 200);
-      }
-    }
+  private _renderImages(): TemplateResult {
+    return html`<panel-images-editor .editor=${this} .config=${this._config}></panel-images-editor>`;
   }
 
   private _renderIndicators(): TemplateResult {
@@ -276,178 +158,83 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     return content;
   }
 
-  private _renderRangeInfo(): TemplateResult {
-    return html`<panel-range-info .hass=${this._hass} .config=${this._config}></panel-range-info>`;
-  }
-
-  private _renderImages(): TemplateResult {
-    return html`<panel-images-editor .editor=${this} .config=${this._config}></panel-images-editor>`;
-  }
-
-  private _renderMiniMap(): TemplateResult {
-    const selectorNumber = {
-      number: {
-        min: 0,
-        max: 24,
-        mode: 'box',
-        step: 1,
-      },
-    };
-
-    const sharedConfig = {
-      component: this,
-      configType: 'mini_map',
-      configIndex: 0,
-    };
-    const themeModeSelect = [
-      { value: 'auto', label: 'Auto' },
-      { value: 'light', label: 'Light' },
-      { value: 'dark', label: 'Dark' },
-    ];
-
-    const miniMap = this._config?.mini_map || {};
-    const deviceTracker = miniMap.device_tracker ?? '';
-    const defaultZoom = miniMap.default_zoom ?? 0;
-    const hoursToShow = miniMap.hours_to_show ?? 0;
-    const googleApi = miniMap.google_api_key ?? '';
-    const themeMode = miniMap.theme_mode ?? 'auto';
-    const popupEnable = miniMap.enable_popup ?? false;
-
-    const pickerConfig = [
-      {
-        label: 'Device Tracker',
-        value: deviceTracker,
-        configValue: 'device_tracker',
-        pickerType: 'entity',
-        options: { includeDomains: ['device_tracker', 'person'] },
-      },
-      { label: 'Google API Key', value: googleApi, configValue: 'google_api_key', pickerType: 'textfield' },
-      {
-        label: 'Default Zoom',
-        value: defaultZoom,
-        configValue: 'default_zoom',
-        pickerType: 'number',
-        options: { selector: selectorNumber },
-      },
-      {
-        label: 'Hours to Show',
-        value: hoursToShow,
-        configValue: 'hours_to_show',
-        pickerType: 'number',
-        options: { selector: selectorNumber },
-      },
-
-      {
-        label: 'Theme Mode',
-        value: themeMode,
-        configValue: 'theme_mode',
-        pickerType: 'attribute',
-        items: themeModeSelect,
-      },
-      {
-        label: 'Enable Popup',
-        value: popupEnable,
-        configValue: 'enable_popup',
-        pickerType: 'selectorBoolean',
-        options: { selector: { boolean: ['true', 'false'] } },
-      },
-    ];
-
-    const createPickers = (config: any) => {
-      return Picker({ ...sharedConfig, ...config });
-    };
-
-    return html`
-      <div class="sub-panel">
-        <div class="sub-header">Mini Map Configuration</div>
-        <div class="sub-panel-config">
-          <div class="sub-content">${pickerConfig.map((config) => createPickers(config))}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderButtonCard(): TemplateResult {
-    return html`<panel-button-card .hass=${this._hass} .editor=${this} .config=${this._config}></panel-button-card>`;
-  }
-
   private _renderLayoutConfig(): TemplateResult {
     const layout = this._config.layout_config || {};
     const buttonGrid = layout.button_grid || {};
 
     const sharedButtonConfig = {
       component: this,
-      configType: 'layout_config',
       configIndex: 'button_grid',
+      configType: 'layout_config',
     };
 
     const buttonGridPicker = [
       {
-        label: 'Rows',
-        value: buttonGrid.rows || 2,
         configValue: 'rows',
+        label: 'Rows',
+        options: { selector: { number: { max: 10, min: 1, mode: 'box', step: 1 } } },
         pickerType: 'number',
-        options: { selector: { number: { min: 1, max: 10, mode: 'box', step: 1 } } },
+        value: buttonGrid.rows || 2,
       },
       {
-        label: 'Use swipe for buttons',
-        value: buttonGrid.swipe || false,
         configValue: 'swipe',
-        pickerType: 'selectorBoolean',
+        label: 'Use swipe for buttons',
         options: { selector: { boolean: ['true', 'false'] } },
+        pickerType: 'selectorBoolean',
+        value: buttonGrid.swipe || false,
       },
     ];
 
     const hide = layout.hide || {};
     const sharedBoolConfig = {
       component: this,
-      configType: 'layout_config',
       configIndex: 'hide',
-      pickerType: 'selectorBoolean',
+      configType: 'layout_config',
       options: { selector: { boolean: ['true', 'false'] } },
+      pickerType: 'selectorBoolean',
     };
     const hidePicker = [
       {
+        configValue: 'button_notify',
         label: 'Notify badge on buttons',
         value: hide.button_notify || false,
-        configValue: 'button_notify',
       },
-      { label: 'Mini Map', value: hide.mini_map || false, configValue: 'mini_map' },
-      { label: 'Buttons', value: hide.buttons || false, configValue: 'buttons' },
-      { label: 'Indicators', value: hide.indicators || false, configValue: 'indicators' },
-      { label: 'Range Info', value: hide.range_info || false, configValue: 'range_info' },
-      { label: 'Images', value: hide.images || false, configValue: 'images' },
+      { configValue: 'mini_map', label: 'Mini Map', value: hide.mini_map || false },
+      { configValue: 'buttons', label: 'Buttons', value: hide.buttons || false },
+      { configValue: 'indicators', label: 'Indicators', value: hide.indicators || false },
+      { configValue: 'range_info', label: 'Range Info', value: hide.range_info || false },
+      { configValue: 'images', label: 'Images', value: hide.images || false },
     ];
 
     const themeConfig = layout.theme_config || {};
 
     const sharedThemeConfig = {
       component: this,
-      configType: 'layout_config',
       configIndex: 'theme_config',
+      configType: 'layout_config',
     };
 
     const themeModeSelect = [
-      { value: themeConfig.theme || 'default', label: 'Theme', pickerType: 'theme' },
+      { label: 'Theme', pickerType: 'theme', value: themeConfig.theme || 'default' },
       {
-        value: themeConfig.mode || 'auto',
-        label: 'Theme Mode',
         configValue: 'mode',
         items: [
           {
-            value: 'auto',
             label: 'Auto',
+            value: 'auto',
           },
           {
-            value: 'light',
             label: 'Light',
+            value: 'light',
           },
           {
-            value: 'dark',
             label: 'Dark',
+            value: 'dark',
           },
         ],
+        label: 'Theme Mode',
         pickerType: 'attribute',
+        value: themeConfig.mode || 'auto',
       },
     ];
 
@@ -503,21 +290,239 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     `;
 
     const tabsConfig = [
-      { key: 'theme_config', label: 'Theme', content: themeWrapper },
-      { key: 'button_grid', label: 'Button Grid', content: buttonGridWrapper },
-      { key: 'hide', label: 'Hide', content: hideWrapper },
+      { content: themeWrapper, key: 'theme_config', label: 'Theme' },
+      { content: buttonGridWrapper, key: 'button_grid', label: 'Button Grid' },
+      { content: hideWrapper, key: 'hide', label: 'Hide' },
     ];
 
     return html`<div class="card-config">
       ${TabBar({
-        tabs: tabsConfig,
         activeTabIndex: this.activeTabIndex || 0,
         onTabChange: (index: number) => (this.activeTabIndex = index),
+        tabs: tabsConfig,
       })}
     </div>`;
   }
 
+  private _renderMainEditorPage(): TemplateResult {
+    const cardTypeSelector = this._renderConfigTypeSelector();
+
+    const menuButton = html`<div class="config-menu-wrapper">
+      <div id="menu-icon" class="menu-icon click-schrink" @click="${() => this._toggleMenu()}">
+        <div class="menu-icon-inner">
+          <ha-icon icon="mdi:menu"></ha-icon>
+        </div>
+      </div>
+      <div class="menu-wrapper">
+        <div class="menu-selector hidden">${cardTypeSelector}</div>
+        <div class="menu-content-wrapper">
+          <div class="menu-label">
+            <span class="primary">${CONFIG_TYPES.name}</span>
+            <span class="secondary">${CONFIG_TYPES.description}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    const tipsContent = this._renderTipContent(); // Tips content
+
+    const versionFooter = html` <div class="version-footer">Version: ${CARD_VERSION}</div>`;
+
+    return html` ${menuButton} ${tipsContent} ${versionFooter}`;
+  }
+
+  private _renderMiniMap(): TemplateResult {
+    const selectorNumber = {
+      number: {
+        max: 24,
+        min: 0,
+        mode: 'box',
+        step: 1,
+      },
+    };
+
+    const sharedConfig = {
+      component: this,
+      configIndex: 0,
+      configType: 'mini_map',
+    };
+    const themeModeSelect = [
+      { label: 'Auto', value: 'auto' },
+      { label: 'Light', value: 'light' },
+      { label: 'Dark', value: 'dark' },
+    ];
+
+    const miniMap = this._config?.mini_map || {};
+    const deviceTracker = miniMap.device_tracker ?? '';
+    const defaultZoom = miniMap.default_zoom ?? 0;
+    const hoursToShow = miniMap.hours_to_show ?? 0;
+    const googleApi = miniMap.google_api_key ?? '';
+    const themeMode = miniMap.theme_mode ?? 'auto';
+    const popupEnable = miniMap.enable_popup ?? false;
+
+    const pickerConfig = [
+      {
+        configValue: 'device_tracker',
+        label: 'Device Tracker',
+        options: { includeDomains: ['device_tracker', 'person'] },
+        pickerType: 'entity',
+        value: deviceTracker,
+      },
+      { configValue: 'google_api_key', label: 'Google API Key', pickerType: 'textfield', value: googleApi },
+      {
+        configValue: 'default_zoom',
+        label: 'Default Zoom',
+        options: { selector: selectorNumber },
+        pickerType: 'number',
+        value: defaultZoom,
+      },
+      {
+        configValue: 'hours_to_show',
+        label: 'Hours to Show',
+        options: { selector: selectorNumber },
+        pickerType: 'number',
+        value: hoursToShow,
+      },
+
+      {
+        configValue: 'theme_mode',
+        items: themeModeSelect,
+        label: 'Theme Mode',
+        pickerType: 'attribute',
+        value: themeMode,
+      },
+      {
+        configValue: 'enable_popup',
+        label: 'Enable Popup',
+        options: { selector: { boolean: ['true', 'false'] } },
+        pickerType: 'selectorBoolean',
+        value: popupEnable,
+      },
+    ];
+
+    const createPickers = (config: any) => {
+      return Picker({ ...sharedConfig, ...config });
+    };
+
+    return html`
+      <div class="sub-panel">
+        <div class="sub-header">Mini Map Configuration</div>
+        <div class="sub-panel-config">
+          <div class="sub-content">${pickerConfig.map((config) => createPickers(config))}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderRangeInfo(): TemplateResult {
+    return html`<panel-range-info .hass=${this._hass} .config=${this._config}></panel-range-info>`;
+  }
+
+  private _renderSelectedType(): TemplateResult {
+    if (!this._selectedConfigType) {
+      return html``;
+    }
+    const selected = this._selectedConfigType;
+    const CARDCONFIG = CONFIG_TYPES.options[selected];
+    const DOC_URL = CARDCONFIG.doc;
+
+    const typeMap = {
+      button_card: this._renderButtonCard(),
+      images: this._renderImages(),
+      indicators: this._renderIndicators(),
+      layout_config: this._renderLayoutConfig(),
+      mini_map: this._renderMiniMap(),
+      range: this._renderRangeInfo(),
+    };
+    const cardTypeSelector = this._renderConfigTypeSelector();
+
+    const isMainEditor = ['layout_config'].includes(selected);
+
+    const menuButton = html`<div class="config-menu-wrapper">
+      <div class="menu-icon click-schrink" @click="${() => (this._selectedConfigType = null)}">
+        <div class="menu-icon-inner">
+          <ha-icon icon="mdi:home"></ha-icon>
+        </div>
+      </div>
+      <div id="menu-icon" class="menu-icon click-schrink" @click="${() => this._toggleMenu()}">
+        <div class="menu-icon-inner">
+          <ha-icon icon="mdi:menu"></ha-icon>
+        </div>
+      </div>
+      <div class="menu-wrapper">
+        <div class="menu-selector hidden">${cardTypeSelector}</div>
+        <div class="menu-content-wrapper">
+          <div class="menu-label">
+            <span class="primary">${CARDCONFIG.name}</span>
+          </div>
+          ${isMainEditor
+            ? nothing
+            : html`
+                <div class="menu-info-icon-wrapper">
+                  <div class="menu-info-icon">
+                    <ha-icon icon="mdi:eye" @click="${() => this._dispatchEvent('toggle-helper', selected)}"></ha-icon>
+                  </div>
+                  <div class="menu-info-icon">
+                    <ha-icon icon="mdi:information" @click="${() => window.open(DOC_URL, '_blank')}"></ha-icon>
+                  </div>
+                </div>
+              `}
+        </div>
+      </div>
+    </div>`;
+
+    return html`${menuButton} ${typeMap[selected]}`;
+  }
+
+  private _renderTipContent(): TemplateResult {
+    const options = CONFIG_TYPES.options;
+
+    return html`<div class="tip-content">
+      ${Object.entries(options).map(
+        ([key, { description, name }]) =>
+          html`<div class="tip-item click-shrink" @click=${() => (this._selectedConfigType = key)}>
+            <div class="tip-title">${name}</div>
+            <span>${description}</span>
+          </div>`
+      )}
+    </div>`;
+  }
+
   /* ---------------------------- PANEL TEMPLATE ---------------------------- */
+
+  private _toggleHelp(selected: string): void {
+    const activeType = selected;
+    const event = new CustomEvent('editor-event', {
+      bubbles: true,
+      composed: true,
+      detail: { activeType, type: 'toggle-helper' },
+    });
+    this.dispatchEvent(event);
+    console.log('Toggle Help:', activeType);
+  }
+
+  private _toggleMenu(): void {
+    const menuSelector = this.shadowRoot?.querySelector('.menu-selector') as HTMLElement;
+    const menuContent = this.shadowRoot?.querySelector('.menu-content-wrapper') as HTMLElement;
+    const menuIcon = this.shadowRoot?.getElementById('menu-icon') as HTMLElement;
+    const haIcon = menuIcon?.querySelector('ha-icon') as HTMLElement;
+    if (menuSelector && menuContent) {
+      const isHidden = menuSelector.classList.contains('hidden');
+      if (isHidden) {
+        menuIcon.classList.add('active');
+        haIcon?.setAttribute('icon', 'mdi:close');
+        menuSelector.classList.remove('hidden');
+        menuContent.classList.add('hidden');
+      } else {
+        menuSelector.classList.add('hidden');
+        haIcon?.setAttribute('icon', 'mdi:menu');
+        menuIcon.classList.remove('active');
+        setTimeout(() => {
+          menuContent.classList.remove('hidden');
+        }, 200);
+      }
+    }
+  }
 
   private panelTemplate(
     panelKey: string,
@@ -525,7 +530,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     content: TemplateResult,
     options?: { expanded?: boolean; helper?: boolean }
   ): TemplateResult {
-    const { name, description, icon } = CONFIG_TYPES.options[panelKey].subpanels[subpanel];
+    const { icon, name } = CONFIG_TYPES.options[panelKey].subpanels[subpanel];
     const expanded = options?.expanded ?? false;
 
     return html`
@@ -546,50 +551,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     `;
   }
 
-  private _handlerAlert(ev: CustomEvent): void {
-    const alert = ev.target as HTMLElement;
-    alert.style.display = 'none';
-  }
-
-  private _handlePanelExpandedChanged(ev: Event, panelKey: string): void {
-    const panel = ev.target as HTMLElement;
-    if (panelKey === 'indicators' && (panel as any).expanded) {
-      this._indicatorEditor?._hideClearButton();
-    }
-  }
-
-  private _dispatchEvent(type: string, detail: any): void {
-    const event = new CustomEvent('editor-event', {
-      detail: { type, data: detail },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-
-  private _toggleHelp(selected: string): void {
-    const activeType = selected;
-    const event = new CustomEvent('editor-event', {
-      detail: { type: 'toggle-helper', activeType },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-    console.log('Toggle Help:', activeType);
-  }
-
-  private _handleSelectedConfigType(ev: any): void {
-    this._selectedConfigType = ev.detail.value;
-    this.requestUpdate();
-  }
-
-  private _handleTabChange(index: number): void {
-    this.activeTabIndex = index;
-    this.requestUpdate();
-  }
-
-  /* ------------------------- CONFIG CHANGED HANDLER ------------------------- */
-
   public _valueChanged(ev: any): void {
     if (!this._config || !this._hass) {
       return;
@@ -603,7 +564,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     // Ensure we handle the boolean value correctly
     let newValue: any = target.value;
 
-    if (['default_zoom', 'hours_to_show', 'theme_mode', 'enable_popup'].includes(configValue)) {
+    if (['default_zoom', 'enable_popup', 'hours_to_show', 'theme_mode'].includes(configValue)) {
       newValue = ev.detail.value;
     } else {
       newValue = target.checked !== undefined ? target.checked : target.value;
@@ -658,6 +619,30 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       this._config = { ...this._config, ...updates };
       fireEvent(this, 'config-changed', { config: this._config });
     }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    void loadHaComponents();
+    void stickyPreview();
+    if (process.env.ROLLUP_WATCH === 'true') {
+      window.EditorManager = this;
+    }
+    this._cleanConfig();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+  }
+
+  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
+    this._config = config;
+  }
+
+  /* ------------------------- CONFIG CHANGED HANDLER ------------------------- */
+
+  set hass(hass: HomeAssistant) {
+    this._hass = hass;
   }
 
   static get styles(): CSSResultGroup {
