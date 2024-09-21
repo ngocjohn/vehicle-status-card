@@ -551,52 +551,6 @@ export class VehicleStatusCard extends LitElement {
     }
   }
 
-  // private _renderDefaultCardItems(data: DefaultCardEntity): TemplateResult {
-  //   const title = data.title;
-  //   const items = data.items;
-  //   const collapsed_items = data.collapsed_items;
-
-  //   const itemRender = (icon: string, name: string, state: string, entity?: string): TemplateResult => {
-  //     return html`
-  //       <div class="data-row">
-  //         <div>
-  //           <ha-icon
-  //             @click=${() => {
-  //               this.toggleMoreInfo(entity);
-  //             }}
-  //             class="data-icon"
-  //             icon="${icon ? icon : 'mdi:nothing'}"
-  //           ></ha-icon>
-  //           <span> ${name} </span>
-  //         </div>
-  //         <div
-  //           class="data-value-unit"
-  //           @click=${() => {
-  //             this.toggleMoreInfo(entity);
-  //           }}
-  //         >
-  //           <span> ${state} </span>
-  //         </div>
-  //       </div>
-  //     `;
-  //   };
-
-  //   const header = collapsed_items
-  //     ? html`<div class="subcard-icon" @click=${(ev: Event) => this.toggleSubCard(ev)}>
-  //         <ha-icon icon="mdi:chevron-down"></ha-icon>
-  //       </div>`
-  //     : html``;
-
-  //   return html`
-  //     <div class="default-card">
-  //       <div class="data-header">${title} ${header}</div>
-  //       <div class="data-box ${collapsed_items ? 'hidden' : ''}">
-  //         ${items.map((item) => itemRender(item.icon, item.name, item.state, item.entity))}
-  //       </div>
-  //     </div>
-  //   `;
-  // }
-
   /* --------------------------- THEME CONFIGURATION -------------------------- */
   private applyTheme(theme: string): void {
     if (!this._config.layout_config?.theme_config?.theme) return;
