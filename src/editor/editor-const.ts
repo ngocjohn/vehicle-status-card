@@ -62,7 +62,7 @@ export const CONFIG_TYPES = {
   },
 };
 
-export type BUTTON_CARD_ACTIONS =
+type BUTTON_CARD_ACTIONS =
   | 'add-item'
   | 'add-new-button'
   | 'back-to-list'
@@ -77,3 +77,34 @@ export type BUTTON_CARD_ACTIONS =
   | 'edit-item'
   | 'show-button'
   | 'show-delete';
+
+const BUTTON_TYPE = [
+  { value: 'default', label: 'Default' },
+  { value: 'action', label: 'Action' },
+];
+
+const CARD_TYPES = [
+  { value: 'default', label: 'Default' },
+  { value: 'custom', label: 'Custom Lovelace' },
+  { value: 'tire', label: 'Tire Pressures' },
+];
+
+const ACTIONSELECTOR = [
+  {
+    name: 'tap_action',
+    label: 'Tap action',
+    defaultAction: 'more-info',
+  },
+  {
+    name: 'hold_action',
+    label: 'Hold action',
+    defaultAction: 'none',
+  },
+  {
+    name: 'double_tap_action',
+    label: 'Double tap action',
+    defaultAction: 'none',
+  },
+];
+
+export { BUTTON_TYPE, CARD_TYPES, ACTIONSELECTOR, BUTTON_CARD_ACTIONS };
