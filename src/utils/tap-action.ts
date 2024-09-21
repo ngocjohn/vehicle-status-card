@@ -1,5 +1,5 @@
 import { ButtonActionConfig } from '../types';
-type ActionType = 'tap' | 'double_tap' | 'hold';
+type ActionType = 'double_tap' | 'hold' | 'tap';
 
 export function addActions(element: HTMLElement, config: ButtonActionConfig) {
   const handler = new ActionHandler(element, config, sendActionEvent);
@@ -15,29 +15,30 @@ export function sendActionEvent(element: HTMLElement, config: ButtonActionConfig
   const doubleTapAction = config?.double_tap_action || { action: 'toggle' };
   const holdAction = config?.hold_action || { action: 'toggle' };
   const entity = config?.entity || '';
-
+  console.log('sendActionEvent', tapAction, doubleTapAction, holdAction, entity, action);
   callAction(
     element,
-    { entity: entity, tap_action: tapAction, double_tap_action: doubleTapAction, hold_action: holdAction },
+    { double_tap_action: doubleTapAction, entity: entity, hold_action: holdAction, tap_action: tapAction },
     action
   );
 }
 
 export function callAction(element: HTMLElement, config: ButtonActionConfig, action: ActionType) {
   setTimeout(() => {
-    const event = new CustomEvent('hass-action', { bubbles: true, composed: true, detail: { config, action } });
+    const event = new CustomEvent('hass-action', { bubbles: true, composed: true, detail: { action, config } });
     element.dispatchEvent(event);
+    console.log('callAction', event);
   }, 1);
 }
 
 class ActionHandler {
-  private element: HTMLElement;
   private config: ButtonActionConfig;
-  private sendActionEvent: (element: HTMLElement, config: ButtonActionConfig, action: ActionType) => void;
-  private tapTimeout: number | null;
+  private defaultEntity: null | string;
+  private element: HTMLElement;
   private lastTap: number;
-  private startTime: number | null;
-  private defaultEntity: string | null;
+  private sendActionEvent: (element: HTMLElement, config: ButtonActionConfig, action: ActionType) => void;
+  private startTime: null | number;
+  private tapTimeout: null | number;
 
   constructor(
     element: HTMLElement,
@@ -47,7 +48,7 @@ class ActionHandler {
     this.element = element;
     this.config = config;
     this.sendActionEvent = sendActionEvent;
-    this.defaultEntity = this._extractEntityFromAction(config);
+    this.defaultEntity = config.entity || this._extractEntityFromAction(config);
     this.tapTimeout = null;
     this.lastTap = 0;
     this.startTime = null;
@@ -68,14 +69,6 @@ class ActionHandler {
     // If no entity is found, return null
     return null;
   }
-  handleStart(e: PointerEvent) {
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-
-    this.startTime = Date.now();
-    clearTimeout(this.tapTimeout as number);
-  }
-
   handleEnd() {
     if (this.startTime === null) return;
 
@@ -97,5 +90,18 @@ class ActionHandler {
         this.sendActionEvent(this.element, this.config, 'tap');
       }, 300); // Same threshold for single tap
     }
+  }
+
+  handleStart(e: PointerEvent) {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    // Example: Only trigger vibration after user interaction
+    if (navigator.vibrate && e.isTrusted) {
+      navigator.vibrate(50); // Vibrate for 50ms
+    }
+
+    this.startTime = Date.now();
+    clearTimeout(this.tapTimeout as number);
   }
 }

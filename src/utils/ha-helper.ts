@@ -1,26 +1,28 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 
-import { LovelaceCardConfig, domainIcon, computeStateDomain } from 'custom-card-helpers';
+import { LovelaceCardConfig } from 'custom-card-helpers';
+
 import {
+  ButtonCardEntity,
+  CardItemEntity,
+  DefaultCardConfig,
   HomeAssistantExtended as HomeAssistant,
-  VehicleStatusCardConfig,
   IndicatorEntity,
   IndicatorGroupEntity,
   RangeInfoEntity,
-  ButtonCardEntity,
   SecondaryInfoConfig,
-  DefaultCardConfig,
-  CardItemEntity,
+  VehicleStatusCardConfig,
 } from '../types';
 
 export async function getTemplateValue(hass: HomeAssistant, templateConfig: string): Promise<string> {
   const response = await fetch('/api/template', {
-    method: 'POST',
     body: JSON.stringify({ template: templateConfig }),
     headers: {
       Authorization: `Bearer ${hass.auth.data.access_token}`,
       'Content-Type': 'application/json',
     },
+    method: 'POST',
   });
 
   if (!response.ok) {
@@ -38,12 +40,12 @@ export async function getBooleanTemplate(hass: HomeAssistant, templateConfig: st
 
   // console.log('Template:', templateConfig);
   const response = await fetch('/api/template', {
-    method: 'POST',
     body: JSON.stringify({ template: templateConfig }),
     headers: {
       Authorization: `Bearer ${hass.auth.data.access_token}`,
       'Content-Type': 'application/json',
     },
+    method: 'POST',
   });
 
   if (!response.ok) {
@@ -79,8 +81,6 @@ export async function getSingleIndicators(
       iconValue = await getTemplateValue(hass, indicator.icon_template);
     } else if (indicator.icon) {
       iconValue = indicator.icon;
-    } else {
-      iconValue = stateObj.attributes.icon || '';
     }
 
     const state = indicator.state_template
@@ -89,7 +89,7 @@ export async function getSingleIndicators(
         ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
         : hass.formatEntityState(stateObj);
 
-    singleIndicator.push({ icon: iconValue, state });
+    singleIndicator.push({ entity, icon: iconValue, state });
   }
   return singleIndicator;
 }
@@ -105,10 +105,10 @@ export async function getGroupIndicators(
 
   for (const group of config.indicators.group) {
     groupIndicator.push({
-      name: group.name,
       icon: group.icon,
-      visibility: await getBooleanTemplate(hass, group.visibility),
       items: [],
+      name: group.name,
+      visibility: await getBooleanTemplate(hass, group.visibility),
     });
 
     if (!group.items) {
@@ -131,7 +131,7 @@ export async function getGroupIndicators(
         ? await getTemplateValue(hass, item.icon_template)
         : item.icon
           ? item.icon
-          : (stateObj.attributes.icon ?? group.icon);
+          : '';
 
       const state = item.state_template
         ? await getTemplateValue(hass, item.state_template)
@@ -139,7 +139,12 @@ export async function getGroupIndicators(
           ? hass.formatEntityAttributeValue(stateObj, item.attribute)
           : hass.formatEntityState(stateObj);
 
-      groupIndicator[groupIndicator.length - 1].items.push({ name: item.name, icon: itemIcon, state });
+      groupIndicator[groupIndicator.length - 1].items.push({
+        entity: item.entity,
+        icon: itemIcon,
+        name: item.name,
+        state,
+      });
     }
   }
   return groupIndicator;
@@ -192,10 +197,10 @@ export async function getRangeInfo(
 
     rangeInfo.push({
       energy: energyState,
-      range: rangeState,
-      progress_color: progressColor,
       icon: energyIcon,
       level: levelState,
+      progress_color: progressColor,
+      range: rangeState,
     });
   }
   return rangeInfo;
@@ -226,19 +231,19 @@ async function _getSecondaryStates(hass: HomeAssistant, secondary: Array<Seconda
 export async function getDefaultCard(
   hass: HomeAssistant,
   defaultCard: DefaultCardConfig[]
-): Promise<{ title: string; collapsed_items: boolean; items: CardItemEntity[] }[] | void> {
+): Promise<{ collapsed_items: boolean; items: CardItemEntity[]; title: string }[] | void> {
   if (!defaultCard) {
     return;
   }
 
-  const defaultCardItem: { title: string; collapsed_items: boolean; items: CardItemEntity[] }[] = [];
+  const defaultCardItem: { collapsed_items: boolean; items: CardItemEntity[]; title: string }[] = [];
 
   for (const card of defaultCard) {
     const title = card.title;
     const collapsed_items = card.collapsed_items || false;
 
     // Initialize `items` array for each card separately
-    let items: CardItemEntity[] = [];
+    const items: CardItemEntity[] = [];
 
     for (const item of card.items) {
       if (!item.entity) {
@@ -251,20 +256,20 @@ export async function getDefaultCard(
         continue;
       }
 
-      let state = item.state_template
+      const state = item.state_template
         ? await getTemplateValue(hass, item.state_template)
         : item.attribute
           ? hass.formatEntityAttributeValue(stateObj, item.attribute)
           : hass.formatEntityState(stateObj);
 
-      let icon = item.icon || stateObj.attributes.icon || domainIcon(computeStateDomain(stateObj));
-      let name = item.name || stateObj.attributes.friendly_name || '';
+      const icon = item.icon || '';
+      const name = item.name || stateObj.attributes.friendly_name || '';
 
-      items.push({ entity, name, icon, state });
+      items.push({ entity, icon, name, state });
     }
 
     // Now that items are populated, add them to the card
-    defaultCardItem.push({ title, collapsed_items, items });
+    defaultCardItem.push({ collapsed_items, items, title });
   }
 
   return defaultCardItem;
@@ -323,11 +328,11 @@ export async function getButtonCard(
     }
 
     const buttonDetails = {
-      primary: button.primary || '',
-      secondary: (await _getSecondaryStates(hass, button.secondary)) || '',
+      button_action: btmCrd.button_action,
       icon: button.icon || '',
       notify: button.notify ? await getBooleanTemplate(hass, button.notify) : false,
-      button_action: btmCrd.button_action,
+      primary: button.primary || '',
+      secondary: (await _getSecondaryStates(hass, button.secondary)) || '',
     };
 
     const defaultCard = (await getDefaultCard(hass, btmCrd.default_card)) || [];
@@ -336,17 +341,17 @@ export async function getButtonCard(
 
     buttonCardItem.push({
       button: buttonDetails,
-      hide_button: btmCrd.hide_button || false,
-      card_type: btmCrd.card_type || 'default',
-      default_card: defaultCard,
-      custom_card: customCard,
       button_type: btmCrd.button_type || 'default',
+      card_type: btmCrd.card_type || 'default',
+      custom_card: customCard,
+      default_card: defaultCard,
+      hide_button: btmCrd.hide_button || false,
     });
   }
   return buttonCardItem;
 }
 
-export async function uploadImage(hass: HomeAssistant, file: File): Promise<string | null> {
+export async function uploadImage(hass: HomeAssistant, file: File): Promise<null | string> {
   console.log('Uploading image:', file.name);
 
   // Check if hass.auth and hass.auth.data are available
@@ -360,11 +365,11 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<stri
 
   try {
     const response = await fetch('/api/image/upload', {
-      method: 'POST',
       body: formData,
       headers: {
         Authorization: `Bearer ${hass.auth.data.access_token}`,
       },
+      method: 'POST',
     });
 
     if (!response.ok) {

@@ -14,7 +14,7 @@ export function formatMoonTime(dateString: string): string {
   } else if (isYesterday) {
     return `Yesterday ${timeString}`;
   } else {
-    return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleString([], { day: 'numeric', hour: '2-digit', minute: '2-digit', month: 'short' });
   }
 }
 
