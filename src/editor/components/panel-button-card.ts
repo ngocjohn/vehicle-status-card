@@ -8,38 +8,22 @@ import {
   VehicleStatusCardConfig,
   ButtonConfig,
   DefaultCardConfig,
-  CardItemConfig,
-  ButtonActionConfig,
   ButtonCardConfig,
+  TireTemplateConfig,
+  TireEntityConfig,
 } from '../../types';
 
-import { BUTTON_CARD_ACTIONS } from '../editor-const';
+import { BUTTON_CARD_ACTIONS, ACTIONSELECTOR, CARD_TYPES, BUTTON_TYPE } from '../editor-const';
 
 import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
-import { debounce, head } from 'es-toolkit';
+import { debounce } from 'es-toolkit';
 
 import Sortable from 'sortablejs';
 
 import * as Create from '../../utils/create';
 
-const ACTIONSELECTOR = [
-  {
-    name: 'tap_action',
-    label: 'Tap action',
-    defaultAction: 'more-info',
-  },
-  {
-    name: 'hold_action',
-    label: 'Hold action',
-    defaultAction: 'none',
-  },
-  {
-    name: 'double_tap_action',
-    label: 'Double tap action',
-    defaultAction: 'none',
-  },
-];
+import { uploadImage } from '../../utils/ha-helper';
 
 @customElement('panel-button-card')
 export class PanelButtonCard extends LitElement {
@@ -305,10 +289,7 @@ export class PanelButtonCard extends LitElement {
           configIndex: buttonIndex,
           configValue: 'button_type',
           pickerType: 'attribute' as 'attribute',
-          items: [
-            { value: 'default', label: 'Default' },
-            { value: 'action', label: 'Action' },
-          ],
+          items: BUTTON_TYPE,
         })}
         ${Create.Picker({
           component: this,
@@ -318,15 +299,10 @@ export class PanelButtonCard extends LitElement {
           configIndex: buttonIndex,
           configValue: 'card_type',
           pickerType: 'attribute' as 'attribute',
-          items: [
-            { value: 'default', label: 'Default' },
-            { value: 'custom', label: 'Custom' },
-          ],
+          items: CARD_TYPES,
           options: { disabled: buttonCard.button_type === 'action' },
         })}
       </div>`;
-
-    const buttonType = buttonCard.button_type || 'default';
 
     const sharedConfig = {
       configType: 'button',
@@ -379,28 +355,8 @@ export class PanelButtonCard extends LitElement {
       },
     ];
 
-    const cardType = [
-      {
-        component: this,
-        value: buttonCard.card_type || 'default',
-        label: 'Card type',
-        configType: 'base',
-        configIndex: buttonIndex,
-        configValue: 'card_type',
-        pickerType: 'attribute' as 'attribute',
-        items: [
-          { value: 'default', label: 'Default' },
-          { value: 'custom', label: 'Custom' },
-        ],
-      },
-    ];
-
     const content = html`
       <div>
-        ${buttonType === 'default'
-          ? html` ${this._renderSubHeader('Select card type', [], false)}
-              <div class="sub-content">${cardType.map((config) => this._createItemPicker({ ...config }))}</div>`
-          : ''}
         ${this._renderSubHeader('Primary and icon', [
           { title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) },
         ])}
@@ -427,7 +383,10 @@ export class PanelButtonCard extends LitElement {
 
     const buttonAction = this._renderButtonActionConfig(buttonCard, buttonIndex);
 
-    return html`<div class="indicator-config">${btnTypeCardType} ${baseBtnConfig} ${buttonAction}</div>`;
+    const tireCardPanel = this._renderTireCardConfig(buttonCard, buttonIndex);
+    return html`<div class="indicator-config">
+      ${btnTypeCardType} ${baseBtnConfig} ${buttonAction}${tireCardPanel}
+    </div>`;
   }
 
   private _renderButtonActionConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
@@ -466,21 +425,85 @@ export class PanelButtonCard extends LitElement {
 
     // The complete content
     const content = html`
-      ${this._renderSubHeader('Configure action', [], false)}
+      ${this._renderSubHeader('Configure Icon tap behavior', [], false)}
       ${buttonCard.button_type === undefined || buttonCard.button_type === 'default'
-        ? html`<ha-alert
-            alert-type="info"
-            dismissable
-            @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
-            >${infoAlert}</ha-alert
-          >`
+        ? html` <div class="sub-content">
+            <ha-alert
+              alert-type="info"
+              dismissable
+              @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
+              >${infoAlert}</ha-alert
+            >
+          </div>`
         : nothing}
       <div class="indicator-config">${entityPicker} ${actionSelectors}</div>
     `;
 
     return Create.ExpansionPanel({
       content: content,
-      options: { header: 'Button Interactions', icon: 'mdi:gesture-tap' },
+      options: { header: 'Icon tap interactions', icon: 'mdi:gesture-tap' },
+    });
+  }
+
+  private _renderTireCardConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
+    const info = `The image should be square with a maximum resolution of 450x450 pixels. A transparent background is recommended.`;
+
+    const tireCard = buttonCard.tire_card || ({} as TireTemplateConfig);
+
+    const backgroundForm = html`
+      <ha-alert alert-type="info">${info}</ha-alert>
+      <ha-textfield
+        .label=${'Background'}
+        .value=${tireCard.background || ''}
+        .buttonIndex=${buttonIndex}
+        @change=${(ev: Event) => this._updateTireBackground(ev, buttonIndex)}
+      ></ha-textfield>
+      <div class="custom-background-wrapper">
+        <ha-button @click=${() => this.shadowRoot?.getElementById('file-upload-new')?.click()}>
+          Upload image
+        </ha-button>
+        <input
+          style="display: none"
+          type="file"
+          id="file-upload-new"
+          class="file-input"
+          @change=${(ev: Event) => this._updateTireBackground(ev, buttonIndex)}
+          accept="image/*"
+        />
+      </div>
+    `;
+
+    // Generate the tire configuration for each tire
+    const frontLeftConfig = this._renderTireConfig(
+      tireCard.front_left || ({} as TireEntityConfig),
+      'front_left',
+      buttonIndex
+    );
+    const frontRightConfig = this._renderTireConfig(
+      tireCard.front_right || ({} as TireEntityConfig),
+      'front_right',
+      buttonIndex
+    );
+    const rearLeftConfig = this._renderTireConfig(
+      tireCard.rear_left || ({} as TireEntityConfig),
+      'rear_left',
+      buttonIndex
+    );
+    const rearRightConfig = this._renderTireConfig(
+      tireCard.rear_right || ({} as TireEntityConfig),
+      'rear_right',
+      buttonIndex
+    );
+
+    const content = html`
+      <div class="indicator-config">
+        ${backgroundForm}${frontLeftConfig} ${frontRightConfig} ${rearLeftConfig} ${rearRightConfig}
+      </div>
+    `;
+
+    return Create.ExpansionPanel({
+      content: content,
+      options: { header: 'Tire card configuration', icon: 'mdi:tire' },
     });
   }
 
@@ -718,6 +741,39 @@ export class PanelButtonCard extends LitElement {
     `;
   }
 
+  private _renderTireConfig(
+    tireConfig: TireEntityConfig,
+    tirePosition: 'front_left' | 'front_right' | 'rear_left' | 'rear_right',
+    buttonIndex: number
+  ): TemplateResult {
+    const sharedConfig = {
+      configType: `tire_${tirePosition}`,
+      configIndex: buttonIndex,
+    };
+
+    const entity = tireConfig?.entity || '';
+    const attribute = tireConfig?.attribute || '';
+    const name = tireConfig?.name || '';
+    const attributeOptions = entity ? Object.keys(this.hass.states[entity]?.attributes || {}) : [];
+    const attributeOpts = [...attributeOptions.map((attr) => ({ value: attr, label: attr }))];
+
+    const tirePickers = [
+      {
+        value: entity,
+        pickerType: 'entity' as 'entity',
+      },
+      { value: attribute, items: attributeOpts, pickerType: 'attribute' as 'attribute' },
+      { value: name, label: 'Name', configValue: 'name', pickerType: 'textfield' as 'textfield' },
+    ];
+
+    return html`
+      ${this._renderSubHeader(tirePosition.replace('_', ' '), [], false)}
+      <div class="sub-content">
+        ${tirePickers.map((config) => this._createItemPicker({ ...config, ...sharedConfig }))}
+      </div>
+    `;
+  }
+
   private _renderSubHeader(
     title: string,
     actions?: Array<{ title?: string; action: (ev?: Event) => void; icon?: string }>,
@@ -940,6 +996,42 @@ export class PanelButtonCard extends LitElement {
       return;
     };
   }
+
+  private async _updateTireBackground(ev: any, buttonIndex: number): Promise<void> {
+    ev.stopPropagation();
+
+    const updateChanged = (value: string) => {
+      let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+      let tireCard = buttonCardConfig[buttonIndex].tire_card || {};
+      tireCard.background = value;
+      buttonCardConfig[buttonIndex].tire_card = tireCard;
+      this.config = { ...this.config, button_card: buttonCardConfig };
+      fireEvent(this, 'config-changed', { config: this.config });
+    };
+
+    // Handle file upload
+    if (ev.target.type === 'file') {
+      if (!ev.target.files || ev.target.files.length === 0) {
+        return;
+      }
+
+      const file = ev.target.files[0];
+      const url = await uploadImage(this.hass, file);
+      if (url) {
+        updateChanged(url);
+      }
+      return;
+    }
+
+    // Handle text input change
+    if (ev.target.type === 'text' || ev.target.tagName === 'HA-TEXTFIELD') {
+      const value = ev.target.value;
+      updateChanged(value);
+    } else {
+      return;
+    }
+  }
+
   private _handleNewItemChange(ev: any): void {
     ev.stopPropagation();
     const { value, cardIndex, configIndex } = ev.target;
@@ -1309,6 +1401,17 @@ export class PanelButtonCard extends LitElement {
       buttonCardConfig[configIndex] = buttonConfig;
       updates.button_card = buttonCardConfig;
       console.log('Button action', buttonAction);
+    } else if (configType.startsWith('tire_')) {
+      const tirePosition = configType.replace('tire_', '');
+      let buttonConfig = { ...buttonCardConfig[configIndex] };
+      let tireCard = buttonConfig.tire_card || ({} as TireTemplateConfig);
+      let tireConfig = tireCard[tirePosition] || ({} as TireEntityConfig);
+      tireConfig[configValue] = newValue;
+      tireCard[tirePosition] = tireConfig;
+      buttonConfig.tire_card = tireCard;
+      buttonCardConfig[configIndex] = buttonConfig;
+      updates.button_card = buttonCardConfig;
+      console.log('Tire config', tireConfig);
     }
 
     // If there are updates, update the config and fire the event
