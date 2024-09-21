@@ -354,6 +354,7 @@ span.info-alert {
 	gap: var(--vic-gutter-gap);
 	width: 100%;
 	justify-content: center;
+	margin-bottom: var(--vic-gutter-gap);
 }
 
 
