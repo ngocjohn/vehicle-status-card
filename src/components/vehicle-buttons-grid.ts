@@ -1,46 +1,31 @@
-import { LitElement, css, html, TemplateResult, PropertyValues, nothing, CSSResultGroup } from 'lit';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators';
-import { Pagination } from 'swiper/modules';
-import { addActions } from '../utils/tap-action';
 import Swiper from 'swiper';
+import { Pagination } from 'swiper/modules';
 
-import {
-  ButtonEntity,
-  VehicleStatusCardConfig,
-  ButtonCardEntity,
-  HomeAssistantExtended as HomeAssistant,
-} from '../types';
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
+import {
+  ButtonCardEntity,
+  ButtonEntity,
+  HomeAssistantExtended as HomeAssistant,
+  VehicleStatusCardConfig,
+} from '../types';
+import { addActions } from '../utils/tap-action';
 
 @customElement('vehicle-buttons-grid')
 export class VehicleButtonsGrid extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ type: Array }) buttons: ButtonCardEntity = [];
   @property({ type: Object }) component?: any;
   @property({ type: Object }) config!: VehicleStatusCardConfig;
-  @property({ type: Array }) buttons: ButtonCardEntity = [];
+  @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() swiper: Swiper | null = null;
+  @property() swiper: null | Swiper = null;
 
-  static get styles(): CSSResultGroup {
-    return [
-      swipercss,
-      css`
-        #button-swiper {
-          --swiper-pagination-bottom: -8px;
-          --swiper-theme-color: var(--primary-text-color);
-          padding-bottom: 12px;
-        }
-        .swiper-pagination-bullet {
-          background-color: var(--swiper-theme-color);
-          transition: all 0.3s ease-in-out !important;
-        }
-        .swiper-pagination-bullet-active {
-          opacity: 0.7;
-        }
-      `,
-      cardstyles,
-    ];
+  constructor() {
+    super();
+    this._handleClick = this._handleClick.bind(this);
   }
 
   protected firstUpdated(changeProperties: PropertyValues): void {
@@ -50,55 +35,63 @@ export class VehicleButtonsGrid extends LitElement {
       this.initSwiper();
     });
   }
-  protected async updated(changeProperties: PropertyValues): Promise<void> {
-    super.updated(changeProperties);
 
-    // Wait for the component to complete rendering
-    await this.updateComplete;
-    const baseButtons = this.buttons.map((button) => button.button);
+  protected render(): TemplateResult {
+    const useSwiper = this.config.layout_config?.button_grid?.swipe || false;
+    const hideNotify = this.config.layout_config?.hide?.button_notify || false;
+    const baseButtons = this.buttons.map((button, index) => ({
+      ...button.button, // Spread original button properties
+      buttonIndex: index, // Add a buttonIndex property to each button
+    }));
 
-    baseButtons.forEach((button, index) => {
-      const btnId = `button-id-${index}`;
-      const btnElt = this.shadowRoot?.getElementById(btnId);
-
-      // Only add actions if button_type is not 'default'
-      if (this.buttons[index].button_type !== 'default' && btnElt) {
-        addActions(btnElt, button.button_action);
-      } else {
-        btnElt?.addEventListener('click', () => this._handleClick(index));
-      }
-    });
+    return html`
+      <section id="button-swiper">
+        ${useSwiper
+          ? html`
+              <div class="swiper-container">
+                <div class="swiper-wrapper">${this._buttonGridGroup(baseButtons, hideNotify)}</div>
+                <div class="swiper-pagination"></div>
+              </div>
+            `
+          : html`
+              <div class="grid-container">
+                ${baseButtons.map((button, index) => {
+                  const { icon, notify, primary, secondary } = button;
+                  return html`
+                    <div class="grid-item click-shrink" @click=${() => this._handleClick(index)}>
+                      <div class="item-icon">
+                        <div class="icon-background">
+                          <ha-icon id="${`button-id-${index}`}" .icon="${icon}"></ha-icon>
+                        </div>
+                        ${!hideNotify
+                          ? html`
+                              <div class="item-notify ${notify ? '' : 'hidden'}">
+                                <ha-icon icon="mdi:alert-circle"></ha-icon>
+                              </div>
+                            `
+                          : nothing}
+                      </div>
+                      <div class="item-content">
+                        <div class="primary">
+                          <span class="title">${primary}</span>
+                        </div>
+                        <span class="secondary">${secondary}</span>
+                      </div>
+                    </div>
+                  `;
+                })}
+              </div>
+            `}
+      </section>
+    `;
   }
-  private initSwiper(): void {
-    const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
-    if (!swiperCon) return;
-    const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
-    this.swiper = new Swiper(swiperCon as HTMLElement, {
-      modules: [Pagination],
-      centeredSlides: true,
-      grabCursor: true,
-      speed: 500,
-      roundLengths: true,
-      spaceBetween: 12,
-      keyboard: {
-        enabled: true,
-        onlyInViewport: true,
-      },
-      loop: false,
-      slidesPerView: 1,
-      pagination: {
-        el: paginationEl,
-        clickable: true,
-      },
-    });
-  }
 
-  private _chunkArray(arr: ButtonEntity[], chunkSize: number): ButtonEntity[][] {
-    const result: ButtonEntity[][] = [];
-    for (let i = 0; i < arr.length; i += chunkSize) {
-      result.push(arr.slice(i, i + chunkSize));
+  protected updated(changedProperties: PropertyValues): void {
+    super.updated(changedProperties);
+
+    if (changedProperties.has('buttons')) {
+      this._setButtonActions();
     }
-    return result;
   }
 
   private _buttonGridGroup(buttons: ButtonEntity[], hideNotify: boolean): TemplateResult {
@@ -109,15 +102,13 @@ export class VehicleButtonsGrid extends LitElement {
       const buttons = html`
         <div class="grid-container">
           ${buttonsGroup.map((button) => {
-            const { primary, secondary, icon, notify, buttonIndex } = button;
+            const { buttonIndex, icon, notify, primary, secondary } = button;
             return html`
-              <div
-                id="${`button-id-${buttonIndex}`}"
-                class="grid-item click-shrink"
-                @click=${() => this._handleClick(buttonIndex)}
-              >
+              <div class="grid-item click-shrink" @click=${() => this._handleClick(buttonIndex)}>
                 <div class="item-icon">
-                  <div class="icon-background"><ha-icon .icon="${icon}"></ha-icon></div>
+                  <div class="icon-background">
+                    <ha-icon .icon="${icon}" id="${`button-id-${buttonIndex}`}"></ha-icon>
+                  </div>
                   ${!hideNotify
                     ? html`
                         <div class="item-notify ${notify ? '' : 'hidden'}">
@@ -142,57 +133,12 @@ export class VehicleButtonsGrid extends LitElement {
     return html`${slides}`;
   }
 
-  protected render(): TemplateResult {
-    const useSwiper = this.config.layout_config?.button_grid?.swipe || false;
-    const hideNotify = this.config.layout_config?.hide?.button_notify || false;
-    const baseButtons = this.buttons.map((button, index) => ({
-      ...button.button, // Spread original button properties
-      buttonIndex: index, // Add a buttonIndex property to each button
-    }));
-
-    return html`
-      <section id="button-swiper">
-        ${useSwiper
-          ? html`
-              <div class="swiper-container">
-                <div class="swiper-wrapper">${this._buttonGridGroup(baseButtons, hideNotify)}</div>
-                <div class="swiper-pagination"></div>
-              </div>
-            `
-          : html`
-              <div class="grid-container">
-                ${baseButtons.map((button, index) => {
-                  const { primary, secondary, icon, notify } = button;
-                  return html`
-                    <div
-                      id="${`button-id-${index}`}"
-                      class="grid-item click-shrink"
-                      @click=${() => this._handleClick(index)}
-                      .
-                    >
-                      <div class="item-icon">
-                        <div class="icon-background"><ha-icon .icon="${icon}"></ha-icon></div>
-                        ${!hideNotify
-                          ? html`
-                              <div class="item-notify ${notify ? '' : 'hidden'}">
-                                <ha-icon icon="mdi:alert-circle"></ha-icon>
-                              </div>
-                            `
-                          : nothing}
-                      </div>
-                      <div class="item-content">
-                        <div class="primary">
-                          <span class="title">${primary}</span>
-                        </div>
-                        <span class="secondary">${secondary}</span>
-                      </div>
-                    </div>
-                  `;
-                })}
-              </div>
-            `}
-      </section>
-    `;
+  private _chunkArray(arr: ButtonEntity[], chunkSize: number): ButtonEntity[][] {
+    const result: ButtonEntity[][] = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+      result.push(arr.slice(i, i + chunkSize));
+    }
+    return result;
   }
 
   private _handleClick(index: number): void {
@@ -204,9 +150,52 @@ export class VehicleButtonsGrid extends LitElement {
       this.component._activeCardIndex = index;
     } else {
       // For non-default buttons, we rely on the action handlers set in addActions
-      const action = button.button.button_action;
-      console.log('Button action:', action);
     }
+  }
+
+  private _setButtonActions(): void {
+    this.updateComplete.then(() => {
+      const baseButtons = this.buttons.map((button) => button.button);
+
+      baseButtons.forEach((button, index) => {
+        const btnId = `button-id-${index}`;
+        const btnElt = this.shadowRoot?.getElementById(btnId);
+
+        // Only add actions if button_type is not 'default'
+        if (this.buttons[index].button_type !== 'default' && btnElt) {
+          addActions(btnElt, button.button_action);
+          // console.log('Button action added:', button.button_action);
+        } else {
+          btnElt?.addEventListener('click', () => this._handleClick(index));
+          // console.log('Default button action added:', index);
+        }
+      });
+    });
+  }
+
+  private initSwiper(): void {
+    const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
+    if (!swiperCon) return;
+    console.log('swiper status init start');
+    const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
+    this.swiper = new Swiper(swiperCon as HTMLElement, {
+      centeredSlides: true,
+      grabCursor: true,
+      keyboard: {
+        enabled: true,
+        onlyInViewport: true,
+      },
+      loop: false,
+      modules: [Pagination],
+      pagination: {
+        clickable: true,
+        el: paginationEl,
+      },
+      roundLengths: true,
+      slidesPerView: 1,
+      spaceBetween: 12,
+      speed: 500,
+    });
   }
 
   public showButton(index: number): void {
@@ -264,5 +253,26 @@ export class VehicleButtonsGrid extends LitElement {
         }, 500);
       }
     });
+  }
+
+  static get styles(): CSSResultGroup {
+    return [
+      swipercss,
+      css`
+        #button-swiper {
+          --swiper-pagination-bottom: -8px;
+          --swiper-theme-color: var(--primary-text-color);
+          padding-bottom: 12px;
+        }
+        .swiper-pagination-bullet {
+          background-color: var(--swiper-theme-color);
+          transition: all 0.3s ease-in-out !important;
+        }
+        .swiper-pagination-bullet-active {
+          opacity: 0.7;
+        }
+      `,
+      cardstyles,
+    ];
   }
 }

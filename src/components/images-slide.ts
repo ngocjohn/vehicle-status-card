@@ -1,47 +1,22 @@
-import { LitElement, css, html, TemplateResult, PropertyValues, CSSResultGroup } from 'lit';
-import { customElement, state, property } from 'lit/decorators';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
-import { Pagination } from 'swiper/modules';
+import { Autoplay, Pagination } from 'swiper/modules';
 
-import { ImageConfig } from '../types';
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
+import { ImageConfig } from '../types';
 
 @customElement('images-slide')
 export class ImagesSlide extends LitElement {
   @property({ type: Array }) images: Array<ImageConfig> = [];
 
-  @state() swiper: Swiper | null = null;
+  @state() swiper: null | Swiper = null;
 
   protected firstUpdated(changeProperties: PropertyValues): void {
     super.firstUpdated(changeProperties);
     this.updateComplete.then(() => {
       this.initSwiper();
-    });
-  }
-
-  private initSwiper(): void {
-    // Destroy the existing Swiper instance if it exists
-
-    const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
-    if (!swiperCon) return;
-    const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
-    this.swiper = new Swiper(swiperCon as HTMLElement, {
-      modules: [Pagination],
-      centeredSlides: true,
-      grabCursor: true,
-      speed: 500,
-      roundLengths: true,
-      keyboard: {
-        enabled: true,
-        onlyInViewport: true,
-      },
-      loop: true,
-      slidesPerView: 'auto',
-      pagination: {
-        el: paginationEl,
-        clickable: true,
-      },
     });
   }
 
@@ -63,6 +38,32 @@ export class ImagesSlide extends LitElement {
         </div>
       </section>
     `;
+  }
+
+  private initSwiper(): void {
+    // Destroy the existing Swiper instance if it exists
+
+    const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
+    if (!swiperCon) return;
+    const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
+    this.swiper = new Swiper(swiperCon as HTMLElement, {
+      centeredSlides: true,
+      grabCursor: true,
+      keyboard: {
+        enabled: true,
+        onlyInViewport: true,
+      },
+      loop: true,
+      modules: [Pagination, Autoplay],
+      pagination: {
+        clickable: true,
+        el: paginationEl,
+      },
+
+      roundLengths: true,
+      slidesPerView: 'auto',
+      speed: 500,
+    });
   }
 
   static get styles(): CSSResultGroup {
