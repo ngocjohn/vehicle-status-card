@@ -12,6 +12,8 @@ import {
   IndicatorGroupEntity,
   RangeInfoEntity,
   SecondaryInfoConfig,
+  TireTemplateConfig,
+  TireEntity,
   VehicleStatusCardConfig,
 } from '../types';
 
@@ -312,6 +314,75 @@ export async function createCardElement(
   return cardElements;
 }
 
+export async function getTireCard(
+  hass: HomeAssistant,
+  tireCard: TireTemplateConfig
+): Promise<Partial<void | TireEntity>> {
+  if (!tireCard) {
+    return;
+  }
+
+  let tireCardItem: TireEntity = {} as TireEntity;
+
+  const frontLeftEntity = tireCard?.front_left?.entity;
+  const frontRightEntity = tireCard?.front_right?.entity;
+  const rearLeftEntity = tireCard?.rear_left?.entity; // Missing entity check here
+  const rearRightEntity = tireCard?.rear_right?.entity;
+
+  // If the rear_left entity is missing, set default "N/A" state
+  const rearLeftState = rearLeftEntity
+    ? hass.states[rearLeftEntity]
+      ? tireCard.rear_left.attribute
+        ? hass.formatEntityAttributeValue(hass.states[rearLeftEntity], tireCard.rear_left.attribute)
+        : hass.formatEntityState(hass.states[rearLeftEntity])
+      : 'N/A' // If the entity exists but has no state, set 'N/A'
+    : 'N/A'; // If the entity is missing, set 'N/A'
+
+  const frontLeftState =
+    frontLeftEntity && hass.states[frontLeftEntity]
+      ? tireCard.front_left.attribute
+        ? hass.formatEntityAttributeValue(hass.states[frontLeftEntity], tireCard.front_left.attribute)
+        : hass.formatEntityState(hass.states[frontLeftEntity])
+      : 'N/A';
+
+  const frontRightState =
+    frontRightEntity && hass.states[frontRightEntity]
+      ? tireCard.front_right.attribute
+        ? hass.formatEntityAttributeValue(hass.states[frontRightEntity], tireCard.front_right.attribute)
+        : hass.formatEntityState(hass.states[frontRightEntity])
+      : 'N/A';
+
+  const rearRightState =
+    rearRightEntity && hass.states[rearRightEntity]
+      ? tireCard.rear_right.attribute
+        ? hass.formatEntityAttributeValue(hass.states[rearRightEntity], tireCard.rear_right.attribute)
+        : hass.formatEntityState(hass.states[rearRightEntity])
+      : 'N/A';
+
+  const frontLeftName = tireCard.front_left?.name || 'Front Left';
+  const frontRightName = tireCard.front_right?.name || 'Front Right';
+  const rearLeftName = tireCard.rear_left?.name || 'Rear Left';
+  const rearRightName = tireCard.rear_right?.name || 'Rear Right';
+
+  tireCardItem = {
+    title: tireCard.title || 'Tire Pressures',
+    background: tireCard.background || '',
+    image_size: tireCard.image_size || 100,
+    value_size: tireCard.value_size || 100,
+    top: tireCard.top || 50,
+    left: tireCard.left || 50,
+    tires: {
+      front_left: { state: frontLeftState, name: frontLeftName },
+      front_right: { state: frontRightState, name: frontRightName },
+      rear_left: { state: rearLeftState, name: rearLeftName },
+      rear_right: { state: rearRightState, name: rearRightName },
+    },
+    horizontal: tireCard.horizontal || false,
+  };
+
+  return tireCardItem;
+}
+
 export async function getButtonCard(
   hass: HomeAssistant,
   config: VehicleStatusCardConfig
@@ -339,6 +410,8 @@ export async function getButtonCard(
 
     const customCard = (await createCardElement(hass, btmCrd.custom_card)) || [];
 
+    const tireCard = btmCrd.tire_card ? await getTireCard(hass, btmCrd.tire_card) : {};
+
     buttonCardItem.push({
       button: buttonDetails,
       button_type: btmCrd.button_type || 'default',
@@ -346,6 +419,7 @@ export async function getButtonCard(
       custom_card: customCard,
       default_card: defaultCard,
       hide_button: btmCrd.hide_button || false,
+      tire_card: tireCard as TireEntity,
     });
   }
   return buttonCardItem;

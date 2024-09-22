@@ -9,11 +9,14 @@ import { isString } from 'es-toolkit';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
+import { styleMap } from 'lit-html/directives/style-map.js';
 
 import './components/images-slide';
 import './components/mini-map-box';
 import './components/vehicle-buttons-grid';
 import { DEFAULT_CONFIG } from './const/const';
+import { TIRE_BG } from './const/img-const';
+
 import cardcss from './css/card.css';
 import {
   ButtonCardEntity,
@@ -23,6 +26,7 @@ import {
   IndicatorGroupEntity,
   RangeInfoEntity,
   VehicleStatusCardConfig,
+  TireEntity,
 } from './types';
 import {
   createCardElement,
@@ -31,6 +35,7 @@ import {
   getGroupIndicators,
   getRangeInfo,
   getSingleIndicators,
+  getTireCard,
 } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
@@ -49,11 +54,13 @@ export class VehicleStatusCard extends LitElement {
 
   @property({ type: Object }) private _config!: VehicleStatusCardConfig;
   @state() private _defaultCardPreview: DefaultCardEntity[] = [];
+  @state() private _tireCardPreview: TireEntity | undefined;
 
   @state() private _indicatorsGroup: IndicatorGroupEntity = [];
   @state() private _indicatorsSingle: IndicatorEntity = [];
   @state() private _isCardPreview: boolean = false;
   @state() private _isDefaultCardPreview: boolean = false;
+  @state() private _isTireCardPreview: boolean = false;
 
   private _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() private _rangeInfo: RangeInfoEntity = [];
@@ -86,6 +93,7 @@ export class VehicleStatusCard extends LitElement {
     this._getButtonCardsConfig();
     this._configureCardPreview();
     this._configureDefaultCardPreview();
+    this._configureTireCardPreview();
   }
 
   protected render(): TemplateResult {
@@ -98,7 +106,11 @@ export class VehicleStatusCard extends LitElement {
     }
 
     if (this._isDefaultCardPreview) {
-      return this._renderCardPreview();
+      return this._renderCardPreview('default');
+    }
+
+    if (this._isTireCardPreview) {
+      return this._renderCardPreview('tire');
     }
 
     const name = this._config.name;
@@ -203,6 +215,29 @@ export class VehicleStatusCard extends LitElement {
     return;
   }
 
+  private async _configureTireCardPreview(): Promise<void> {
+    if (
+      this._config.tire_preview !== undefined &&
+      this._config.tire_preview !== null &&
+      this._config.tire_preview &&
+      this.isEditorPreview
+    ) {
+      const tireCardConfig = this._config?.tire_preview;
+      if (!tireCardConfig) return;
+      const tireCard = await getTireCard(this._hass, tireCardConfig);
+      if (!tireCard) return;
+      this._tireCardPreview = tireCard as TireEntity;
+      this._isTireCardPreview = true;
+      this.requestUpdate();
+      console.log('Tire Card:', this._tireCardPreview);
+    } else {
+      this._tireCardPreview = undefined;
+      this._isTireCardPreview = false;
+    }
+
+    return;
+  }
+
   private async _configureMiniMapPopup(): Promise<void> {
     if (!this._config.mini_map?.enable_popup || !this._config.mini_map?.device_tracker) return;
     const miniMap = this._config.mini_map || {};
@@ -267,6 +302,13 @@ export class VehicleStatusCard extends LitElement {
           this._configureDefaultCardPreview();
         });
         break;
+      case 'toggle-tire-preview':
+        this._isTireCardPreview = detail.data.isTireCardPreview;
+        this.updateComplete.then(() => {
+          this._configureTireCardPreview();
+        });
+        break;
+
       case 'toggle-helper':
         this._toggleHelper(detail.data);
         break;
@@ -312,65 +354,18 @@ export class VehicleStatusCard extends LitElement {
     `;
   }
 
-  private _renderCardPreview(): TemplateResult {
-    if (!this._isDefaultCardPreview) return html``; // Return early if no default card preview
-
-    const defaultCardPreview = this._defaultCardPreview.map((card) => this._renderDefaultCardItems(card));
+  private _renderCardPreview(type: string): TemplateResult {
+    const typeMap = {
+      default: this._defaultCardPreview.map((card) => this._renderDefaultCardItems(card)),
+      tire: this._tireCardPreview ? this._renderTireCard(this._tireCardPreview) : nothing,
+    };
 
     return html`
       <ha-card>
         <main>
-          <section class="card-element"><div class="added-card">${defaultCardPreview}</div></section>
+          <section class="card-element"><div class="added-card">${typeMap[type]}</div></section>
         </main>
       </ha-card>
-    `;
-  }
-
-  private _renderDefaultCardItems(data: DefaultCardEntity): TemplateResult {
-    const title = data.title;
-    const items = data.items;
-    const collapsed_items = data.collapsed_items;
-
-    const itemRender = (name: string, state: string, entity: string, icon: string): TemplateResult => {
-      return html`
-        <div class="data-row">
-          <div>
-            <ha-state-icon
-              class="data-icon"
-              @click=${() => {
-                this.toggleMoreInfo(entity);
-              }}
-              .hass=${this._hass}
-              .icon=${icon}
-              .stateObj=${this._hass.states[entity]}
-            ></ha-state-icon>
-            <span> ${name} </span>
-          </div>
-          <div
-            class="data-value-unit"
-            @click=${() => {
-              this.toggleMoreInfo(entity);
-            }}
-          >
-            <span> ${state} </span>
-          </div>
-        </div>
-      `;
-    };
-
-    const header = collapsed_items
-      ? html`<div class="subcard-icon" @click=${(ev: Event) => this.toggleSubCard(ev)}>
-          <ha-icon icon="mdi:chevron-down"></ha-icon>
-        </div>`
-      : html``;
-
-    return html`
-      <div class="default-card">
-        <div class="data-header">${title} ${header}</div>
-        <div class="data-box ${collapsed_items ? 'hidden' : ''}">
-          ${items.map((item) => itemRender(item.name, item.state, item.entity, item.icon))}
-        </div>
-      </div>
     `;
   }
 
@@ -486,6 +481,7 @@ export class VehicleStatusCard extends LitElement {
   }
 
   /* -------------------------- CUSTO CARD RENDERING -------------------------- */
+
   private _renderSelectedCard(): TemplateResult {
     if (this._activeCardIndex === null) return html``;
     const index = this._activeCardIndex;
@@ -493,6 +489,7 @@ export class VehicleStatusCard extends LitElement {
     const cardType = selectedCard.card_type;
     const defaultCard = selectedCard.default_card;
     const customCard = selectedCard.custom_card;
+    const tireCard = selectedCard.tire_card;
 
     const cardHeaderBox = html` <div class="added-card-header">
       <div class="headder-btn click-shrink" @click="${() => (this._activeCardIndex = null)}">
@@ -512,7 +509,9 @@ export class VehicleStatusCard extends LitElement {
       ? this._mapPopupLovelace
       : cardType === 'default'
         ? defaultCard.map((card: DefaultCardEntity) => this._renderDefaultCardItems(card))
-        : customCard.map((card: LovelaceCardConfig) => card);
+        : cardType === 'tire'
+          ? this._renderTireCard(tireCard)
+          : customCard.map((card: LovelaceCardConfig) => card);
 
     const content = html`
       <main id="cards-wrapper">
@@ -523,6 +522,163 @@ export class VehicleStatusCard extends LitElement {
       </main>
     `;
     return content;
+  }
+
+  private _renderDefaultCardItems(data: DefaultCardEntity): TemplateResult {
+    const title = data.title;
+    const items = data.items;
+    const collapsed_items = data.collapsed_items;
+
+    const itemRender = (name: string, state: string, entity: string, icon: string): TemplateResult => {
+      return html`
+        <div class="data-row">
+          <div>
+            <ha-state-icon
+              class="data-icon"
+              @click=${() => {
+                this.toggleMoreInfo(entity);
+              }}
+              .hass=${this._hass}
+              .icon=${icon}
+              .stateObj=${this._hass.states[entity]}
+            ></ha-state-icon>
+            <span> ${name} </span>
+          </div>
+          <div
+            class="data-value-unit"
+            @click=${() => {
+              this.toggleMoreInfo(entity);
+            }}
+          >
+            <span> ${state} </span>
+          </div>
+        </div>
+      `;
+    };
+
+    const header = collapsed_items
+      ? html`<div class="subcard-icon" @click=${(ev: Event) => this.toggleSubCard(ev)}>
+          <ha-icon icon="mdi:chevron-down"></ha-icon>
+        </div>`
+      : html``;
+
+    return html`
+      <div class="default-card">
+        <div class="data-header">${title} ${header}</div>
+        <div class="data-box ${collapsed_items ? 'hidden' : ''}">
+          ${items.map((item) => itemRender(item.name, item.state, item.entity, item.icon))}
+        </div>
+      </div>
+    `;
+  }
+
+  // private _renderTireCard(tireConfig: TireEntity): TemplateResult {
+  //   const defaultTireConfig = {
+  //     background: TIRE_BG,
+  //     horizontal: false,
+  //     title: 'Tire Pressures',
+  //     image_size: 100,
+  //     value_size: 100,
+  //     top: 50,
+  //     left: 50,
+  //     tires: {
+  //       front_left: { name: 'Front Left', state: '0' },
+  //       front_right: { name: 'Front Right', state: '0' },
+  //       rear_left: { name: 'Rear Left', state: '0' },
+  //       rear_right: { name: 'Rear Right', state: '0' },
+  //     },
+  //   };
+
+  //   const background = tireConfig.background || defaultTireConfig.background;
+  //   const isHorizontal = tireConfig.horizontal || defaultTireConfig.horizontal;
+  //   const tireCardTitle = tireConfig.title || defaultTireConfig.title;
+  //   const tireCardSize = tireConfig.image_size || defaultTireConfig.image_size;
+  //   const tireValueSize = tireConfig.value_size || defaultTireConfig.value_size;
+  //   const tireTop = tireConfig.top || defaultTireConfig.top;
+  //   const tireLeft = tireConfig.left || defaultTireConfig.left;
+  //   const tires = tireConfig.tires || defaultTireConfig.tires;
+
+  //   let sizeStyle = {
+  //     '--vic-tire-top': `${tireTop}%`,
+  //     '--vic-tire-left': `${tireLeft}%`,
+  //     '--vic-tire-size': `${tireCardSize}%`,
+  //     '--vic-tire-value-size': tireValueSize / 100,
+  //   };
+  //   const directionClass = isHorizontal ? 'rotated' : '';
+
+  //   return html`
+  //     <div class="default-card">
+  //       <div class="data-header">${tireCardTitle}</div>
+  //       <div class="tyre-toggle-btn click-shrink" @click=${(ev: Event) => this.toggleTireDirection(ev)}>
+  //         <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
+  //       </div>
+
+  //       <div class="data-box tyre-wrapper ${directionClass}" style=${styleMap(sizeStyle)}>
+  //         <div class="background" style="background-image: url(${background})"></div>
+  //         ${Object.keys(tires).map((key) => {
+  //           return html` <div class="tyre-box ${directionClass} ${key.replace('_', '').toLowerCase()}">
+  //             <span class="tyre-value">${tires[key].state ? tires[key].state : '0'}</span>
+  //             <span class="tyre-name">${tires[key].name}</span>
+  //           </div>`;
+  //         })}
+  //       </div>
+  //     </div>
+  //   `;
+  // }
+  private _renderTireCard(tireConfig: TireEntity | null): TemplateResult {
+    if (!tireConfig) {
+      return html`<div class="error">Tire configuration not available</div>`;
+    }
+
+    const background = tireConfig.background || TIRE_BG;
+    const isHorizontal = tireConfig.horizontal || false;
+    const tireCardTitle = tireConfig.title || 'Tire Pressures';
+    const tireCardSize = tireConfig.image_size || 100;
+    const tireValueSize = tireConfig.value_size || 100;
+    const tireTop = tireConfig.top || 50;
+    const tireLeft = tireConfig.left || 50;
+    const tires = tireConfig.tires;
+
+    const sizeStyle = {
+      '--vic-tire-top': `${tireTop}%`,
+      '--vic-tire-left': `${tireLeft}%`,
+      '--vic-tire-size': `${tireCardSize}%`,
+      '--vic-tire-value-size': tireValueSize / 100,
+    };
+    const directionClass = isHorizontal ? 'rotated' : '';
+
+    return html`
+      <div class="default-card">
+        <div class="data-header">${tireCardTitle}</div>
+        <div class="tyre-toggle-btn click-shrink" @click=${(ev: Event) => this.toggleTireDirection(ev)}>
+          <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
+        </div>
+
+        <div class="data-box tyre-wrapper ${directionClass}" style=${styleMap(sizeStyle)}>
+          <div class="background" style="background-image: url(${background})"></div>
+          ${Object.keys(tires).map((key) => {
+            return html` <div class="tyre-box ${directionClass} ${key.replace('_', '').toLowerCase()}">
+              <span class="tyre-value">${tires[key].state}</span>
+              <span class="tyre-name">${tires[key].name}</span>
+            </div>`;
+          })}
+        </div>
+      </div>
+    `;
+  }
+  private toggleTireDirection(ev: Event): void {
+    ev.stopPropagation();
+    const target = ev.target as HTMLElement;
+    const tyreWrapper = target.closest('.default-card')?.querySelector('.tyre-wrapper');
+    const tyreBoxex = tyreWrapper?.querySelectorAll('.tyre-box');
+    if (!tyreWrapper || !tyreBoxex) return;
+
+    const isHorizontal = tyreWrapper.classList.contains('rotated');
+
+    tyreWrapper.classList.toggle('rotated', !isHorizontal);
+    tyreBoxex.forEach((el) => {
+      el.classList.toggle('rotated', !isHorizontal);
+    });
   }
 
   private _showWarning(warning: string): TemplateResult {

@@ -297,7 +297,6 @@ export class PanelImagesEditor extends LitElement {
       return;
     }
     const target = ev.target;
-    const configValue = target.configValue;
     const index = target.index;
     let newValue: any = target.value;
 

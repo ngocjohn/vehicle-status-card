@@ -8,38 +8,22 @@ import {
   VehicleStatusCardConfig,
   ButtonConfig,
   DefaultCardConfig,
-  CardItemConfig,
-  ButtonActionConfig,
   ButtonCardConfig,
+  TireTemplateConfig,
+  TireEntityConfig,
 } from '../../types';
 
-import { BUTTON_CARD_ACTIONS } from '../editor-const';
+import { BUTTON_CARD_ACTIONS, ACTIONSELECTOR, CARD_TYPES, BUTTON_TYPE, CONFIG_VALUES } from '../editor-const';
 
 import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
-import { debounce, head } from 'es-toolkit';
+import { debounce } from 'es-toolkit';
 
 import Sortable from 'sortablejs';
 
 import * as Create from '../../utils/create';
 
-const ACTIONSELECTOR = [
-  {
-    name: 'tap_action',
-    label: 'Tap action',
-    defaultAction: 'more-info',
-  },
-  {
-    name: 'hold_action',
-    label: 'Hold action',
-    defaultAction: 'none',
-  },
-  {
-    name: 'double_tap_action',
-    label: 'Double tap action',
-    defaultAction: 'none',
-  },
-];
+import { uploadImage } from '../../utils/ha-helper';
 
 @customElement('panel-button-card')
 export class PanelButtonCard extends LitElement {
@@ -48,6 +32,7 @@ export class PanelButtonCard extends LitElement {
   @property({ type: Object }) config!: VehicleStatusCardConfig;
 
   @state() _activeTabIndex: number = 0;
+  @state() _activeTireEntityIndex: number = 0;
   @state() _buttonIndex: number | null = null;
   @state() _cardIndex: number | null = null;
   @state() _itemIndex: number | null = null;
@@ -55,6 +40,7 @@ export class PanelButtonCard extends LitElement {
   @state() _yamlConfig: any[] = [];
   @state() _isCardPreview: boolean = false;
   @state() _isDefaultCardPreview: boolean = false;
+  @state() _isTireCardPreview: boolean = false;
   @state() _newItemName: Map<string, string> = new Map();
   @state() _selectedAction: string = 'tap_action';
 
@@ -134,7 +120,7 @@ export class PanelButtonCard extends LitElement {
 
     this._reindexing = true;
     setTimeout(() => {
-      this._resetItems();
+      this.resetItems();
     }, 50);
   }
 
@@ -154,16 +140,16 @@ export class PanelButtonCard extends LitElement {
     if (
       changedProps.has('_buttonIndex') &&
       this._buttonIndex === null &&
-      (this._isCardPreview || this._isDefaultCardPreview)
+      (this._isCardPreview || this._isDefaultCardPreview || this._isTireCardPreview)
     ) {
-      this._resetEditorPreview();
+      this.resetEditorPreview();
     }
     if (changedProps.has('_activeTabIndex') && (this._isCardPreview || this._isDefaultCardPreview)) {
-      this._resetEditorPreview();
+      this.resetEditorPreview();
     }
 
     if (changedProps.has('_buttonIndex') || changedProps.has('_cardIndex') || changedProps.has('_activeTabIndex')) {
-      this._hideClearButton();
+      this.hideClearButton();
     }
 
     if (changedProps.has('_activeTabIndex') && this._activeTabIndex === 1) {
@@ -259,6 +245,11 @@ export class PanelButtonCard extends LitElement {
         label: 'Custom Card',
         content: this._renderCustomCardConfig(buttonIndex),
       },
+      {
+        key: `tire-card-${buttonIndex}`,
+        label: 'Tire Card',
+        content: this._renderTireCardConfig(buttonCard, buttonIndex),
+      },
     ];
 
     return html`
@@ -305,10 +296,7 @@ export class PanelButtonCard extends LitElement {
           configIndex: buttonIndex,
           configValue: 'button_type',
           pickerType: 'attribute' as 'attribute',
-          items: [
-            { value: 'default', label: 'Default' },
-            { value: 'action', label: 'Action' },
-          ],
+          items: BUTTON_TYPE,
         })}
         ${Create.Picker({
           component: this,
@@ -318,15 +306,10 @@ export class PanelButtonCard extends LitElement {
           configIndex: buttonIndex,
           configValue: 'card_type',
           pickerType: 'attribute' as 'attribute',
-          items: [
-            { value: 'default', label: 'Default' },
-            { value: 'custom', label: 'Custom' },
-          ],
+          items: CARD_TYPES,
           options: { disabled: buttonCard.button_type === 'action' },
         })}
       </div>`;
-
-    const buttonType = buttonCard.button_type || 'default';
 
     const sharedConfig = {
       configType: 'button',
@@ -379,43 +362,23 @@ export class PanelButtonCard extends LitElement {
       },
     ];
 
-    const cardType = [
-      {
-        component: this,
-        value: buttonCard.card_type || 'default',
-        label: 'Card type',
-        configType: 'base',
-        configIndex: buttonIndex,
-        configValue: 'card_type',
-        pickerType: 'attribute' as 'attribute',
-        items: [
-          { value: 'default', label: 'Default' },
-          { value: 'custom', label: 'Custom' },
-        ],
-      },
-    ];
-
     const content = html`
       <div>
-        ${buttonType === 'default'
-          ? html` ${this._renderSubHeader('Select card type', [], false)}
-              <div class="sub-content">${cardType.map((config) => this._createItemPicker({ ...config }))}</div>`
-          : ''}
         ${this._renderSubHeader('Primary and icon', [
           { title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) },
         ])}
         <div class="sub-content">
-          ${pickerPrimaryIcon.map((config) => this._createItemPicker({ ...config, ...sharedConfig }))}
+          ${pickerPrimaryIcon.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
         </div>
-        ${notifyTemplate.map((config) => this._createItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
+        ${notifyTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
         <div class="sub-header">
           <div class="sub-header-title">Secondary state display</div>
         </div>
         <div class="sub-content">
-          ${pickerSecondary.map((config) => this._createItemPicker({ ...config, ...sharedConfig }))}
+          ${pickerSecondary.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
         </div>
         ${pickerSecondaryState.map((config) =>
-          this._createItemPicker({ ...config, ...sharedConfig }, 'template-content')
+          this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content')
         )}
       </div>
     `;
@@ -458,7 +421,7 @@ export class PanelButtonCard extends LitElement {
             .value=${buttonAction[action.name] || action.defaultAction}
             .configValue=${action.name}
             .configType=${'button_action'}
-            @value-changed=${(ev: CustomEvent) => this._handleActionTypeChange(ev, action?.name, buttonIndex)}
+            @value-changed=${(ev: CustomEvent) => this.handleActionTypeUpdate(ev, action?.name, buttonIndex)}
           ></ha-selector>
         </div>
       `;
@@ -466,22 +429,185 @@ export class PanelButtonCard extends LitElement {
 
     // The complete content
     const content = html`
-      ${this._renderSubHeader('Configure action', [], false)}
+      ${this._renderSubHeader('Configure Icon tap behavior', [], false)}
       ${buttonCard.button_type === undefined || buttonCard.button_type === 'default'
-        ? html`<ha-alert
-            alert-type="info"
-            dismissable
-            @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
-            >${infoAlert}</ha-alert
-          >`
+        ? html` <div class="sub-content">
+            <ha-alert
+              alert-type="info"
+              dismissable
+              @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
+              >${infoAlert}</ha-alert
+            >
+          </div>`
         : nothing}
       <div class="indicator-config">${entityPicker} ${actionSelectors}</div>
     `;
 
     return Create.ExpansionPanel({
       content: content,
-      options: { header: 'Button Interactions', icon: 'mdi:gesture-tap' },
+      options: { header: 'Icon tap interactions', icon: 'mdi:gesture-tap' },
     });
+  }
+
+  private _renderTireCardConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
+    const tireCard = buttonCard.tire_card || {
+      title: 'Tire Pressures',
+      background: '',
+      horizontal: false,
+      image_size: 100,
+      value_size: 100,
+      top: 50,
+      left: 50,
+      front_left: {} as TireEntityConfig,
+      front_right: {} as TireEntityConfig,
+      rear_left: {} as TireEntityConfig,
+      rear_right: {} as TireEntityConfig,
+    };
+
+    const info = `The image should be square with a maximum resolution of 450x450 pixels. A transparent background is recommended.`;
+
+    const cardTitle = html`<div class="item-content">
+      ${Create.Picker({
+        component: this,
+        label: 'Card Title',
+        value: tireCard.title || 'Tire Pressures',
+        configType: 'tire_base',
+        configIndex: buttonIndex,
+        configValue: 'title',
+        pickerType: 'textfield' as 'textfield',
+      })}
+    </div>`;
+
+    const imageSizeDirection = [
+      {
+        value: tireCard.image_size || 100,
+        label: 'Background size',
+        configValue: 'image_size',
+        pickerType: 'number' as 'number',
+        options: { selector: { number: { max: 200, min: 0, mode: 'box', step: 1 } } },
+      },
+      {
+        value: tireCard.value_size || 100,
+        label: 'Value size',
+        configValue: 'value_size',
+        pickerType: 'number' as 'number',
+        options: { selector: { number: { max: 150, min: 50, mode: 'box', step: 1 } } },
+      },
+      {
+        value: tireCard.top || 50,
+        label: 'Vertical position',
+        configValue: 'top',
+        pickerType: 'number' as 'number',
+        options: { selector: { number: { max: 100, min: 0, mode: 'box', step: 1 } } },
+      },
+      {
+        value: tireCard.left || 50,
+        label: 'Horizontal position',
+        configValue: 'left',
+        pickerType: 'number' as 'number',
+        options: { selector: { number: { max: 100, min: 0, mode: 'box', step: 1 } } },
+      },
+      {
+        value: tireCard.horizontal || false,
+        label: 'Horizontal layout',
+        configValue: 'horizontal',
+        pickerType: 'selectorBoolean' as 'selectorBoolean',
+      },
+    ];
+
+    const background = html`
+      <ha-alert alert-type="info">${info}</ha-alert>
+      <div class="item-content">
+        <ha-textfield
+          .label=${'Background image URL'}
+          .value=${tireCard.background || ''}
+          .buttonIndex=${buttonIndex}
+          @change=${(ev: Event) => this.updateTireBackground(ev, buttonIndex)}
+        ></ha-textfield>
+      </div>
+      <ha-button @click=${() => this.shadowRoot?.getElementById('file-upload-new')?.click()}> Upload image </ha-button>
+      <input
+        style="display: none"
+        type="file"
+        id="file-upload-new"
+        class="file-input"
+        @change=${(ev: Event) => this.updateTireBackground(ev, buttonIndex)}
+        accept="image/*"
+      />
+      ${tireCard.background
+        ? html`<ha-button @click=${() => this.updateTireBackground(null, buttonIndex)}>Use default</ha-button>`
+        : ''}
+    `;
+
+    const backgroundWrapper = Create.ExpansionPanel({
+      content: background,
+      options: { header: 'Background Image', icon: 'mdi:image', secondary: 'Configure background image' },
+    });
+
+    const sizeAndPosition = Create.ExpansionPanel({
+      content: html` <div class="sub-content">
+        ${imageSizeDirection.map((config) =>
+          this.generateItemPicker({ ...config, configIndex: buttonIndex, configType: 'tire_base' })
+        )}
+        <ha-button class="item-content" @click=${() => this.resetTireImageSizes(buttonIndex)}>Reset sizes</ha-button>
+      </div>`,
+      options: { header: 'Size and Position', icon: 'mdi:arrow-expand-all', secondary: 'Configure size and position' },
+    });
+
+    const tiresWrapper = Create.ExpansionPanel({
+      content: this._renderTiresEntities(tireCard, buttonIndex),
+      options: { header: 'Tire Entities', icon: 'mdi:car-tire-alert', secondary: 'Configure tire entities' },
+    });
+
+    return html`${this._renderSubHeader(
+        'Tire Card Configuration',
+        [],
+        false,
+        html` <ha-button @click=${() => this._toggleTireCardPreview(buttonIndex)}
+          >${this._isTireCardPreview ? 'Close Preview' : 'Preview'}</ha-button
+        >`
+      )}
+      <div class="indicator-config">${cardTitle} ${backgroundWrapper} ${sizeAndPosition} ${tiresWrapper}</div>`;
+  }
+
+  private _renderTiresEntities(tireCard: TireTemplateConfig, buttonIndex: number): TemplateResult {
+    // Generate the tire configuration for each tire
+    const frontLeftConfig = this._renderTireConfig(
+      tireCard.front_left || ({} as TireEntityConfig),
+      'front_left',
+      buttonIndex
+    );
+    const frontRightConfig = this._renderTireConfig(
+      tireCard.front_right || ({} as TireEntityConfig),
+      'front_right',
+      buttonIndex
+    );
+    const rearLeftConfig = this._renderTireConfig(
+      tireCard.rear_left || ({} as TireEntityConfig),
+      'rear_left',
+      buttonIndex
+    );
+    const rearRightConfig = this._renderTireConfig(
+      tireCard.rear_right || ({} as TireEntityConfig),
+      'rear_right',
+      buttonIndex
+    );
+
+    const tireEntitiesTabs = [
+      { key: 'front', label: 'Front', content: html`${frontLeftConfig} ${frontRightConfig}` },
+      { key: 'rear', label: 'Rear', content: html`${rearLeftConfig} ${rearRightConfig}` },
+    ];
+
+    const tiresWrapper = html`
+      <div class="sub-panel">
+        ${Create.TabBar({
+          tabs: tireEntitiesTabs,
+          activeTabIndex: this._activeTireEntityIndex,
+          onTabChange: (index: number) => (this._activeTireEntityIndex = index),
+        })}
+      </div>
+    `;
+    return tiresWrapper;
   }
 
   private _renderDefaultCardList(defaultCard: DefaultCardConfig[], buttonIndex: number): TemplateResult {
@@ -531,17 +657,15 @@ export class PanelButtonCard extends LitElement {
     </div>`;
 
     return html`
-      <div class="sub-panel-config default-card">
-        ${this._renderSubHeader(
-          'Card Content',
-          [],
-          false,
-          html` <ha-button @click=${() => this._toggleDefaultCardPreview(buttonIndex)}
-            >${this._isDefaultCardPreview ? 'Close Preview' : 'Preview'}</ha-button
-          >`
-        )}
-        ${defaultCardlist} ${footerActions}
-      </div>
+      ${this._renderSubHeader(
+        'Card Content',
+        [],
+        false,
+        html` <ha-button @click=${() => this._toggleDefaultCardPreview(buttonIndex)}
+          >${this._isDefaultCardPreview ? 'Close Preview' : 'Preview'}</ha-button
+        >`
+      )}
+      ${defaultCardlist} ${footerActions}
     `;
   }
 
@@ -549,14 +673,16 @@ export class PanelButtonCard extends LitElement {
     if (this._cardIndex === null) return html``;
     const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex];
     const card = this.config.button_card[buttonIndex].default_card[cardIndex].items;
+
     return html`
-    <div class="sub-panel-config">
       <div class="sub-header">
-        <div class="subcard-icon"><ha-icon icon="mdi:close" @click=${this.toggleAction('category-back')}></ha-icon></div>
-        <div class="sub-header-title">${baseCard.title}</div>
         <div class="subcard-icon">
-                ${this._renderPreviewButton(buttonIndex)}
-                </div>
+          <ha-icon icon="mdi:close" @click=${this.toggleAction('category-back')}></ha-icon>
+        </div>
+        <div class="sub-header-title">${baseCard.title}</div>
+        <ha-button @click=${() => this._toggleDefaultCardPreview(buttonIndex)}>
+          ${this._isDefaultCardPreview ? 'Close Preview' : 'Preview'}
+        </ha-button>
       </div>
       <div class="default-card-list">
         ${repeat(
@@ -592,23 +718,33 @@ export class PanelButtonCard extends LitElement {
         )}
         <div class="item-config-row">
           <div class="item-content">
-            <ha-entity-picker id="entity-picker-form" .hass=${this.hass} .value=${this._newItemName.get('entity')} .configValue=${'entity'} .configType=${'card_item_add'} .configIndex=${buttonIndex} .cardIndex=${cardIndex} .label=${'Add New Item'} @change=${this._handleNewItemChange} .allowCustomIcons=${true}></ha-entity-picker>
+            <ha-entity-picker
+              id="entity-picker-form"
+              .hass=${this.hass}
+              .value=${this._newItemName.get('entity')}
+              .configValue=${'entity'}
+              .configType=${'card_item_add'}
+              .configIndex=${buttonIndex}
+              .cardIndex=${cardIndex}
+              .label=${'Add New Item'}
+              @change=${this._handleNewItemChange}
+              .allowCustomIcons=${true}
+            ></ha-entity-picker>
           </div>
-                  <div style="display: inline-flex;">${Create.Picker({
-                    component: this,
-                    label: 'Collapsed items',
-                    value: baseCard.collapsed_items,
-                    configType: 'default_card',
-                    configIndex: buttonIndex,
-                    cardIndex: cardIndex,
-                    configValue: 'collapsed_items',
-                    pickerType: 'selectorBoolean' as 'selectorBoolean',
-                  })}
-            </div>
+          <div style="display: inline-flex;">
+            ${Create.Picker({
+              component: this,
+              label: 'Collapsed items',
+              value: baseCard.collapsed_items,
+              configType: 'default_card',
+              configIndex: buttonIndex,
+              cardIndex: cardIndex,
+              configValue: 'collapsed_items',
+              pickerType: 'selectorBoolean' as 'selectorBoolean',
+            })}
+          </div>
         </div>
-
-      </div
-    </div>
+      </div>
     `;
   }
 
@@ -654,19 +790,19 @@ export class PanelButtonCard extends LitElement {
     ];
 
     return html`
-      <div class="sub-panel-config card-item">
-        ${this._renderSubHeader(
-          'Item Configuration',
-          [{ action: () => (this._itemIndex = null), icon: 'mdi:close' }],
-          true
-        )}
-        ${this._renderPreviewButton(buttonIndex)}
+      ${this._renderSubHeader(
+        'Item Configuration',
+        [{ action: () => (this._itemIndex = null), icon: 'mdi:close' }],
+        false,
+        html`<ha-button @click=${() => this._toggleDefaultCardPreview(buttonIndex)}
+          >${this._isDefaultCardPreview ? 'Close Preview' : 'Preview'}</ha-button
+        >`
+      )}
 
-        <div class="sub-content">
-          ${pickerEntity.map((config) => this._createItemPicker({ ...config, ...sharedConfig }))}
-        </div>
-        ${pickerState.map((config) => this._createItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
+      <div class="sub-content">
+        ${pickerEntity.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
       </div>
+      ${pickerState.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
     `;
   }
 
@@ -676,44 +812,66 @@ export class PanelButtonCard extends LitElement {
     const isHidden = customCard === undefined;
 
     return html`
-      <div class="sub-panel-config custom-card">
-        <div class="sub-header">
-          <div class="sub-header-title">Custom Card Configuration</div>
-          ${!isHidden
-            ? html` <div class="subcard-icon">
-                <ha-button @click=${(ev: Event) => this._toggleCustomCardPreview(buttonIndex, ev)}>Preview</ha-button>
-              </div>`
-            : ''}
-        </div>
-
-        <div class="sub-panel">
-          <ha-code-editor
-            .autofocus=${true}
-            .autocompleteEntities=${true}
-            .autocompleteIcons=${true}
-            .dir=${'ltr'}
-            .mode=${'yaml'}
-            .hass=${this.hass}
-            .linewrap=${false}
-            .value=${yamlCardConfig}
-            .configValue=${'custom_card'}
-            .configType=${'custom_card'}
-            .configIndex=${buttonIndex}
-            @value-changed=${(ev: any) => this._handleCustomCardConfig(ev)}
-          ></ha-code-editor>
-        </div>
+      <div class="sub-header">
+        <div class="sub-header-title">Custom Card Configuration</div>
+        ${!isHidden
+          ? html` <div class="subcard-icon">
+              <ha-button @click=${(ev: Event) => this._toggleCustomCardPreview(buttonIndex, ev)}>Preview</ha-button>
+            </div>`
+          : ''}
+      </div>
+      <div class="sub-panel">
+        <ha-code-editor
+          .autofocus=${true}
+          .autocompleteEntities=${true}
+          .autocompleteIcons=${true}
+          .dir=${'ltr'}
+          .mode=${'yaml'}
+          .hass=${this.hass}
+          .linewrap=${false}
+          .value=${yamlCardConfig}
+          .configValue=${'custom_card'}
+          .configType=${'custom_card'}
+          .configIndex=${buttonIndex}
+          @value-changed=${(ev: any) => this.handleCustomCardConfig(ev)}
+        ></ha-code-editor>
       </div>
     `;
   }
 
-  private _renderPreviewButton(index: number): TemplateResult {
+  private _renderTireConfig(
+    tireConfig: TireEntityConfig,
+    tirePosition: 'front_left' | 'front_right' | 'rear_left' | 'rear_right',
+    buttonIndex: number
+  ): TemplateResult {
+    const sharedConfig = {
+      configType: `tire_entity_${tirePosition}`,
+      configIndex: buttonIndex,
+    };
+
+    const entity = tireConfig?.entity || '';
+    const attribute = tireConfig?.attribute || '';
+    const name = tireConfig?.name || '';
+    const attributeOptions = entity ? Object.keys(this.hass.states[entity]?.attributes || {}) : [];
+    const attributeOpts = [...attributeOptions.map((attr) => ({ value: attr, label: attr }))];
+
+    const tirePickers = [
+      { value: name, label: 'Name', configValue: 'name', pickerType: 'textfield' as 'textfield' },
+      {
+        value: entity,
+        pickerType: 'entity' as 'entity',
+      },
+    ];
+
+    const attributePicker = [{ value: attribute, items: attributeOpts, pickerType: 'attribute' as 'attribute' }];
+
     return html`
-      <div class="sub-header" style="justify-content: flex-end;">
-        <div class="subcard-icon">
-          <ha-button @click=${() => this._toggleDefaultCardPreview(index)}
-            >${this._isDefaultCardPreview ? 'Close Preview' : 'Preview'}</ha-button
-          >
-        </div>
+      <div class="sub-header">
+        <div class="sub-header-title">${tirePosition.replace('_', ' ').toUpperCase()}</div>
+      </div>
+      <div class="sub-content">
+        ${tirePickers.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
+        ${entity ? attributePicker.map((config) => this.generateItemPicker({ ...config, ...sharedConfig })) : nothing}
       </div>
     `;
   }
@@ -762,45 +920,6 @@ export class PanelButtonCard extends LitElement {
     return use_icon ? withIcon : addedElement ? addedWithIcon : noIcon;
   }
 
-  private _handleCustomCardConfig(ev: any): void {
-    ev.stopPropagation();
-    if (!this.config) {
-      return;
-    }
-    const target = ev.target;
-    const configType = target.configType;
-    const configValue = target.configValue;
-    const configIndex = target.configIndex;
-    const value = target.value;
-
-    console.log('configType', configType, 'configValue', configValue, 'configIndex', configIndex, 'value', value);
-    let parsedYaml = [];
-    try {
-      parsedYaml = YAML.parse(value);
-    } catch (e) {
-      console.error('Error parsing YAML', e);
-      return;
-    }
-
-    if (this.config.card_preview && this._isCardPreview) {
-      this.config = { ...this.config, card_preview: parsedYaml };
-    }
-
-    if (configType === 'custom_card') {
-      let buttonCardConfig = [...(this.config.button_card || [])];
-      let buttonConfig = { ...buttonCardConfig[configIndex] };
-      buttonConfig.custom_card = parsedYaml;
-      buttonCardConfig[configIndex] = buttonConfig;
-      this.config = { ...this.config, button_card: buttonCardConfig };
-    }
-
-    this._debouncedCustomBtnChanged();
-  }
-
-  private configChanged(): void {
-    fireEvent(this, 'config-changed', { config: this.config });
-  }
-
   private toggleAction(
     action: BUTTON_CARD_ACTIONS,
     buttonIndex?: number,
@@ -814,7 +933,7 @@ export class PanelButtonCard extends LitElement {
         fireEvent(this, 'config-changed', { config: this.config });
         if (this._isDefaultCardPreview) {
           this._setDefaultCardPreview(null);
-          this._validateListAndReset;
+          this.validateListAndReset;
           this.updateComplete.then(() => {
             this._setDefaultCardPreview(this._buttonIndex);
             if (!this._sortable) {
@@ -822,7 +941,7 @@ export class PanelButtonCard extends LitElement {
             }
           });
         } else {
-          this._resetEditorPreview();
+          this.resetEditorPreview();
         }
       };
 
@@ -847,7 +966,7 @@ export class PanelButtonCard extends LitElement {
         this._reindexing = true;
         this.requestUpdate();
         setTimeout(() => {
-          this._resetItems();
+          this.resetItems();
         }, 50);
       }
 
@@ -935,59 +1054,123 @@ export class PanelButtonCard extends LitElement {
         defaultCard[cardIndex] = card;
         buttonCardConfig[buttonIndex].default_card = defaultCard;
         updateChange(buttonCardConfig);
-        this._resetEditorPreview();
+        this.resetEditorPreview();
       }
       return;
     };
   }
-  private _handleNewItemChange(ev: any): void {
-    ev.stopPropagation();
-    const { value, cardIndex, configIndex } = ev.target;
 
-    const newItem = new Map(this._newItemName);
-    newItem.set('entity', value);
-    newItem.set('cardIndex', cardIndex);
-    newItem.set('configIndex', configIndex);
-
-    this._newItemName = newItem;
-
-    this.requestUpdate();
-
-    this._handleNewItem();
+  private generateItemPicker(config: any, wrapperClass = 'item-content'): TemplateResult {
+    return html`
+      <div class="${wrapperClass}">
+        ${Create.Picker({
+          ...config,
+          component: this,
+        })}
+      </div>
+    `;
   }
 
-  private _handleNewItem = () => {
-    const reset = () => {
-      this._newItemName.clear();
-      if (this._isDefaultCardPreview) {
-        this._setDefaultCardPreview(null);
-        this.updateComplete.then(() => {
-          this._setDefaultCardPreview(this._buttonIndex);
-        });
-      } else {
-        this._resetEditorPreview();
+  private validateListAndReset(buttonIndex: number): void {
+    setTimeout(() => {
+      const cardList = this.shadowRoot?.querySelectorAll('.default-card-list .item-config-row').length || 0;
+      let configCardListCount: number = 0;
+      if (this.config.button_card) {
+        configCardListCount = this.config.button_card[buttonIndex].default_card.length;
       }
-    };
+      console.log('Card list count', cardList, configCardListCount);
+      if (cardList !== configCardListCount) {
+        this._sortable?.destroy();
+        this._reindexing = true;
+        this.requestUpdate();
+        if (this._isDefaultCardPreview) {
+          this._setDefaultCardPreview(null);
+          this.updateComplete.then(() => {
+            this._setDefaultCardPreview(buttonIndex);
+          });
+        } else {
+          this.resetItems();
+        }
+      }
+    }, 100);
+  }
 
-    this.updateComplete.then(() => {
-      const entity = this._newItemName.get('entity');
-      const cardIndex = this._newItemName.get('cardIndex');
-      const configIndex = this._newItemName.get('configIndex');
-      if (entity && cardIndex !== undefined && configIndex !== undefined) {
-        let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
-        let defaultCard = buttonCardConfig[configIndex]?.default_card || [];
-        let card = defaultCard[cardIndex];
-        let items = card.items || [];
-        items.push({ entity });
-        card.items = items;
-        defaultCard[cardIndex] = card;
-        buttonCardConfig[configIndex].default_card = defaultCard;
-        this.config = { ...this.config, button_card: buttonCardConfig };
-        fireEvent(this, 'config-changed', { config: this.config });
-        reset();
+  private resetEditorPreview(): void {
+    console.log('Resetting editor preview');
+
+    if (this._isCardPreview || this._isDefaultCardPreview || this._isTireCardPreview) {
+      const isCardPreview = this._isCardPreview;
+      const isDefaultCardPreview = this._isDefaultCardPreview;
+      const isTireCardPreview = this._isTireCardPreview;
+
+      this._isCardPreview = false;
+      this._isDefaultCardPreview = false;
+      this._isTireCardPreview = false;
+
+      this._setCardPreview(null);
+      this._setDefaultCardPreview(null);
+      this._setTireCardPreview(null);
+
+      if (isCardPreview) {
+        this.editor._dispatchEvent('toggle-card-preview', { isCardPreview: false });
+      } else if (isDefaultCardPreview) {
+        this.editor._dispatchEvent('toggle-default-card', { isDefaultCardPreview: false });
+      } else if (isTireCardPreview) {
+        this.editor._dispatchEvent('toggle-tire-preview', { isTireCardPreview: false });
       }
-    });
-  };
+      this.hideClearButton();
+    }
+  }
+
+  private resetItems(): void {
+    console.log('Resetting items');
+    setTimeout(() => {
+      this._reindexing = false;
+      console.log('Reindexing done');
+      if (this._activeTabIndex === 1) {
+        console.log('Reinit sortable');
+        this.initSortable();
+      }
+    }, 150);
+    if (this._isDefaultCardPreview) {
+      this._setDefaultCardPreview(null);
+      this.updateComplete.then(() => {
+        this._setDefaultCardPreview(this._buttonIndex);
+      });
+    }
+  }
+
+  private hideClearButton(): void {
+    setTimeout(() => {
+      const entityPickers = this.shadowRoot?.querySelectorAll('#entity-picker-form');
+      if (entityPickers) {
+        entityPickers.forEach((entityPicker) => {
+          const comboBox = entityPicker.shadowRoot
+            ?.querySelector('ha-combo-box')
+            ?.shadowRoot?.querySelector('vaadin-combo-box-light > ha-svg-icon.clear-button') as HTMLElement;
+          if (comboBox) {
+            comboBox.style.display = 'none';
+          } else {
+            return;
+          }
+        });
+      }
+    }, 100);
+  }
+
+  private resetTireImageSizes(buttonIndex: number): void {
+    const buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+    const tireCard = buttonCardConfig[buttonIndex].tire_card;
+    tireCard.image_size = 100;
+    tireCard.value_size = 100;
+    tireCard.top = 50;
+    tireCard.left = 50;
+    this._copyTireConfigToPreview(tireCard);
+    this.config = { ...this.config, button_card: buttonCardConfig };
+    fireEvent(this, 'config-changed', { config: this.config });
+  }
+
+  /* ----------------------------- PREVIEW METHODS ---------------------------- */
 
   private _toggleCustomCardPreview = (index: number, ev: Event): void => {
     this._isCardPreview = !this._isCardPreview;
@@ -1048,100 +1231,38 @@ export class PanelButtonCard extends LitElement {
     }
   }
 
-  private _validateListAndReset(buttonIndex: number): void {
-    setTimeout(() => {
-      const cardList = this.shadowRoot?.querySelectorAll('.default-card-list .item-config-row').length || 0;
-      let configCardListCount: number = 0;
-      if (this.config.button_card) {
-        configCardListCount = this.config.button_card[buttonIndex].default_card.length;
-      }
-      console.log('Card list count', cardList, configCardListCount);
-      if (cardList !== configCardListCount) {
-        this._sortable?.destroy();
-        this._reindexing = true;
-        this.requestUpdate();
-        if (this._isDefaultCardPreview) {
-          this._setDefaultCardPreview(null);
-          this.updateComplete.then(() => {
-            this._setDefaultCardPreview(buttonIndex);
-          });
-        } else {
-          this._resetItems();
-        }
-      }
-    }, 100);
-  }
-
-  _resetEditorPreview(): void {
-    console.log('Resetting editor preview');
-
-    if (this._isCardPreview || this._isDefaultCardPreview) {
-      const isCardPreview = this._isCardPreview;
-      const isDefaultCardPreview = this._isDefaultCardPreview;
-
-      this._isCardPreview = false;
-      this._isDefaultCardPreview = false;
-
-      this._setCardPreview(null);
-      this._setDefaultCardPreview(null);
-
-      if (isCardPreview) {
-        this.editor._dispatchEvent('toggle-card-preview', { isCardPreview: false });
-      } else {
-        this.editor._dispatchEvent('toggle-default-card', { isDefaultCardPreview: false });
-      }
-      this._hideClearButton();
+  private _toggleTireCardPreview(buttonIndex: number): void {
+    this._isTireCardPreview = !this._isTireCardPreview;
+    if (this._isTireCardPreview) {
+      this._setTireCardPreview(buttonIndex);
+    } else {
+      this._setTireCardPreview(null);
     }
   }
 
-  private _resetItems(): void {
-    console.log('Resetting items');
-    setTimeout(() => {
-      this._reindexing = false;
-      console.log('Reindexing done');
-      if (this._activeTabIndex === 1) {
-        console.log('Reinit sortable');
-        this.initSortable();
+  private _setTireCardPreview(buttonIndex: number | null): void {
+    const dispatch = () => {
+      this.editor._dispatchEvent('toggle-tire-preview', { isTireCardPreview: this._isTireCardPreview });
+    };
+
+    console.log('Setting tire card preview', buttonIndex);
+    if (buttonIndex !== null) {
+      let tirePreviewConfig = this.config.button_card[buttonIndex].tire_card || {};
+      if (this.config) {
+        this.config = { ...this.config, tire_preview: tirePreviewConfig };
+        fireEvent(this, 'config-changed', { config: this.config });
+        dispatch();
       }
-    }, 150);
-    if (this._isDefaultCardPreview) {
-      this._setDefaultCardPreview(null);
-      this.updateComplete.then(() => {
-        this._setDefaultCardPreview(this._buttonIndex);
-      });
+    } else {
+      this.config = { ...this.config, tire_preview: null };
+      fireEvent(this, 'config-changed', { config: this.config });
+      dispatch();
     }
   }
 
-  private _createItemPicker(config: any, wrapperClass = 'item-content'): TemplateResult {
-    return html`
-      <div class="${wrapperClass}">
-        ${Create.Picker({
-          ...config,
-          component: this,
-        })}
-      </div>
-    `;
-  }
+  /* -------------------- HANDLER METHODS FOR CONFIGURATION ------------------- */
 
-  private _hideClearButton(): void {
-    setTimeout(() => {
-      const entityPickers = this.shadowRoot?.querySelectorAll('#entity-picker-form');
-      if (entityPickers) {
-        entityPickers.forEach((entityPicker) => {
-          const comboBox = entityPicker.shadowRoot
-            ?.querySelector('ha-combo-box')
-            ?.shadowRoot?.querySelector('vaadin-combo-box-light > ha-svg-icon.clear-button') as HTMLElement;
-          if (comboBox) {
-            comboBox.style.display = 'none';
-          } else {
-            return;
-          }
-        });
-      }
-    }, 100);
-  }
-
-  private _handleActionTypeChange(ev: CustomEvent, action: string, buttonIndex: number): void {
+  private handleActionTypeUpdate(ev: CustomEvent, action: string, buttonIndex: number): void {
     ev.stopPropagation();
     const actionValue = ev.detail.value;
     this._selectedAction = actionValue;
@@ -1165,7 +1286,7 @@ export class PanelButtonCard extends LitElement {
     fireEvent(this, 'config-changed', { config: this.config });
   }
 
-  _valueChanged(ev: any): void {
+  public _valueChanged(ev: any): void {
     ev.stopPropagation();
     if (!this.config) {
       return;
@@ -1182,12 +1303,7 @@ export class PanelButtonCard extends LitElement {
     // Get the new value from the event or the target
     let newValue: any = target.value;
 
-    if (
-      configValue === 'attribute' ||
-      configValue === 'card_type' ||
-      configValue === 'collapsed_items' ||
-      configValue === 'button_type'
-    ) {
+    if (CONFIG_VALUES.includes(configValue)) {
       newValue = ev.detail.value;
     } else {
       newValue = target.value;
@@ -1309,6 +1425,27 @@ export class PanelButtonCard extends LitElement {
       buttonCardConfig[configIndex] = buttonConfig;
       updates.button_card = buttonCardConfig;
       console.log('Button action', buttonAction);
+    } else if (configType === 'tire_base') {
+      let buttonConfig = { ...buttonCardConfig[configIndex] };
+      let tireCard = buttonConfig.tire_card || ({} as TireTemplateConfig);
+      tireCard[configValue] = newValue;
+      buttonConfig.tire_card = tireCard;
+      buttonCardConfig[configIndex] = buttonConfig;
+      updates.button_card = buttonCardConfig;
+      this._copyTireConfigToPreview(tireCard);
+      // console.log('Tire config', tireCard);
+    } else if (configType.startsWith('tire_entity_')) {
+      const tirePosition = configType.replace('tire_entity_', '');
+      let buttonConfig = { ...buttonCardConfig[configIndex] };
+      let tireCard = buttonConfig.tire_card || ({} as TireTemplateConfig);
+      let tireConfig = tireCard[tirePosition] || ({} as TireEntityConfig);
+      tireConfig[configValue] = newValue;
+      tireCard[tirePosition] = tireConfig;
+      buttonConfig.tire_card = tireCard;
+      buttonCardConfig[configIndex] = buttonConfig;
+      updates.button_card = buttonCardConfig;
+      this._copyTireConfigToPreview(tireCard);
+      // console.log('Tire config', tireConfig);
     }
 
     // If there are updates, update the config and fire the event
@@ -1326,6 +1463,143 @@ export class PanelButtonCard extends LitElement {
       console.log('Not copied to preview');
       return;
     }
+  }
+
+  private _copyTireConfigToPreview(tireCard: TireTemplateConfig): void {
+    if (this._isTireCardPreview && this.config?.tire_preview) {
+      this.config = { ...this.config, tire_preview: tireCard };
+      fireEvent(this, 'config-changed', { config: this.config });
+    } else {
+      console.log('Not copied to preview');
+      return;
+    }
+  }
+
+  private async updateTireBackground(ev: any, buttonIndex: number): Promise<void> {
+    const updateChanged = (value: string) => {
+      let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+      let tireCard = buttonCardConfig[buttonIndex].tire_card || {};
+      tireCard.background = value;
+      buttonCardConfig[buttonIndex].tire_card = tireCard;
+      this._copyTireConfigToPreview(tireCard);
+      this.config = { ...this.config, button_card: buttonCardConfig };
+      fireEvent(this, 'config-changed', { config: this.config });
+    };
+
+    if (!ev) {
+      updateChanged('');
+      return;
+    }
+
+    // Handle file upload
+    if (ev.target.type === 'file') {
+      if (!ev.target.files || ev.target.files.length === 0) {
+        return;
+      }
+
+      const file = ev.target.files[0];
+      const url = await uploadImage(this.hass, file);
+      if (url) {
+        updateChanged(url);
+      }
+      return;
+    }
+
+    // Handle text input change
+    if (ev.target.type === 'text' || ev.target.tagName === 'HA-TEXTFIELD') {
+      const value = ev.target.value;
+      updateChanged(value);
+    } else {
+      return;
+    }
+  }
+
+  private _handleNewItemChange(ev: any): void {
+    ev.stopPropagation();
+    const { value, cardIndex, configIndex } = ev.target;
+
+    const newItem = new Map(this._newItemName);
+    newItem.set('entity', value);
+    newItem.set('cardIndex', cardIndex);
+    newItem.set('configIndex', configIndex);
+
+    this._newItemName = newItem;
+
+    this.requestUpdate();
+
+    this._handleNewItem();
+  }
+
+  private _handleNewItem = () => {
+    const reset = () => {
+      this._newItemName.clear();
+      if (this._isDefaultCardPreview) {
+        this._setDefaultCardPreview(null);
+        this.updateComplete.then(() => {
+          this._setDefaultCardPreview(this._buttonIndex);
+        });
+      } else {
+        this.resetEditorPreview();
+      }
+    };
+
+    this.updateComplete.then(() => {
+      const entity = this._newItemName.get('entity');
+      const cardIndex = this._newItemName.get('cardIndex');
+      const configIndex = this._newItemName.get('configIndex');
+      if (entity && cardIndex !== undefined && configIndex !== undefined) {
+        let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+        let defaultCard = buttonCardConfig[configIndex]?.default_card || [];
+        let card = defaultCard[cardIndex];
+        let items = card.items || [];
+        items.push({ entity });
+        card.items = items;
+        defaultCard[cardIndex] = card;
+        buttonCardConfig[configIndex].default_card = defaultCard;
+        this.config = { ...this.config, button_card: buttonCardConfig };
+        fireEvent(this, 'config-changed', { config: this.config });
+        reset();
+      }
+    });
+  };
+
+  private handleCustomCardConfig(ev: any): void {
+    ev.stopPropagation();
+    if (!this.config) {
+      return;
+    }
+    const target = ev.target;
+    const configType = target.configType;
+    const configValue = target.configValue;
+    const configIndex = target.configIndex;
+    const value = target.value;
+
+    console.log('configType', configType, 'configValue', configValue, 'configIndex', configIndex, 'value', value);
+    let parsedYaml = [];
+    try {
+      parsedYaml = YAML.parse(value);
+    } catch (e) {
+      console.error('Error parsing YAML', e);
+      return;
+    }
+
+    if (this.config.card_preview && this._isCardPreview) {
+      this.config = { ...this.config, card_preview: parsedYaml };
+    }
+
+    if (configType === 'custom_card') {
+      let buttonCardConfig = [...(this.config.button_card || [])];
+      let buttonConfig = { ...buttonCardConfig[configIndex] };
+      buttonConfig.custom_card = parsedYaml;
+      buttonCardConfig[configIndex] = buttonConfig;
+      this.config = { ...this.config, button_card: buttonCardConfig };
+    }
+
+    this._debouncedCustomBtnChanged();
+  }
+
+  private configChanged(): void {
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _handlerAlert(ev: CustomEvent): void {

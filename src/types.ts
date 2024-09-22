@@ -159,14 +159,63 @@ export interface ButtonActionConfig {
   tap_action: ActionConfig;
 }
 
+export interface TireEntityConfig {
+  entity: string;
+  attribute: string;
+  name: string;
+}
+
+export interface TireTemplateConfig {
+  title: string;
+  background: string;
+  horizontal: boolean;
+  image_size: number;
+  value_size: number;
+  top: number;
+  left: number;
+  front_left: TireEntityConfig;
+  front_right: TireEntityConfig;
+  rear_left: TireEntityConfig;
+  rear_right: TireEntityConfig;
+}
+
+export type TireEntity = {
+  title: string;
+  background: string;
+  image_size: number;
+  value_size: number;
+  top: number;
+  left: number;
+  tires: {
+    front_left: {
+      state: string;
+      name: string;
+    };
+    front_right: {
+      state: string;
+      name: string;
+    };
+    rear_left: {
+      state: string;
+      name: string;
+    };
+    rear_right: {
+      state: string;
+      name: string;
+    };
+  };
+  horizontal: boolean;
+};
+
 export interface ButtonCardConfig {
   button: ButtonConfig;
   button_action: ButtonActionConfig;
   button_type: 'action' | 'default';
-  card_type: 'custom' | 'default';
+  card_type: 'custom' | 'default' | 'tire';
   custom_card: LovelaceCardConfig[];
   default_card: Array<DefaultCardConfig>;
   hide_button: boolean;
+  tire_card?: TireTemplateConfig;
 }
 
 export interface CardItemEntity {
@@ -196,7 +245,7 @@ export type ButtonCardEntity = Array<{
     secondary: string;
   };
   button_type: 'action' | 'default';
-  card_type: 'custom' | 'default';
+  card_type: 'custom' | 'default' | 'tire';
   custom_card: LovelaceCardConfig[];
   default_card: Array<{
     collapsed_items: boolean;
@@ -209,6 +258,7 @@ export type ButtonCardEntity = Array<{
     title: string;
   }>;
   hide_button: boolean;
+  tire_card?: TireEntity;
 }>;
 
 export interface LayoutConfig {
