@@ -131,7 +131,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	gap: var(--vic-card-padding);
+	gap: var(--vic-gutter-gap);
 }
 
 .card-types {
@@ -284,7 +284,7 @@
 
 .sub-header {
 	width: 100%;
-	padding-bottom: var(--vic-gutter-gap);
+	margin-block: var(--vic-gutter-gap);
 	box-sizing: border-box;
 	text-transform: uppercase;
 	height: 100%;
@@ -293,6 +293,7 @@
 	justify-content: space-between;
 	align-content: center;
 	align-items: center;
+	padding-inline: var(--vic-gutter-gap);
 }
 
 .sub-header .info-icon {
