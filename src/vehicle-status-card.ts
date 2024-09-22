@@ -61,17 +61,8 @@ export class VehicleStatusCard extends LitElement {
   @state() private _isCardPreview: boolean = false;
   @state() private _isDefaultCardPreview: boolean = false;
   @state() private _isTireCardPreview: boolean = false;
-
-  private _mapPopupLovelace: LovelaceCardConfig[] = [];
+  @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() private _rangeInfo: RangeInfoEntity = [];
-  private getDeviceTrackerLatLong = (): { lat: number; lon: number } | undefined => {
-    if (!this._config?.mini_map?.device_tracker) return;
-    const deviceTracker = this._hass.states[this._config.mini_map.device_tracker];
-    if (!deviceTracker) return;
-    const lat = deviceTracker.attributes.latitude;
-    const lon = deviceTracker.attributes.longitude;
-    return { lat, lon };
-  };
   @property({ attribute: false }) public _hass!: HomeAssistant;
 
   @query('mini-map-box') _miniMapBox!: HTMLElement;
@@ -572,59 +563,6 @@ export class VehicleStatusCard extends LitElement {
     `;
   }
 
-  // private _renderTireCard(tireConfig: TireEntity): TemplateResult {
-  //   const defaultTireConfig = {
-  //     background: TIRE_BG,
-  //     horizontal: false,
-  //     title: 'Tire Pressures',
-  //     image_size: 100,
-  //     value_size: 100,
-  //     top: 50,
-  //     left: 50,
-  //     tires: {
-  //       front_left: { name: 'Front Left', state: '0' },
-  //       front_right: { name: 'Front Right', state: '0' },
-  //       rear_left: { name: 'Rear Left', state: '0' },
-  //       rear_right: { name: 'Rear Right', state: '0' },
-  //     },
-  //   };
-
-  //   const background = tireConfig.background || defaultTireConfig.background;
-  //   const isHorizontal = tireConfig.horizontal || defaultTireConfig.horizontal;
-  //   const tireCardTitle = tireConfig.title || defaultTireConfig.title;
-  //   const tireCardSize = tireConfig.image_size || defaultTireConfig.image_size;
-  //   const tireValueSize = tireConfig.value_size || defaultTireConfig.value_size;
-  //   const tireTop = tireConfig.top || defaultTireConfig.top;
-  //   const tireLeft = tireConfig.left || defaultTireConfig.left;
-  //   const tires = tireConfig.tires || defaultTireConfig.tires;
-
-  //   let sizeStyle = {
-  //     '--vic-tire-top': `${tireTop}%`,
-  //     '--vic-tire-left': `${tireLeft}%`,
-  //     '--vic-tire-size': `${tireCardSize}%`,
-  //     '--vic-tire-value-size': tireValueSize / 100,
-  //   };
-  //   const directionClass = isHorizontal ? 'rotated' : '';
-
-  //   return html`
-  //     <div class="default-card">
-  //       <div class="data-header">${tireCardTitle}</div>
-  //       <div class="tyre-toggle-btn click-shrink" @click=${(ev: Event) => this.toggleTireDirection(ev)}>
-  //         <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
-  //       </div>
-
-  //       <div class="data-box tyre-wrapper ${directionClass}" style=${styleMap(sizeStyle)}>
-  //         <div class="background" style="background-image: url(${background})"></div>
-  //         ${Object.keys(tires).map((key) => {
-  //           return html` <div class="tyre-box ${directionClass} ${key.replace('_', '').toLowerCase()}">
-  //             <span class="tyre-value">${tires[key].state ? tires[key].state : '0'}</span>
-  //             <span class="tyre-name">${tires[key].name}</span>
-  //           </div>`;
-  //         })}
-  //       </div>
-  //     </div>
-  //   `;
-  // }
   private _renderTireCard(tireConfig: TireEntity | null): TemplateResult {
     if (!tireConfig) {
       return html`<div class="error">Tire configuration not available</div>`;
@@ -752,6 +690,15 @@ export class VehicleStatusCard extends LitElement {
   private getStateDisplay(entityId: string | undefined): string {
     if (!entityId || !this._hass.states[entityId]) return '';
     return this._hass.formatEntityState(this._hass.states[entityId]);
+  }
+
+  private getDeviceTrackerLatLong(): { lat: number; lon: number } | undefined {
+    if (!this._config?.mini_map?.device_tracker) return;
+    const deviceTracker = this._hass.states[this._config.mini_map.device_tracker];
+    if (!deviceTracker) return;
+    const lat = deviceTracker.attributes.latitude;
+    const lon = deviceTracker.attributes.longitude;
+    return { lat, lon };
   }
 
   private toggleCard(action: 'next' | 'prev'): void {
