@@ -58,10 +58,14 @@ export class VehicleButtonsGrid extends LitElement {
                 ${baseButtons.map((button, index) => {
                   const { icon, notify, primary, secondary } = button;
                   return html`
-                    <div class="grid-item click-shrink" @click=${() => this._handleClick(index)}>
+                    <div
+                      id="${`button-id-${index}`}"
+                      class="grid-item click-shrink"
+                      @click=${() => this._handleClick(index)}
+                    >
                       <div class="item-icon">
                         <div class="icon-background">
-                          <ha-icon id="${`button-id-${index}`}" .icon="${icon}"></ha-icon>
+                          <ha-icon id="${`button-action-${index}`}" .icon="${icon}"></ha-icon>
                         </div>
                         ${!hideNotify
                           ? html`
@@ -104,10 +108,14 @@ export class VehicleButtonsGrid extends LitElement {
           ${buttonsGroup.map((button) => {
             const { buttonIndex, icon, notify, primary, secondary } = button;
             return html`
-              <div class="grid-item click-shrink" @click=${() => this._handleClick(buttonIndex)}>
+              <div
+                id="${`button-id-${buttonIndex}`}"
+                class="grid-item click-shrink"
+                @click=${() => this._handleClick(buttonIndex)}
+              >
                 <div class="item-icon">
                   <div class="icon-background">
-                    <ha-icon .icon="${icon}" id="${`button-id-${buttonIndex}`}"></ha-icon>
+                    <ha-icon .icon="${icon}" id="${`button-action-${buttonIndex}`}"></ha-icon>
                   </div>
                   ${!hideNotify
                     ? html`
@@ -158,7 +166,7 @@ export class VehicleButtonsGrid extends LitElement {
       const baseButtons = this.buttons.map((button) => button.button);
 
       baseButtons.forEach((button, index) => {
-        const btnId = `button-id-${index}`;
+        const btnId = `button-action-${index}`;
         const btnElt = this.shadowRoot?.getElementById(btnId);
 
         // Only add actions if button_type is not 'default'
@@ -176,7 +184,7 @@ export class VehicleButtonsGrid extends LitElement {
   private initSwiper(): void {
     const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
     if (!swiperCon) return;
-    console.log('swiper status init start');
+    // console.log('swiper status init start');
     const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
     this.swiper = new Swiper(swiperCon as HTMLElement, {
       centeredSlides: true,
