@@ -166,12 +166,46 @@ export interface TireEntityConfig {
 }
 
 export interface TireTemplateConfig {
+  title: string;
   background: string;
+  horizontal: boolean;
+  image_size: number;
+  value_size: number;
+  top: number;
+  left: number;
   front_left: TireEntityConfig;
   front_right: TireEntityConfig;
   rear_left: TireEntityConfig;
   rear_right: TireEntityConfig;
 }
+
+export type TireEntity = {
+  title: string;
+  background: string;
+  image_size: number;
+  value_size: number;
+  top: number;
+  left: number;
+  tires: {
+    front_left: {
+      state: string;
+      name: string;
+    };
+    front_right: {
+      state: string;
+      name: string;
+    };
+    rear_left: {
+      state: string;
+      name: string;
+    };
+    rear_right: {
+      state: string;
+      name: string;
+    };
+  };
+  horizontal: boolean;
+};
 
 export interface ButtonCardConfig {
   button: ButtonConfig;
@@ -224,7 +258,7 @@ export type ButtonCardEntity = Array<{
     title: string;
   }>;
   hide_button: boolean;
-  tire_card?: TireTemplateConfig;
+  tire_card?: TireEntity;
 }>;
 
 export interface LayoutConfig {
