@@ -35,8 +35,24 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     this._handleTabChange = this._handleTabChange.bind(this);
   }
 
-  protected firstUpdated(changedProps: PropertyValues): void {
-    super.firstUpdated(changedProps);
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+    if (changedProps.has('_selectedConfigType') && this._selectedConfigType !== null) {
+      setTimeout(() => {
+        if (this._selectedConfigType) this._dispatchEvent('toggle-helper', this._selectedConfigType);
+      }, 200);
+    }
+    if (
+      (changedProps.has('_selectedConfigType') && this._selectedConfigType === null) ||
+      this._selectedConfigType !== 'button_card'
+    ) {
+      this._cleanConfig();
+    }
+
+    // if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
+    //   console.log('Init sortable');
+    //   this._imagesEditor.initSortable();
+    // }
   }
 
   protected render(): TemplateResult {
@@ -53,27 +69,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     `;
   }
 
-  protected updated(changedProps: PropertyValues): void {
-    super.updated(changedProps);
-    if (changedProps.has('_selectedConfigType') && this._selectedConfigType !== null) {
-      setTimeout(() => {
-        if (this._selectedConfigType) this._dispatchEvent('toggle-helper', this._selectedConfigType);
-      }, 200);
-    }
-    if (
-      (changedProps.has('_selectedConfigType') && this._selectedConfigType === null) ||
-      this._selectedConfigType !== 'button_card'
-    ) {
-      this._cleanConfig();
-    }
-
-    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
-      console.log('Init sortable');
-      this._imagesEditor.initSortable();
-    }
-  }
-
-  private _cleanConfig(): void {
+  public _cleanConfig(): void {
     if (['btn_preview', 'card_preview', 'default_card_preview', 'tire_preview'].some((key) => this._config[key])) {
       console.log('Cleaning config of preview keys');
       this._config = {
@@ -89,13 +85,14 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
   }
 
-  private _dispatchEvent(type: string, detail: any): void {
+  public _dispatchEvent(type: string, detail: any): void {
     const event = new CustomEvent('editor-event', {
       bubbles: true,
       composed: true,
       detail: { data: detail, type },
     });
     this.dispatchEvent(event);
+    console.log('Dispatch Event:', type, detail);
   }
 
   private _handlePanelExpandedChanged(ev: Event, panelKey: string): void {

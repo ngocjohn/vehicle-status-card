@@ -247,3 +247,31 @@ export const ExpansionPanel = ({
     </ha-expansion-panel>
   `;
 };
+
+export const HaAlert = ({
+  message,
+  type,
+  dismissable,
+  options,
+}: {
+  message: string;
+  type?: 'info' | 'success' | 'warning' | 'error';
+  dismissable?: boolean;
+  options?: { title?: string; icon?: string };
+}): TemplateResult => {
+  const dismisHandler = (ev: CustomEvent) => {
+    const alert = ev.target as HTMLElement;
+    alert.style.display = 'none';
+  };
+
+  return html`
+    <ha-alert
+      alert-type=${type || 'info'}
+      ?dismissable=${dismissable || true}
+      @alert-dismissed-clicked=${dismisHandler}
+      title=${options?.title}
+    >
+      ${message}
+    </ha-alert>
+  `;
+};

@@ -1,7 +1,8 @@
-const makePanel = (name: string, description?: string, icon?: string) => ({
+const makePanel = (name: string, description: string, icon?: string, helper?: string) => ({
+  name,
   description,
   icon,
-  name,
+  helper,
 });
 
 export const CONFIG_TYPES = {
@@ -49,7 +50,10 @@ export const CONFIG_TYPES = {
       description: 'Configure button appearance, notifications, and default or custom cards.',
       doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#button-card',
       subpanels: {
-        button: makePanel('Button', 'Set the value of primary, secondary, icon, and notify for the button.'),
+        button: makePanel(
+          'Button',
+          'Select the button type between default and action. Default opens a card, action triggers an action.'
+        ),
         default_cards: makePanel('Default Card', 'Set the title and items for the default card.'),
         custom_cards: makePanel('Custom Card', 'Add custom cards to display. Use Lovelace card configuration.'),
       },

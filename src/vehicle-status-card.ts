@@ -40,30 +40,23 @@ import {
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
-  public static getStubConfig = (): Record<string, unknown> => {
-    return {
-      ...DEFAULT_CONFIG,
-    };
-  };
+  @property({ attribute: false }) public _hass!: HomeAssistant;
+  @property({ type: Object }) private _config!: VehicleStatusCardConfig;
+
+  @state() private _activeCardPreview: string | null = null;
 
   @state() private _activeCardIndex: null | number | string = null;
   @state() private _activeGroupIndicator: null | number = null;
 
-  @state() private _buttonCards: ButtonCardEntity = [];
   @state() private _cardPreviewElement: LovelaceCardConfig[] = [];
-
-  @property({ type: Object }) private _config!: VehicleStatusCardConfig;
   @state() private _defaultCardPreview: DefaultCardEntity[] = [];
   @state() private _tireCardPreview: TireEntity | undefined;
 
+  @state() private _buttonCards: ButtonCardEntity = [];
   @state() private _indicatorsGroup: IndicatorGroupEntity = [];
   @state() private _indicatorsSingle: IndicatorEntity = [];
-  @state() private _isCardPreview: boolean = false;
-  @state() private _isDefaultCardPreview: boolean = false;
-  @state() private _isTireCardPreview: boolean = false;
   @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() private _rangeInfo: RangeInfoEntity = [];
-  @property({ attribute: false }) public _hass!: HomeAssistant;
 
   @query('mini-map-box') _miniMapBox!: HTMLElement;
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any; // !: HTMLElement;
@@ -72,9 +65,40 @@ export class VehicleStatusCard extends LitElement {
 
   @property({ type: Boolean }) public preview: boolean = false;
 
+  public static getStubConfig = (): Record<string, unknown> => {
+    return {
+      ...DEFAULT_CONFIG,
+    };
+  };
+
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import('./editor/editor');
     return document.createElement('vehicle-status-card-editor');
+  }
+  set hass(hass: HomeAssistant) {
+    this._hass = hass;
+  }
+
+  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
+    if (!config) {
+      throw new Error('Invalid configuration');
+    }
+
+    this._config = {
+      ...config,
+    };
+  }
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (process.env.ROLLUP_WATCH === 'true') {
+      window.VehicleCard = this;
+    }
+    window.addEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+  }
+
+  disconnectedCallback(): void {
+    window.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    super.disconnectedCallback();
   }
 
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
@@ -85,35 +109,6 @@ export class VehicleStatusCard extends LitElement {
     this._configureCardPreview();
     this._configureDefaultCardPreview();
     this._configureTireCardPreview();
-  }
-
-  protected render(): TemplateResult {
-    if (!this._config || !this._hass) {
-      return html``;
-    }
-
-    if (this._isCardPreview) {
-      return html` <ha-card class="preview-card">${this._cardPreviewElement}</ha-card> `;
-    }
-
-    if (this._isDefaultCardPreview) {
-      return this._renderCardPreview('default');
-    }
-
-    if (this._isTireCardPreview) {
-      return this._renderCardPreview('tire');
-    }
-
-    const name = this._config.name;
-
-    return html`
-      <ha-card>
-        <header id="name">
-          <h1>${name}</h1>
-        </header>
-        ${this._activeCardIndex === null ? this._renderMainCard() : this._renderSelectedCard()}
-      </ha-card>
-    `;
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
@@ -130,17 +125,22 @@ export class VehicleStatusCard extends LitElement {
       this._getRangeInfo();
     }
 
-    if (changedProps.has('_config') && this._isCardPreview) {
+    if (changedProps.has('_config') && this._activeCardPreview === 'custom') {
       this._configureCardPreview();
+    }
+
+    if (changedProps.has('_config') && this._activeCardPreview === 'default') {
+      this._configureDefaultCardPreview();
+    }
+
+    if (changedProps.has('_config') && this._activeCardPreview === 'tire') {
+      this._configureTireCardPreview();
     }
 
     if (changedProps.has('_hass') && this._config.button_card && this._config.button_card.length > 0) {
       this._getButtonCardsConfig();
     }
 
-    if (changedProps.has('_config') && this._isDefaultCardPreview) {
-      this._configureDefaultCardPreview();
-    }
     if (
       changedProps.has('_config') &&
       this._config.mini_map?.enable_popup &&
@@ -158,10 +158,6 @@ export class VehicleStatusCard extends LitElement {
     if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
       this.applyTheme(this._config.layout_config.theme_config.theme);
     }
-
-    if (changedProps.has('_activeIndicator') && this._activeGroupIndicator) {
-      console.log('Active Indicator:', this._activeGroupIndicator);
-    }
   }
 
   private async _configureCardPreview(): Promise<void> {
@@ -176,11 +172,11 @@ export class VehicleStatusCard extends LitElement {
       const cardElement = await createCardElement(this._hass, cardConfig);
       if (!cardElement) return;
       this._cardPreviewElement = cardElement;
-      this._isCardPreview = true;
+      this._activeCardPreview = 'custom';
       this.requestUpdate();
     } else {
       this._cardPreviewElement = [];
-      this._isCardPreview = false;
+      this._activeCardPreview = null;
     }
     return;
   }
@@ -197,11 +193,11 @@ export class VehicleStatusCard extends LitElement {
       const defaultCard = await getDefaultCard(this._hass, defaultCardConfig);
       if (!defaultCard) return;
       this._defaultCardPreview = defaultCard;
-      this._isDefaultCardPreview = true;
+      this._activeCardPreview = 'default';
       this.requestUpdate();
     } else {
       this._defaultCardPreview = [];
-      this._isDefaultCardPreview = false;
+      this._activeCardPreview = null;
     }
     return;
   }
@@ -218,12 +214,11 @@ export class VehicleStatusCard extends LitElement {
       const tireCard = await getTireCard(this._hass, tireCardConfig);
       if (!tireCard) return;
       this._tireCardPreview = tireCard as TireEntity;
-      this._isTireCardPreview = true;
+      this._activeCardPreview = 'tire';
       this.requestUpdate();
-      console.log('Tire Card:', this._tireCardPreview);
     } else {
       this._tireCardPreview = undefined;
-      this._isTireCardPreview = false;
+      this._activeCardPreview = null;
     }
 
     return;
@@ -269,41 +264,23 @@ export class VehicleStatusCard extends LitElement {
     this._rangeInfo = (await getRangeInfo(this._hass, this._config)) ?? [];
   }
 
-  /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
-  private _handleEditorEvent(ev: any): void {
-    const { detail } = ev;
-    const type = detail.type;
-    switch (type) {
-      case 'show-button':
-        console.log('Show button:', detail.data.buttonIndex);
-        this._isCardPreview = false;
-        this.updateComplete.then(() => {
-          this._vehicleButtonsGrid?.showButton(detail.data.buttonIndex);
-        });
-        break;
-      case 'toggle-card-preview':
-        this._isCardPreview = detail.data.isCardPreview;
-        this.updateComplete.then(() => {
-          this._configureCardPreview();
-        });
-        break;
-      case 'toggle-default-card':
-        this._isDefaultCardPreview = detail.data.isDefaultCardPreview;
-        this.updateComplete.then(() => {
-          this._configureDefaultCardPreview();
-        });
-        break;
-      case 'toggle-tire-preview':
-        this._isTireCardPreview = detail.data.isTireCardPreview;
-        this.updateComplete.then(() => {
-          this._configureTireCardPreview();
-        });
-        break;
-
-      case 'toggle-helper':
-        this._toggleHelper(detail.data);
-        break;
+  protected render(): TemplateResult {
+    if (!this._config || !this._hass) {
+      return html``;
     }
+
+    if (this._activeCardPreview !== null) {
+      return this._renderCardPreview();
+    }
+
+    return html`
+      <ha-card>
+        <header id="name">
+          <h1>${this._config.name}</h1>
+        </header>
+        ${this._activeCardIndex === null ? this._renderMainCard() : this._renderSelectedCard()}
+      </ha-card>
+    `;
   }
 
   private _renderActiveIndicator(): TemplateResult {
@@ -345,14 +322,17 @@ export class VehicleStatusCard extends LitElement {
     `;
   }
 
-  private _renderCardPreview(type: string): TemplateResult {
+  private _renderCardPreview(): TemplateResult {
+    if (!this._activeCardPreview) return html``;
+    const type = this._activeCardPreview;
     const typeMap = {
       default: this._defaultCardPreview.map((card) => this._renderDefaultCardItems(card)),
-      tire: this._tireCardPreview ? this._renderTireCard(this._tireCardPreview) : nothing,
+      custom: this._cardPreviewElement,
+      tire: this._renderTireCard(this._tireCardPreview || null),
     };
 
     return html`
-      <ha-card>
+      <ha-card class="preview-card">
         <main>
           <section class="card-element"><div class="added-card">${typeMap[type]}</div></section>
         </main>
@@ -604,6 +584,7 @@ export class VehicleStatusCard extends LitElement {
       </div>
     `;
   }
+
   private toggleTireDirection(ev: Event): void {
     ev.stopPropagation();
     const target = ev.target as HTMLElement;
@@ -734,35 +715,43 @@ export class VehicleStatusCard extends LitElement {
     target.querySelector('.subcard-icon')?.classList.toggle('active', !isHidden);
   }
 
-  connectedCallback(): void {
-    super.connectedCallback();
-    if (process.env.ROLLUP_WATCH === 'true') {
-      window.VehicleCard = this;
-    }
-    window.addEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
-  }
+  /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
+  private _handleEditorEvent(ev: any): void {
+    ev.stopPropagation();
+    const { detail } = ev;
+    const type = detail.type;
+    switch (type) {
+      case 'show-button':
+        console.log('Show button:', detail.data.buttonIndex);
+        if (this._activeCardPreview !== null) {
+          this._activeCardPreview = null;
+        }
+        this.updateComplete.then(() => {
+          this._vehicleButtonsGrid?.showButton(detail.data.buttonIndex);
+        });
+        break;
 
-  disconnectedCallback(): void {
-    window.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
-    super.disconnectedCallback();
+      case 'toggle-preview':
+        const cardType = detail.data.cardType;
+        this._activeCardPreview = cardType;
+        this.updateComplete.then(() => {
+          if (cardType === 'custom') {
+            this._configureCardPreview();
+          } else if (cardType === 'default') {
+            this._configureDefaultCardPreview();
+          } else if (cardType === 'tire') {
+            this._configureTireCardPreview();
+          }
+        });
+        break;
+      case 'toggle-helper':
+        this._toggleHelper(detail.data);
+        break;
+    }
   }
 
   public getCardSize(): number {
     return 5;
-  }
-
-  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
-    if (!config) {
-      throw new Error('Invalid configuration');
-    }
-
-    this._config = {
-      ...config,
-    };
-  }
-
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
   }
 
   private get isDark(): boolean {
