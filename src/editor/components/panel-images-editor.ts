@@ -19,8 +19,8 @@ export class PanelImagesEditor extends LitElement {
   @property({ type: Object }) public config?: VehicleStatusCardConfig;
   @property({ type: Boolean }) isDragging = false;
 
+  @state() _newImage: string = '';
   @state() _sortable: Sortable | null = null;
-
   @state() _reindexImages: boolean = false;
 
   static get styles(): CSSResultGroup {
@@ -52,8 +52,27 @@ export class PanelImagesEditor extends LitElement {
           display: none;
         }
 
-        .new-image-url > ha-textfield {
+        .new-image-url {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          text-wrap: nowrap;
           width: 100%;
+          justify-content: space-between;
+        }
+
+        .new-url-btn {
+          display: none;
+        }
+
+        .new-url-btn.show {
+          display: inline-block;
+          color: var(--secondary-text-color);
+          cursor: pointer;
+        }
+
+        .new-url-btn:hover {
+          color: var(--primary-color);
         }
       `,
     ];
@@ -140,19 +159,32 @@ export class PanelImagesEditor extends LitElement {
           </p>
         </div>
         <div class="new-image-url">
-          ${Create.Picker({
-            component: this,
-            label: 'Image URL',
-            value: '',
-            configType: 'images',
-            configIndex: 0,
-            configValue: 'url',
-            pickerType: 'textfield' as 'textfield',
-          })}
+          <ha-textfield
+            style="width: 100%;"
+            .label=${'Image URL'}
+            .value=${this._newImage}
+            @input=${this.toggleAddButton}
+            ></ha-textfield>
+          <div class="new-url-btn">
+            <ha-icon icon="mdi:plus" @click=${this.toggleAction('add-new-url')}></ha-icon>
+          </div>
         </div>
       </div>
 
     `;
+  }
+
+  private toggleAddButton(ev: Event): void {
+    ev.stopPropagation();
+    const target = ev.target as HTMLInputElement;
+    const addButton = target.parentElement?.querySelector('.new-url-btn') as HTMLElement;
+    if (!addButton) return;
+    if (target.value && target.value.length > 0) {
+      this._newImage = target.value;
+      addButton.classList.add('show');
+    } else {
+      addButton.classList.remove('show');
+    }
   }
 
   private _handleDragOver(event: DragEvent) {
@@ -173,7 +205,7 @@ export class PanelImagesEditor extends LitElement {
     }
   }
 
-  private toggleAction(action: 'add' | 'showDelete' | 'delete' | 'upload', idx?: number) {
+  private toggleAction(action: 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url', idx?: number) {
     return () => {
       const updateChanged = (update: any) => {
         fireEvent(this, 'config-changed', { config: { ...this.config, images: update } });
@@ -222,6 +254,14 @@ export class PanelImagesEditor extends LitElement {
           imageList.style.display = 'block';
           addImageBtn.innerHTML = 'Add Image';
         }
+      }
+      if (action === 'add-new-url') {
+        if (!this._newImage) return;
+        const imagesList = [...(this.config?.images || [])];
+        imagesList.push({ url: this._newImage, title: this._newImage });
+        updateChanged(imagesList);
+        this._newImage = '';
+        fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
       }
     };
   }
@@ -298,10 +338,26 @@ export class PanelImagesEditor extends LitElement {
     }
     const target = ev.target;
     const index = target.index;
+    const configValue = target.configValue;
     let newValue: any = target.value;
 
-    newValue = newValue.trim().replace(/'/g, '');
-    console.log('New value:', newValue);
+    if (configValue === 'url') {
+      newValue = this._newImage;
+      newValue = newValue.trim().replace(/'/g, '');
+    } else {
+      newValue = newValue.trim().replace(/'/g, '');
+    }
+    console.log(
+      'Index:',
+      index,
+      'Config Value:',
+      configValue,
+      'Old value:',
+      target.value,
+      'New value:',
+      newValue,
+      this._newImage
+    );
 
     let imagesList = [...(this.config?.images || [])];
     imagesList[index] = { url: newValue, title: newValue } as ImageConfig;
