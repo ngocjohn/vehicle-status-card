@@ -394,13 +394,15 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderButtonActionConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
-    const infoAlert = 'You are using `default` button type, select `action` to use Tap Action features';
+    const infoAlert = `You are using 'DEFAULT' button type, select 'ACTION' to use Tap Action features`;
+
+    const infoIconAction = `Action is triggered with the ICON.`;
     const buttonAction = buttonCard.button_action || {};
 
     // Entity Picker
     const entityPicker = Create.Picker({
       component: this,
-      label: 'Entity',
+      label: 'Entity to interact with',
       value: buttonAction.entity || '',
       configType: 'button_action',
       configIndex: buttonIndex,
@@ -433,13 +435,16 @@ export class PanelButtonCard extends LitElement {
       ${buttonCard.button_type === undefined || buttonCard.button_type === 'default'
         ? html` <div class="sub-content">
             <ha-alert
-              alert-type="info"
+              alert-type="warning"
               dismissable
               @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
               >${infoAlert}</ha-alert
             >
           </div>`
         : nothing}
+      <div class="sub-content">
+        <ha-alert alert-type="info">${infoIconAction}</ha-alert>
+      </div>
       <div class="indicator-config">${entityPicker} ${actionSelectors}</div>
     `;
 
@@ -535,7 +540,9 @@ export class PanelButtonCard extends LitElement {
         accept="image/*"
       />
       ${tireCard.background
-        ? html`<ha-button @click=${() => this.updateTireBackground(null, buttonIndex)}>Use default</ha-button>`
+        ? html`<ha-button style="float: inline-end;" @click=${() => this.updateTireBackground(null, buttonIndex)}
+            >Use default</ha-button
+          >`
         : ''}
     `;
 

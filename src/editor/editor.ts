@@ -25,7 +25,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @state() _helpOverlayActive: boolean = false;
 
-  @query('panel-images-editor') _imagesEditor?: any;
+  @query('panel-images-editor') _imagesEditor!: any;
   @query('panel-indicator') _indicatorEditor?: any;
   @query('panel-range-info') _rangeInfoEditor?: any;
   @state() _selectedConfigType: null | string = null;
@@ -65,6 +65,11 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       this._selectedConfigType !== 'button_card'
     ) {
       this._cleanConfig();
+    }
+
+    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
+      console.log('Init sortable');
+      this._imagesEditor.initSortable();
     }
   }
 
