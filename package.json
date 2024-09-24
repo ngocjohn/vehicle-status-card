@@ -1,6 +1,6 @@
 {
   "name": "vehicle-status-card",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Lovelace custom card for tracking Vehicle status",
   "keywords": [
     "home-assistant",
