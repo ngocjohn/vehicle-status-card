@@ -25,7 +25,8 @@ interface PickerOptions {
     | 'selectorBoolean'
     | 'template'
     | 'textfield'
-    | 'theme';
+    | 'theme'
+    | 'new_template';
   value: boolean | number | string;
 }
 
@@ -152,7 +153,7 @@ export const Picker = ({
         .required=${false}
       ></ha-selector>
     `,
-    template: html`
+    new_template: html`
       <div class="template-ui">
         <p>${options?.label}</p>
         <ha-code-editor
@@ -173,6 +174,23 @@ export const Picker = ({
         <ha-input-helper-text>${options?.helperText}</ha-input-helper-text>
       </div>
     `,
+    template: html`
+      <ha-selector
+        .hass=${hass}
+        .value=${value}
+        .configValue=${configValue}
+        .configType=${configType}
+        .configIndex=${configIndex}
+        .label=${options?.label || 'template'}
+        .helper=${options?.helperText}
+        .selector=${{ template: {} }}
+        .index=${configIndex}
+        @value-changed=${handleValueChange}
+        .required=${false}
+      >
+      </ha-selector>
+    `,
+
     textfield: html`
       <ha-textfield
         class="form-text"
