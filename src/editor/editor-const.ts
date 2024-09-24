@@ -77,6 +77,9 @@ const DETAIL_CONFIG_VALUES = [
   'value_size',
   'top',
   'left',
+  'visibility',
+  'state_template',
+  'icon_template',
 ];
 
 const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview'];

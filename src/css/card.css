@@ -102,6 +102,10 @@ header h1 {
   flex-wrap: wrap;
 }
 
+.item.hidden {
+  display: none !important;
+}
+
 .info-box.range {
   flex-wrap: nowrap !important;
   justify-content: center;

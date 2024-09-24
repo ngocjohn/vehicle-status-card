@@ -35,15 +35,17 @@ export type HomeAssistantExtended = {
 export interface IndicatorConfig {
   attribute?: string;
   entity: string;
-  icon?: string;
+  icon: string;
   icon_template?: string;
   state_template?: string;
+  visibility?: string;
 }
 
 export type IndicatorEntity = Array<{
   entity: string;
   icon: string;
   state: string;
+  visibility?: boolean;
 }>;
 
 // IndicatorGroup configuration for a group of indicators

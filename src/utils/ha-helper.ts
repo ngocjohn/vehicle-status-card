@@ -91,7 +91,9 @@ export async function getSingleIndicators(
         ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
         : hass.formatEntityState(stateObj);
 
-    singleIndicator.push({ entity, icon: iconValue, state });
+    const visibility = indicator.visibility ? await getBooleanTemplate(hass, indicator.visibility) : true;
+
+    singleIndicator.push({ entity, icon: iconValue, state, visibility });
   }
   return singleIndicator;
 }

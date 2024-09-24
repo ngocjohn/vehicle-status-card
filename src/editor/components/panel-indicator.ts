@@ -11,6 +11,7 @@ import {
 } from '../../types';
 import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
+import { CONFIG_VALUES } from '../editor-const';
 
 import Sortable from 'sortablejs';
 
@@ -137,6 +138,15 @@ export class PanelIndicator extends LitElement {
 
     const singleTemplate = [
       {
+        value: indicator.visibility,
+        pickerType: 'template',
+        configValue: 'visibility',
+        options: {
+          label: 'Visibility template',
+          helperText: 'Template for the visibility. Use Jinja2 template with result as true to show the indicator',
+        },
+      },
+      {
         value: indicator.icon_template,
         pickerType: 'template',
         configValue: 'icon_template',
@@ -161,9 +171,12 @@ export class PanelIndicator extends LitElement {
         <div class="sub-content">
           ${singlePicker.map((config) => this._createItemPicker({ ...config, ...sharedConfig }))}
         </div>
+      </div>
+      <div class="sub-panel-config">
         ${singleTemplate.map((config) => this._createItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
       </div>
     `;
+
     return subPanelConfig;
   }
 
@@ -557,7 +570,7 @@ export class PanelIndicator extends LitElement {
     let configIndex = target.configIndex;
     let newValue: any;
 
-    if (configValue === 'attribute') {
+    if (CONFIG_VALUES.includes(configValue)) {
       newValue = ev.detail.value;
     } else {
       newValue = target.value;

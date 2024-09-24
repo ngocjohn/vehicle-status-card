@@ -341,8 +341,8 @@ export class VehicleStatusCard extends LitElement {
     if (!this._config.indicators) return html``;
     // Render single indicators
     const singleIndicators = Object.values(this._indicatorsSingle).map(
-      ({ entity, icon, state }) => html`
-        <div class="item">
+      ({ entity, icon, state, visibility }) => html`
+        <div class="item ${visibility === false ? 'hidden' : ''}">
           <ha-state-icon
             .hass=${this._hass}
             .stateObj=${entity ? this._hass.states[entity] : undefined}
