@@ -112,11 +112,26 @@ Image slides allow you to upload or link images that will be displayed in a rota
 
 - **Image Upload**: You can upload images directly or link to external image URLs.
 - **Slideshow**: The images can automatically cycle through at set intervals, offering a dynamic visual experience.
-- **Customization**: Set the duration of each slide and control the display order.
+- **Customization**: Control the dimensions of the images, the transition effects between slides, and various other options to customize the slideshow to your liking.
 
-This feature adds a more personalized and visual element to your card, enhancing the overall presentation of vehicle data.
+### New Swiper Configuration Options
 
-![Images slides](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-images.gif)
+The latest release introduces advanced swiper configuration options, allowing for more control over how images are displayed.
+
+#### Swiper Configurable Options:
+
+- **Max Height**: Set the maximum height for the image slides.
+- **Max Width**: Set the maximum width for the image slides.
+- **Autoplay**: Automatically transition between images after a specified delay.
+- **Loop**: Whether the slideshow should loop indefinitely.
+- **Delay**: The amount of time (in milliseconds) each image stays on screen before transitioning to the next.
+- **Speed**: How fast the transition between images happens (in milliseconds).
+- **Effect**: Choose between different transition effects for the slideshow:
+  - `slide`: A classic sliding effect.
+  - `fade`: A smooth fade between images.
+  - `coverflow`: A 3D coverflow effect that adds depth to the transition.
+
+  ![Images slides](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-images.gif)
 
 ## Mini Map
 
@@ -130,7 +145,7 @@ The mini map feature displays a real-time map within the card, tracking the loca
 
 The mini map provides an easy way to keep track of where your vehicle is at all times, directly on the card.
 
-![Config mini map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-mini-map.gif)
+  ![Config mini map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-mini-map.gif)
 
 # Button Card
 
@@ -138,7 +153,7 @@ The button card is a core feature that provides interactive buttons to control o
 
 ## Single Button Configuration
 
-A single button allows you to represent an entity or action related to your vehicle. You can set up the button’s appearance and behavior to suit your needs.
+A single button allows you to represent an entity or action related to your vehicle. You can set up the button’s appearance, behavior, and actions to suit your needs.
 
 ### Key Features
 
@@ -146,8 +161,23 @@ A single button allows you to represent an entity or action related to your vehi
 - **Secondary Info**: Additional details below the primary label, such as the state of an entity (e.g., "Locked" or "Unlocked").
 - **Icon**: Customize the icon displayed on the button to visually represent the entity or action (e.g., a lock or fuel pump).
 - **Notifications**: Set up conditional notifications to alert you when certain states occur (e.g., when the fuel level is low).
+- **Action Types**: New feature that allows you to configure different types of actions for the button, such as `tap`, `hold`, or `double_tap` actions.
 
-The single button configuration gives you control over the key vehicle functions, allowing quick interaction and feedback directly from the card.
+### Action Type
+
+The **Action Type** feature allows you to define what action should be triggered when interacting with a button. Each button can have multiple action types configured, giving you more control over how the button behaves. You can specify different actions for tapping, holding, or double tapping the button.
+
+#### Supported Action Types:
+- **tap_action**: The action triggered when the button is tapped.
+- **hold_action**: The action triggered when the button is held down.
+- **double_tap_action**: The action triggered when the button is double tapped.
+
+#### Available Actions:
+- `more-info`: Opens the more-info dialog of the entity.
+- `toggle`: Toggles the state of the entity (e.g., from `on` to `off`).
+- `call-service`: Calls a Home Assistant service (e.g., `lock.lock`).
+- `navigate`: Navigates to a specified path or view in the interface.
+- `url`: Opens a specific URL.
 
 ![Config button](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-button.gif)
 
@@ -163,7 +193,7 @@ The default card configuration allows you to display a set of related entities w
 
 The default card is perfect for grouping and displaying related entities in one place, giving users an at-a-glance view of the vehicle’s key metrics or controls.
 
-![Config Default Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-default-card.gif)
+  ![Config Default Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-default-card.gif)
 
 ## Custom Card
 
@@ -178,6 +208,32 @@ The custom card configuration allows you to integrate any Home Assistant-support
 This powerful feature allows you to extend the functionality of the vehicle status card by adding any custom elements or controls that fit your needs.
 
 ![Config Custom Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-custom-card.gif)
+
+## Tire Pressures Card
+
+The **Tire Pressures Card** allows users to monitor and display the tire pressures of their vehicle in a highly customizable manner. This card provides a visual representation of the vehicle’s tires, allowing users to assign specific entities to each tire and customize the background image, layout, and size.
+
+This card is designed to give users a clear, at-a-glance view of their tire pressure status, ensuring they can easily monitor and respond to any issues that may arise.
+
+### Key Features
+
+- **Custom Background**: Upload or link to a custom image of your vehicle, allowing for a personalized layout.
+- **Tire Pressure Monitoring**: Assign specific Home Assistant entities to each tire to display real-time pressure readings.
+- **Customizable Layout**: You can adjust the size, position, and orientation of the vehicle image and tire indicators.
+- **Responsive Design**: Ensure the card fits neatly within your dashboard, adapting to different screen sizes and layouts.
+
+### Tire Pressure Card Configuration
+
+The card supports complete customization, from setting the vehicle's background image to adjusting the size and positioning of tire pressure indicators.
+
+#### Available Options:
+
+- **Background Image**: Set a custom image of your vehicle (or any image of your choice) as the background to enhance the visual appeal of the tire pressures display.
+- **Tire Entities**: Define which Home Assistant entities should be used for each tire (front left, front right, rear left, rear right).s
+- **Image Size & Position**: Customize the size and position of the background image, ensuring that the tire pressure indicators fit well within the image.
+- **Orientation**: Choose whether the layout should be horizontal or vertical, allowing you to display the tires in the correct orientation based on the background image.
+
+  ![Config Tire Pressures Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-tire-card.gif)
 
 ## Layout Configuration
 
