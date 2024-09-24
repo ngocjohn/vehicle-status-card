@@ -27,6 +27,9 @@ import {
   RangeInfoEntity,
   VehicleStatusCardConfig,
   TireEntity,
+  TireTemplateConfig,
+  DefaultCardConfig,
+  PREVIEW_TYPE,
 } from './types';
 import {
   createCardElement,
@@ -43,15 +46,14 @@ export class VehicleStatusCard extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ type: Object }) private _config!: VehicleStatusCardConfig;
 
-  @state() private _activeCardPreview: string | null = null;
+  @state() private _currentPreview: PREVIEW_TYPE = null;
 
   @state() private _activeCardIndex: null | number | string = null;
   @state() private _activeGroupIndicator: null | number = null;
 
   @state() private _cardPreviewElement: LovelaceCardConfig[] = [];
   @state() private _defaultCardPreview: DefaultCardEntity[] = [];
-  @state() private _tireCardPreview: TireEntity | undefined;
-
+  @state() private _tireCardPreview: TireEntity | undefined = undefined;
   @state() private _buttonCards: ButtonCardEntity = [];
   @state() private _indicatorsGroup: IndicatorGroupEntity = [];
   @state() private _indicatorsSingle: IndicatorEntity = [];
@@ -61,9 +63,10 @@ export class VehicleStatusCard extends LitElement {
   @query('mini-map-box') _miniMapBox!: HTMLElement;
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any; // !: HTMLElement;
 
-  @property({ type: Boolean }) public editMode: boolean = false;
-
-  @property({ type: Boolean }) public preview: boolean = false;
+  constructor() {
+    super();
+    this._handleEditorEvent = this._handleEditorEvent.bind(this);
+  }
 
   public static getStubConfig = (): Record<string, unknown> => {
     return {
@@ -106,9 +109,19 @@ export class VehicleStatusCard extends LitElement {
     this._getIndicators();
     this._getRangeInfo();
     this._getButtonCardsConfig();
-    this._configureCardPreview();
-    this._configureDefaultCardPreview();
-    this._configureTireCardPreview();
+    this._setUpPreview();
+  }
+
+  protected updated(changedProps: PropertyValues) {
+    super.updated(changedProps);
+    if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
+      this.applyTheme(this._config.layout_config.theme_config.theme);
+    }
+
+    // Always configure the card preview when there are config changes
+    if (changedProps.has('_config') && this._currentPreview !== null) {
+      this._configureCardPreview(this._currentPreview);
+    }
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
@@ -123,18 +136,6 @@ export class VehicleStatusCard extends LitElement {
 
     if (changedProps.has('_hass') && this._config.range_info) {
       this._getRangeInfo();
-    }
-
-    if (changedProps.has('_config') && this._activeCardPreview === 'custom') {
-      this._configureCardPreview();
-    }
-
-    if (changedProps.has('_config') && this._activeCardPreview === 'default') {
-      this._configureDefaultCardPreview();
-    }
-
-    if (changedProps.has('_config') && this._activeCardPreview === 'tire') {
-      this._configureTireCardPreview();
     }
 
     if (changedProps.has('_hass') && this._config.button_card && this._config.button_card.length > 0) {
@@ -153,75 +154,66 @@ export class VehicleStatusCard extends LitElement {
     return hasConfigOrEntityChanged(this, changedProps, true);
   }
 
-  protected updated(changedProps: PropertyValues) {
-    super.updated(changedProps);
-    if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
-      this.applyTheme(this._config.layout_config.theme_config.theme);
+  private async _setUpPreview(): Promise<void> {
+    // Ensure a card preview is configured during the first update if applicable
+    if (!this._currentPreview && this._config?.card_preview) {
+      this._currentPreview = 'custom'; // Set a default card preview type if none is set
+    } else if (!this._currentPreview && this._config?.default_card_preview) {
+      this._currentPreview = 'default';
+    } else if (!this._currentPreview && this._config?.tire_preview) {
+      this._currentPreview = 'tire';
+    }
+
+    if (this._currentPreview !== null) {
+      await this._configureCardPreview(this._currentPreview);
+    } else {
+      this._currentPreview = null;
     }
   }
 
-  private async _configureCardPreview(): Promise<void> {
-    if (
-      this._config.card_preview !== undefined &&
-      this._config.card_preview !== null &&
-      this._config.card_preview &&
-      this.isEditorPreview
-    ) {
-      const cardConfig = this._config?.card_preview;
-      if (!cardConfig) return;
-      const cardElement = await createCardElement(this._hass, cardConfig);
-      if (!cardElement) return;
-      this._cardPreviewElement = cardElement;
-      this._activeCardPreview = 'custom';
-      this.requestUpdate();
-    } else {
-      this._cardPreviewElement = [];
-      this._activeCardPreview = null;
+  private async _configureCardPreview(cardType: 'custom' | 'default' | 'tire' | null): Promise<void> {
+    if (!cardType && !this.isEditorPreview) return;
+    let cardConfig: LovelaceCardConfig[] | DefaultCardConfig[] | TireTemplateConfig;
+    let cardElement: LovelaceCardConfig[] | DefaultCardEntity[] | TireEntity | undefined;
+
+    switch (cardType) {
+      case 'custom':
+        cardConfig = this._config?.card_preview as LovelaceCardConfig[];
+        if (!cardConfig) return;
+        cardElement = (await createCardElement(this._hass, cardConfig)) as LovelaceCardConfig[];
+        this._cardPreviewElement = cardElement;
+        break;
+      case 'default':
+        cardConfig = this._config?.default_card_preview as DefaultCardConfig[];
+        if (!cardConfig) return;
+        cardElement = (await getDefaultCard(this._hass, cardConfig)) as DefaultCardEntity[];
+        this._defaultCardPreview = cardElement;
+        break;
+      case 'tire':
+        cardConfig = this._config?.tire_preview as TireTemplateConfig;
+        if (!cardConfig) return;
+        cardElement = (await getTireCard(this._hass, cardConfig)) as TireEntity;
+        this._tireCardPreview = cardElement as TireEntity;
+        break;
+      default:
+        return;
     }
-    return;
+
+    if (!cardElement) {
+      this._resetCardPreviews();
+      return;
+    }
+
+    this._currentPreview = cardType;
+    this.requestUpdate();
   }
 
-  private async _configureDefaultCardPreview(): Promise<void> {
-    if (
-      this._config.default_card_preview !== undefined &&
-      this._config.default_card_preview !== null &&
-      this._config.default_card_preview &&
-      this.isEditorPreview
-    ) {
-      const defaultCardConfig = this._config?.default_card_preview;
-      if (!defaultCardConfig) return;
-      const defaultCard = await getDefaultCard(this._hass, defaultCardConfig);
-      if (!defaultCard) return;
-      this._defaultCardPreview = defaultCard;
-      this._activeCardPreview = 'default';
-      this.requestUpdate();
-    } else {
-      this._defaultCardPreview = [];
-      this._activeCardPreview = null;
-    }
-    return;
-  }
-
-  private async _configureTireCardPreview(): Promise<void> {
-    if (
-      this._config.tire_preview !== undefined &&
-      this._config.tire_preview !== null &&
-      this._config.tire_preview &&
-      this.isEditorPreview
-    ) {
-      const tireCardConfig = this._config?.tire_preview;
-      if (!tireCardConfig) return;
-      const tireCard = await getTireCard(this._hass, tireCardConfig);
-      if (!tireCard) return;
-      this._tireCardPreview = tireCard as TireEntity;
-      this._activeCardPreview = 'tire';
-      this.requestUpdate();
-    } else {
-      this._tireCardPreview = undefined;
-      this._activeCardPreview = null;
-    }
-
-    return;
+  private _resetCardPreviews(): void {
+    this._cardPreviewElement = [];
+    this._defaultCardPreview = [];
+    this._tireCardPreview = undefined;
+    this._currentPreview = null;
+    this.requestUpdate();
   }
 
   private async _configureMiniMapPopup(): Promise<void> {
@@ -269,7 +261,7 @@ export class VehicleStatusCard extends LitElement {
       return html``;
     }
 
-    if (this._activeCardPreview !== null) {
+    if (this._currentPreview !== null && this.isEditorPreview) {
       return this._renderCardPreview();
     }
 
@@ -323,12 +315,12 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _renderCardPreview(): TemplateResult {
-    if (!this._activeCardPreview) return html``;
-    const type = this._activeCardPreview;
+    if (!this._currentPreview) return html``;
+    const type = this._currentPreview;
     const typeMap = {
       default: this._defaultCardPreview.map((card) => this._renderDefaultCardItems(card)),
-      custom: this._cardPreviewElement,
-      tire: this._renderTireCard(this._tireCardPreview || null),
+      custom: this._cardPreviewElement as LovelaceCardConfig[],
+      tire: this._renderTireCard(this._tireCardPreview as TireEntity),
     };
 
     return html`
@@ -550,7 +542,7 @@ export class VehicleStatusCard extends LitElement {
 
     const background = tireConfig.background || TIRE_BG;
     const isHorizontal = tireConfig.horizontal || false;
-    const tireCardTitle = tireConfig.title || 'Tire Pressures';
+    const tireCardTitle = tireConfig.title || '';
     const tireCardSize = tireConfig.image_size || 100;
     const tireValueSize = tireConfig.value_size || 100;
     const tireTop = tireConfig.top || 50;
@@ -723,27 +715,35 @@ export class VehicleStatusCard extends LitElement {
     switch (type) {
       case 'show-button':
         console.log('Show button:', detail.data.buttonIndex);
-        if (this._activeCardPreview !== null) {
-          this._activeCardPreview = null;
+        if (this._currentPreview !== null) {
+          this._currentPreview = null;
         }
         this.updateComplete.then(() => {
           this._vehicleButtonsGrid?.showButton(detail.data.buttonIndex);
         });
         break;
 
+      // case 'toggle-preview':
+      //   const cardType = detail.data.cardType;
+      //   this._activeCardPreview = cardType;
+      //   this.updateComplete.then(() => {
+      //     if (cardType === 'custom') {
+      //       this._configureCustomCardPreview();
+      //     } else if (cardType === 'default') {
+      //       this._configureDefaultCardPreview();
+      //     } else if (cardType === 'tire') {
+      //       this._configureTireCardPreview();
+      //     }
+      //   });
+      //   break;
       case 'toggle-preview':
         const cardType = detail.data.cardType;
-        this._activeCardPreview = cardType;
+        this._currentPreview = cardType;
         this.updateComplete.then(() => {
-          if (cardType === 'custom') {
-            this._configureCardPreview();
-          } else if (cardType === 'default') {
-            this._configureDefaultCardPreview();
-          } else if (cardType === 'tire') {
-            this._configureTireCardPreview();
-          }
+          this._configureCardPreview(cardType);
         });
         break;
+
       case 'toggle-helper':
         this._toggleHelper(detail.data);
         break;

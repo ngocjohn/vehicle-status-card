@@ -261,6 +261,9 @@ export type ButtonCardEntity = Array<{
   tire_card?: TireEntity;
 }>;
 
+export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
+
+/* ----------------------------- LAYOUT CONFIG ----------------------------- */
 export interface LayoutConfig {
   button_grid: {
     rows: number;

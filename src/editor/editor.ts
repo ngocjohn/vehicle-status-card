@@ -14,7 +14,7 @@ import './components/panel-button-card';
 import './components/panel-images-editor';
 import './components/panel-indicator';
 import './components/panel-range-info';
-import { CONFIG_TYPES } from './editor-const';
+import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
@@ -70,7 +70,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   public _cleanConfig(): void {
-    if (['btn_preview', 'card_preview', 'default_card_preview', 'tire_preview'].some((key) => this._config[key])) {
+    if (PREVIEW_CONFIG_TYPES.some((key) => this._config[key])) {
       console.log('Cleaning config of preview keys');
       this._config = {
         ...this._config,
@@ -92,7 +92,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       detail: { data: detail, type },
     });
     this.dispatchEvent(event);
-    console.log('Dispatch Event:', type, detail);
   }
 
   private _handlePanelExpandedChanged(ev: Event, panelKey: string): void {

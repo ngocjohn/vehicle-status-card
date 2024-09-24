@@ -54,8 +54,9 @@ export const CONFIG_TYPES = {
           'Button',
           'Select the button type between default and action. Default opens a card, action triggers an action.'
         ),
-        default_cards: makePanel('Default Card', 'Set the title and items for the default card.'),
+        default_cards: makePanel('Default Card', 'To change order of sections, click and drag the handle.'),
         custom_cards: makePanel('Custom Card', 'Add custom cards to display. Use Lovelace card configuration.'),
+        tire_card: makePanel('Tire Card', 'Set the title and items for the tire card.'),
       },
     },
     layout_config: {
@@ -78,6 +79,8 @@ const DETAIL_CONFIG_VALUES = [
   'left',
 ];
 
+const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview'];
+
 type BUTTON_CARD_ACTIONS =
   | 'add-item'
   | 'add-new-button'
@@ -91,6 +94,7 @@ type BUTTON_CARD_ACTIONS =
   | 'delete-item'
   | 'edit-button'
   | 'edit-item'
+  | 'item-back'
   | 'show-button'
   | 'show-delete';
 
@@ -123,4 +127,32 @@ const ACTIONSELECTOR = [
   },
 ];
 
-export { BUTTON_TYPE, CARD_TYPES, ACTIONSELECTOR, BUTTON_CARD_ACTIONS, DETAIL_CONFIG_VALUES as CONFIG_VALUES };
+const NEW_BUTTON_CONFIG = {
+  button: {
+    primary: 'New Button',
+    secondary: [{ entity: '', attribute: '', state_template: '' }],
+    icon: 'mdi:new-box',
+    notify: '',
+  },
+  button_type: 'default',
+  hide_button: false,
+  card_type: 'default',
+  default_card: [],
+  custom_card: [],
+  button_action: {
+    entity: '',
+    tap_action: { action: 'more-info' },
+    hold_action: { action: 'none' },
+    double_tap_action: { action: 'none' },
+  },
+};
+
+export {
+  BUTTON_TYPE,
+  CARD_TYPES,
+  ACTIONSELECTOR,
+  BUTTON_CARD_ACTIONS,
+  DETAIL_CONFIG_VALUES as CONFIG_VALUES,
+  PREVIEW_CONFIG_TYPES,
+  NEW_BUTTON_CONFIG,
+};

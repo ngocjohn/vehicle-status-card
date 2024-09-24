@@ -365,7 +365,7 @@ export async function getTireCard(
   const rearRightName = tireCard.rear_right?.name || 'Rear Right';
 
   tireCardItem = {
-    title: tireCard.title || 'Tire Pressures',
+    title: tireCard.title || '',
     background: tireCard.background || '',
     image_size: tireCard.image_size || 100,
     value_size: tireCard.value_size || 100,
