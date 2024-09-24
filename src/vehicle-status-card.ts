@@ -30,8 +30,6 @@ import {
   TireTemplateConfig,
   DefaultCardConfig,
   PREVIEW_TYPE,
-  ButtonCardConfig,
-  SecondaryInfoConfig,
 } from './types';
 import {
   createCardElement,
@@ -41,8 +39,6 @@ import {
   getRangeInfo,
   getSingleIndicators,
   getTireCard,
-  getTemplateValue,
-  getTemplateBoolean,
 } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
@@ -63,10 +59,10 @@ export class VehicleStatusCard extends LitElement {
   @state() private _indicatorsSingle: IndicatorEntity = [];
   @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() private _rangeInfo: RangeInfoEntity = [];
-  @state() private _connected = false;
 
-  @query('mini-map-box') _miniMapBox!: HTMLElement;
-  @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any; // !: HTMLElement;
+  @query('mini-map-box') _miniMapBox!: Element;
+  @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any;
+  @query('images-slide') _imagesSlide!: any;
 
   constructor() {
     super();
@@ -105,7 +101,6 @@ export class VehicleStatusCard extends LitElement {
   }
   connectedCallback(): void {
     super.connectedCallback();
-    this._connected = true;
     if (process.env.ROLLUP_WATCH === 'true') {
       window.VehicleCard = this;
     }
@@ -114,7 +109,6 @@ export class VehicleStatusCard extends LitElement {
 
   disconnectedCallback(): void {
     window.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
-    this._connected = false;
     super.disconnectedCallback();
   }
 
@@ -785,19 +779,9 @@ export class VehicleStatusCard extends LitElement {
         });
         break;
 
-      // case 'toggle-preview':
-      //   const cardType = detail.data.cardType;
-      //   this._activeCardPreview = cardType;
-      //   this.updateComplete.then(() => {
-      //     if (cardType === 'custom') {
-      //       this._configureCustomCardPreview();
-      //     } else if (cardType === 'default') {
-      //       this._configureDefaultCardPreview();
-      //     } else if (cardType === 'tire') {
-      //       this._configureTireCardPreview();
-      //     }
-      //   });
-      //   break;
+      case 'show-image':
+        this._imagesSlide?.showImage(detail.data.index);
+        break;
       case 'toggle-preview':
         const cardType = detail.data.cardType;
         this._currentPreview = cardType;

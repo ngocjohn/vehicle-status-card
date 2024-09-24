@@ -101,6 +101,8 @@ type BUTTON_CARD_ACTIONS =
   | 'show-button'
   | 'show-delete';
 
+type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image';
+
 const BUTTON_TYPE = [
   { value: 'default', label: 'Default' },
   { value: 'action', label: 'Action' },
@@ -158,4 +160,5 @@ export {
   DETAIL_CONFIG_VALUES as CONFIG_VALUES,
   PREVIEW_CONFIG_TYPES,
   NEW_BUTTON_CONFIG,
+  IMAGE_CONFIG_ACTIONS,
 };

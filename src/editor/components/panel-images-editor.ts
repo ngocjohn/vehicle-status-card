@@ -10,6 +10,8 @@ import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
 
+import { IMAGE_CONFIG_ACTIONS } from '../editor-const';
+
 import Sortable from 'sortablejs';
 
 @customElement('panel-images-editor')
@@ -139,6 +141,11 @@ export class PanelImagesEditor extends LitElement {
                 <ha-icon icon="mdi:close"></ha-icon>
               </div>
             </div>
+            <div class="item-actions">
+              <div class="action-icon" @click="${this.toggleAction('show-image', idx)}">
+                <ha-icon icon="mdi:eye"></ha-icon>
+              </div>
+            </div>
           </div>
         `
       )}
@@ -235,7 +242,7 @@ export class PanelImagesEditor extends LitElement {
     }
   }
 
-  private toggleAction(action: 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url', idx?: number) {
+  private toggleAction(action: IMAGE_CONFIG_ACTIONS, idx?: number): () => void {
     return () => {
       const updateChanged = (update: any) => {
         this.config = {
@@ -245,7 +252,7 @@ export class PanelImagesEditor extends LitElement {
         this._debouncedConfigChanged();
       };
 
-      if (action === 'showDelete') {
+      const toggleDeleteIcons = () => {
         const items = this.shadowRoot?.querySelectorAll('.item-actions');
         const isHidden = items?.[0].classList.contains('hidden');
 
@@ -254,12 +261,9 @@ export class PanelImagesEditor extends LitElement {
           deleteBtn.innerHTML = isHidden ? 'Cancel' : 'Delete';
           items?.forEach((item) => item.classList.toggle('hidden'));
         }
-      } else if (action === 'delete' && idx !== undefined) {
-        const imagesList = [...(this.config?.images || [])];
-        imagesList.splice(idx, 1);
-        updateChanged(imagesList);
-        this._validateAndReindexImages();
-      } else if (action === 'upload') {
+      };
+
+      const showDropArea = () => {
         const dropArea = this.shadowRoot?.getElementById('drop-area') as HTMLElement;
         const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
         const addImageBtn = this.shadowRoot?.querySelector('.upload-btn') as HTMLElement;
@@ -273,22 +277,50 @@ export class PanelImagesEditor extends LitElement {
           imageList.style.display = 'block';
           addImageBtn.innerHTML = 'Add Image';
         }
-      } else if (action === 'add-new-url') {
-        if (!this._newImage) return;
-        const imageAlert = this.shadowRoot?.querySelector('.image-alert') as HTMLElement;
-        const imagesList = [...(this.config?.images || [])];
-        imagesList.push({ url: this._newImage, title: this._newImage });
-        updateChanged(imagesList);
-        this._newImage = '';
-        if (imageAlert) {
-          imageAlert.classList.remove('hidden');
-          setTimeout(() => {
-            imageAlert.classList.add('hidden');
-          }, 3000);
+      };
+
+      const handleImageAction = () => {
+        switch (action) {
+          case 'showDelete':
+            toggleDeleteIcons();
+            break;
+
+          case 'delete':
+            if (idx !== undefined) {
+              const imagesList = [...(this.config?.images || [])];
+              imagesList.splice(idx, 1);
+              updateChanged(imagesList);
+              this._validateAndReindexImages();
+            }
+            break;
+
+          case 'upload':
+            showDropArea();
+            break;
+
+          case 'add-new-url':
+            if (!this._newImage) return;
+            const imageAlert = this.shadowRoot?.querySelector('.image-alert') as HTMLElement;
+            const imagesList = [...(this.config?.images || [])];
+            imagesList.push({ url: this._newImage, title: this._newImage });
+            updateChanged(imagesList);
+            this._newImage = '';
+            if (imageAlert) {
+              imageAlert.classList.remove('hidden');
+              setTimeout(() => {
+                imageAlert.classList.add('hidden');
+              }, 3000);
+            }
+            break;
+          case 'show-image':
+            this.editor?._dispatchEvent('show-image', { index: idx });
+            break;
         }
-      }
+      };
+      handleImageAction();
     };
   }
+
   private _handlerAlert(ev: CustomEvent): void {
     const alert = ev.target as HTMLElement;
     alert.style.display = 'none';

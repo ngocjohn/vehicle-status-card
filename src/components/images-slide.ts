@@ -27,8 +27,8 @@ export class ImagesSlide extends LitElement {
         <div class="swiper-container">
           <div class="swiper-wrapper">
             ${images.map(
-              (image) => html`
-                <div class="swiper-slide">
+              (image, index) => html`
+                <div class="swiper-slide" id="image-slide-${index}">
                   <img src="${image.url}" />
                 </div>
               `
@@ -64,6 +64,24 @@ export class ImagesSlide extends LitElement {
       slidesPerView: 'auto',
       spaceBetween: 12,
       speed: 500,
+    });
+  }
+
+  public showImage(index: number): void {
+    this.updateComplete.then(() => {
+      const imgId = `image-slide-${index}`;
+      const swiperSlides = this.shadowRoot?.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
+      if (!swiperSlides) return;
+      let targetSlideIndex = -1;
+      swiperSlides.forEach((slide, index) => {
+        if (slide.id === imgId) {
+          targetSlideIndex = index;
+        }
+      });
+
+      if (this.swiper && targetSlideIndex > -1) {
+        this.swiper.slideTo(targetSlideIndex);
+      }
     });
   }
 
