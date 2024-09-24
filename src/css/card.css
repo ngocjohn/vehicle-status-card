@@ -247,11 +247,7 @@ header h1 {
 .grid-item {
   display: flex;
   position: relative;
-  gap: var(--vic-card-padding);
   padding: var(--vic-gutter-gap) var(--vic-card-padding);
-  height: 100%;
-  flex-direction: row;
-  align-items: center;
   background: var(--secondary-background-color, var(--card-background-color, #fff));
   box-shadow: var(--ha-card-box-shadow, none);
   box-sizing: border-box;
@@ -268,12 +264,23 @@ header h1 {
   }
 }
 
+.grid-item .click-container {
+  display: flex;
+  height: 100%;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--vic-card-padding);
+}
+
 /* @media screen and (max-width: 768px) {
   .grid-item {
     padding: 8px;
     gap: 0.5rem;
   }
 } */
+
+
+
 .grid-item .item-notify {
   display: flex;
   position: absolute;

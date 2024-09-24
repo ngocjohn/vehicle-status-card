@@ -63,23 +63,25 @@ export class VehicleButtonsGrid extends LitElement {
                       class="grid-item click-shrink"
                       @click=${() => this._handleClick(index)}
                     >
-                      <div class="item-icon">
-                        <div class="icon-background">
-                          <ha-icon id="${`button-action-${index}`}" .icon="${icon}"></ha-icon>
+                      <div class="click-container" id="${`button-action-${index}`}">
+                        <div class="item-icon">
+                          <div class="icon-background">
+                            <ha-icon .icon="${icon}"></ha-icon>
+                          </div>
+                          ${!hideNotify
+                            ? html`
+                                <div class="item-notify ${notify ? '' : 'hidden'}">
+                                  <ha-icon icon="mdi:alert-circle"></ha-icon>
+                                </div>
+                              `
+                            : nothing}
                         </div>
-                        ${!hideNotify
-                          ? html`
-                              <div class="item-notify ${notify ? '' : 'hidden'}">
-                                <ha-icon icon="mdi:alert-circle"></ha-icon>
-                              </div>
-                            `
-                          : nothing}
-                      </div>
-                      <div class="item-content">
-                        <div class="primary">
-                          <span class="title">${primary}</span>
+                        <div class="item-content">
+                          <div class="primary">
+                            <span class="title">${primary}</span>
+                          </div>
+                          <span class="secondary">${secondary}</span>
                         </div>
-                        <span class="secondary">${secondary}</span>
                       </div>
                     </div>
                   `;
@@ -113,23 +115,25 @@ export class VehicleButtonsGrid extends LitElement {
                 class="grid-item click-shrink"
                 @click=${() => this._handleClick(buttonIndex)}
               >
-                <div class="item-icon">
-                  <div class="icon-background">
-                    <ha-icon .icon="${icon}" id="${`button-action-${buttonIndex}`}"></ha-icon>
+                <div class="click-container" id="${`button-action-${buttonIndex}`}">
+                  <div class="item-icon">
+                    <div class="icon-background">
+                      <ha-icon .icon="${icon}"></ha-icon>
+                    </div>
+                    ${!hideNotify
+                      ? html`
+                          <div class="item-notify ${notify ? '' : 'hidden'}">
+                            <ha-icon icon="mdi:alert-circle"></ha-icon>
+                          </div>
+                        `
+                      : nothing}
                   </div>
-                  ${!hideNotify
-                    ? html`
-                        <div class="item-notify ${notify ? '' : 'hidden'}">
-                          <ha-icon icon="mdi:alert-circle"></ha-icon>
-                        </div>
-                      `
-                    : nothing}
-                </div>
-                <div class="item-content">
-                  <div class="primary">
-                    <span class="title">${primary}</span>
+                  <div class="item-content">
+                    <div class="primary">
+                      <span class="title">${primary}</span>
+                    </div>
+                    <span class="secondary">${secondary}</span>
                   </div>
-                  <span class="secondary">${secondary}</span>
                 </div>
               </div>
             `;
