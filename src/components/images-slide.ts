@@ -62,6 +62,7 @@ export class ImagesSlide extends LitElement {
 
       roundLengths: true,
       slidesPerView: 'auto',
+      spaceBetween: 12,
       speed: 500,
     });
   }
@@ -89,7 +90,7 @@ export class ImagesSlide extends LitElement {
           justify-content: center;
           align-items: center;
           width: 100%;
-          max-height: 125px;
+          height: 100%;
         }
         .swiper-slide:active {
           scale: 1.02;
@@ -97,8 +98,9 @@ export class ImagesSlide extends LitElement {
         .swiper-slide img {
           width: 100%;
           height: 100%;
-          max-height: 150px;
           object-fit: scale-down;
+          max-height: var(--vic-images-slide-height, 150px);
+          max-width: var(--vic-images-slide-width, 450px);
         }
         .swiper-slide .image-index {
           position: absolute;
