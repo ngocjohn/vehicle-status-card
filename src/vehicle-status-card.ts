@@ -30,6 +30,8 @@ import {
   TireTemplateConfig,
   DefaultCardConfig,
   PREVIEW_TYPE,
+  ButtonCardConfig,
+  SecondaryInfoConfig,
 } from './types';
 import {
   createCardElement,
@@ -39,6 +41,8 @@ import {
   getRangeInfo,
   getSingleIndicators,
   getTireCard,
+  getTemplateValue,
+  getTemplateBoolean,
 } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
@@ -59,6 +63,7 @@ export class VehicleStatusCard extends LitElement {
   @state() private _indicatorsSingle: IndicatorEntity = [];
   @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() private _rangeInfo: RangeInfoEntity = [];
+  @state() private _connected = false;
 
   @query('mini-map-box') _miniMapBox!: HTMLElement;
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any; // !: HTMLElement;
@@ -80,6 +85,13 @@ export class VehicleStatusCard extends LitElement {
   }
   set hass(hass: HomeAssistant) {
     this._hass = hass;
+    if (this._buttonCards) {
+      this._buttonCards.forEach((button) => {
+        button.custom_card.forEach((card) => {
+          card.hass = hass;
+        });
+      });
+    }
   }
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
@@ -93,6 +105,7 @@ export class VehicleStatusCard extends LitElement {
   }
   connectedCallback(): void {
     super.connectedCallback();
+    this._connected = true;
     if (process.env.ROLLUP_WATCH === 'true') {
       window.VehicleCard = this;
     }
@@ -101,20 +114,49 @@ export class VehicleStatusCard extends LitElement {
 
   disconnectedCallback(): void {
     window.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    this._connected = false;
     super.disconnectedCallback();
   }
 
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    this._getIndicators();
-    this._getRangeInfo();
-    this._getButtonCardsConfig();
+    this._handleFirstUpdated();
     this._setUpPreview();
+  }
+
+  private _handleFirstUpdated(): void {
+    if (!this._config || !this._hass) return;
+    if (this._config.button_card && this._config.button_card.length > 0) {
+      this._getButtonCardsConfig();
+    }
+
+    if (this._config.indicators.single && this._config.indicators.single.length > 0) {
+      this._getSingleIndicators();
+    }
+
+    if (this._config.indicators.group && this._config.indicators.group.length > 0) {
+      this._getGroupIndicators();
+    }
+
+    if (this._config.range_info && this._config.range_info.length > 0) {
+      this._getRangeInfo();
+    }
   }
 
   protected updated(changedProps: PropertyValues) {
     super.updated(changedProps);
-    if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
+    if (!this._config || !this._hass) return;
+
+    const oldHass = changedProps.get('_hass') as HomeAssistant | undefined;
+    const oldConfig = changedProps.get('_config') as VehicleStatusCardConfig | undefined;
+
+    // Apply theme when the theme configuration changes
+    if (
+      !oldHass ||
+      !oldConfig ||
+      oldHass.themes !== this._hass.themes ||
+      oldConfig.layout_config?.theme_config?.theme !== this._config.layout_config?.theme_config?.theme
+    ) {
       this.applyTheme(this._config.layout_config.theme_config.theme);
     }
 
@@ -130,15 +172,19 @@ export class VehicleStatusCard extends LitElement {
       return false;
     }
 
-    if (changedProps.has('_hass') && this._config.indicators) {
-      this._getIndicators();
+    if (changedProps.has('_hass') && this._indicatorsSingle) {
+      this._getSingleIndicators();
     }
 
-    if (changedProps.has('_hass') && this._config.range_info) {
+    if (changedProps.has('_hass') && this._indicatorsGroup) {
+      this._getGroupIndicators();
+    }
+
+    if (changedProps.has('_hass') && this._rangeInfo) {
       this._getRangeInfo();
     }
 
-    if (changedProps.has('_hass') && this._config.button_card && this._config.button_card.length > 0) {
+    if (changedProps.has('_hass') && this._buttonCards) {
       this._getButtonCardsConfig();
     }
 
@@ -243,17 +289,21 @@ export class VehicleStatusCard extends LitElement {
     this._buttonCards = (await getButtonCard(this._hass, this._config)) ?? [];
   }
 
-  private async _getIndicators(): Promise<void> {
-    if (!this._config.indicators) return;
-    // Handle single indicators (IndicatorConfig)
-    this._indicatorsSingle = (await getSingleIndicators(this._hass, this._config)) ?? [];
-    // Handle group indicators (IndicatorGroupConfig)
-    this._indicatorsGroup = (await getGroupIndicators(this._hass, this._config)) ?? [];
+  private async _getSingleIndicators(): Promise<void> {
+    if (!this._config.indicators.single) return;
+    if (this._config.indicators.single && this._config.indicators.single.length > 0) {
+      // Handle single indicators (IndicatorConfig)
+      this._indicatorsSingle = (await getSingleIndicators(this._hass, this._config.indicators.single)) ?? [];
+    }
   }
 
+  private async _getGroupIndicators(): Promise<void> {
+    if (!this._config.indicators.group) return;
+    this._indicatorsGroup = (await getGroupIndicators(this._hass, this._config.indicators.group)) ?? [];
+  }
   private async _getRangeInfo(): Promise<void> {
     if (!this._config.range_info) return;
-    this._rangeInfo = (await getRangeInfo(this._hass, this._config)) ?? [];
+    this._rangeInfo = (await getRangeInfo(this._hass, this._config.range_info)) ?? [];
   }
 
   protected render(): TemplateResult {
@@ -334,7 +384,19 @@ export class VehicleStatusCard extends LitElement {
 
   private _renderImagesSlide(): TemplateResult {
     if (!this._config.images || this._config.images.length === 0) return html``;
-    return html` <div id="images"><images-slide .images=${this._config.images}> </images-slide></div> `;
+    const max_height = this._config.layout_config?.images_swipe?.max_height || 150;
+    const max_width = this._config.layout_config?.images_swipe?.max_width || 450;
+
+    const styleImages = {
+      '--vic-images-slide-height': `${max_height}px`,
+      '--vic-images-slide-width': `${max_width}px`,
+    };
+
+    return html`
+      <div id="images" style=${styleMap(styleImages)}>
+        <images-slide .images=${this._config.images}> </images-slide>
+      </div>
+    `;
   }
 
   private _renderIndicators(): TemplateResult {

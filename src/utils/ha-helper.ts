@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
-
 import { LovelaceCardConfig } from 'custom-card-helpers';
 
 import {
@@ -15,59 +14,49 @@ import {
   TireTemplateConfig,
   TireEntity,
   VehicleStatusCardConfig,
+  IndicatorConfig,
+  IndicatorGroupConfig,
+  RangeInfoConfig,
 } from '../types';
 
-export async function getTemplateValue(hass: HomeAssistant, templateConfig: string): Promise<string> {
-  const response = await fetch('/api/template', {
-    body: JSON.stringify({ template: templateConfig }),
-    headers: {
-      Authorization: `Bearer ${hass.auth.data.access_token}`,
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-  });
-
-  if (!response.ok) {
-    return '';
-  }
-
-  const data = await response.text();
-  return data;
-}
-
-export async function getBooleanTemplate(hass: HomeAssistant, templateConfig: string): Promise<boolean> {
-  if (!templateConfig) {
+export async function getTemplateBoolean(hass: HomeAssistant, templateConfig: string): Promise<boolean> {
+  if (!hass || !templateConfig) {
     return true;
   }
 
-  // console.log('Template:', templateConfig);
-  const response = await fetch('/api/template', {
-    body: JSON.stringify({ template: templateConfig }),
-    headers: {
-      Authorization: `Bearer ${hass.auth.data.access_token}`,
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-  });
-
-  if (!response.ok) {
+  try {
+    // Prepare the body with the template
+    const result = await hass.callApi<string>('POST', 'template', { template: templateConfig });
+    if (result.trim().toLowerCase() === 'true') {
+      return true;
+    }
     return false;
+  } catch (error) {
+    throw new Error(`Error evaluating template: ${error}`);
+  }
+}
+
+export async function getTemplateValue(hass: HomeAssistant, templateConfig: string): Promise<string> {
+  if (!hass || !templateConfig) {
+    return '';
   }
 
-  const data = await response.text();
-  return data.trim().toLowerCase() === 'true';
+  try {
+    // Prepare the body with the template
+    const result = await hass.callApi<string>('POST', 'template', { template: templateConfig });
+    return result;
+  } catch (error) {
+    throw new Error(`Error evaluating template: ${error}`);
+  }
 }
 
 export async function getSingleIndicators(
   hass: HomeAssistant,
-  config: VehicleStatusCardConfig
+  single: IndicatorConfig[]
 ): Promise<IndicatorEntity | void> {
   const singleIndicator: IndicatorEntity = [];
-  if (!config.indicators.single) {
-    return;
-  }
 
-  for (const indicator of config.indicators.single) {
+  for (const indicator of single) {
     if (!indicator.entity) {
       continue;
     }
@@ -77,13 +66,12 @@ export async function getSingleIndicators(
     if (!stateObj) {
       continue;
     }
-    let iconValue = '';
 
-    if (indicator.icon_template) {
-      iconValue = await getTemplateValue(hass, indicator.icon_template);
-    } else if (indicator.icon) {
-      iconValue = indicator.icon;
-    }
+    const iconValue = indicator.icon_template
+      ? await getTemplateValue(hass, indicator.icon_template)
+      : indicator.icon
+        ? indicator.icon
+        : '';
 
     const state = indicator.state_template
       ? await getTemplateValue(hass, indicator.state_template)
@@ -91,7 +79,7 @@ export async function getSingleIndicators(
         ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
         : hass.formatEntityState(stateObj);
 
-    const visibility = indicator.visibility ? await getBooleanTemplate(hass, indicator.visibility) : true;
+    const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
 
     singleIndicator.push({ entity, icon: iconValue, state, visibility });
   }
@@ -100,19 +88,16 @@ export async function getSingleIndicators(
 
 export async function getGroupIndicators(
   hass: HomeAssistant,
-  config: VehicleStatusCardConfig
+  groups: IndicatorGroupConfig[]
 ): Promise<IndicatorGroupEntity | void> {
   const groupIndicator: IndicatorGroupEntity = [];
-  if (!config.indicators.group) {
-    return;
-  }
 
-  for (const group of config.indicators.group) {
+  for (const group of groups) {
     groupIndicator.push({
       icon: group.icon,
       items: [],
       name: group.name,
-      visibility: await getBooleanTemplate(hass, group.visibility),
+      visibility: await getTemplateBoolean(hass, group.visibility),
     });
 
     if (!group.items) {
@@ -156,14 +141,11 @@ export async function getGroupIndicators(
 
 export async function getRangeInfo(
   hass: HomeAssistant,
-  config: VehicleStatusCardConfig
+  rangeConfig: RangeInfoConfig[]
 ): Promise<RangeInfoEntity | void> {
-  if (!config.range_info) {
-    return;
-  }
   const rangeInfo: RangeInfoEntity = [];
 
-  for (const range of config.range_info) {
+  for (const range of rangeConfig) {
     if (!range.energy_level || !range.range_level) {
       continue;
     }
@@ -201,8 +183,10 @@ export async function getRangeInfo(
 
     rangeInfo.push({
       energy: energyState,
+      energy_entity: energyEntity,
       icon: energyIcon,
       level: levelState,
+      level_entity: rangeEntity,
       progress_color: progressColor,
       range: rangeState,
     });
@@ -403,7 +387,7 @@ export async function getButtonCard(
     const buttonDetails = {
       button_action: btmCrd.button_action,
       icon: button.icon || '',
-      notify: button.notify ? await getBooleanTemplate(hass, button.notify) : false,
+      notify: button.notify ? await getTemplateBoolean(hass, button.notify) : false,
       primary: button.primary || '',
       secondary: (await _getSecondaryStates(hass, button.secondary)) || '',
     };
