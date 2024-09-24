@@ -18,6 +18,12 @@
 	align-items: center;
 }
 
+.sortable-ghost {
+	opacity: 0.5;
+	background: var(--primary-color);
+	border-radius: var(--ha-card-border-radius, 12px);
+}
+
 .tab-wrapper {
 	display: flex;
 	flex-direction: column;

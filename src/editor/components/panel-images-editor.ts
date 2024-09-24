@@ -95,6 +95,7 @@ export class PanelImagesEditor extends LitElement {
         this._sortable = new Sortable(imagesList, {
           animation: 150,
           handle: '.handle',
+          ghostClass: 'sortable-ghost',
           onEnd: (evt: Event) => {
             this._handleSort(evt);
           },

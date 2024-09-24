@@ -49,10 +49,10 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       this._cleanConfig();
     }
 
-    // if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
-    //   console.log('Init sortable');
-    //   this._imagesEditor.initSortable();
-    // }
+    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
+      console.log('Init sortable');
+      this._imagesEditor.initSortable();
+    }
   }
 
   protected render(): TemplateResult {
