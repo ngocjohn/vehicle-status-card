@@ -1,9 +1,8 @@
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
+import mapstyle from '../css/leaflet.css';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-
-import mapstyle from '../css/leaflet.css';
 
 interface Address {
   city: string;
@@ -240,14 +239,14 @@ export class MiniMapBox extends LitElement {
 
   render(): TemplateResult {
     return html`
-      <div class="map-wrapper">
+      <ha-card class="map-wrapper">
         <div id="map"></div>
         <div class="map-overlay"></div>
         <div class="reset-button" @click=${this.updateMap}>
           <ha-icon icon="mdi:compass"></ha-icon>
         </div>
         ${this._renderAddress()}
-      </div>
+      </ha-card>
     `;
   }
 
@@ -292,6 +291,9 @@ export class MiniMapBox extends LitElement {
           position: relative;
           width: 100%;
           height: 100%;
+          border: none !important;
+          box-shadow: none !important;
+          background: transparent !important;
         }
         .map-overlay {
           position: absolute;

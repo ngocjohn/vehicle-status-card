@@ -90,6 +90,7 @@ export class PanelButtonCard extends LitElement {
       console.log('Init sortable');
       this._sortable = new Sortable(list, {
         handle: '.handle',
+        ghostClass: 'sortable-ghost',
         animation: 150,
         onEnd: (evt) => {
           this._handleSortEnd(evt);

@@ -80,6 +80,13 @@ const DETAIL_CONFIG_VALUES = [
   'visibility',
   'state_template',
   'icon_template',
+  'max_height',
+  'max_width',
+  'autoplay',
+  'loop',
+  'delay',
+  'speed',
+  'effect',
 ];
 
 const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview'];
@@ -100,6 +107,8 @@ type BUTTON_CARD_ACTIONS =
   | 'item-back'
   | 'show-button'
   | 'show-delete';
+
+type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image';
 
 const BUTTON_TYPE = [
   { value: 'default', label: 'Default' },
@@ -158,4 +167,5 @@ export {
   DETAIL_CONFIG_VALUES as CONFIG_VALUES,
   PREVIEW_CONFIG_TYPES,
   NEW_BUTTON_CONFIG,
+  IMAGE_CONFIG_ACTIONS,
 };

@@ -18,6 +18,12 @@
 	align-items: center;
 }
 
+.sortable-ghost {
+	opacity: 0.5;
+	background: var(--primary-color);
+	border-radius: var(--ha-card-border-radius, 12px);
+}
+
 .tab-wrapper {
 	display: flex;
 	flex-direction: column;
@@ -331,7 +337,7 @@ span.info-alert {
 
 .sub-panel-config {
 	opacity: 1;
-	padding-top: var(--vic-gutter-gap);
+	padding-top: var(--vic-card-padding);
 	max-height: 1000px;
 	transition: all 400ms ease-in-out;
 }

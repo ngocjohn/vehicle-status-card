@@ -6,6 +6,7 @@ import { Pagination } from 'swiper/modules';
 
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
+
 import {
   ButtonCardEntity,
   ButtonEntity,
@@ -45,7 +46,7 @@ export class VehicleButtonsGrid extends LitElement {
     }));
 
     return html`
-      <section id="button-swiper">
+      <ha-card id="button-swiper">
         ${useSwiper
           ? html`
               <div class="swiper-container">
@@ -88,7 +89,7 @@ export class VehicleButtonsGrid extends LitElement {
                 })}
               </div>
             `}
-      </section>
+      </ha-card>
     `;
   }
 
@@ -274,7 +275,10 @@ export class VehicleButtonsGrid extends LitElement {
         #button-swiper {
           --swiper-pagination-bottom: -8px;
           --swiper-theme-color: var(--primary-text-color);
-          padding-bottom: 12px;
+          padding: 0 0 var(--vic-card-padding) 0;
+          border: none !important;
+          background: none !important;
+          overflow: visible;
         }
         .swiper-pagination-bullet {
           background-color: var(--swiper-theme-color);

@@ -49,10 +49,10 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       this._cleanConfig();
     }
 
-    // if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
-    //   console.log('Init sortable');
-    //   this._imagesEditor.initSortable();
-    // }
+    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
+      console.log('Init sortable');
+      this._imagesEditor.initSortable();
+    }
   }
 
   protected render(): TemplateResult {
@@ -137,7 +137,11 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderImages(): TemplateResult {
-    return html`<panel-images-editor .editor=${this} .config=${this._config}></panel-images-editor>`;
+    return html`<panel-images-editor
+      .hass=${this._hass}
+      .editor=${this}
+      .config=${this._config}
+    ></panel-images-editor>`;
   }
 
   private _renderIndicators(): TemplateResult {

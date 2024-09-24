@@ -60,8 +60,9 @@ export class VehicleStatusCard extends LitElement {
   @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() private _rangeInfo: RangeInfoEntity = [];
 
-  @query('mini-map-box') _miniMapBox!: HTMLElement;
-  @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any; // !: HTMLElement;
+  @query('mini-map-box') _miniMapBox!: Element;
+  @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any;
+  @query('images-slide') _imagesSlide!: any;
 
   constructor() {
     super();
@@ -80,6 +81,13 @@ export class VehicleStatusCard extends LitElement {
   }
   set hass(hass: HomeAssistant) {
     this._hass = hass;
+    if (this._buttonCards) {
+      this._buttonCards.forEach((button) => {
+        button.custom_card.forEach((card) => {
+          card.hass = hass;
+        });
+      });
+    }
   }
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
@@ -106,15 +114,43 @@ export class VehicleStatusCard extends LitElement {
 
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    this._getIndicators();
-    this._getRangeInfo();
-    this._getButtonCardsConfig();
+    this._handleFirstUpdated();
     this._setUpPreview();
+  }
+
+  private _handleFirstUpdated(): void {
+    if (!this._config || !this._hass) return;
+    if (this._config.button_card && this._config.button_card.length > 0) {
+      this._getButtonCardsConfig();
+    }
+
+    if (this._config.indicators.single && this._config.indicators.single.length > 0) {
+      this._getSingleIndicators();
+    }
+
+    if (this._config.indicators.group && this._config.indicators.group.length > 0) {
+      this._getGroupIndicators();
+    }
+
+    if (this._config.range_info && this._config.range_info.length > 0) {
+      this._getRangeInfo();
+    }
   }
 
   protected updated(changedProps: PropertyValues) {
     super.updated(changedProps);
-    if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
+    if (!this._config || !this._hass) return;
+
+    const oldHass = changedProps.get('_hass') as HomeAssistant | undefined;
+    const oldConfig = changedProps.get('_config') as VehicleStatusCardConfig | undefined;
+
+    // Apply theme when the theme configuration changes
+    if (
+      !oldHass ||
+      !oldConfig ||
+      oldHass.themes !== this._hass.themes ||
+      oldConfig.layout_config?.theme_config?.theme !== this._config.layout_config?.theme_config?.theme
+    ) {
       this.applyTheme(this._config.layout_config.theme_config.theme);
     }
 
@@ -130,15 +166,19 @@ export class VehicleStatusCard extends LitElement {
       return false;
     }
 
-    if (changedProps.has('_hass') && this._config.indicators) {
-      this._getIndicators();
+    if (changedProps.has('_hass') && this._indicatorsSingle) {
+      this._getSingleIndicators();
     }
 
-    if (changedProps.has('_hass') && this._config.range_info) {
+    if (changedProps.has('_hass') && this._indicatorsGroup) {
+      this._getGroupIndicators();
+    }
+
+    if (changedProps.has('_hass') && this._rangeInfo) {
       this._getRangeInfo();
     }
 
-    if (changedProps.has('_hass') && this._config.button_card && this._config.button_card.length > 0) {
+    if (changedProps.has('_hass') && this._buttonCards) {
       this._getButtonCardsConfig();
     }
 
@@ -243,17 +283,21 @@ export class VehicleStatusCard extends LitElement {
     this._buttonCards = (await getButtonCard(this._hass, this._config)) ?? [];
   }
 
-  private async _getIndicators(): Promise<void> {
-    if (!this._config.indicators) return;
-    // Handle single indicators (IndicatorConfig)
-    this._indicatorsSingle = (await getSingleIndicators(this._hass, this._config)) ?? [];
-    // Handle group indicators (IndicatorGroupConfig)
-    this._indicatorsGroup = (await getGroupIndicators(this._hass, this._config)) ?? [];
+  private async _getSingleIndicators(): Promise<void> {
+    if (!this._config.indicators.single) return;
+    if (this._config.indicators.single && this._config.indicators.single.length > 0) {
+      // Handle single indicators (IndicatorConfig)
+      this._indicatorsSingle = (await getSingleIndicators(this._hass, this._config.indicators.single)) ?? [];
+    }
   }
 
+  private async _getGroupIndicators(): Promise<void> {
+    if (!this._config.indicators.group) return;
+    this._indicatorsGroup = (await getGroupIndicators(this._hass, this._config.indicators.group)) ?? [];
+  }
   private async _getRangeInfo(): Promise<void> {
     if (!this._config.range_info) return;
-    this._rangeInfo = (await getRangeInfo(this._hass, this._config)) ?? [];
+    this._rangeInfo = (await getRangeInfo(this._hass, this._config.range_info)) ?? [];
   }
 
   protected render(): TemplateResult {
@@ -334,7 +378,12 @@ export class VehicleStatusCard extends LitElement {
 
   private _renderImagesSlide(): TemplateResult {
     if (!this._config.images || this._config.images.length === 0) return html``;
-    return html` <div id="images"><images-slide .images=${this._config.images}> </images-slide></div> `;
+
+    return html`
+      <div id="images">
+        <images-slide .images=${this._config.images} .config=${this._config}> </images-slide>
+      </div>
+    `;
   }
 
   private _renderIndicators(): TemplateResult {
@@ -723,19 +772,9 @@ export class VehicleStatusCard extends LitElement {
         });
         break;
 
-      // case 'toggle-preview':
-      //   const cardType = detail.data.cardType;
-      //   this._activeCardPreview = cardType;
-      //   this.updateComplete.then(() => {
-      //     if (cardType === 'custom') {
-      //       this._configureCustomCardPreview();
-      //     } else if (cardType === 'default') {
-      //       this._configureDefaultCardPreview();
-      //     } else if (cardType === 'tire') {
-      //       this._configureTireCardPreview();
-      //     }
-      //   });
-      //   break;
+      case 'show-image':
+        this._imagesSlide?.showImage(detail.data.index);
+        break;
       case 'toggle-preview':
         const cardType = detail.data.cardType;
         this._currentPreview = cardType;

@@ -94,8 +94,10 @@ export interface RangeItemConfig {
 
 export type RangeInfoEntity = Array<{
   energy: string;
+  energy_entity: string;
   icon: string;
   level: number;
+  level_entity: string;
   progress_color: string;
   range: string;
 }>;
@@ -271,7 +273,15 @@ export interface LayoutConfig {
     rows: number;
     swipe: boolean;
   };
-
+  images_swipe: {
+    max_height: number;
+    max_width: number;
+    autoplay: boolean;
+    loop: boolean;
+    delay: number;
+    speed: number;
+    effect: 'slide' | 'fade' | 'coverflow';
+  };
   hide: {
     button_notify: boolean;
     buttons: boolean;
