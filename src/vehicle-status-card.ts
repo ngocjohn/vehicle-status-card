@@ -378,17 +378,10 @@ export class VehicleStatusCard extends LitElement {
 
   private _renderImagesSlide(): TemplateResult {
     if (!this._config.images || this._config.images.length === 0) return html``;
-    const max_height = this._config.layout_config?.images_swipe?.max_height || 150;
-    const max_width = this._config.layout_config?.images_swipe?.max_width || 450;
-
-    const styleImages = {
-      '--vic-images-slide-height': `${max_height}px`,
-      '--vic-images-slide-width': `${max_width}px`,
-    };
 
     return html`
-      <div id="images" style=${styleMap(styleImages)}>
-        <images-slide .images=${this._config.images}> </images-slide>
+      <div id="images">
+        <images-slide .images=${this._config.images} .config=${this._config}> </images-slide>
       </div>
     `;
   }

@@ -137,7 +137,11 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderImages(): TemplateResult {
-    return html`<panel-images-editor .editor=${this} .config=${this._config}></panel-images-editor>`;
+    return html`<panel-images-editor
+      .hass=${this._hass}
+      .editor=${this}
+      .config=${this._config}
+    ></panel-images-editor>`;
   }
 
   private _renderIndicators(): TemplateResult {

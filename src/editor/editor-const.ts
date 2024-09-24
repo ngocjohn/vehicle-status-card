@@ -80,6 +80,13 @@ const DETAIL_CONFIG_VALUES = [
   'visibility',
   'state_template',
   'icon_template',
+  'max_height',
+  'max_width',
+  'autoplay',
+  'loop',
+  'delay',
+  'speed',
+  'effect',
 ];
 
 const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview'];

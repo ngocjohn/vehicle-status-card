@@ -276,6 +276,11 @@ export interface LayoutConfig {
   images_swipe: {
     max_height: number;
     max_width: number;
+    autoplay: boolean;
+    loop: boolean;
+    delay: number;
+    speed: number;
+    effect: 'slide' | 'fade' | 'coverflow';
   };
   hide: {
     button_notify: boolean;

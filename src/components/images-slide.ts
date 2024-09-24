@@ -1,16 +1,19 @@
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
+import { styleMap } from 'lit-html/directives/style-map.js';
+
 import Swiper from 'swiper';
-import { Autoplay, Pagination } from 'swiper/modules';
+import { Autoplay, Pagination, EffectFade, EffectCoverflow } from 'swiper/modules';
 
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
-import { ImageConfig } from '../types';
+import { ImageConfig, VehicleStatusCardConfig } from '../types';
+import { SwiperOptions } from 'swiper/types';
 
 @customElement('images-slide')
 export class ImagesSlide extends LitElement {
   @property({ type: Array }) images: Array<ImageConfig> = [];
-
+  @state() private config!: VehicleStatusCardConfig;
   @state() swiper: null | Swiper = null;
 
   protected firstUpdated(changeProperties: PropertyValues): void {
@@ -21,9 +24,17 @@ export class ImagesSlide extends LitElement {
   }
 
   protected render(): TemplateResult {
+    const max_height = this.config.layout_config?.images_swipe?.max_height || 150;
+    const max_width = this.config.layout_config?.images_swipe?.max_width || 450;
+
+    const styleImages = {
+      '--vic-images-slide-height': `${max_height}px`,
+      '--vic-images-slide-width': `${max_width}px`,
+    };
+
     const images = this.images || [];
     return html`
-      <section id="swiper">
+      <section id="swiper" style=${styleMap(styleImages)}>
         <div class="swiper-container">
           <div class="swiper-wrapper">
             ${images.map(
@@ -42,29 +53,63 @@ export class ImagesSlide extends LitElement {
 
   private initSwiper(): void {
     // Destroy the existing Swiper instance if it exists
-
-    const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
+    const config = this.config.layout_config?.images_swipe || {};
+    const swiperCon = this.shadowRoot?.querySelector('.swiper-container') as HTMLElement;
     if (!swiperCon) return;
     const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
-    this.swiper = new Swiper(swiperCon as HTMLElement, {
-      centeredSlides: true,
-      grabCursor: true,
-      keyboard: {
-        enabled: true,
-        onlyInViewport: true,
-      },
-      loop: true,
-      modules: [Pagination, Autoplay],
-      pagination: {
-        clickable: true,
-        el: paginationEl,
-      },
 
-      roundLengths: true,
-      slidesPerView: 'auto',
-      spaceBetween: 12,
-      speed: 500,
-    });
+    const swiperConfig = () => {
+      const defaultConfig: SwiperOptions = {
+        modules: [Pagination, Autoplay, EffectFade, EffectCoverflow],
+        centeredSlides: true,
+        grabCursor: true,
+        keyboard: {
+          enabled: true,
+          onlyInViewport: true,
+        },
+        loop: config.loop || true,
+        speed: config.speed || 500,
+        pagination: {
+          clickable: true,
+          el: paginationEl,
+        },
+        roundLengths: true,
+        slidesPerView: 'auto',
+        spaceBetween: 12,
+      };
+
+      const effectConfig: Partial<Record<string, Partial<SwiperOptions>>> = {
+        slide: {},
+        fade: {
+          effect: 'fade',
+          fadeEffect: { crossFade: true },
+        },
+        coverflow: {
+          effect: 'coverflow',
+          coverflowEffect: {
+            rotate: 50,
+            stretch: 0,
+            depth: 100,
+            modifier: 1,
+            slideShadows: true,
+          },
+        },
+      };
+
+      if (config.autoplay === true) {
+        Object.assign(defaultConfig, {
+          autoplay: {
+            delay: config.delay || 5000,
+            disableOnInteraction: false,
+          },
+        });
+      }
+
+      Object.assign(defaultConfig, effectConfig[config.effect || 'slide']);
+      return defaultConfig;
+    };
+
+    this.swiper = new Swiper(swiperCon, swiperConfig());
   }
 
   public showImage(index: number): void {
