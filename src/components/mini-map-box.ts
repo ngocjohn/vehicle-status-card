@@ -1,8 +1,9 @@
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
-import mapstyle from '../css/leaflet.css';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
+
+import mapstyle from '../css/leaflet.css';
 
 interface Address {
   city: string;

@@ -1,14 +1,13 @@
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators';
 import { styleMap } from 'lit-html/directives/style-map.js';
-
+import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
 import { Autoplay, Pagination, EffectFade, EffectCoverflow } from 'swiper/modules';
+import { SwiperOptions } from 'swiper/types';
 
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
 import { ImageConfig, VehicleStatusCardConfig } from '../types';
-import { SwiperOptions } from 'swiper/types';
 
 @customElement('images-slide')
 export class ImagesSlide extends LitElement {

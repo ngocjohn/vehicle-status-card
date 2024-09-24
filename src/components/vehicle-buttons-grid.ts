@@ -6,7 +6,6 @@ import { Pagination } from 'swiper/modules';
 
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
-
 import {
   ButtonCardEntity,
   ButtonEntity,
