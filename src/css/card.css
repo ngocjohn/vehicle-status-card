@@ -110,22 +110,22 @@ header h1 {
   flex-wrap: nowrap !important;
   justify-content: center;
   text-wrap: nowrap;
+}
 
-  .item {
-    display: flex;
-    align-items: center;
-    gap: 4px !important;
-  }
+.info-box.range .item {
+  display: flex;
+  align-items: center;
+  gap: 4px !important;
 }
 
 .info-box .item {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
 
-  ha-icon {
-    margin-bottom: 3px;
-  }
+.info-box .item ha-icon {
+  margin-bottom: 3px;
 }
 
 .combined-info-box>.info-box:nth-last-child(1):nth-child(odd) {
@@ -253,7 +253,7 @@ header h1 {
   position: relative;
   padding: var(--vic-gutter-gap) var(--vic-card-padding);
   background: var(--secondary-background-color, var(--card-background-color, #fff));
-  box-shadow: var(--ha-card-box-shadow, none);
+  box-shadow: var(--ha-card-box-shadow);
   box-sizing: border-box;
   border-radius: var(--ha-card-border-radius, 12px);
   border-width: var(--ha-card-border-width, 1px);
@@ -262,11 +262,12 @@ header h1 {
   transition: all 0.3s ease-out;
   opacity: 1;
   cursor: pointer;
-
-  &:hover {
-    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.3);
-  }
 }
+
+.grid-item:hover {
+  box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.3);
+}
+
 
 .grid-item .click-container {
   display: flex;
@@ -275,14 +276,6 @@ header h1 {
   align-items: center;
   gap: var(--vic-card-padding);
 }
-
-/* @media screen and (max-width: 768px) {
-  .grid-item {
-    padding: 8px;
-    gap: 0.5rem;
-  }
-} */
-
 
 
 .grid-item .item-notify {
@@ -300,12 +293,6 @@ header h1 {
   display: none;
 }
 
-/* .grid-item .item-icon {
-  display: inline-block;
-  border-radius: 50% 50%;
-  background-color: var(--chip-background-color);
-  padding: 0.5rem;
-} */
 
 .grid-item .item-icon {
   position: relative;
@@ -333,23 +320,23 @@ header h1 {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+}
 
-  .primary {
-    font-weight: 500;
-    font-size: 1rem;
-    white-space: nowrap;
-    position: relative;
-    text-overflow: ellipsis;
-    overflow: hidden;
-  }
+.grid-item .item-content .primary {
+  font-weight: 500;
+  font-size: 1rem;
+  white-space: nowrap;
+  position: relative;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
 
-  .secondary {
-    color: var(--secondary-text-color);
-    /* text-transform: capitalize; */
-    letter-spacing: 0.5px;
-    font-size: smaller;
-    text-wrap: nowrap;
-  }
+.grid-item .item-content .secondary {
+  color: var(--secondary-text-color);
+  /* text-transform: capitalize; */
+  letter-spacing: 0.5px;
+  font-size: smaller;
+  text-wrap: nowrap;
 }
 
 .primary.title-wrap {
@@ -407,11 +394,13 @@ header h1 {
   color: var(--secondary-text-color);
   opacity: 0.5;
   transition: opacity 0.3s;
-
-  &:hover {
-    opacity: 1;
-  }
 }
+
+.added-card-header .headder-btn:hover {
+  opacity: 1;
+}
+
+
 
 .added-card-header .card-toggle {
   display: flex;
@@ -456,13 +445,6 @@ header h1 {
   position: relative;
 }
 
-/* .card-element.swiping-left {
-  transform: translateX(-120%);
-} */
-
-/* .card-element.swiping-right {
-  transform: translateX(120%);
-}  */
 
 .slide-left-enter {
   transform: translateX(100%);
@@ -510,7 +492,7 @@ header h1 {
   align-items: center;
   padding: var(--vic-card-padding);
   background: var(--ha-card-background-color, var(--secondary-background-color));
-  box-shadow: var(--ha-card-box-shadow, none);
+  box-shadow: var(--ha-card-box-shadow);
   box-sizing: border-box;
   border-radius: var(--ha-card-border-radius, 12px);
   border-width: var(--ha-card-border-width, 1px);
@@ -705,10 +687,10 @@ dialog::backdrop {
   opacity: 0.5;
   cursor: pointer;
   transition: opacity 0.3s;
+}
 
-  &:hover {
-    opacity: 1;
-  }
+.tyre-toggle-btn:hover {
+  opacity: 1;
 }
 
 /* TYRE WRAP ROTATED */
@@ -746,7 +728,7 @@ dialog::backdrop {
   gap: 0.5rem;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
   transition: all 400ms cubic-bezier(0.3, 0.0, 0.8, 0.15);
-  scale: var(--vic-tire-value-size, 1);
+  scale: var(--vic-tire-value-size);
 }
 
 .tyre-value {

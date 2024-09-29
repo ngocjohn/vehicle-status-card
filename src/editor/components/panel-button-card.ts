@@ -711,7 +711,8 @@ export class PanelButtonCard extends LitElement {
     return html`
       <div class="sub-header">
         <div class="subcard-icon">
-          <ha-icon icon="mdi:close" @click=${this.toggleAction('category-back')}></ha-icon>
+          <ha-icon-button-prev @click=${this.toggleAction('category-back')}></ha-icon-button-prev>
+          <ha-outlined-button @click=${this.toggleAction('category-back')}>Back</ha-outlined-button>
         </div>
         <div class="sub-header-title">${baseCard.title}</div>
         <ha-button @click=${() => this._togglePreview('default', buttonIndex)}
