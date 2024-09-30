@@ -15,7 +15,7 @@ export function sendActionEvent(element: HTMLElement, config: ButtonActionConfig
   const doubleTapAction = config?.double_tap_action || { action: 'toggle' };
   const holdAction = config?.hold_action || { action: 'toggle' };
   const entity = config?.entity || '';
-  console.log('sendActionEvent', tapAction, doubleTapAction, holdAction, entity, action);
+  // console.log('sendActionEvent', tapAction, doubleTapAction, holdAction, entity, action);
   callAction(
     element,
     { double_tap_action: doubleTapAction, entity: entity, hold_action: holdAction, tap_action: tapAction },
@@ -27,7 +27,7 @@ export function callAction(element: HTMLElement, config: ButtonActionConfig, act
   setTimeout(() => {
     const event = new CustomEvent('hass-action', { bubbles: true, composed: true, detail: { action, config } });
     element.dispatchEvent(event);
-    console.log('callAction', event);
+    // console.log('callAction', event);
   }, 1);
 }
 
