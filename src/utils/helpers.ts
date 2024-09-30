@@ -46,6 +46,7 @@ export function formatTimeToHHMM(dateString: string): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isEmpty(input: any): boolean {
   if (Array.isArray(input)) {
     // Check if array is empty

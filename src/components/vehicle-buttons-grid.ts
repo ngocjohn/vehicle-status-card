@@ -14,7 +14,6 @@ import {
   ButtonConfig,
   ButtonEntity,
 } from '../types';
-
 import { getTemplateBoolean, getTemplateValue } from '../utils/ha-helper';
 import { addActions } from '../utils/tap-action';
 import { VehicleStatusCard } from '../vehicle-status-card';
