@@ -60,7 +60,7 @@ export class VehicleButtonsGrid extends LitElement {
     const secondaryInfo: CustomButtonItem[] = [];
 
     for (const button of this.buttons) {
-      const info = await this._getSecondaryInfo(button.button);
+      const info = (await this._getSecondaryInfo(button.button)) as CustomButtonItem;
       secondaryInfo.push(info);
     }
 
@@ -78,19 +78,24 @@ export class VehicleButtonsGrid extends LitElement {
     }
   }
   private async _getSecondaryInfo(button: ButtonConfig): Promise<CustomButtonItem> {
+    if (!button || !button.secondary) {
+      return { notify: false, state: '', entity: '' };
+    }
+
     const notify = button.notify ? await getTemplateBoolean(this.hass, button.notify) : false;
 
-    const secondary = button?.secondary[0];
+    const secondary = button.secondary[0];
+    const entity = secondary.entity || '';
 
     const state = secondary.state_template
       ? await getTemplateValue(this.hass, secondary.state_template)
-      : secondary.attribute
+      : secondary.attribute && secondary.entity
         ? this.hass.formatEntityAttributeValue(this.hass.states[secondary.entity], secondary.attribute)
-        : this.hass.formatEntityState(this.hass.states[secondary.entity]);
+        : secondary.entity && this.hass.states[secondary.entity]
+          ? this.hass.formatEntityState(this.hass.states[secondary.entity])
+          : '';
 
-    const entity = secondary.entity ? secondary.entity : '';
-
-    return { state, notify, entity };
+    return { notify, state, entity };
   }
 
   private async checkSecondaryChanged(): Promise<void> {
@@ -107,7 +112,7 @@ export class VehicleButtonsGrid extends LitElement {
       const index = this._secondaryInfo.indexOf(info);
       const oldState = this._secondaryInfo[index].state;
       const oldNotify = this._secondaryInfo[index].notify;
-      const { state, notify } = await this._getSecondaryInfo(this.buttons[index].button);
+      const { state, notify } = (await this._getSecondaryInfo(this.buttons[index].button)) as CustomButtonItem;
       if (oldState !== state || oldNotify !== notify) {
         isChanged = true;
         changedIndexes.push(index);
@@ -119,7 +124,9 @@ export class VehicleButtonsGrid extends LitElement {
       const newSecondaryInfo = [...this._secondaryInfo]; // Spread to copy the existing array
       await Promise.all(
         changedIndexes.map(async (index) => {
-          const { state, notify, entity } = await this._getSecondaryInfo(this.buttons[index].button);
+          const { state, notify, entity } = (await this._getSecondaryInfo(
+            this.buttons[index].button
+          )) as CustomButtonItem;
           newSecondaryInfo[index] = { state, notify, entity };
         })
       );
