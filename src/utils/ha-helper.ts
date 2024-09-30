@@ -10,10 +10,10 @@ import {
   IndicatorEntity,
   IndicatorGroupEntity,
   RangeInfoEntity,
-  SecondaryInfoConfig,
+  DefaultCardEntity,
   TireTemplateConfig,
   TireEntity,
-  VehicleStatusCardConfig,
+  ButtonCardConfig,
   IndicatorConfig,
   IndicatorGroupConfig,
   RangeInfoConfig,
@@ -56,33 +56,37 @@ export async function getSingleIndicators(
 ): Promise<IndicatorEntity | void> {
   const singleIndicator: IndicatorEntity = [];
 
-  for (const indicator of single) {
-    if (!indicator.entity) {
-      continue;
-    }
+  // Use Promise.all to handle each indicator concurrently
+  await Promise.all(
+    single.map(async (indicator) => {
+      if (!indicator.entity) {
+        return;
+      }
 
-    const entity = indicator.entity;
-    const stateObj = hass.states[entity];
-    if (!stateObj) {
-      continue;
-    }
+      const entity = indicator.entity;
+      const stateObj = hass.states[entity];
+      if (!stateObj) {
+        return;
+      }
 
-    const iconValue = indicator.icon_template
-      ? await getTemplateValue(hass, indicator.icon_template)
-      : indicator.icon
-        ? indicator.icon
-        : '';
+      const iconValue = indicator.icon_template
+        ? await getTemplateValue(hass, indicator.icon_template)
+        : indicator.icon
+          ? indicator.icon
+          : '';
 
-    const state = indicator.state_template
-      ? await getTemplateValue(hass, indicator.state_template)
-      : indicator.attribute
-        ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
-        : hass.formatEntityState(stateObj);
+      const state = indicator.state_template
+        ? await getTemplateValue(hass, indicator.state_template)
+        : indicator.attribute
+          ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
+          : hass.formatEntityState(stateObj);
 
-    const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
+      const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
 
-    singleIndicator.push({ entity, icon: iconValue, state, visibility });
-  }
+      singleIndicator.push({ entity, icon: iconValue, state, visibility });
+    })
+  );
+
   return singleIndicator;
 }
 
@@ -100,54 +104,104 @@ export async function getGroupIndicators(
       visibility: await getTemplateBoolean(hass, group.visibility),
     });
 
-    if (!group.items) {
-      continue;
-    }
+    if (group.items) {
+      const itemPromises = group.items.map(async (item) => {
+        if (!item.entity) {
+          return null;
+        }
 
-    const items = group.items;
-    for (const item of items) {
-      if (!item.entity) {
-        continue;
-      }
+        const entity = item.entity;
+        const stateObj = hass.states[entity];
+        if (!stateObj) {
+          return null;
+        }
 
-      const entity = item.entity;
-      const stateObj = hass.states[entity];
-      if (!stateObj) {
-        continue;
-      }
+        const itemIcon = item.icon_template ? await getTemplateValue(hass, item.icon_template) : item.icon || '';
 
-      const itemIcon = item.icon_template
-        ? await getTemplateValue(hass, item.icon_template)
-        : item.icon
-          ? item.icon
-          : '';
+        const state = item.state_template
+          ? await getTemplateValue(hass, item.state_template)
+          : item.attribute
+            ? hass.formatEntityAttributeValue(stateObj, item.attribute)
+            : hass.formatEntityState(stateObj);
 
-      const state = item.state_template
-        ? await getTemplateValue(hass, item.state_template)
-        : item.attribute
-          ? hass.formatEntityAttributeValue(stateObj, item.attribute)
-          : hass.formatEntityState(stateObj);
-
-      groupIndicator[groupIndicator.length - 1].items.push({
-        entity: item.entity,
-        icon: itemIcon,
-        name: item.name,
-        state,
+        return {
+          entity: item.entity,
+          icon: itemIcon,
+          name: item.name,
+          state,
+        };
       });
+      // Resolve all item promises and filter out nulls
+      groupIndicator[groupIndicator.length - 1].items = (await Promise.all(itemPromises)).filter(
+        (item) => item !== null
+      );
     }
   }
   return groupIndicator;
 }
 
+// export async function getRangeInfo(
+//   hass: HomeAssistant,
+//   rangeConfig: RangeInfoConfig[]
+// ): Promise<RangeInfoEntity | void> {
+//   const rangeInfo: RangeInfoEntity = [];
+
+//   for (const range of rangeConfig) {
+//     if (!range.energy_level || !range.range_level) {
+//       continue;
+//     }
+
+//     const energyLevel = range.energy_level[0];
+//     const rangeLevel = range.range_level[0];
+//     const progressColor = range.progress_color;
+
+//     let energyState = '';
+//     let rangeState = '';
+//     let energyIcon = '';
+//     let levelState = 0;
+
+//     if (!energyLevel.entity) continue;
+//     const energyEntity = energyLevel.entity;
+//     const energyStateObj = hass.states[energyEntity];
+//     if (!energyStateObj) continue;
+//     energyState = energyLevel.attribute
+//       ? hass.formatEntityAttributeValue(energyStateObj, energyLevel.attribute)
+//       : hass.formatEntityState(energyStateObj);
+
+//     energyIcon = energyLevel.icon ? energyLevel.icon : energyStateObj.attributes.icon || 'mdi:fuel';
+
+//     levelState = parseInt(energyState);
+
+//     if (!rangeLevel.entity) continue;
+
+//     const rangeEntity = rangeLevel.entity;
+//     const rangeStateObj = hass.states[rangeEntity];
+//     if (!rangeStateObj) continue;
+
+//     rangeState = rangeLevel.attribute
+//       ? hass.formatEntityAttributeValue(rangeStateObj, rangeLevel.attribute)
+//       : hass.formatEntityState(rangeStateObj);
+
+//     rangeInfo.push({
+//       energy: energyState,
+//       energy_entity: energyEntity,
+//       icon: energyIcon,
+//       level: levelState,
+//       level_entity: rangeEntity,
+//       progress_color: progressColor,
+//       range: rangeState,
+//     });
+//   }
+//   return rangeInfo;
+// }
+
 export async function getRangeInfo(
   hass: HomeAssistant,
   rangeConfig: RangeInfoConfig[]
 ): Promise<RangeInfoEntity | void> {
-  const rangeInfo: RangeInfoEntity = [];
-
-  for (const range of rangeConfig) {
+  const rangeInfoPromises = rangeConfig.map(async (range) => {
     if (!range.energy_level || !range.range_level) {
-      continue;
+      return null;
     }
 
     const energyLevel = range.energy_level[0];
@@ -159,29 +213,28 @@ export async function getRangeInfo(
     let energyIcon = '';
     let levelState = 0;
 
-    if (!energyLevel.entity) continue;
+    if (!energyLevel.entity) return null;
     const energyEntity = energyLevel.entity;
     const energyStateObj = hass.states[energyEntity];
-    if (!energyStateObj) continue;
+    if (!energyStateObj) return null;
+
     energyState = energyLevel.attribute
       ? hass.formatEntityAttributeValue(energyStateObj, energyLevel.attribute)
       : hass.formatEntityState(energyStateObj);
 
     energyIcon = energyLevel.icon ? energyLevel.icon : energyStateObj.attributes.icon || 'mdi:fuel';
-
     levelState = parseInt(energyState);
 
-    if (!rangeLevel.entity) continue;
-
+    if (!rangeLevel.entity) return null;
     const rangeEntity = rangeLevel.entity;
     const rangeStateObj = hass.states[rangeEntity];
-    if (!rangeStateObj) continue;
+    if (!rangeStateObj) return null;
 
     rangeState = rangeLevel.attribute
       ? hass.formatEntityAttributeValue(rangeStateObj, rangeLevel.attribute)
       : hass.formatEntityState(rangeStateObj);
 
-    rangeInfo.push({
+    return {
       energy: energyState,
       energy_entity: energyEntity,
       icon: energyIcon,
@@ -189,42 +242,24 @@ export async function getRangeInfo(
       level_entity: rangeEntity,
       progress_color: progressColor,
       range: rangeState,
-    });
-  }
+    };
+  });
+
+  // Resolve all promises and filter out null results
+  const rangeInfo = (await Promise.all(rangeInfoPromises)).filter((info) => info !== null);
+  // console.log('Range Info:', rangeInfo);
   return rangeInfo;
-}
-
-async function _getSecondaryStates(hass: HomeAssistant, secondary: Array<SecondaryInfoConfig>): Promise<string> {
-  let state: string = '';
-  for (const item of secondary) {
-    if (!item.entity) {
-      continue;
-    }
-
-    const entity = item.entity;
-    const stateObj = hass.states[entity];
-    if (!stateObj) {
-      continue;
-    }
-
-    state = item.state_template
-      ? await getTemplateValue(hass, item.state_template)
-      : item.attribute
-        ? hass.formatEntityAttributeValue(stateObj, item.attribute)
-        : hass.formatEntityState(stateObj);
-  }
-  return state;
 }
 
 export async function getDefaultCard(
   hass: HomeAssistant,
   defaultCard: DefaultCardConfig[]
-): Promise<{ collapsed_items: boolean; items: CardItemEntity[]; title: string }[] | void> {
+): Promise<DefaultCardEntity[] | void> {
   if (!defaultCard) {
     return;
   }
 
-  const defaultCardItem: { collapsed_items: boolean; items: CardItemEntity[]; title: string }[] = [];
+  const defaultCardItem: DefaultCardEntity[] = [];
 
   for (const card of defaultCard) {
     const title = card.title;
@@ -369,45 +404,44 @@ export async function getTireCard(
   return tireCardItem;
 }
 
-export async function getButtonCard(
-  hass: HomeAssistant,
-  config: VehicleStatusCardConfig
-): Promise<ButtonCardEntity | void> {
-  if (!config.button_card) {
-    return;
+export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCardConfig[]): Promise<ButtonCardEntity> {
+  if (!buttonConfig) {
+    return [];
   }
+
   const buttonCardItem: ButtonCardEntity = [];
 
-  for (const btmCrd of config.button_card) {
-    const button = btmCrd.button;
+  for (const btnCrd of buttonConfig) {
+    const button = btnCrd.button;
     if (!button) {
       continue;
     }
 
     const buttonDetails = {
-      button_action: btmCrd.button_action,
+      button_action: btnCrd.button_action,
       icon: button.icon || '',
-      notify: button.notify ? await getTemplateBoolean(hass, button.notify) : false,
+      notify: button.notify || '',
       primary: button.primary || '',
-      secondary: (await _getSecondaryStates(hass, button.secondary)) || '',
+      secondary: button.secondary || [],
     };
 
-    const defaultCard = (await getDefaultCard(hass, btmCrd.default_card)) || [];
+    // const defaultCard = (await getDefaultCard(hass, btnCrd.default_card)) || [];
 
-    const customCard = (await createCardElement(hass, btmCrd.custom_card)) || [];
+    const customCard = (await createCardElement(hass, btnCrd.custom_card)) || [];
 
-    const tireCard = btmCrd.tire_card ? await getTireCard(hass, btmCrd.tire_card) : {};
+    const tireCard = btnCrd.tire_card ? await getTireCard(hass, btnCrd.tire_card) : {};
 
     buttonCardItem.push({
       button: buttonDetails,
-      button_type: btmCrd.button_type || 'default',
-      card_type: btmCrd.card_type || 'default',
+      button_type: btnCrd.button_type || 'default',
+      card_type: btnCrd.card_type || 'default',
       custom_card: customCard,
-      default_card: defaultCard,
-      hide_button: btmCrd.hide_button || false,
+      default_card: btnCrd.default_card || [],
+      hide_button: btnCrd.hide_button || false,
       tire_card: tireCard as TireEntity,
     });
   }
+
   return buttonCardItem;
 }
 

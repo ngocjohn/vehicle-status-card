@@ -41,6 +41,12 @@ import {
   getTireCard,
 } from './utils/ha-helper';
 
+import { isEmpty } from './utils/helpers';
+
+import { VehicleButtonsGrid } from './components/vehicle-buttons-grid';
+import { MiniMapBox } from './components/mini-map-box';
+import { ImagesSlide } from './components/images-slide';
+
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
@@ -48,25 +54,44 @@ export class VehicleStatusCard extends LitElement {
 
   @state() private _currentPreview: PREVIEW_TYPE = null;
 
-  @state() private _activeCardIndex: null | number | string = null;
+  @state() public _activeCardIndex: null | number | string = null;
   @state() private _activeGroupIndicator: null | number = null;
 
   @state() private _cardPreviewElement: LovelaceCardConfig[] = [];
   @state() private _defaultCardPreview: DefaultCardEntity[] = [];
   @state() private _tireCardPreview: TireEntity | undefined = undefined;
+
   @state() private _buttonCards: ButtonCardEntity = [];
   @state() private _indicatorsGroup: IndicatorGroupEntity = [];
   @state() private _indicatorsSingle: IndicatorEntity = [];
   @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() private _rangeInfo: RangeInfoEntity = [];
 
-  @query('mini-map-box') _miniMapBox!: Element;
-  @query('vehicle-buttons-grid') _vehicleButtonsGrid!: any;
-  @query('images-slide') _imagesSlide!: any;
+  @state() private _buttonReady = false;
+
+  @state() private _defaultItems: Map<number, DefaultCardEntity[]> = new Map();
+
+  @query('mini-map-box') _miniMapBox!: MiniMapBox;
+  @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
+  @query('images-slide') _imagesSlide!: ImagesSlide;
 
   constructor() {
     super();
     this._handleEditorEvent = this._handleEditorEvent.bind(this);
+  }
+
+  set hass(hass: HomeAssistant) {
+    this._hass = hass;
+    if (this._buttonReady && this._buttonCards) {
+      this._buttonCards.map((button) => {
+        const cardType = button.card_type;
+        if (cardType === 'custom') {
+          button.custom_card.map((card) => {
+            card.hass = hass;
+          });
+        }
+      });
+    }
   }
 
   public static getStubConfig = (): Record<string, unknown> => {
@@ -79,16 +104,6 @@ export class VehicleStatusCard extends LitElement {
     await import('./editor/editor');
     return document.createElement('vehicle-status-card-editor');
   }
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
-    if (this._buttonCards) {
-      this._buttonCards.forEach((button) => {
-        button.custom_card.forEach((card) => {
-          card.hass = hass;
-        });
-      });
-    }
-  }
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     if (!config) {
@@ -99,6 +114,7 @@ export class VehicleStatusCard extends LitElement {
       ...config,
     };
   }
+
   connectedCallback(): void {
     super.connectedCallback();
     if (process.env.ROLLUP_WATCH === 'true') {
@@ -115,24 +131,21 @@ export class VehicleStatusCard extends LitElement {
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
     this._handleFirstUpdated();
+    this._getButtonCardsConfig();
     this._setUpPreview();
   }
 
   private _handleFirstUpdated(): void {
     if (!this._config || !this._hass) return;
-    if (this._config.button_card && this._config.button_card.length > 0) {
-      this._getButtonCardsConfig();
-    }
-
-    if (this._config.indicators.single && this._config.indicators.single.length > 0) {
+    if (this._config.indicators.single && !isEmpty(this._config.indicators.single)) {
       this._getSingleIndicators();
     }
 
-    if (this._config.indicators.group && this._config.indicators.group.length > 0) {
+    if (this._config.indicators.group && !isEmpty(this._config.indicators.group)) {
       this._getGroupIndicators();
     }
 
-    if (this._config.range_info && this._config.range_info.length > 0) {
+    if (this._config.range_info && !isEmpty(this._config.range_info)) {
       this._getRangeInfo();
     }
   }
@@ -158,6 +171,10 @@ export class VehicleStatusCard extends LitElement {
     if (changedProps.has('_config') && this._currentPreview !== null) {
       this._configureCardPreview(this._currentPreview);
     }
+
+    if (changedProps.has('_buttonReady') && this._buttonReady) {
+      this._getDefaultCardItems();
+    }
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
@@ -178,10 +195,6 @@ export class VehicleStatusCard extends LitElement {
       this._getRangeInfo();
     }
 
-    if (changedProps.has('_hass') && this._buttonCards) {
-      this._getButtonCardsConfig();
-    }
-
     if (
       changedProps.has('_config') &&
       this._config.mini_map?.enable_popup &&
@@ -189,6 +202,10 @@ export class VehicleStatusCard extends LitElement {
       this._config.layout_config?.hide?.mini_map !== true
     ) {
       this._configureMiniMapPopup();
+    }
+
+    if (changedProps.has('_hass') && this._activeCardIndex !== null) {
+      this._getDefaultCardItems();
     }
 
     return hasConfigOrEntityChanged(this, changedProps, true);
@@ -275,12 +292,18 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private async _getButtonCardsConfig(): Promise<void> {
+    if (this._currentPreview !== null) return;
     if (!this._config.button_card) {
       console.log('No button cards found in config');
       return;
     }
 
-    this._buttonCards = (await getButtonCard(this._hass, this._config)) ?? [];
+    this._buttonReady = false;
+
+    // Get button cards
+    this._buttonCards = await getButtonCard(this._hass, this._config.button_card);
+
+    this._buttonReady = true;
   }
 
   private async _getSingleIndicators(): Promise<void> {
@@ -295,9 +318,30 @@ export class VehicleStatusCard extends LitElement {
     if (!this._config.indicators.group) return;
     this._indicatorsGroup = (await getGroupIndicators(this._hass, this._config.indicators.group)) ?? [];
   }
+
   private async _getRangeInfo(): Promise<void> {
     if (!this._config.range_info) return;
     this._rangeInfo = (await getRangeInfo(this._hass, this._config.range_info)) ?? [];
+  }
+
+  private async _getDefaultCardItems(): Promise<void> {
+    const defaultCardItemsMap = new Map<number, DefaultCardEntity[]>();
+
+    // Loop through each button card
+    for (let index = 0; index < this._buttonCards.length; index++) {
+      const button = this._buttonCards[index];
+      const cardItems = button.default_card;
+
+      // Fetch the default card items
+      const items = await getDefaultCard(this._hass, cardItems);
+      if (items) {
+        // Associate the items with the index of the button card
+        defaultCardItemsMap.set(index, items);
+      }
+    }
+
+    // Update the state with the map
+    this._defaultItems = defaultCardItemsMap;
   }
 
   protected render(): TemplateResult {
@@ -345,6 +389,7 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _renderButtons(): TemplateResult {
+    if (!this._buttonReady) return html``;
     return html`
       <div id="button_card">
         <vehicle-buttons-grid
@@ -499,7 +544,7 @@ export class VehicleStatusCard extends LitElement {
     const index = this._activeCardIndex;
     const selectedCard = this._buttonCards[index];
     const cardType = selectedCard.card_type;
-    const defaultCard = selectedCard.default_card;
+    const defaultCard = this._defaultItems.get(index as number);
     const customCard = selectedCard.custom_card;
     const tireCard = selectedCard.tire_card;
 
@@ -520,10 +565,12 @@ export class VehicleStatusCard extends LitElement {
     const selected_card = isString(index)
       ? this._mapPopupLovelace
       : cardType === 'default'
-        ? defaultCard.map((card: DefaultCardEntity) => this._renderDefaultCardItems(card))
+        ? defaultCard!.map((card: DefaultCardEntity) => this._renderDefaultCardItems(card))
         : cardType === 'tire'
           ? this._renderTireCard(tireCard)
-          : customCard.map((card: LovelaceCardConfig) => card);
+          : !isEmpty(customCard)
+            ? customCard.map((card: LovelaceCardConfig) => card)
+            : this._showWarning('Card not found');
 
     const content = html`
       <main id="cards-wrapper">
