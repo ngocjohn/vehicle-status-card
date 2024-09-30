@@ -122,25 +122,22 @@ export interface MiniMapConfig {
 
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */
 
-export interface SecondaryInfoConfig {
+export type SecondaryInfoConfig = {
   attribute: string;
   entity: string;
   state_template: string;
-}
+};
+
 export interface ButtonConfig {
   icon: string;
-  notify: string;
+  notify?: string;
   primary: string;
   secondary: Array<SecondaryInfoConfig>;
 }
 
-export type ButtonEntity = {
+export interface ButtonEntity extends ButtonConfig {
   buttonIndex: number;
-  icon: string;
-  notify: boolean;
-  primary: string;
-  secondary: string;
-};
+}
 
 export interface DefaultCardConfig {
   collapsed_items: boolean;
@@ -154,6 +151,13 @@ export interface CardItemConfig {
   icon?: string;
   name: string;
   state_template: string;
+}
+
+export interface CardItemEntity {
+  entity: string;
+  icon: string;
+  name: string;
+  state: string;
 }
 
 export interface ButtonActionConfig {
@@ -222,13 +226,6 @@ export interface ButtonCardConfig {
   tire_card?: TireTemplateConfig;
 }
 
-export interface CardItemEntity {
-  entity: string;
-  icon: string;
-  name: string;
-  state: string;
-}
-
 export type DefaultCardEntity = {
   collapsed_items: boolean;
   items: Array<{
@@ -244,21 +241,16 @@ export type ButtonCardEntity = Array<{
   button: {
     button_action: ButtonActionConfig;
     icon: string;
-    notify: boolean;
+    notify: string;
     primary: string;
-    secondary: string;
+    secondary: SecondaryInfoConfig[];
   };
   button_type: 'action' | 'default';
   card_type: 'custom' | 'default' | 'tire';
   custom_card: LovelaceCardConfig[];
   default_card: Array<{
     collapsed_items: boolean;
-    items: Array<{
-      entity: string;
-      icon: string;
-      name: string;
-      state: string;
-    }>;
+    items: CardItemConfig[];
     title: string;
   }>;
   hide_button: boolean;

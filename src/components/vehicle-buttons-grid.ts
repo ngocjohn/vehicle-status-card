@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators';
+import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 
@@ -8,37 +8,141 @@ import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
 import {
   ButtonCardEntity,
-  ButtonEntity,
   HomeAssistantExtended as HomeAssistant,
   VehicleStatusCardConfig,
+  SecondaryInfoConfig,
+  ButtonConfig,
+  ButtonEntity,
 } from '../types';
+
+import { getTemplateBoolean, getTemplateValue } from '../utils/ha-helper';
 import { addActions } from '../utils/tap-action';
+import { VehicleStatusCard } from '../vehicle-status-card';
+
+export type CustomButtonItem = {
+  notify: boolean;
+  state: string;
+  entity: string;
+};
 
 @customElement('vehicle-buttons-grid')
 export class VehicleButtonsGrid extends LitElement {
-  @property({ type: Array }) buttons: ButtonCardEntity = [];
-  @property({ type: Object }) component?: any;
-  @property({ type: Object }) config!: VehicleStatusCardConfig;
   @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ type: Object }) component!: VehicleStatusCard;
+  @property({ type: Object }) config!: VehicleStatusCardConfig;
+  @property({ type: Array }) buttons: ButtonCardEntity = [];
 
-  @property() swiper: null | Swiper = null;
+  @state() private _isButtonReady = false;
+  @state() _secondaryInfo: CustomButtonItem[] = [];
+
+  private swiper: null | Swiper = null;
 
   constructor() {
     super();
     this._handleClick = this._handleClick.bind(this);
   }
 
-  protected firstUpdated(changeProperties: PropertyValues): void {
+  protected async firstUpdated(changeProperties: PropertyValues): Promise<void> {
     super.firstUpdated(changeProperties);
+    this._fetchSecondaryInfo();
+  }
 
-    this.updateComplete.then(() => {
-      this.initSwiper();
-    });
+  protected updated(changedProperties: PropertyValues): void {
+    super.updated(changedProperties);
+    if (changedProperties.has('hass')) {
+      this.checkSecondaryChanged();
+    }
+  }
+
+  private async _fetchSecondaryInfo(): Promise<void> {
+    console.log('Fetching secondary info...');
+    this._isButtonReady = false;
+    // console.log('Custom Button Ready:', this._isButtonReady);
+
+    const secondaryInfo: CustomButtonItem[] = [];
+
+    for (const button of this.buttons) {
+      const info = await this._getSecondaryInfo(button.button);
+      secondaryInfo.push(info);
+    }
+
+    this._secondaryInfo = secondaryInfo;
+    this._isButtonReady = true;
+
+    // console.log('Custom Button Ready:', this._isButtonReady);
+    if (this.useSwiper) {
+      this.updateComplete.then(() => {
+        this.initSwiper();
+        this._setButtonActions();
+      });
+    } else {
+      this._setButtonActions();
+    }
+  }
+  private async _getSecondaryInfo(button: ButtonConfig): Promise<CustomButtonItem> {
+    const secondaryInfo = await Promise.all(
+      button.secondary.map(async (info: SecondaryInfoConfig) => {
+        return {
+          state: info.state_template
+            ? await getTemplateValue(this.hass, info.state_template)
+            : info.attribute
+              ? this.hass.formatEntityAttributeValue(this.hass.states[info.entity], info.attribute)
+              : this.hass.formatEntityState(this.hass.states[info.entity]),
+          entity: info.entity ? info.entity : '',
+          notify: button.notify ? await getTemplateBoolean(this.hass, button.notify) : false,
+        };
+      })
+    );
+    return secondaryInfo[0]; // Return the first item or handle multiple items as needed.
+  }
+
+  private async checkSecondaryChanged(): Promise<void> {
+    let isChanged = false;
+    const changedIndexes: number[] = [];
+
+    // Ensure _secondaryInfo is an array before iterating
+    if (!Array.isArray(this._secondaryInfo)) {
+      console.error('_secondaryInfo is not an array');
+      return;
+    }
+
+    for (const info of this._secondaryInfo) {
+      const index = this._secondaryInfo.indexOf(info);
+      const oldState = this._secondaryInfo[index].state;
+      const oldNotify = this._secondaryInfo[index].notify;
+      const { state, notify } = await this._getSecondaryInfo(this.buttons[index].button);
+      if (oldState !== state || oldNotify !== notify) {
+        isChanged = true;
+        changedIndexes.push(index);
+      }
+    }
+
+    if (isChanged) {
+      // console.log('Secondary info changed:', isChanged, changedIndexes);
+      const newSecondaryInfo = [...this._secondaryInfo]; // Spread to copy the existing array
+      await Promise.all(
+        changedIndexes.map(async (index) => {
+          const { state, notify, entity } = await this._getSecondaryInfo(this.buttons[index].button);
+          newSecondaryInfo[index] = { state, notify, entity };
+        })
+      );
+      this._secondaryInfo = newSecondaryInfo;
+      this.requestUpdate();
+    }
+  }
+
+  private get useSwiper(): boolean {
+    return this.config.layout_config?.button_grid?.swipe || false;
+  }
+
+  private get hideNotify(): boolean {
+    return this.config.layout_config?.hide?.button_notify || false;
   }
 
   protected render(): TemplateResult {
-    const useSwiper = this.config.layout_config?.button_grid?.swipe || false;
-    const hideNotify = this.config.layout_config?.hide?.button_notify || false;
+    if (!this._isButtonReady) {
+      return html``;
+    }
     const baseButtons = this.buttons.map((button, index) => ({
       ...button.button, // Spread original button properties
       buttonIndex: index, // Add a buttonIndex property to each button
@@ -46,58 +150,20 @@ export class VehicleButtonsGrid extends LitElement {
 
     return html`
       <ha-card id="button-swiper">
-        ${useSwiper
+        ${this.useSwiper
           ? html`
               <div class="swiper-container">
-                <div class="swiper-wrapper">${this._buttonGridGroup(baseButtons, hideNotify)}</div>
+                <div class="swiper-wrapper">${this._buttonGridGroup(baseButtons, this.hideNotify)}</div>
                 <div class="swiper-pagination"></div>
               </div>
             `
           : html`
               <div class="grid-container">
-                ${baseButtons.map((button, index) => {
-                  const { icon, notify, primary, secondary } = button;
-                  return html`
-                    <div
-                      id="${`button-id-${index}`}"
-                      class="grid-item click-shrink"
-                      @click=${() => this._handleClick(index)}
-                    >
-                      <div class="click-container" id="${`button-action-${index}`}">
-                        <div class="item-icon">
-                          <div class="icon-background">
-                            <ha-icon .icon="${icon}"></ha-icon>
-                          </div>
-                          ${!hideNotify
-                            ? html`
-                                <div class="item-notify ${notify ? '' : 'hidden'}">
-                                  <ha-icon icon="mdi:alert-circle"></ha-icon>
-                                </div>
-                              `
-                            : nothing}
-                        </div>
-                        <div class="item-content">
-                          <div class="primary">
-                            <span class="title">${primary}</span>
-                          </div>
-                          <span class="secondary">${secondary}</span>
-                        </div>
-                      </div>
-                    </div>
-                  `;
-                })}
+                ${baseButtons.map((button) => this._renderButton(button.buttonIndex, this.hideNotify))}
               </div>
             `}
       </ha-card>
     `;
-  }
-
-  protected updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-
-    if (changedProperties.has('buttons')) {
-      this._setButtonActions();
-    }
   }
 
   private _buttonGridGroup(buttons: ButtonEntity[], hideNotify: boolean): TemplateResult {
@@ -107,37 +173,7 @@ export class VehicleButtonsGrid extends LitElement {
     const slides = chunkedButtons.map((buttonsGroup) => {
       const buttons = html`
         <div class="grid-container">
-          ${buttonsGroup.map((button) => {
-            const { buttonIndex, icon, notify, primary, secondary } = button;
-            return html`
-              <div
-                id="${`button-id-${buttonIndex}`}"
-                class="grid-item click-shrink"
-                @click=${() => this._handleClick(buttonIndex)}
-              >
-                <div class="click-container" id="${`button-action-${buttonIndex}`}">
-                  <div class="item-icon">
-                    <div class="icon-background">
-                      <ha-icon .icon="${icon}"></ha-icon>
-                    </div>
-                    ${!hideNotify
-                      ? html`
-                          <div class="item-notify ${notify ? '' : 'hidden'}">
-                            <ha-icon icon="mdi:alert-circle"></ha-icon>
-                          </div>
-                        `
-                      : nothing}
-                  </div>
-                  <div class="item-content">
-                    <div class="primary">
-                      <span class="title">${primary}</span>
-                    </div>
-                    <span class="secondary">${secondary}</span>
-                  </div>
-                </div>
-              </div>
-            `;
-          })}
+          ${buttonsGroup.map((button) => this._renderButton(button.buttonIndex, hideNotify))}
         </div>
       `;
       return html`<div class="swiper-slide">${buttons}</div>`;
@@ -153,37 +189,68 @@ export class VehicleButtonsGrid extends LitElement {
     return result;
   }
 
+  private _renderButton(buttonIndex: number, hideNotify: boolean): TemplateResult {
+    const button = this.buttons[buttonIndex]; // Array of button objects
+    const { icon, primary } = button.button;
+    const { notify, state, entity } = this._secondaryInfo[buttonIndex];
+
+    return html`
+      <div
+        id="${`button-id-${buttonIndex}`}"
+        class="grid-item click-shrink"
+        @click=${() => this._handleClick(buttonIndex)}
+      >
+        <div class="click-container" id="${`button-action-${buttonIndex}`}">
+          <div class="item-icon">
+            <div class="icon-background">
+              <ha-state-icon
+                .hass=${this.hass}
+                .stateObj=${entity ? this.hass.states[entity] : undefined}
+                .icon=${icon}
+              ></ha-state-icon>
+            </div>
+            ${!hideNotify
+              ? html`
+                  <div class="item-notify ${notify ? '' : 'hidden'}">
+                    <ha-icon icon="mdi:alert-circle"></ha-icon>
+                  </div>
+                `
+              : nothing}
+          </div>
+          <div class="item-content">
+            <div class="primary">
+              <span class="title">${primary}</span>
+            </div>
+            <span class="secondary">${state}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private _handleClick(index: number): void {
     const button = this.buttons[index];
-    const buttonType = button.button_type;
-
+    const buttonType = button?.button_type;
     if (buttonType === 'default') {
-      // Handle default button behavior, e.g., toggle the card or show content
       this.component._activeCardIndex = index;
-    } else {
-      // For non-default buttons, we rely on the action handlers set in addActions
     }
   }
 
-  private _setButtonActions(): void {
-    this.updateComplete.then(() => {
-      const baseButtons = this.buttons.map((button) => button.button);
+  private _setButtonActions = (): void => {
+    for (const [index, button] of this.buttons.entries()) {
+      const buttonType = button.button_type;
+      const buttonAction = button.button.button_action;
+      const btnId = `button-action-${index}`;
+      const btnElt = this.shadowRoot?.getElementById(btnId);
 
-      baseButtons.forEach((button, index) => {
-        const btnId = `button-action-${index}`;
-        const btnElt = this.shadowRoot?.getElementById(btnId);
-
-        // Only add actions if button_type is not 'default'
-        if (this.buttons[index].button_type !== 'default' && btnElt) {
-          addActions(btnElt, button.button_action);
-          // console.log('Button action added:', button.button_action);
-        } else {
-          btnElt?.addEventListener('click', () => this._handleClick(index));
-          // console.log('Default button action added:', index);
-        }
-      });
-    });
-  }
+      if (btnElt && buttonType === 'action' && buttonAction) {
+        addActions(btnElt, buttonAction);
+        // console.log('Button action set for', btnId, 'with action:', buttonAction);
+      } else {
+        btnElt?.addEventListener('click', () => this._handleClick(index));
+      }
+    }
+  };
 
   private initSwiper(): void {
     const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
@@ -210,62 +277,39 @@ export class VehicleButtonsGrid extends LitElement {
     });
   }
 
-  public showButton(index: number): void {
+  public showButton = (index: number): void => {
     this.updateComplete.then(() => {
       const btnId = `button-id-${index}`;
       const gridBtns = this.shadowRoot?.querySelectorAll('.grid-item') as NodeListOf<HTMLElement>;
       const btnElt = this.shadowRoot?.getElementById(btnId) as HTMLElement;
 
       if (!btnElt) return;
+
+      const highlightButton = () => {
+        const filteredBtns = Array.from(gridBtns).filter((btn) => btn.id !== btnId);
+
+        filteredBtns.forEach((btn) => (btn.style.opacity = '0.2'));
+        btnElt.classList.add('redGlows');
+
+        setTimeout(() => {
+          filteredBtns.forEach((btn) => (btn.style.opacity = ''));
+          btnElt.classList.remove('redGlows');
+        }, 3000);
+      };
+
       if (this.swiper) {
         const swiperSlides = this.shadowRoot?.querySelectorAll('.swiper-slide') as NodeListOf<HTMLElement>;
-        let targetSlideIndex = -1;
-
-        swiperSlides.forEach((slide, index) => {
-          if (slide.contains(btnElt)) {
-            targetSlideIndex = index;
-          }
-        });
+        const targetSlideIndex = Array.from(swiperSlides).findIndex((slide) => slide.contains(btnElt));
 
         if (targetSlideIndex !== -1) {
           this.swiper?.slideTo(targetSlideIndex);
-
-          // Wait until the slide transition completes
-          setTimeout(() => {
-            const filteredBtns = Array.from(gridBtns).filter((btn) => btn.id !== btnId);
-
-            filteredBtns.forEach((btn) => {
-              btn.style.opacity = '0.2';
-            });
-
-            btnElt.classList.add('redGlows');
-            setTimeout(() => {
-              filteredBtns.forEach((btn) => {
-                btn.style.opacity = '';
-              });
-              btnElt.classList.remove('redGlows');
-            }, 3000);
-          }, 500);
+          setTimeout(highlightButton, 500);
         }
       } else {
-        setTimeout(() => {
-          const filteredBtns = Array.from(gridBtns).filter((btn) => btn.id !== btnId);
-
-          filteredBtns.forEach((btn) => {
-            btn.style.opacity = '0.2';
-          });
-
-          btnElt.classList.add('redGlows');
-          setTimeout(() => {
-            filteredBtns.forEach((btn) => {
-              btn.style.opacity = '';
-            });
-            btnElt.classList.remove('redGlows');
-          }, 3000);
-        }, 500);
+        setTimeout(highlightButton, 500);
       }
     });
-  }
+  };
 
   static get styles(): CSSResultGroup {
     return [
