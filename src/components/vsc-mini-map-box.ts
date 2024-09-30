@@ -3,9 +3,8 @@ import 'leaflet-providers/leaflet-providers.js';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
-
 import mapstyle from '../css/leaflet.css';
+import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 interface Address {

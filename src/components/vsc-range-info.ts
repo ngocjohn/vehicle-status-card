@@ -1,11 +1,10 @@
 import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
+import cardcss from '../css/card.css';
+import { HA as HomeAssistant, VehicleStatusCardConfig, RangeInfoEntity } from '../types';
 import { HaHelp } from '../utils';
 import { isEmpty } from '../utils';
-import { HA as HomeAssistant, VehicleStatusCardConfig, RangeInfoEntity } from '../types';
-
-import cardcss from '../css/card.css';
 
 @customElement('vsc-range-info')
 export class VscRangeInfo extends LitElement {

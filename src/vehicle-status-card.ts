@@ -6,15 +6,16 @@ import {
   LovelaceCardConfig,
   LovelaceCardEditor,
 } from 'custom-card-helpers';
+import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, query, state } from 'lit/decorators';
 
 import './components';
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo } from './components';
-
 import { DEFAULT_CONFIG } from './const/const';
 import { TIRE_BG } from './const/img-const';
+import cardcss from './css/card.css';
 import {
   ButtonCardEntity,
   DefaultCardEntity,
@@ -25,12 +26,8 @@ import {
   DefaultCardConfig,
   PREVIEW_TYPE,
 } from './types';
-
 import { HaHelp } from './utils';
 import { isEmpty } from './utils/helpers';
-import { isString } from 'es-toolkit';
-
-import cardcss from './css/card.css';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
