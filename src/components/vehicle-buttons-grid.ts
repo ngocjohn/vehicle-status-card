@@ -79,20 +79,19 @@ export class VehicleButtonsGrid extends LitElement {
     }
   }
   private async _getSecondaryInfo(button: ButtonConfig): Promise<CustomButtonItem> {
-    const secondaryInfo = await Promise.all(
-      button.secondary.map(async (info: SecondaryInfoConfig) => {
-        return {
-          state: info.state_template
-            ? await getTemplateValue(this.hass, info.state_template)
-            : info.attribute
-              ? this.hass.formatEntityAttributeValue(this.hass.states[info.entity], info.attribute)
-              : this.hass.formatEntityState(this.hass.states[info.entity]),
-          entity: info.entity ? info.entity : '',
-          notify: button.notify ? await getTemplateBoolean(this.hass, button.notify) : false,
-        };
-      })
-    );
-    return secondaryInfo[0]; // Return the first item or handle multiple items as needed.
+    const notify = button.notify ? await getTemplateBoolean(this.hass, button.notify) : false;
+
+    const secondary = button?.secondary[0];
+
+    const state = secondary.state_template
+      ? await getTemplateValue(this.hass, secondary.state_template)
+      : secondary.attribute
+        ? this.hass.formatEntityAttributeValue(this.hass.states[secondary.entity], secondary.attribute)
+        : this.hass.formatEntityState(this.hass.states[secondary.entity]);
+
+    const entity = secondary.entity ? secondary.entity : '';
+
+    return { state, notify, entity };
   }
 
   private async checkSecondaryChanged(): Promise<void> {
