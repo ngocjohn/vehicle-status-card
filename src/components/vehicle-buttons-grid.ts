@@ -10,7 +10,6 @@ import {
   ButtonCardEntity,
   HomeAssistantExtended as HomeAssistant,
   VehicleStatusCardConfig,
-  SecondaryInfoConfig,
   ButtonConfig,
   ButtonEntity,
 } from '../types';
