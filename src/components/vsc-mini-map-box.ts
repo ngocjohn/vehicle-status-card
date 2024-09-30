@@ -1,9 +1,12 @@
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
+
+import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 
 import mapstyle from '../css/leaflet.css';
+import { VehicleStatusCard } from '../vehicle-status-card';
 
 interface Address {
   city: string;
@@ -17,18 +20,58 @@ interface Address {
 
 @customElement('mini-map-box')
 export class MiniMapBox extends LitElement {
+  @property() private hass!: HomeAssistant;
+  @property() private config!: VehicleStatusCardConfig;
+  @property() component!: VehicleStatusCard;
+
   @state() private address: Partial<Address> = {};
-  @state() private apiKey?: string;
-  @state() private darkMode!: boolean;
   @state() private deviceTracker: { lat: number; lon: number } = { lat: 0, lon: 0 };
-  @state() private loadingAdress: boolean = false;
+  @state() private adressLoaded: boolean = false;
+  @state() private locationLoaded: boolean = false;
+
   @state() private map: L.Map | null = null;
-  @state() private mapPopup!: boolean;
   @state() private marker: L.Marker | null = null;
   @state() private zoom = 16;
 
+  private get apiKey(): string {
+    return this.config.mini_map?.google_api_key || '';
+  }
+
+  private get darkMode(): boolean {
+    return this.component.isDark;
+  }
+
+  private get mapPopup(): boolean {
+    return this.config.mini_map?.enable_popup;
+  }
+
+  protected firstUpdated(changedProperties: PropertyValues): void {
+    super.firstUpdated(changedProperties);
+    this.updateCSSVariables();
+    this._getDeviceTracker();
+  }
+
+  private _getDeviceTracker(): void {
+    if (!this.config.mini_map?.device_tracker) return;
+
+    this.locationLoaded = false;
+
+    const deviceTracker = this.config.mini_map.device_tracker;
+    const stateObj = this.hass.states[deviceTracker];
+    if (!stateObj) return;
+    const { latitude, longitude } = stateObj.attributes;
+
+    this.deviceTracker = { lat: latitude, lon: longitude };
+    console.log('Device Tracker:', this.deviceTracker);
+    this.locationLoaded = true;
+    this.getAddress(latitude, longitude);
+    this.updateComplete.then(() => {
+      this.initMap();
+    });
+  }
+
   private _renderAddress() {
-    if (this.loadingAdress) {
+    if (!this.adressLoaded) {
       return html`<div class="address" style="left: 10%;"><span class="loader"></span></div>`;
     }
     return html`
@@ -172,13 +215,8 @@ export class MiniMapBox extends LitElement {
     this.marker.setLatLng([lat, lon]);
   }
 
-  firstUpdated(): void {
-    this.updateCSSVariables();
-    this.setEntityAttribute();
-  }
-
   async getAddress(lat: number, lon: number): Promise<void> {
-    this.loadingAdress = true;
+    this.adressLoaded = false;
     let address: null | Partial<Address> = null;
     if (this.apiKey) {
       address = await this.getAddressFromGoggle(lat, lon);
@@ -187,10 +225,8 @@ export class MiniMapBox extends LitElement {
     }
     if (address) {
       this.address = address;
-      this.loadingAdress = false;
+      this.adressLoaded = true;
       this.requestUpdate();
-    } else {
-      this.loadingAdress = true;
     }
   }
 
@@ -239,6 +275,7 @@ export class MiniMapBox extends LitElement {
   }
 
   render(): TemplateResult {
+    if (!this.locationLoaded) return html``;
     return html`
       <ha-card class="map-wrapper">
         <div id="map"></div>
@@ -249,17 +286,6 @@ export class MiniMapBox extends LitElement {
         ${this._renderAddress()}
       </ha-card>
     `;
-  }
-
-  setEntityAttribute(): void {
-    const { lat, lon } = this.deviceTracker;
-    if (lat && lon) {
-      this.getAddress(lat, lon);
-    }
-
-    setTimeout(() => {
-      this.initMap();
-    }, 200);
   }
 
   updated(changedProperties: PropertyValues): void {

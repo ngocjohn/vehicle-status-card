@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   applyThemesOnElement,
   fireEvent,
@@ -5,47 +6,31 @@ import {
   LovelaceCardConfig,
   LovelaceCardEditor,
 } from 'custom-card-helpers';
-import { isString } from 'es-toolkit';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators';
 import { styleMap } from 'lit-html/directives/style-map.js';
+import { customElement, property, query, state } from 'lit/decorators';
 
-import './components/images-slide';
-import './components/mini-map-box';
-import './components/vehicle-buttons-grid';
+import './components';
+import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo } from './components';
+
 import { DEFAULT_CONFIG } from './const/const';
 import { TIRE_BG } from './const/img-const';
-
-import cardcss from './css/card.css';
 import {
   ButtonCardEntity,
   DefaultCardEntity,
-  HomeAssistantExtended as HomeAssistant,
-  IndicatorEntity,
-  IndicatorGroupEntity,
-  RangeInfoEntity,
+  HA as HomeAssistant,
   VehicleStatusCardConfig,
   TireEntity,
   TireTemplateConfig,
   DefaultCardConfig,
   PREVIEW_TYPE,
 } from './types';
-import {
-  createCardElement,
-  getButtonCard,
-  getDefaultCard,
-  getGroupIndicators,
-  getRangeInfo,
-  getSingleIndicators,
-  getTireCard,
-} from './utils/ha-helper';
 
+import { HaHelp } from './utils';
 import { isEmpty } from './utils/helpers';
+import { isString } from 'es-toolkit';
 
-import { VehicleButtonsGrid } from './components/vehicle-buttons-grid';
-import { MiniMapBox } from './components/mini-map-box';
-import { ImagesSlide } from './components/images-slide';
+import cardcss from './css/card.css';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
@@ -53,27 +38,21 @@ export class VehicleStatusCard extends LitElement {
   @property({ type: Object }) private _config!: VehicleStatusCardConfig;
 
   @state() private _currentPreview: PREVIEW_TYPE = null;
-
-  @state() public _activeCardIndex: null | number | string = null;
-  @state() private _activeGroupIndicator: null | number = null;
-
   @state() private _cardPreviewElement: LovelaceCardConfig[] = [];
   @state() private _defaultCardPreview: DefaultCardEntity[] = [];
   @state() private _tireCardPreview: TireEntity | undefined = undefined;
 
   @state() private _buttonCards: ButtonCardEntity = [];
-  @state() private _indicatorsGroup: IndicatorGroupEntity = [];
-  @state() private _indicatorsSingle: IndicatorEntity = [];
   @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
-  @state() private _rangeInfo: RangeInfoEntity = [];
 
+  @state() public _activeCardIndex: null | number | string = null;
   @state() private _buttonReady = false;
 
   @state() private _defaultItems: Map<number, DefaultCardEntity[]> = new Map();
 
-  @query('mini-map-box') _miniMapBox!: MiniMapBox;
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
+  @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
 
   constructor() {
     super();
@@ -130,24 +109,8 @@ export class VehicleStatusCard extends LitElement {
 
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    this._handleFirstUpdated();
     this._getButtonCardsConfig();
     this._setUpPreview();
-  }
-
-  private _handleFirstUpdated(): void {
-    if (!this._config || !this._hass) return;
-    if (this._config.indicators.single && !isEmpty(this._config.indicators.single)) {
-      this._getSingleIndicators();
-    }
-
-    if (this._config.indicators.group && !isEmpty(this._config.indicators.group)) {
-      this._getGroupIndicators();
-    }
-
-    if (this._config.range_info && !isEmpty(this._config.range_info)) {
-      this._getRangeInfo();
-    }
   }
 
   protected updated(changedProps: PropertyValues) {
@@ -183,18 +146,6 @@ export class VehicleStatusCard extends LitElement {
       return false;
     }
 
-    if (changedProps.has('_hass') && this._indicatorsSingle) {
-      this._getSingleIndicators();
-    }
-
-    if (changedProps.has('_hass') && this._indicatorsGroup) {
-      this._getGroupIndicators();
-    }
-
-    if (changedProps.has('_hass') && this._rangeInfo) {
-      this._getRangeInfo();
-    }
-
     if (
       changedProps.has('_config') &&
       this._config.mini_map?.enable_popup &&
@@ -209,6 +160,30 @@ export class VehicleStatusCard extends LitElement {
     }
 
     return hasConfigOrEntityChanged(this, changedProps, true);
+  }
+
+  private async _getButtonCardsConfig(): Promise<void> {
+    if (this._currentPreview !== null) return;
+    if (!this._config.button_card) {
+      console.log('No button cards found in config');
+      return;
+    }
+    this._buttonReady = false;
+    this._buttonCards = await HaHelp.getButtonCard(this._hass, this._config.button_card);
+    this._buttonReady = true;
+  }
+
+  private async _getDefaultCardItems(): Promise<void> {
+    const defaultCardItemsMap = new Map<number, DefaultCardEntity[]>();
+    for (let index = 0; index < this._buttonCards.length; index++) {
+      const button = this._buttonCards[index];
+      const cardItems = button.default_card;
+      const items = await HaHelp.getDefaultCard(this._hass, cardItems);
+      if (items) {
+        defaultCardItemsMap.set(index, items);
+      }
+    }
+    this._defaultItems = defaultCardItemsMap;
   }
 
   private async _setUpPreview(): Promise<void> {
@@ -237,19 +212,19 @@ export class VehicleStatusCard extends LitElement {
       case 'custom':
         cardConfig = this._config?.card_preview as LovelaceCardConfig[];
         if (!cardConfig) return;
-        cardElement = (await createCardElement(this._hass, cardConfig)) as LovelaceCardConfig[];
+        cardElement = (await HaHelp.createCardElement(this._hass, cardConfig)) as LovelaceCardConfig[];
         this._cardPreviewElement = cardElement;
         break;
       case 'default':
         cardConfig = this._config?.default_card_preview as DefaultCardConfig[];
         if (!cardConfig) return;
-        cardElement = (await getDefaultCard(this._hass, cardConfig)) as DefaultCardEntity[];
+        cardElement = (await HaHelp.getDefaultCard(this._hass, cardConfig)) as DefaultCardEntity[];
         this._defaultCardPreview = cardElement;
         break;
       case 'tire':
         cardConfig = this._config?.tire_preview as TireTemplateConfig;
         if (!cardConfig) return;
-        cardElement = (await getTireCard(this._hass, cardConfig)) as TireEntity;
+        cardElement = (await HaHelp.getTireCard(this._hass, cardConfig)) as TireEntity;
         this._tireCardPreview = cardElement as TireEntity;
         break;
       default:
@@ -288,60 +263,7 @@ export class VehicleStatusCard extends LitElement {
       type: 'map',
     };
 
-    this._mapPopupLovelace = await createCardElement(this._hass, [mapCardConfig]);
-  }
-
-  private async _getButtonCardsConfig(): Promise<void> {
-    if (this._currentPreview !== null) return;
-    if (!this._config.button_card) {
-      console.log('No button cards found in config');
-      return;
-    }
-
-    this._buttonReady = false;
-
-    // Get button cards
-    this._buttonCards = await getButtonCard(this._hass, this._config.button_card);
-
-    this._buttonReady = true;
-  }
-
-  private async _getSingleIndicators(): Promise<void> {
-    if (!this._config.indicators.single) return;
-    if (this._config.indicators.single && this._config.indicators.single.length > 0) {
-      // Handle single indicators (IndicatorConfig)
-      this._indicatorsSingle = (await getSingleIndicators(this._hass, this._config.indicators.single)) ?? [];
-    }
-  }
-
-  private async _getGroupIndicators(): Promise<void> {
-    if (!this._config.indicators.group) return;
-    this._indicatorsGroup = (await getGroupIndicators(this._hass, this._config.indicators.group)) ?? [];
-  }
-
-  private async _getRangeInfo(): Promise<void> {
-    if (!this._config.range_info) return;
-    this._rangeInfo = (await getRangeInfo(this._hass, this._config.range_info)) ?? [];
-  }
-
-  private async _getDefaultCardItems(): Promise<void> {
-    const defaultCardItemsMap = new Map<number, DefaultCardEntity[]>();
-
-    // Loop through each button card
-    for (let index = 0; index < this._buttonCards.length; index++) {
-      const button = this._buttonCards[index];
-      const cardItems = button.default_card;
-
-      // Fetch the default card items
-      const items = await getDefaultCard(this._hass, cardItems);
-      if (items) {
-        // Associate the items with the index of the button card
-        defaultCardItemsMap.set(index, items);
-      }
-    }
-
-    // Update the state with the map
-    this._defaultItems = defaultCardItemsMap;
+    this._mapPopupLovelace = await HaHelp.createCardElement(this._hass, [mapCardConfig]);
   }
 
   protected render(): TemplateResult {
@@ -363,29 +285,33 @@ export class VehicleStatusCard extends LitElement {
     `;
   }
 
-  private _renderActiveIndicator(): TemplateResult {
-    const activeIndex =
-      this._activeGroupIndicator !== null ? this._activeGroupIndicator : this._indicatorsGroup.length + 1;
-    const items = this._indicatorsGroup[activeIndex]?.items || [];
-    const activeClass = this._activeGroupIndicator !== null ? 'info-box charge active' : 'info-box charge';
+  private _renderMainCard(): TemplateResult | typeof nothing {
+    const hide = this._config.layout_config?.hide || {};
+
+    // const indicators = !hide.indicators ? this._renderIndicators() : nothing;
+    const indicators = !hide.indicators ? this._renderIndicators() : nothing;
+    const rangeInfo = !hide.range_info ? this._renderRangeInfo() : nothing;
+    const imagesSlide = !hide.images ? this._renderImagesSlide() : nothing;
+    const miniMap = !hide.mini_map ? this._renderMiniMap() : nothing;
+    const buttons = !hide.buttons ? this._renderButtons() : nothing;
 
     return html`
-      <div class=${activeClass}>
-        ${items.map(({ entity, icon, name, state }) => {
-          return html`
-            <div class="item charge">
-              <div>
-                <ha-state-icon .hass=${this._hass} .stateObj=${this._hass.states[entity]} .icon=${icon}></ha-state-icon>
-                <span>${state}</span>
-              </div>
-              <div class="item-name">
-                <span>${name}</span>
-              </div>
-            </div>
-          `;
-        })}
-      </div>
+      <main id="main-wrapper">
+        <div class="header-info-box">${indicators} ${rangeInfo}</div>
+        ${imagesSlide} ${miniMap} ${buttons}
+      </main>
     `;
+  }
+
+  private _renderIndicators(): TemplateResult {
+    if (!this._config.indicators) return html``;
+    return html` <vsc-indicators
+      .hass=${this._hass}
+      .config=${this._config}
+      @indicator-toggle=${(ev: CustomEvent) => {
+        this._rangeInfo?._handleIndicatorClick(ev.detail.active);
+      }}
+    ></vsc-indicators>`;
   }
 
   private _renderButtons(): TemplateResult {
@@ -431,79 +357,15 @@ export class VehicleStatusCard extends LitElement {
     `;
   }
 
-  private _renderIndicators(): TemplateResult {
-    if (!this._config.indicators) return html``;
-    // Render single indicators
-    const singleIndicators = Object.values(this._indicatorsSingle).map(
-      ({ entity, icon, state, visibility }) => html`
-        <div class="item ${visibility === false ? 'hidden' : ''}">
-          <ha-state-icon
-            .hass=${this._hass}
-            .stateObj=${entity ? this._hass.states[entity] : undefined}
-            .icon=${icon}
-          ></ha-state-icon>
-          <div><span>${state}</span></div>
-        </div>
-      `
-    );
-
-    // Helper function to render group
-    const groupIndicator = (icon: string, label: string, onClick: (index: number) => void, isActive: boolean) => html`
-      <div class="item active-btn" @click=${onClick}>
-        <ha-icon icon=${icon}></ha-icon>
-        <div class="added-item-arrow">
-          <span>${label}</span>
-          <div class="subcard-icon ${isActive ? 'active' : ''}" style="margin-bottom: 2px">
-            <ha-icon icon="mdi:chevron-down"></ha-icon>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const groupWithItems = this._indicatorsGroup.filter((group) => group.visibility !== false);
-
-    // Render group indicators
-    const groupIndicators = groupWithItems.map((group, index) => {
-      const isActive = this._activeGroupIndicator === index;
-      return groupIndicator(group.icon, group.name, () => this._toggleGroupIndicator(index), isActive);
-    });
-
-    return html` <div id="indicators"><div class="info-box">${singleIndicators} ${groupIndicators}</div></div> `;
-  }
-
-  private _renderMainCard(): TemplateResult | typeof nothing {
-    const hide = this._config.layout_config?.hide || {};
-
-    const indicators = !hide.indicators ? this._renderIndicators() : nothing;
-    const activeIndicator = this._renderActiveIndicator();
-    const rangeInfo = !hide.range_info ? this._renderRangeInfo() : nothing;
-    const imagesSlide = !hide.images ? this._renderImagesSlide() : nothing;
-    const miniMap = !hide.mini_map ? this._renderMiniMap() : nothing;
-    const buttons = !hide.buttons ? this._renderButtons() : nothing;
-
-    return html`
-      <main id="main-wrapper">
-        <div class="header-info-box">${indicators} ${activeIndicator} ${rangeInfo}</div>
-        ${imagesSlide} ${miniMap} ${buttons}
-      </main>
-    `;
-  }
-
   private _renderMiniMap(): TemplateResult {
-    if (!this._config?.mini_map?.device_tracker) return html``; // Return early if no device tracker
-    const deviceTracker = this.getDeviceTrackerLatLong();
-    if (!deviceTracker) return this._showWarning('Device tracker not found');
-    const google_api_key = this._config.mini_map.google_api_key || '';
-    const darkMode = this.isDark;
-    const mapPopup = this._config.mini_map.enable_popup;
+    if (!this._config?.mini_map?.device_tracker) return this._showWarning('Device tracker not available');
 
     return html`
       <div id="mini_map">
         <mini-map-box
-          .deviceTracker=${deviceTracker}
-          .darkMode=${darkMode}
-          .apiKey=${google_api_key || ''}
-          .mapPopup=${mapPopup}
+          .hass=${this._hass}
+          .config=${this._config}
+          .component=${this}
           @toggle-map-popup=${() => (this._activeCardIndex = 'map')}
         >
         </mini-map-box>
@@ -512,29 +374,8 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _renderRangeInfo(): TemplateResult {
-    if (!this._rangeInfo || this._rangeInfo.length === 0 || this._activeGroupIndicator !== null) return html``;
-
-    const renderInfoBox = (icon: string, level: number, energy: string, range: string, progress_color: string) => html`
-      <div class="info-box range">
-        <div class="item">
-          <ha-icon icon="${icon}"></ha-icon>
-          <div><span>${energy}</span></div>
-        </div>
-        <div class="fuel-wrapper">
-          <div class="fuel-level-bar" style="--vic-range-width: ${level}%; background-color:${progress_color};"></div>
-        </div>
-        <div class="item">
-          <span>${range}</span>
-        </div>
-      </div>
-    `;
-
-    const rangeInfo = this._rangeInfo.map(({ energy, icon, level, progress_color, range }) => {
-      return renderInfoBox(icon, level, energy, range, progress_color);
-    });
-
-    // Wrap rangeInfo in a div if there are more than one entries
-    return html`<div id="range"><div class="combined-info-box">${rangeInfo}</div></div>`;
+    if (!this._config.range_info) return html``;
+    return html`<vsc-range-info .hass=${this._hass} .config=${this._config}></vsc-range-info>`;
   }
 
   /* -------------------------- CUSTO CARD RENDERING -------------------------- */
@@ -692,17 +533,6 @@ export class VehicleStatusCard extends LitElement {
     return html` <hui-warning>${warning}</hui-warning> `;
   }
 
-  private _toggleGroupIndicator(index: number): void {
-    if (this._activeGroupIndicator === index) {
-      this._activeGroupIndicator = null;
-    } else {
-      this._activeGroupIndicator = null;
-      setTimeout(() => {
-        this._activeGroupIndicator = index;
-      }, 400);
-    }
-  }
-
   private _toggleHelper(type: string): void {
     if (!this.isEditorPreview) return;
     const element = this.shadowRoot?.getElementById(type);
@@ -744,30 +574,6 @@ export class VehicleStatusCard extends LitElement {
         false
       );
     }
-  }
-
-  private getEntityAttribute(entity: string | undefined, attribute: string): any {
-    if (!entity || !this._hass.states[entity] || !this._hass.states[entity].attributes) return undefined;
-    return this._hass.states[entity].attributes[attribute];
-  }
-
-  private getFormattedAttributeValue(entity: string | undefined, attribute: string): string {
-    if (!entity || !this._hass.states[entity] || !this._hass.states[entity].attributes) return '';
-    return this._hass.formatEntityAttributeValue(this._hass.states[entity], attribute);
-  }
-
-  private getStateDisplay(entityId: string | undefined): string {
-    if (!entityId || !this._hass.states[entityId]) return '';
-    return this._hass.formatEntityState(this._hass.states[entityId]);
-  }
-
-  private getDeviceTrackerLatLong(): { lat: number; lon: number } | undefined {
-    if (!this._config?.mini_map?.device_tracker) return;
-    const deviceTracker = this._hass.states[this._config.mini_map.device_tracker];
-    if (!deviceTracker) return;
-    const lat = deviceTracker.attributes.latitude;
-    const lon = deviceTracker.attributes.longitude;
-    return { lat, lon };
   }
 
   private toggleCard(action: 'next' | 'prev'): void {
@@ -815,7 +621,7 @@ export class VehicleStatusCard extends LitElement {
           this._currentPreview = null;
         }
         this.updateComplete.then(() => {
-          this._vehicleButtonsGrid?.showButton(detail.data.buttonIndex);
+          this._vehicleButtonsGrid.showButton(detail.data.buttonIndex);
         });
         break;
 
@@ -840,7 +646,7 @@ export class VehicleStatusCard extends LitElement {
     return 5;
   }
 
-  private get isDark(): boolean {
+  public get isDark(): boolean {
     if (this._config.layout_config?.theme_config?.mode === 'dark') {
       return true;
     } else if (this._config.layout_config?.theme_config?.mode === 'light') {

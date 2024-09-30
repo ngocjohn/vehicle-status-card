@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { html, TemplateResult } from 'lit';
 
-import { HomeAssistantExtended as HomeAssistant } from '../types';
+import { HA as HomeAssistant } from '../types';
 
 interface PickerOptions {
   cardIndex?: number;

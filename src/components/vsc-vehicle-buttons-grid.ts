@@ -6,13 +6,7 @@ import { Pagination } from 'swiper/modules';
 
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
-import {
-  ButtonCardEntity,
-  HomeAssistantExtended as HomeAssistant,
-  VehicleStatusCardConfig,
-  ButtonConfig,
-  ButtonEntity,
-} from '../types';
+import { ButtonCardEntity, HA as HomeAssistant, VehicleStatusCardConfig, ButtonConfig, ButtonEntity } from '../types';
 import { getTemplateBoolean, getTemplateValue } from '../utils/ha-helper';
 import { addActions } from '../utils/tap-action';
 import { VehicleStatusCard } from '../vehicle-status-card';

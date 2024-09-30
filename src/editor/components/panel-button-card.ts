@@ -5,7 +5,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import YAML from 'yaml';
 
 import {
-  HomeAssistantExtended as HomeAssistant,
+  HA as HomeAssistant,
   VehicleStatusCardConfig,
   ButtonConfig,
   DefaultCardConfig,

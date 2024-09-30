@@ -1,3 +1,5 @@
+import { isString } from 'es-toolkit';
+
 export function formatMoonTime(dateString: string): string {
   const date = new Date(dateString);
   const today = new Date();

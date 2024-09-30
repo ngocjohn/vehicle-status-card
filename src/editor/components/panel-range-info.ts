@@ -2,12 +2,7 @@ import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, nothi
 import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
 
-import {
-  HomeAssistantExtended as HomeAssistant,
-  VehicleStatusCardConfig,
-  RangeInfoConfig,
-  RangeItemConfig,
-} from '../../types';
+import { HA as HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig } from '../../types';
 
 import iro from '@jaames/iro';
 

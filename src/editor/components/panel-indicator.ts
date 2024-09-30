@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
 
 import {
-  HomeAssistantExtended as HomeAssistant,
+  HA as HomeAssistant,
   VehicleStatusCardConfig,
   IndicatorConfig,
   IndicatorGroupConfig,

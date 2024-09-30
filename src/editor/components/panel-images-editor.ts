@@ -2,7 +2,7 @@ import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues }
 import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { VehicleStatusCardConfig, ImageConfig, HomeAssistantExtended as HomeAssistant } from '../../types';
+import { VehicleStatusCardConfig, ImageConfig, HA as HomeAssistant } from '../../types';
 import { uploadImage } from '../../utils/ha-helper';
 
 import editorcss from '../../css/editor.css';

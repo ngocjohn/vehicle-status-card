@@ -7,7 +7,7 @@ import { fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 
 import { CARD_VERSION } from '../const/const';
 import editorcss from '../css/editor.css';
-import { HomeAssistantExtended as HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import { Picker, TabBar } from '../utils/create';
 import { loadHaComponents, stickyPreview } from '../utils/loader';
 import './components/panel-button-card';

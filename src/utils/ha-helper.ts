@@ -6,7 +6,7 @@ import {
   ButtonCardEntity,
   CardItemEntity,
   DefaultCardConfig,
-  HomeAssistantExtended as HomeAssistant,
+  HA as HomeAssistant,
   IndicatorEntity,
   IndicatorGroupEntity,
   RangeInfoEntity,
@@ -140,68 +140,18 @@ export async function getGroupIndicators(
   return groupIndicator;
 }
 
-// export async function getRangeInfo(
-//   hass: HomeAssistant,
-//   rangeConfig: RangeInfoConfig[]
-// ): Promise<RangeInfoEntity | void> {
-//   const rangeInfo: RangeInfoEntity = [];
-
-//   for (const range of rangeConfig) {
-//     if (!range.energy_level || !range.range_level) {
-//       continue;
-//     }
-
-//     const energyLevel = range.energy_level[0];
-//     const rangeLevel = range.range_level[0];
-//     const progressColor = range.progress_color;
-
-//     let energyState = '';
-//     let rangeState = '';
-//     let energyIcon = '';
-//     let levelState = 0;
-
-//     if (!energyLevel.entity) continue;
-//     const energyEntity = energyLevel.entity;
-//     const energyStateObj = hass.states[energyEntity];
-//     if (!energyStateObj) continue;
-//     energyState = energyLevel.attribute
-//       ? hass.formatEntityAttributeValue(energyStateObj, energyLevel.attribute)
-//       : hass.formatEntityState(energyStateObj);
-
-//     energyIcon = energyLevel.icon ? energyLevel.icon : energyStateObj.attributes.icon || 'mdi:fuel';
-
-//     levelState = parseInt(energyState);
-
-//     if (!rangeLevel.entity) continue;
-
-//     const rangeEntity = rangeLevel.entity;
-//     const rangeStateObj = hass.states[rangeEntity];
-//     if (!rangeStateObj) continue;
-
-//     rangeState = rangeLevel.attribute
-//       ? hass.formatEntityAttributeValue(rangeStateObj, rangeLevel.attribute)
-//       : hass.formatEntityState(rangeStateObj);
-
-//     rangeInfo.push({
-//       energy: energyState,
-//       energy_entity: energyEntity,
-//       icon: energyIcon,
-//       level: levelState,
-//       level_entity: rangeEntity,
-//       progress_color: progressColor,
-//       range: rangeState,
-//     });
-//   }
-//   return rangeInfo;
-// }
-
 export async function getRangeInfo(
   hass: HomeAssistant,
   rangeConfig: RangeInfoConfig[]
 ): Promise<RangeInfoEntity | void> {
-  const rangeInfoPromises = rangeConfig.map(async (range) => {
+  if (!rangeConfig) {
+    return;
+  }
+  const rangeInfo: RangeInfoEntity = [];
+
+  for (const range of rangeConfig as RangeInfoConfig[]) {
     if (!range.energy_level || !range.range_level) {
-      return null;
+      continue;
     }
 
     const energyLevel = range.energy_level[0];
@@ -213,28 +163,29 @@ export async function getRangeInfo(
     let energyIcon = '';
     let levelState = 0;
 
-    if (!energyLevel.entity) return null;
+    if (!energyLevel.entity) continue;
     const energyEntity = energyLevel.entity;
     const energyStateObj = hass.states[energyEntity];
-    if (!energyStateObj) return null;
-
+    if (!energyStateObj) continue;
     energyState = energyLevel.attribute
       ? hass.formatEntityAttributeValue(energyStateObj, energyLevel.attribute)
       : hass.formatEntityState(energyStateObj);
 
     energyIcon = energyLevel.icon ? energyLevel.icon : energyStateObj.attributes.icon || 'mdi:fuel';
+
     levelState = parseInt(energyState);
 
-    if (!rangeLevel.entity) return null;
+    if (!rangeLevel.entity) continue;
+
     const rangeEntity = rangeLevel.entity;
     const rangeStateObj = hass.states[rangeEntity];
-    if (!rangeStateObj) return null;
+    if (!rangeStateObj) continue;
 
     rangeState = rangeLevel.attribute
       ? hass.formatEntityAttributeValue(rangeStateObj, rangeLevel.attribute)
       : hass.formatEntityState(rangeStateObj);
 
-    return {
+    rangeInfo.push({
       energy: energyState,
       energy_entity: energyEntity,
       icon: energyIcon,
@@ -242,12 +193,8 @@ export async function getRangeInfo(
       level_entity: rangeEntity,
       progress_color: progressColor,
       range: rangeState,
-    };
-  });
-
-  // Resolve all promises and filter out null results
-  const rangeInfo = (await Promise.all(rangeInfoPromises)).filter((info) => info !== null);
-  // console.log('Range Info:', rangeInfo);
+    });
+  }
   return rangeInfo;
 }
 

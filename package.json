@@ -74,7 +74,7 @@
   "scripts": {
     "dev": "rollup -c --watch",
     "build": "npm run lint && npm run rollup",
-    "lint": "eslint src/**/**.ts --fix",
+    "lint": "eslint src/*.ts --fix",
     "rollup": "rollup -c",
     "start:hass": "docker run --rm -p8123:8123 -v ${HOME}/Documents/GitHub/custom-cards-project/.hass_dev:/config homeassistant/home-assistant:beta"
   }
