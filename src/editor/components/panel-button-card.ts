@@ -53,8 +53,10 @@ export class PanelButtonCard extends LitElement {
   @state() _selectedAction: string = 'tap_action';
 
   @state() _reindexing: boolean = false;
+  @state() _reindexButton: boolean = false;
 
   private _sortable: Sortable | null = null;
+  private _btnSortable: Sortable | null = null;
 
   private _debouncedCustomBtnChanged = debounce(this.configChanged.bind(this), 500);
 
@@ -77,6 +79,41 @@ export class PanelButtonCard extends LitElement {
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
     this._loadYamlConfig();
+    this.initBtnSortable();
+  }
+
+  private initBtnSortable(): void {
+    this.updateComplete.then(() => {
+      const list = this.shadowRoot?.getElementById('button-list');
+      if (!list) {
+        console.log('List not found');
+        return;
+      }
+
+      console.log('Init sortable');
+      this._btnSortable = new Sortable(list, {
+        handle: '.handle',
+        ghostClass: 'sortable-ghost',
+        animation: 150,
+        onEnd: (evt) => {
+          this._btnHandleSortEnd(evt);
+        },
+      });
+    });
+  }
+
+  private _btnHandleSortEnd(evt: any): void {
+    const { oldIndex, newIndex } = evt;
+    const buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+    const button = buttonCardConfig[oldIndex];
+    buttonCardConfig.splice(oldIndex, 1);
+    buttonCardConfig.splice(newIndex, 0, button);
+    this.config = { ...this.config, button_card: buttonCardConfig };
+    fireEvent(this, 'config-changed', { config: this.config });
+    this._reindexButton = true;
+    setTimeout(() => {
+      this.resetItems();
+    }, 50);
   }
 
   private initSortable(): void {
@@ -164,6 +201,9 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderButtonList(): TemplateResult {
+    if (this._reindexButton) {
+      return html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`;
+    }
     const footerActions = html` <div class="action-footer">
       <ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>
       ${this.config?.button_card?.length !== 0
@@ -184,6 +224,7 @@ export class PanelButtonCard extends LitElement {
             buttons,
             (button, index) => html`
               <div class="item-config-row" data-index="${index}">
+                <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
                 <div class="sub-content">
                   ${Create.Picker({
                     component: this,
@@ -1109,12 +1150,17 @@ export class PanelButtonCard extends LitElement {
   private resetItems(): void {
     setTimeout(() => {
       this._reindexing = false;
+      this._reindexButton = false;
       // console.log('Reindexing done');
       if (this._activeTabIndex === 1) {
         // console.log('Reinit sortable');
         this.initSortable();
       }
+      if (!this._activePreview) {
+        this.initBtnSortable();
+      }
     }, 50);
+
     if (this._activePreview === 'default') {
       this._activePreview = null;
       this.requestUpdate();
