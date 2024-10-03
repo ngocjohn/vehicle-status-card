@@ -1,3 +1,4 @@
+import { forwardHaptic } from 'custom-card-helpers';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
@@ -227,11 +228,14 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   private _handleClick(index: number): void {
-    const button = this.buttons[index];
-    const buttonType = button?.button_type;
-    if (buttonType === 'default') {
-      this.component._activeCardIndex = index;
-    }
+    forwardHaptic('light');
+    setTimeout(() => {
+      const button = this.buttons[index];
+      const buttonType = button?.button_type;
+      if (buttonType === 'default') {
+        this.component._activeCardIndex = index;
+      }
+    }, 150);
   }
 
   private _setButtonActions = (): void => {
