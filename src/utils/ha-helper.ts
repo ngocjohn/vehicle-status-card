@@ -57,36 +57,33 @@ export async function getSingleIndicators(
   const singleIndicator: IndicatorEntity = [];
 
   // Use Promise.all to handle each indicator concurrently
-  await Promise.all(
-    single.map(async (indicator) => {
-      if (!indicator.entity) {
-        return;
-      }
+  for (const indicator of single) {
+    if (!indicator.entity) {
+      return;
+    }
 
-      const entity = indicator.entity;
-      const stateObj = hass.states[entity];
-      if (!stateObj) {
-        return;
-      }
+    const entity = indicator.entity;
+    const stateObj = hass.states[entity];
+    if (!stateObj) {
+      return;
+    }
 
-      const iconValue = indicator.icon_template
-        ? await getTemplateValue(hass, indicator.icon_template)
-        : indicator.icon
-          ? indicator.icon
-          : '';
+    const iconValue = indicator.icon_template
+      ? await getTemplateValue(hass, indicator.icon_template)
+      : indicator.icon
+        ? indicator.icon
+        : '';
 
-      const state = indicator.state_template
-        ? await getTemplateValue(hass, indicator.state_template)
-        : indicator.attribute
-          ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
-          : hass.formatEntityState(stateObj);
+    const state = indicator.state_template
+      ? await getTemplateValue(hass, indicator.state_template)
+      : indicator.attribute
+        ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
+        : hass.formatEntityState(stateObj);
 
-      const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
+    const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
 
-      singleIndicator.push({ entity, icon: iconValue, state, visibility });
-    })
-  );
-
+    singleIndicator.push({ entity, icon: iconValue, state, visibility });
+  }
   return singleIndicator;
 }
 
