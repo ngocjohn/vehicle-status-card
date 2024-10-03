@@ -5,6 +5,7 @@ import {
   hasConfigOrEntityChanged,
   LovelaceCardConfig,
   LovelaceCardEditor,
+  forwardHaptic,
 } from 'custom-card-helpers';
 import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
@@ -574,31 +575,34 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private toggleCard(action: 'next' | 'prev'): void {
-    if (this._activeCardIndex === null) return;
-    if (isString(this._activeCardIndex)) return;
+    forwardHaptic('light');
+    setTimeout(() => {
+      if (this._activeCardIndex === null) return;
+      if (isString(this._activeCardIndex)) return;
 
-    const cardIndexNum = Number(this._activeCardIndex);
-    const totalCards = this._buttonCards.length;
+      const cardIndexNum = Number(this._activeCardIndex);
+      const totalCards = this._buttonCards.length;
 
-    const isNotActionType = (index: number): boolean => this._buttonCards[index].button_type !== 'action';
+      const isNotActionType = (index: number): boolean => this._buttonCards[index].button_type !== 'action';
 
-    let newCardIndex = cardIndexNum;
+      let newCardIndex = cardIndexNum;
 
-    if (action === 'next') {
-      do {
-        newCardIndex = newCardIndex === totalCards - 1 ? 0 : newCardIndex + 1;
-      } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
-      console.log('New card index:', newCardIndex);
-    } else if (action === 'prev') {
-      do {
-        newCardIndex = newCardIndex === 0 ? totalCards - 1 : newCardIndex - 1;
-      } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
-    } else {
-      this._activeCardIndex = null;
-      return;
-    }
+      if (action === 'next') {
+        do {
+          newCardIndex = newCardIndex === totalCards - 1 ? 0 : newCardIndex + 1;
+        } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
+        console.log('New card index:', newCardIndex);
+      } else if (action === 'prev') {
+        do {
+          newCardIndex = newCardIndex === 0 ? totalCards - 1 : newCardIndex - 1;
+        } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
+      } else {
+        this._activeCardIndex = null;
+        return;
+      }
 
-    this._activeCardIndex = newCardIndex;
+      this._activeCardIndex = newCardIndex;
+    }, 100);
     this.requestUpdate();
   }
 
