@@ -39,6 +39,7 @@ export interface IndicatorConfig {
   icon_template?: string;
   state_template?: string;
   visibility?: string;
+  color?: string;
 }
 
 export type IndicatorEntity = Array<{
@@ -46,6 +47,7 @@ export type IndicatorEntity = Array<{
   icon: string;
   state: string;
   visibility?: boolean;
+  color?: string;
 }>;
 
 // IndicatorGroup configuration for a group of indicators
@@ -54,6 +56,7 @@ export interface IndicatorGroupConfig {
   items: Array<IndicatorGroupItemConfig>; // Array of group items
   name: string;
   visibility: string;
+  color?: string;
 }
 
 // Configuration for individual items in the indicatorGroup
@@ -76,6 +79,7 @@ export type IndicatorGroupEntity = Array<{
   }>; // Array of individual indicator items
   name: string;
   visibility?: boolean;
+  color: string;
 }>;
 
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */

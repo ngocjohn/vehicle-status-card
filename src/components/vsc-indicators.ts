@@ -81,7 +81,7 @@ export class VscIndicators extends LitElement {
         ${items.map(({ entity, icon, name, state }) => {
           return html`
             <div class="item charge">
-              <div>
+              <div class="icon-state">
                 <ha-state-icon .hass=${this.hass} .stateObj=${this.hass.states[entity]} .icon=${icon}></ha-state-icon>
                 <span>${state}</span>
               </div>
@@ -97,12 +97,13 @@ export class VscIndicators extends LitElement {
 
   private _renderSingleIndicators(): TemplateResult {
     const indicator = Object.values(this._indicatorsSingle).map(
-      ({ entity, icon, state, visibility }) => html`
+      ({ entity, icon, state, visibility, color }) => html`
         <div class="item ${visibility === false ? 'hidden' : ''}">
           <ha-state-icon
             .hass=${this.hass}
             .stateObj=${entity ? this.hass.states[entity] : undefined}
             .icon=${icon}
+            style=${color ? `color: ${color}` : ''}
           ></ha-state-icon>
           <div><span>${state}</span></div>
         </div>
@@ -114,9 +115,15 @@ export class VscIndicators extends LitElement {
 
   private _renderGroupIndicators(): TemplateResult {
     // Helper function to render group
-    const groupIndicator = (icon: string, label: string, onClick: (index: number) => void, isActive: boolean) => html`
+    const groupIndicator = (
+      icon: string,
+      label: string,
+      color: string,
+      onClick: (index: number) => void,
+      isActive: boolean
+    ) => html`
       <div class="item active-btn" @click=${onClick}>
-        <ha-icon icon=${icon}></ha-icon>
+        <ha-icon icon=${icon} style=${color ? `color: ${color}` : ''}></ha-icon>
         <div class="added-item-arrow">
           <span>${label}</span>
           <div class="subcard-icon ${isActive ? 'active' : ''}" style="margin-bottom: 2px">
@@ -130,7 +137,7 @@ export class VscIndicators extends LitElement {
     // Render group indicators
     const groupIndicators = groupWithItems.map((group, index) => {
       const isActive = this._activeGroupIndicator === index;
-      return groupIndicator(group.icon, group.name, () => this._toggleGroupIndicator(index), isActive);
+      return groupIndicator(group.icon, group.name, group.color, () => this._toggleGroupIndicator(index), isActive);
     });
 
     return html`${groupIndicators}`;
