@@ -70,14 +70,20 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   public _cleanConfig(): void {
-    if (PREVIEW_CONFIG_TYPES.some((key) => this._config[key])) {
+    // Check if _config exists and is an object
+    if (!this._config || typeof this._config !== 'object') {
+      return;
+    }
+
+    // Check if any preview key is not null
+    if (PREVIEW_CONFIG_TYPES.some((key) => this._config[key] !== null)) {
       console.log('Cleaning config of preview keys');
       this._config = {
         ...this._config,
-        btn_preview: null,
-        card_preview: null,
-        default_card_preview: null,
-        tire_preview: null,
+        ...PREVIEW_CONFIG_TYPES.reduce((acc: any, key: string) => {
+          acc[key] = null;
+          return acc;
+        }, {}),
       };
       fireEvent(this, 'config-changed', { config: this._config });
     } else {
