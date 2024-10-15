@@ -100,13 +100,35 @@ type BUTTON_CARD_ACTIONS =
   | 'category-delete'
   | 'category-edit'
   | 'custom-card-preview'
+  | 'duplicate-button'
   | 'delete-button'
   | 'delete-item'
   | 'edit-button'
   | 'edit-item'
   | 'item-back'
   | 'show-button'
-  | 'show-delete';
+  | 'show-delete'
+  | 'category-duplicate';
+
+export enum ACTIONS {
+  ADD_ITEM = 'add-item',
+  ADD_NEW_BUTTON = 'add-new-button',
+  BACK_TO_LIST = 'back-to-list',
+  CATEGORY_ADD = 'category-add',
+  CATEGORY_BACK = 'category-back',
+  CATEGORY_DELETE = 'category-delete',
+  CATEGORY_EDIT = 'category-edit',
+  CUSTOM_CARD_PREVIEW = 'custom-card-preview',
+  DUPLICATE_BUTTON = 'duplicate-button',
+  DELETE_BUTTON = 'delete-button',
+  DELETE_ITEM = 'delete-item',
+  EDIT_BUTTON = 'edit-button',
+  EDIT_ITEM = 'edit-item',
+  ITEM_BACK = 'item-back',
+  SHOW_BUTTON = 'show-button',
+  SHOW_DELETE = 'show-delete',
+  CATEGORY_DUPLICATE = 'category-duplicate',
+}
 
 type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image';
 
