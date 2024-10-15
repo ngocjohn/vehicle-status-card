@@ -437,8 +437,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       return html``;
     }
     const selected = this._selectedConfigType;
-    const CARDCONFIG = CONFIG_TYPES.options[selected];
-    const DOC_URL = CARDCONFIG.doc;
+    const CARDCONFIG = CONFIG_TYPES.options[selected] || {};
+    const DOC_URL = CARDCONFIG.doc || '';
 
     const typeMap = {
       button_card: this._renderButtonCard(),
@@ -467,7 +467,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         <div class="menu-selector hidden">${cardTypeSelector}</div>
         <div class="menu-content-wrapper">
           <div class="menu-label">
-            <span class="primary">${CARDCONFIG.name}</span>
+            <span class="primary">${CARDCONFIG.name ?? ''}</span>
           </div>
           ${isMainEditor
             ? nothing

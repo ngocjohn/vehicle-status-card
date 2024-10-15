@@ -22,6 +22,7 @@ import {
   CONFIG_VALUES,
   CONFIG_TYPES,
   NEW_BUTTON_CONFIG,
+  ACTIONS,
 } from '../editor-const';
 
 import editorcss from '../../css/editor.css';
@@ -206,15 +207,23 @@ export class PanelButtonCard extends LitElement {
     }
     const footerActions = html` <div class="action-footer">
       <ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>
-      ${this.config?.button_card?.length !== 0
-        ? html`<ha-button class="showdelete delete-btn" @click=${this.toggleAction('show-delete')}>Delete</ha-button>`
-        : ''}
     </div>`;
 
     const buttons = this.config.button_card;
     if (!buttons) {
       return footerActions;
     }
+
+    const actionMap = [
+      { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
+      { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
+      {
+        title: 'Delete',
+        action: ACTIONS.DELETE_BUTTON,
+        icon: 'mdi:delete',
+        color: 'var(--error-color)',
+      },
+    ];
 
     return html`
       <div class="card-config">
@@ -237,12 +246,35 @@ export class PanelButtonCard extends LitElement {
                   })}
                 </div>
                 <div class="item-actions">
-                  <div class="action-icon delete-icon hidden" @click="${this.toggleAction('delete-button', index)}">
-                    <ha-icon icon="mdi:close"></ha-icon>
-                  </div>
-
                   <div class="action-icon" @click="${this.toggleAction('edit-button', index)}">
                     <ha-icon icon="mdi:pencil"></ha-icon>
+                  </div>
+                  <div class="action-icon">
+                    <ha-button-menu
+                      .corner=${'BOTTOM_START'}
+                      .fixed=${true}
+                      .menuCorner=${'START'}
+                      .activatable=${true}
+                      .naturalMenuWidth=${true}
+                      @closed=${(ev: Event) => ev.stopPropagation()}
+                    >
+                      <div class="action-icon" slot="trigger"><ha-icon icon="mdi:dots-vertical"></ha-icon></div>
+                      ${actionMap.map(
+                        (action) =>
+                          html`<mwc-list-item
+                            @click=${this.toggleAction(action.action, index)}
+                            .graphic=${'icon'}
+                            style="${action.color ? `color: ${action.color}` : ''}"
+                          >
+                            <ha-icon
+                              icon=${action.icon}
+                              slot="graphic"
+                              style="${action.color ? `color: ${action.color}` : ''}"
+                            ></ha-icon>
+                            ${action.title}
+                          </mwc-list-item>`
+                      )}
+                    </ha-button-menu>
                   </div>
                 </div>
               </div>
@@ -685,6 +717,10 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderDefaultCardList(defaultCard: DefaultCardConfig[], buttonIndex: number): TemplateResult {
+    const actions = [
+      { title: 'Duplicate', action: ACTIONS.CATEGORY_DUPLICATE, icon: 'mdi:content-duplicate' },
+      { title: 'Delete', action: ACTIONS.CATEGORY_DELETE, icon: 'mdi:delete', color: 'var(--error-color)' },
+    ];
     const defaultCardlist = this._reindexing
       ? html`<span>Reindexing...</span>`
       : html`<div class="default-card-list" id="default-card-list">
@@ -706,14 +742,35 @@ export class PanelButtonCard extends LitElement {
                   })}
                 </div>
                 <div class="item-actions">
-                  <div
-                    class="action-icon delete-icon hidden"
-                    @click="${this.toggleAction('category-delete', buttonIndex, cardIndex)}"
-                  >
-                    <ha-icon icon="mdi:close"></ha-icon>
-                  </div>
                   <div class="action-icon" @click="${this.toggleAction('category-edit', buttonIndex, cardIndex)}">
                     <ha-icon icon="mdi:pencil"></ha-icon>
+                  </div>
+                  <div class="action-icon">
+                    <ha-button-menu
+                      .corner=${'BOTTOM_START'}
+                      .fixed=${true}
+                      .menuCorner=${'START'}
+                      .activatable=${true}
+                      .naturalMenuWidth=${true}
+                      @closed=${(ev: Event) => ev.stopPropagation()}
+                    >
+                      <div class="action-icon" slot="trigger"><ha-icon icon="mdi:dots-vertical"></ha-icon></div>
+                      ${actions.map(
+                        (action) =>
+                          html`<mwc-list-item
+                            @click=${this.toggleAction(action.action, buttonIndex, cardIndex)}
+                            .graphic=${'icon'}
+                            style="${action.color ? `color: ${action.color}` : ''}"
+                          >
+                            <ha-icon
+                              icon=${action.icon}
+                              slot="graphic"
+                              style="${action.color ? `color: ${action.color}` : ''}"
+                            ></ha-icon>
+                            ${action.title}
+                          </mwc-list-item>`
+                      )}
+                    </ha-button-menu>
                   </div>
                 </div>
               </div>
@@ -723,10 +780,8 @@ export class PanelButtonCard extends LitElement {
 
     const footerActions = html` <div class="action-footer">
       <ha-button @click=${this.toggleAction('category-add', buttonIndex)}>Add category</ha-button>
-      ${defaultCard.length !== 0
-        ? html`<ha-button class="showdelete delete-btn" @click=${this.toggleAction('show-delete')}>Delete</ha-button>`
-        : ''}
     </div>`;
+
     const cardInfo = CONFIG_TYPES.options.button_card.subpanels.default_cards.description;
     return html`
       ${this._renderSubHeader(
@@ -1068,6 +1123,14 @@ export class PanelButtonCard extends LitElement {
               updateChange(buttonCardConfig);
             }
             break;
+          case 'category-duplicate':
+            if (buttonIndex !== undefined && cardIndex !== undefined) {
+              const buttonCardConfig = [...(this.config.button_card || [])];
+              const newCategory = JSON.parse(JSON.stringify(buttonCardConfig[buttonIndex].default_card[cardIndex]));
+              buttonCardConfig[buttonIndex].default_card.push(newCategory);
+              updateChange(buttonCardConfig);
+            }
+            break;
           case 'category-add':
             if (buttonIndex !== undefined) {
               hideAllDeleteButtons();
@@ -1081,10 +1144,10 @@ export class PanelButtonCard extends LitElement {
           case 'edit-item':
             this._itemIndex = itemIndex!;
             break;
+
           case 'item-back':
             this._itemIndex = null;
             this.hideClearButton();
-
             break;
 
           case 'delete-item':
@@ -1092,6 +1155,14 @@ export class PanelButtonCard extends LitElement {
               const buttonCardConfig = [...(this.config.button_card || [])];
               const defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
               defaultCard[cardIndex].items.splice(itemIndex, 1);
+              updateChange(buttonCardConfig);
+            }
+            break;
+          case 'duplicate-button':
+            if (buttonIndex !== undefined) {
+              const buttonCardConfig = [...(this.config.button_card || [])];
+              const newButton = JSON.parse(JSON.stringify(buttonCardConfig[buttonIndex]));
+              buttonCardConfig.push(newButton);
               updateChange(buttonCardConfig);
             }
             break;
