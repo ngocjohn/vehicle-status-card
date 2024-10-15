@@ -164,6 +164,15 @@ export class PanelIndicator extends LitElement {
           helperText: 'Template for the state',
         },
       },
+      {
+        value: indicator.color,
+        pickerType: 'template',
+        configValue: 'color',
+        options: {
+          label: 'Color template',
+          helperText: 'Template for the color of the indicator',
+        },
+      },
     ];
 
     const subPanelConfig = html`
@@ -203,6 +212,8 @@ export class PanelIndicator extends LitElement {
     const groupPicker = [
       { value: group.name, pickerType: 'textfield', label: 'Group name', configValue: 'name' },
       { value: group.icon, pickerType: 'icon' },
+    ];
+    const groupTemplate = [
       {
         value: group.visibility,
         pickerType: 'template',
@@ -212,11 +223,23 @@ export class PanelIndicator extends LitElement {
           helperText: 'Template for the visibility. Use Jinja2 template with result as true to show the indicator',
         },
       },
+      {
+        value: group.color,
+        pickerType: 'template',
+        configValue: 'color',
+        options: {
+          label: 'Color template',
+          helperText: 'Template for the color of the indicator',
+        },
+      },
     ];
 
     const groupNameIcon = html`
       <div class="sub-content">
         ${groupPicker.map((config) => this._createItemPicker({ ...config, ...configShared }))}
+      </div>
+      <div class="sub-panel-config">
+        ${groupTemplate.map((config) => this._createItemPicker({ ...config, ...configShared }, 'template-content'))}
       </div>
     `;
 

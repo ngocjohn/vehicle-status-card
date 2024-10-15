@@ -91,15 +91,21 @@ header h1 {
 }
 
 .info-box {
-  --mdc-icon-size: 17px;
+  --mdc-icon-size: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
   position: relative;
   width: 100%;
   height: fit-content;
   gap: var(--vic-gutter-gap);
   flex-wrap: wrap;
+}
+
+@media screen and (max-width: 768px) {
+  .info-box {
+    --mdc-icon-size: 17px;
+  }
+
 }
 
 .item.hidden {
@@ -110,6 +116,7 @@ header h1 {
   flex-wrap: nowrap !important;
   justify-content: center;
   text-wrap: nowrap;
+  align-items: center;
 }
 
 .info-box.range .item {
@@ -120,7 +127,6 @@ header h1 {
 
 .info-box .item {
   display: flex;
-  align-items: center;
   gap: 0.4rem;
 }
 
@@ -171,6 +177,12 @@ header h1 {
   flex-direction: column;
   gap: initial;
   width: max-content;
+}
+
+.info-box.charge .icon-state {
+  display: flex;
+  height: auto;
+  align-items: center;
 }
 
 .info-box.charge .item-name {

@@ -82,7 +82,9 @@ export async function getSingleIndicators(
 
     const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
 
-    singleIndicator.push({ entity, icon: iconValue, state, visibility });
+    const color = indicator.color ? await getTemplateValue(hass, indicator.color) : '';
+
+    singleIndicator.push({ entity, icon: iconValue, state, visibility, color });
   }
   return singleIndicator;
 }
@@ -99,6 +101,7 @@ export async function getGroupIndicators(
       items: [],
       name: group.name,
       visibility: await getTemplateBoolean(hass, group.visibility),
+      color: group.color ? await getTemplateValue(hass, group.color) : '',
     });
 
     if (group.items) {

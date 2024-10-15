@@ -13,7 +13,7 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, query, state } from 'lit/decorators';
 
 import './components';
-import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo } from './components';
+import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
 import { DEFAULT_CONFIG } from './const/const';
 import { TIRE_BG } from './const/img-const';
 import cardcss from './css/card.css';
@@ -51,6 +51,7 @@ export class VehicleStatusCard extends LitElement {
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
   @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
+  @query('vsc-indicators') _indicators!: VscIndicators;
 
   constructor() {
     super();
