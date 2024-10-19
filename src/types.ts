@@ -17,7 +17,10 @@ export interface ExtendedThemes extends Themes {
     [key: string]: ExtendedTheme;
   };
 }
-
+export interface GUIModeChangedEvent {
+  guiMode: boolean;
+  guiModeAvailable: boolean;
+}
 /**
  * HomeAssistantExtended extends the existing HomeAssistant interface with additional properties.
  */

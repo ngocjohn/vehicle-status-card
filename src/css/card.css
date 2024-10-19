@@ -21,8 +21,9 @@ ha-card {
 }
 
 ha-card.preview-card {
-  padding: 0;
+  padding: 0px;
   border: none;
+  background: none;
 }
 
 .fade-in {
@@ -426,6 +427,10 @@ header h1 {
   margin-top: 1rem;
   padding: 0;
   overflow: hidden;
+}
+
+.added-card>.added-cutom {
+  margin-bottom: var(--vic-card-padding);
 }
 
 .added-card:first-child {

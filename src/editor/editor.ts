@@ -3,7 +3,7 @@ import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResu
 import { customElement, property, query, state } from 'lit/decorators';
 
 // Custom card helpers
-import { fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
+import { fireEvent, LovelaceCardEditor, LovelaceConfig } from 'custom-card-helpers';
 
 import { CARD_VERSION } from '../const/const';
 import editorcss from '../css/editor.css';
@@ -18,11 +18,13 @@ import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
-  @property() private _config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) public _hass!: HomeAssistant;
+  @property({ attribute: false }) public lovelace?: LovelaceConfig;
+  @property() _config!: VehicleStatusCardConfig;
+
   @state() private activeTabIndex: null | number = null;
 
   @query('panel-button-card') _buttonCardEditor?: any;
-  @property({ attribute: false }) public _hass!: HomeAssistant;
   @state() _helpOverlayActive: boolean = false;
 
   @query('panel-images-editor') _imagesEditor!: any;

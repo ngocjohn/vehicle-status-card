@@ -25,6 +25,8 @@ import {
   ACTIONS,
 } from '../editor-const';
 
+import '../../editor/components/panel-editor-ui';
+
 import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
@@ -34,11 +36,12 @@ import Sortable from 'sortablejs';
 import * as Create from '../../utils/create';
 
 import { uploadImage } from '../../utils/ha-helper';
+import { VehicleStatusCardEditor } from '../editor';
 
 @customElement('panel-button-card')
 export class PanelButtonCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) editor?: any;
+  @property({ type: Object }) editor!: VehicleStatusCardEditor;
   @property({ type: Object }) config!: VehicleStatusCardConfig;
 
   @state() _activePreview: string | null = null;
@@ -79,12 +82,15 @@ export class PanelButtonCard extends LitElement {
 
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
-    this._loadYamlConfig();
+
     this.initBtnSortable();
   }
 
   private initBtnSortable(): void {
     this.updateComplete.then(() => {
+      if (this._activePreview !== null) {
+        return;
+      }
       const list = this.shadowRoot?.getElementById('button-list');
       if (!list) {
         console.log('List not found');
@@ -164,17 +170,6 @@ export class PanelButtonCard extends LitElement {
     }, 50);
   }
 
-  private async _loadYamlConfig() {
-    if (!this.config.button_card) {
-      return;
-    }
-    for (const button_card of this.config.button_card) {
-      const yamlConfig = button_card.custom_card;
-      const yaml = YAML.stringify(yamlConfig);
-      this._yamlConfig.push(yaml);
-    }
-  }
-
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
     if (changedProps.has('_buttonIndex') && this._buttonIndex === null && this._activePreview !== null) {
@@ -182,7 +177,8 @@ export class PanelButtonCard extends LitElement {
     }
 
     if (changedProps.has('_activeTabIndex') && this._activePreview !== null) {
-      this.editor._cleanConfig();
+      this.resetEditorPreview();
+      // this.editor._cleanConfig();
     }
 
     if (changedProps.has('_buttonIndex') || changedProps.has('_cardIndex') || changedProps.has('_activeTabIndex')) {
@@ -938,7 +934,6 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderCustomCardConfig(buttonIndex: number): TemplateResult {
-    const yamlCardConfig = this._yamlConfig[buttonIndex];
     const customCard = this.config.button_card[buttonIndex].custom_card;
     const isHidden = customCard === undefined;
 
@@ -954,20 +949,14 @@ export class PanelButtonCard extends LitElement {
           : ''}
       </div>
       <div class="sub-panel">
-        <ha-code-editor
-          .autofocus=${true}
-          .autocompleteEntities=${true}
-          .autocompleteIcons=${true}
-          .dir=${'ltr'}
-          .mode=${'yaml'}
+        <panel-editor-ui
           .hass=${this.hass}
-          .linewrap=${false}
-          .value=${yamlCardConfig}
-          .configValue=${'custom_card'}
-          .configType=${'custom_card'}
-          .configIndex=${buttonIndex}
-          @value-changed=${(ev: any) => this.handleCustomCardConfig(ev)}
-        ></ha-code-editor>
+          .config=${this.config}
+          .editor=${this.editor}
+          .cards=${customCard}
+          .buttonIndex=${buttonIndex}
+          .activePreview=${this._activePreview}
+        ></panel-editor-ui>
       </div>
     `;
   }
@@ -1616,40 +1605,6 @@ export class PanelButtonCard extends LitElement {
       }
     });
   };
-
-  private handleCustomCardConfig(ev: any): void {
-    ev.stopPropagation();
-    if (!this.config) {
-      return;
-    }
-    const target = ev.target;
-    const configType = target.configType;
-    const configValue = target.configValue;
-    const configIndex = target.configIndex;
-    const value = target.value;
-
-    console.log('configType', configType, 'configValue', configValue, 'configIndex', configIndex, 'value', value);
-    let parsedYaml = [];
-    try {
-      parsedYaml = YAML.parse(value);
-    } catch (e) {
-      console.error('Error parsing YAML', e);
-      return;
-    }
-
-    if (this.config.card_preview && this._activePreview === 'custom') {
-      this.config = { ...this.config, card_preview: parsedYaml };
-    }
-
-    if (configType === 'custom_card') {
-      let buttonCardConfig = [...(this.config.button_card || [])];
-      let buttonConfig = { ...buttonCardConfig[configIndex] };
-      buttonConfig.custom_card = parsedYaml;
-      buttonCardConfig[configIndex] = buttonConfig;
-      this.config = { ...this.config, button_card: buttonCardConfig };
-      this._debouncedCustomBtnChanged();
-    }
-  }
 
   private configChanged(): void {
     fireEvent(this, 'config-changed', { config: this.config });

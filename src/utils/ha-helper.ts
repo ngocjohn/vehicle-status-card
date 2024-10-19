@@ -248,9 +248,9 @@ export async function getDefaultCard(
 export async function createCardElement(
   hass: HomeAssistant,
   cards: LovelaceCardConfig[]
-): Promise<LovelaceCardConfig[]> {
+): Promise<LovelaceCardConfig[] | void> {
   if (!cards) {
-    return [];
+    return;
   }
 
   // Load the helpers and ensure they are available
@@ -264,7 +264,7 @@ export async function createCardElement(
   // Check if helpers were loaded and if createCardElement exists
   if (!helpers || !helpers.createCardElement) {
     console.error('Card helpers or createCardElement not available.');
-    return [];
+    return;
   }
 
   const cardElements = await Promise.all(
