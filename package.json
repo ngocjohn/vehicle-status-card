@@ -19,6 +19,7 @@
   "module": "vehicle-status-card.js",
   "license": "MIT",
   "dependencies": {
+    "@mdi/js": "^7.4.47",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "custom-card-helpers": "^1.7.2",

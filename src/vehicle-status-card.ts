@@ -262,7 +262,8 @@ export class VehicleStatusCard extends LitElement {
       type: 'map',
     };
 
-    this._mapPopupLovelace = await HaHelp.createCardElement(this._hass, [mapCardConfig]);
+    const mapCardElement = (await HaHelp.createCardElement(this._hass, [mapCardConfig])) as LovelaceCardConfig[];
+    this._mapPopupLovelace = mapCardElement;
   }
 
   protected render(): TemplateResult {
@@ -333,7 +334,7 @@ export class VehicleStatusCard extends LitElement {
     const type = this._currentPreview;
     const typeMap = {
       default: this._defaultCardPreview.map((card) => this._renderDefaultCardItems(card)),
-      custom: this._cardPreviewElement as LovelaceCardConfig[],
+      custom: this._cardPreviewElement.map((card) => html`<div class="added-cutom">${card}</div>`),
       tire: this._renderTireCard(this._tireCardPreview as TireEntity),
     };
 
@@ -409,7 +410,7 @@ export class VehicleStatusCard extends LitElement {
         : cardType === 'tire'
           ? this._renderTireCard(tireCard)
           : !isEmpty(customCard)
-            ? customCard.map((card: LovelaceCardConfig) => card)
+            ? customCard.map((card: LovelaceCardConfig) => html`<div class="added-cutom">${card}</div>`)
             : this._showWarning('Card not found');
 
     const content = html`
