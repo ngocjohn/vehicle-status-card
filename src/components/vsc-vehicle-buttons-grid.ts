@@ -15,6 +15,7 @@ export type CustomButtonItem = {
   notify: boolean;
   state: string;
   entity: string;
+  color: string;
 };
 
 @customElement('vehicle-buttons-grid')
@@ -72,7 +73,7 @@ export class VehicleButtonsGrid extends LitElement {
   }
   private async _getSecondaryInfo(button: ButtonConfig): Promise<CustomButtonItem> {
     if (!button || !button.secondary) {
-      return { notify: false, state: '', entity: '' };
+      return { notify: false, state: '', entity: '', color: '' };
     }
 
     const notify = button.notify ? await getTemplateBoolean(this.hass, button.notify) : false;
@@ -88,7 +89,8 @@ export class VehicleButtonsGrid extends LitElement {
           ? this.hass.formatEntityState(this.hass.states[secondary.entity])
           : '';
 
-    return { notify, state, entity };
+    const color = button.color ? await getTemplateValue(this.hass, button.color) : '';
+    return { notify, state, entity, color };
   }
 
   private async checkSecondaryChanged(): Promise<void> {
@@ -105,8 +107,9 @@ export class VehicleButtonsGrid extends LitElement {
       const index = this._secondaryInfo.indexOf(info);
       const oldState = this._secondaryInfo[index].state;
       const oldNotify = this._secondaryInfo[index].notify;
-      const { state, notify } = (await this._getSecondaryInfo(this.buttons[index].button)) as CustomButtonItem;
-      if (oldState !== state || oldNotify !== notify) {
+      const oldColor = this._secondaryInfo[index].color;
+      const { state, notify, color } = (await this._getSecondaryInfo(this.buttons[index].button)) as CustomButtonItem;
+      if (oldState !== state || oldNotify !== notify || oldColor !== color) {
         isChanged = true;
         changedIndexes.push(index);
       }
@@ -117,10 +120,10 @@ export class VehicleButtonsGrid extends LitElement {
       const newSecondaryInfo = [...this._secondaryInfo]; // Spread to copy the existing array
       await Promise.all(
         changedIndexes.map(async (index) => {
-          const { state, notify, entity } = (await this._getSecondaryInfo(
+          const { state, notify, entity, color } = (await this._getSecondaryInfo(
             this.buttons[index].button
           )) as CustomButtonItem;
-          newSecondaryInfo[index] = { state, notify, entity };
+          newSecondaryInfo[index] = { state, notify, entity, color };
         })
       );
       this._secondaryInfo = newSecondaryInfo;
@@ -189,7 +192,7 @@ export class VehicleButtonsGrid extends LitElement {
   private _renderButton(buttonIndex: number, hideNotify: boolean): TemplateResult {
     const button = this.buttons[buttonIndex]; // Array of button objects
     const { icon, primary } = button.button;
-    const { notify, state, entity } = this._secondaryInfo[buttonIndex];
+    const { notify, state, entity, color } = this._secondaryInfo[buttonIndex];
 
     return html`
       <div
@@ -204,6 +207,7 @@ export class VehicleButtonsGrid extends LitElement {
                 .hass=${this.hass}
                 .stateObj=${entity ? this.hass.states[entity] : undefined}
                 .icon=${icon}
+                style=${color ? `color: ${color}` : ''}
               ></ha-state-icon>
             </div>
             ${!hideNotify

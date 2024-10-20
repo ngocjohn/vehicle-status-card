@@ -14,7 +14,7 @@ import { customElement, property, query, state } from 'lit/decorators';
 
 import './components';
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
-import { DEFAULT_CONFIG } from './const/const';
+import { DEFAULT_CONFIG, ICON } from './const/const';
 import { TIRE_BG } from './const/img-const';
 import cardcss from './css/card.css';
 import {
@@ -29,8 +29,6 @@ import {
 } from './types';
 import { HaHelp } from './utils';
 import { isEmpty } from './utils/helpers';
-import { loadCustomElement } from './utils/loader';
-import { mdiChevronLeft, mdiChevronRight, mdiClose } from '@mdi/js';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
@@ -389,7 +387,7 @@ export class VehicleStatusCard extends LitElement {
       <ha-icon-button
         class="click-shrink headder-btn"
         .label=${'Close'}
-        .path=${mdiClose}
+        .path=${ICON.CLOSE}
         @click="${() => (this._activeCardIndex = null)}"
       >
       </ha-icon-button>
@@ -398,13 +396,13 @@ export class VehicleStatusCard extends LitElement {
           class="click-shrink headder-btn"
           @click=${() => this.toggleCard('prev')}
           .label=${'Previous'}
-          .path=${mdiChevronLeft}
+          .path=${ICON.CHEVRON_LEFT}
         ></ha-icon-button>
         <ha-icon-button
           class="click-shrink headder-btn"
           @click=${() => this.toggleCard('next')}
           .label=${'Next'}
-          .path=${mdiChevronRight}
+          .path=${ICON.CHEVRON_RIGHT}
         ></ha-icon-button>
       </div>
     </div>`;

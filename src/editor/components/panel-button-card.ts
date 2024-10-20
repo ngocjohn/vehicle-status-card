@@ -420,6 +420,7 @@ export class PanelButtonCard extends LitElement {
     const entity = secondary.entity;
     const attribute = secondary.attribute || '';
     const state_template = secondary.state_template;
+    const color = button.color || '';
 
     const attributes = entity ? Object.keys(this.hass.states[entity].attributes) : [];
     const attrOpts = [...attributes.map((attr) => ({ value: attr, label: attr }))];
@@ -462,6 +463,18 @@ export class PanelButtonCard extends LitElement {
       },
     ];
 
+    const colorTemplate = [
+      {
+        value: color,
+        pickerType: 'template',
+        configValue: 'color',
+        options: {
+          label: 'Color template',
+          helperText: 'Template for the icon color',
+        },
+      },
+    ];
+
     const content = html`
       <div>
         ${this._renderSubHeader('Primary and icon', [
@@ -480,6 +493,7 @@ export class PanelButtonCard extends LitElement {
         ${pickerSecondaryState.map((config) =>
           this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content')
         )}
+        ${colorTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
       </div>
     `;
 

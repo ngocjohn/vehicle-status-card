@@ -8,8 +8,8 @@ import { isEmpty } from '../utils';
 
 @customElement('vsc-indicators')
 export class VscIndicators extends LitElement {
-  @property() private hass!: HomeAssistant;
-  @property() private config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) private hass!: HomeAssistant;
+  @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() private _indicatorsGroup: IndicatorGroupEntity = [];
   @state() private _indicatorsSingle: IndicatorEntity = [];
