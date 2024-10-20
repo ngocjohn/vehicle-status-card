@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { html, TemplateResult } from 'lit';
 
 import { HA as HomeAssistant } from '../types';
@@ -154,7 +153,7 @@ export const Picker = ({
       ></ha-selector>
     `,
     new_template: html`
-      <div class="template-ui">
+      <div>
         <p>${options?.label}</p>
         <ha-code-editor
           .hass=${hass}
@@ -193,7 +192,6 @@ export const Picker = ({
 
     textfield: html`
       <ha-textfield
-        class="form-text"
         .label=${label}
         .placeholder=${label}
         .configValue=${configValue}
@@ -241,7 +239,7 @@ export const TabBar = ({
       )}
     </mwc-tab-bar>
 
-    <div class="tab-content">${tabs[activeTabIndex]?.content || html`<div>No content available</div>`}</div>
+    <div>${tabs[activeTabIndex]?.content || html`<div>No content available</div>`}</div>
   `;
 };
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
 
@@ -20,7 +19,7 @@ import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public lovelace?: LovelaceConfig;
-  @property() _config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) _config!: VehicleStatusCardConfig;
 
   @state() private activeTabIndex: null | number = null;
 
@@ -88,8 +87,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         }, {}),
       };
       fireEvent(this, 'config-changed', { config: this._config });
-    } else {
-      console.log('No preview keys found');
     }
   }
 
@@ -330,7 +327,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const cardTypeSelector = this._renderConfigTypeSelector();
 
     const menuButton = html`<div class="config-menu-wrapper">
-      <div id="menu-icon" class="menu-icon click-schrink" @click="${() => this._toggleMenu()}">
+      <div id="menu-icon" class="menu-icon click-shrink" @click="${() => this._toggleMenu()}">
         <div class="menu-icon-inner">
           <ha-icon icon="mdi:menu"></ha-icon>
         </div>
@@ -461,12 +458,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const isMainEditor = ['layout_config'].includes(selected);
 
     const menuButton = html`<div class="config-menu-wrapper">
-      <div class="menu-icon click-schrink" @click="${() => (this._selectedConfigType = null)}">
+      <div class="menu-icon click-shrink" @click="${() => (this._selectedConfigType = null)}">
         <div class="menu-icon-inner">
           <ha-icon icon="mdi:home"></ha-icon>
         </div>
       </div>
-      <div id="menu-icon" class="menu-icon click-schrink" @click="${() => this._toggleMenu()}">
+      <div id="menu-icon" class="menu-icon click-shrink" @click="${() => this._toggleMenu()}">
         <div class="menu-icon-inner">
           <ha-icon icon="mdi:menu"></ha-icon>
         </div>

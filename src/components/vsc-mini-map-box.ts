@@ -19,9 +19,9 @@ interface Address {
 
 @customElement('mini-map-box')
 export class MiniMapBox extends LitElement {
-  @property() private hass!: HomeAssistant;
-  @property() private config!: VehicleStatusCardConfig;
-  @property() component!: VehicleStatusCard;
+  @property({ attribute: false }) private hass!: HomeAssistant;
+  @property({ attribute: false }) private config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) card!: VehicleStatusCard;
 
   @state() private address: Partial<Address> = {};
   @state() private deviceTracker: { lat: number; lon: number } = { lat: 0, lon: 0 };
@@ -37,7 +37,7 @@ export class MiniMapBox extends LitElement {
   }
 
   private get darkMode(): boolean {
-    return this.component.isDark;
+    return this.card.isDark;
   }
 
   private get mapPopup(): boolean {

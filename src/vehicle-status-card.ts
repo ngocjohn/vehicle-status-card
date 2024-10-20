@@ -29,6 +29,8 @@ import {
 } from './types';
 import { HaHelp } from './utils';
 import { isEmpty } from './utils/helpers';
+import { loadCustomElement } from './utils/loader';
+import { mdiChevronLeft, mdiChevronRight, mdiClose } from '@mdi/js';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
@@ -133,10 +135,6 @@ export class VehicleStatusCard extends LitElement {
     if (changedProps.has('_config') && this._currentPreview !== null) {
       this._configureCardPreview(this._currentPreview);
     }
-
-    if (changedProps.has('_buttonReady') && this._buttonReady) {
-      this._getDefaultCardItems();
-    }
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
@@ -170,6 +168,7 @@ export class VehicleStatusCard extends LitElement {
     this._buttonReady = false;
     this._buttonCards = await HaHelp.getButtonCard(this._hass, this._config.button_card);
     this._buttonReady = true;
+    this._getDefaultCardItems();
   }
 
   private async _getDefaultCardItems(): Promise<void> {
@@ -288,17 +287,18 @@ export class VehicleStatusCard extends LitElement {
   private _renderMainCard(): TemplateResult | typeof nothing {
     const hide = this._config.layout_config?.hide || {};
 
-    // const indicators = !hide.indicators ? this._renderIndicators() : nothing;
-    const indicators = !hide.indicators ? this._renderIndicators() : nothing;
-    const rangeInfo = !hide.range_info ? this._renderRangeInfo() : nothing;
-    const imagesSlide = !hide.images ? this._renderImagesSlide() : nothing;
-    const miniMap = !hide.mini_map ? this._renderMiniMap() : nothing;
-    const buttons = !hide.buttons ? this._renderButtons() : nothing;
+    const section = [
+      hide.indicators ? null : this._renderIndicators(),
+      hide.range_info ? null : this._renderRangeInfo(),
+      hide.images ? null : this._renderImagesSlide(),
+      hide.mini_map ? null : this._renderMiniMap(),
+      hide.buttons ? null : this._renderButtons(),
+    ];
 
     return html`
       <main id="main-wrapper">
-        <div class="header-info-box">${indicators} ${rangeInfo}</div>
-        ${imagesSlide} ${miniMap} ${buttons}
+        <div class="header-info-box">${section.slice(0, 2).map((item) => item)}</div>
+        ${section.slice(2).map((item) => item)}
       </main>
     `;
   }
@@ -318,12 +318,7 @@ export class VehicleStatusCard extends LitElement {
     if (!this._buttonReady) return html``;
     return html`
       <div id="button_card">
-        <vehicle-buttons-grid
-          .hass=${this._hass}
-          .component=${this}
-          .config=${this._config}
-          .buttons=${this._buttonCards}
-        >
+        <vehicle-buttons-grid .hass=${this._hass} .card=${this} .config=${this._config} .buttons=${this._buttonCards}>
         </vehicle-buttons-grid>
       </div>
     `;
@@ -365,7 +360,7 @@ export class VehicleStatusCard extends LitElement {
         <mini-map-box
           .hass=${this._hass}
           .config=${this._config}
-          .component=${this}
+          .card=${this}
           @toggle-map-popup=${() => (this._activeCardIndex = 'map')}
         >
         </mini-map-box>
@@ -378,7 +373,7 @@ export class VehicleStatusCard extends LitElement {
     return html`<vsc-range-info .hass=${this._hass} .config=${this._config}></vsc-range-info>`;
   }
 
-  /* -------------------------- CUSTO CARD RENDERING -------------------------- */
+  /* -------------------------- CUSTOM CARD RENDERING -------------------------- */
 
   private _renderSelectedCard(): TemplateResult {
     if (this._activeCardIndex === null) return html``;
@@ -390,16 +385,26 @@ export class VehicleStatusCard extends LitElement {
     const tireCard = selectedCard.tire_card;
 
     const cardHeaderBox = html` <div class="added-card-header">
-      <div class="headder-btn click-shrink" @click="${() => (this._activeCardIndex = null)}">
-        <ha-icon icon="mdi:close"></ha-icon>
-      </div>
+      <ha-icon-button
+        class="click-shrink headder-btn"
+        .label=${'Close'}
+        .path=${mdiClose}
+        @click="${() => (this._activeCardIndex = null)}"
+      >
+      </ha-icon-button>
       <div class="card-toggle">
-        <div class="headder-btn click-shrink" @click=${() => this.toggleCard('prev')}>
-          <ha-icon icon="mdi:chevron-left"></ha-icon>
-        </div>
-        <div class="headder-btn click-shrink" @click=${() => this.toggleCard('next')}>
-          <ha-icon icon="mdi:chevron-right"></ha-icon>
-        </div>
+        <ha-icon-button
+          class="click-shrink headder-btn"
+          @click=${() => this.toggleCard('prev')}
+          .label=${'Previous'}
+          .path=${mdiChevronLeft}
+        ></ha-icon-button>
+        <ha-icon-button
+          class="click-shrink headder-btn"
+          @click=${() => this.toggleCard('next')}
+          .label=${'Next'}
+          .path=${mdiChevronRight}
+        ></ha-icon-button>
       </div>
     </div>`;
 
@@ -492,7 +497,6 @@ export class VehicleStatusCard extends LitElement {
       '--vic-tire-size': `${tireCardSize}%`,
       '--vic-tire-value-size': tireValueSize / 100,
     };
-    const directionClass = isHorizontal ? 'rotated' : '';
 
     return html`
       <div class="default-card">
@@ -501,10 +505,11 @@ export class VehicleStatusCard extends LitElement {
           <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
         </div>
 
-        <div class="data-box tyre-wrapper ${directionClass}" style=${styleMap(sizeStyle)}>
+        <div class="data-box tyre-wrapper" rotated=${isHorizontal} style=${styleMap(sizeStyle)}>
           <div class="background" style="background-image: url(${background})"></div>
           ${Object.keys(tires).map((key) => {
-            return html` <div class="tyre-box ${directionClass} ${key.replace('_', '').toLowerCase()}">
+            const cssClass = key.replace('_', '').toLowerCase();
+            return html` <div class="tyre-box ${cssClass}">
               <span class="tyre-value">${tires[key].state}</span>
               <span class="tyre-name">${tires[key].name}</span>
             </div>`;
@@ -518,15 +523,10 @@ export class VehicleStatusCard extends LitElement {
     ev.stopPropagation();
     const target = ev.target as HTMLElement;
     const tyreWrapper = target.closest('.default-card')?.querySelector('.tyre-wrapper');
-    const tyreBoxex = tyreWrapper?.querySelectorAll('.tyre-box');
-    if (!tyreWrapper || !tyreBoxex) return;
+    if (!tyreWrapper) return;
 
-    const isHorizontal = tyreWrapper.classList.contains('rotated');
-
-    tyreWrapper.classList.toggle('rotated', !isHorizontal);
-    tyreBoxex.forEach((el) => {
-      el.classList.toggle('rotated', !isHorizontal);
-    });
+    const isHorizontal = tyreWrapper.getAttribute('rotated') === 'true';
+    tyreWrapper.setAttribute('rotated', isHorizontal ? 'false' : 'true');
   }
 
   private _showWarning(warning: string): TemplateResult {
