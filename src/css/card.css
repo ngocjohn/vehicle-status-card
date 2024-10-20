@@ -399,11 +399,10 @@ header h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+
 }
 
 .added-card-header .headder-btn {
-  cursor: pointer;
   color: var(--secondary-text-color);
   opacity: 0.5;
   transition: opacity 0.3s;
@@ -711,11 +710,11 @@ dialog::backdrop {
 }
 
 /* TYRE WRAP ROTATED */
-.tyre-wrapper.rotated {
+.tyre-wrapper[rotated='true'] {
   transform: rotate(90deg);
 }
 
-.tyre-box.rotated {
+.tyre-wrapper[rotated='true'] .tyre-box {
   transform: rotate(-90deg);
 }
 

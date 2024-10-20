@@ -1,5 +1,4 @@
 import { REPOSITORY } from '../const/const';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // Hack to load ha-components needed for editor
 export const loadHaComponents = () => {
   if (!customElements.get('ha-form')) {

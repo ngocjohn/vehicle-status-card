@@ -1,9 +1,8 @@
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { customElement, property, state } from 'lit/decorators';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import YAML from 'yaml';
-
 import {
   HA as HomeAssistant,
   VehicleStatusCardConfig,
@@ -61,8 +60,6 @@ export class PanelButtonCard extends LitElement {
 
   private _sortable: Sortable | null = null;
   private _btnSortable: Sortable | null = null;
-
-  private _debouncedCustomBtnChanged = debounce(this.configChanged.bind(this), 500);
 
   static get styles(): CSSResultGroup {
     return [
@@ -354,7 +351,7 @@ export class PanelButtonCard extends LitElement {
       ${actions?.map(
         (action) =>
           html` <div class="icon-title" @click=${(ev: Event) => action.action(ev)}>
-            <ha-icon icon=${action.icon}></ha-icon>
+            <ha-icon icon=${ifDefined(action.icon)}></ha-icon>
             <span>${action.title}</span>
           </div>`
       )}
@@ -953,7 +950,6 @@ export class PanelButtonCard extends LitElement {
           .hass=${this.hass}
           .config=${this.config}
           .editor=${this.editor}
-          .cards=${customCard}
           .buttonIndex=${buttonIndex}
           .activePreview=${this._activePreview}
         ></panel-editor-ui>
@@ -1017,7 +1013,7 @@ export class PanelButtonCard extends LitElement {
       ${actions?.map(
         (action) =>
           html` <div class="subcard-icon" @click=${(ev: Event) => action.action(ev)}>
-            <ha-icon icon=${action.icon}></ha-icon>
+            <ha-icon icon=${ifDefined(action.icon)}></ha-icon>
           </div>`
       )}
       <div class="sub-header-title">${title}</div>
@@ -1032,7 +1028,7 @@ export class PanelButtonCard extends LitElement {
       ${actions?.map(
         (action) =>
           html` <div class="subcard-icon" @click=${(ev: Event) => action.action(ev)}>
-            <ha-icon icon=${action.icon}></ha-icon>
+            <ha-icon icon=${ifDefined(action.icon)}></ha-icon>
           </div>`
       )}
       <div class="sub-header-title">${title}</div>

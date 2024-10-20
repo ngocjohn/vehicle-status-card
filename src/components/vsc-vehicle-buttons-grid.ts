@@ -1,5 +1,4 @@
 import { forwardHaptic } from 'custom-card-helpers';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
@@ -21,7 +20,7 @@ export type CustomButtonItem = {
 @customElement('vehicle-buttons-grid')
 export class VehicleButtonsGrid extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) component!: VehicleStatusCard;
+  @property({ type: Object }) card!: VehicleStatusCard;
   @property({ type: Object }) config!: VehicleStatusCardConfig;
   @property({ type: Array }) buttons: ButtonCardEntity = [];
 
@@ -48,7 +47,6 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   private async _fetchSecondaryInfo(): Promise<void> {
-    console.log('Fetching secondary info...');
     this._isButtonReady = false;
     // console.log('Custom Button Ready:', this._isButtonReady);
 
@@ -233,7 +231,7 @@ export class VehicleButtonsGrid extends LitElement {
       const button = this.buttons[index];
       const buttonType = button?.button_type;
       if (buttonType === 'default') {
-        this.component._activeCardIndex = index;
+        this.card._activeCardIndex = index;
       }
     }, 150);
   }
