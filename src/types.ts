@@ -139,6 +139,7 @@ export interface ButtonConfig {
   icon: string;
   notify?: string;
   primary: string;
+  color: string;
   secondary: Array<SecondaryInfoConfig>;
 }
 
@@ -251,6 +252,7 @@ export type ButtonCardEntity = Array<{
     notify: string;
     primary: string;
     secondary: SecondaryInfoConfig[];
+    color: string;
   };
   button_type: 'action' | 'default';
   card_type: 'custom' | 'default' | 'tire';

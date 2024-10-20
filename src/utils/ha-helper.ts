@@ -1,4 +1,3 @@
- 
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import { LovelaceCardConfig } from 'custom-card-helpers';
 
@@ -370,6 +369,7 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
       notify: button.notify || '',
       primary: button.primary || '',
       secondary: button.secondary || [],
+      color: button.color || '',
     };
 
     // const defaultCard = (await getDefaultCard(hass, btnCrd.default_card)) || [];

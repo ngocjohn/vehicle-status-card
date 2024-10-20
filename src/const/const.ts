@@ -9,6 +9,9 @@ import {
   mdiDelete,
   mdiContentCopy,
   mdiContentCut,
+  mdiClose,
+  mdiChevronRight,
+  mdiChevronLeft,
 } from '@mdi/js';
 
 export const CARD_VERSION = `v${version}`;
@@ -217,6 +220,7 @@ export const DEFAULT_CONFIG = {
 };
 
 export const ICON = {
+  CLOSE: mdiClose,
   CODE_BRACES: mdiCodeBraces,
   CONTENT_COPY: mdiContentCopy,
   CONTENT_CUT: mdiContentCut,
@@ -226,4 +230,6 @@ export const ICON = {
   LIST_BOX_OUTLINE: mdiListBoxOutline,
   PENCIL: mdiPencil,
   PLUS: mdiPlus,
+  CHEVRON_RIGHT: mdiChevronRight,
+  CHEVRON_LEFT: mdiChevronLeft,
 };
