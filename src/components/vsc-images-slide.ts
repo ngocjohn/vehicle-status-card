@@ -8,7 +8,6 @@ import { SwiperOptions } from 'swiper/types';
 import cardstyles from '../css/card.css';
 import swipercss from '../css/swiper-bundle.css';
 import { ImageConfig, VehicleStatusCardConfig } from '../types';
-import { PREVIEW_TYPE } from '../types';
 
 @customElement('images-slide')
 export class ImagesSlide extends LitElement {
