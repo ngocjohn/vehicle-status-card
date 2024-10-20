@@ -314,7 +314,8 @@ export class VehicleStatusCard extends LitElement {
     ></vsc-indicators>`;
   }
 
-  private _renderButtons(): TemplateResult {
+  private _renderButtons(): TemplateResult | typeof nothing {
+    if (isEmpty(this._buttonCards)) return nothing;
     if (!this._buttonReady) return html``;
     return html`
       <div id="button_card">

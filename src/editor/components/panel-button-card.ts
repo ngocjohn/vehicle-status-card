@@ -24,6 +24,8 @@ import {
   ACTIONS,
 } from '../editor-const';
 
+import { ICON } from '../../const/const';
+
 import '../../editor/components/panel-editor-ui';
 
 import editorcss from '../../css/editor.css';
@@ -40,7 +42,7 @@ import { VehicleStatusCardEditor } from '../editor';
 @customElement('panel-button-card')
 export class PanelButtonCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) editor!: VehicleStatusCardEditor;
+  @property({ type: Object }) cardEditor!: VehicleStatusCardEditor;
   @property({ type: Object }) config!: VehicleStatusCardConfig;
 
   @state() _activePreview: string | null = null;
@@ -220,13 +222,20 @@ export class PanelButtonCard extends LitElement {
 
     return html`
       <div class="card-config">
-        ${this._renderSubHeader('Button List')}
+        ${this._renderSubHeader(
+          'Button List',
+          [],
+          false,
+          html`<ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>`
+        )}
         <div class="button-list" id="button-list">
           ${repeat(
             buttons,
             (button, index) => html`
               <div class="item-config-row" data-index="${index}">
-                <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
+                <div class="handle">
+                  <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+                </div>
                 <div class="sub-content">
                   ${Create.Picker({
                     component: this,
@@ -239,42 +248,41 @@ export class PanelButtonCard extends LitElement {
                   })}
                 </div>
                 <div class="item-actions">
-                  <div class="action-icon" @click="${this.toggleAction('edit-button', index)}">
-                    <ha-icon icon="mdi:pencil"></ha-icon>
-                  </div>
-                  <div class="action-icon">
-                    <ha-button-menu
-                      .corner=${'BOTTOM_START'}
-                      .fixed=${true}
-                      .menuCorner=${'START'}
-                      .activatable=${true}
-                      .naturalMenuWidth=${true}
-                      @closed=${(ev: Event) => ev.stopPropagation()}
-                    >
-                      <div class="action-icon" slot="trigger"><ha-icon icon="mdi:dots-vertical"></ha-icon></div>
-                      ${actionMap.map(
-                        (action) =>
-                          html`<mwc-list-item
-                            @click=${this.toggleAction(action.action, index)}
-                            .graphic=${'icon'}
+                  <ha-icon-button
+                    class="action-icon"
+                    @click="${this.toggleAction('edit-button', index)}"
+                    .path=${ICON.PENCIL}
+                  ></ha-icon-button>
+                  <ha-button-menu
+                    .corner=${'BOTTOM_START'}
+                    .fixed=${true}
+                    .menuCorner=${'START'}
+                    .activatable=${true}
+                    .naturalMenuWidth=${true}
+                    @closed=${(ev: Event) => ev.stopPropagation()}
+                  >
+                    <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                    ${actionMap.map(
+                      (action) =>
+                        html`<mwc-list-item
+                          @click=${this.toggleAction(action.action, index)}
+                          .graphic=${'icon'}
+                          style="${action.color ? `color: ${action.color}` : ''}"
+                        >
+                          <ha-icon
+                            icon=${action.icon}
+                            slot="graphic"
                             style="${action.color ? `color: ${action.color}` : ''}"
-                          >
-                            <ha-icon
-                              icon=${action.icon}
-                              slot="graphic"
-                              style="${action.color ? `color: ${action.color}` : ''}"
-                            ></ha-icon>
-                            ${action.title}
-                          </mwc-list-item>`
-                      )}
-                    </ha-button-menu>
-                  </div>
+                          ></ha-icon>
+                          ${action.title}
+                        </mwc-list-item>`
+                    )}
+                  </ha-button-menu>
                 </div>
               </div>
             `
           )}
         </div>
-        ${footerActions}
       </div>
     `;
   }
@@ -721,7 +729,9 @@ export class PanelButtonCard extends LitElement {
             defaultCard,
             (card, cardIndex) => html`
               <div class="item-config-row" data-index="${cardIndex}">
-                <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
+                <div class="handle">
+                  <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+                </div>
                 <div class="item-content">
                   ${Create.Picker({
                     component: this,
@@ -735,36 +745,36 @@ export class PanelButtonCard extends LitElement {
                   })}
                 </div>
                 <div class="item-actions">
-                  <div class="action-icon" @click="${this.toggleAction('category-edit', buttonIndex, cardIndex)}">
-                    <ha-icon icon="mdi:pencil"></ha-icon>
-                  </div>
-                  <div class="action-icon">
-                    <ha-button-menu
-                      .corner=${'BOTTOM_START'}
-                      .fixed=${true}
-                      .menuCorner=${'START'}
-                      .activatable=${true}
-                      .naturalMenuWidth=${true}
-                      @closed=${(ev: Event) => ev.stopPropagation()}
-                    >
-                      <div class="action-icon" slot="trigger"><ha-icon icon="mdi:dots-vertical"></ha-icon></div>
-                      ${actions.map(
-                        (action) =>
-                          html`<mwc-list-item
-                            @click=${this.toggleAction(action.action, buttonIndex, cardIndex)}
-                            .graphic=${'icon'}
+                  <ha-icon-button
+                    class="action-icon"
+                    .path=${ICON.PENCIL}
+                    @click="${this.toggleAction('category-edit', buttonIndex, cardIndex)}"
+                  ></ha-icon-button>
+                  <ha-button-menu
+                    .corner=${'BOTTOM_START'}
+                    .fixed=${true}
+                    .menuCorner=${'START'}
+                    .activatable=${true}
+                    .naturalMenuWidth=${true}
+                    @closed=${(ev: Event) => ev.stopPropagation()}
+                  >
+                    <ha-icon-button class="action-icon" .path=${ICON.DOTS_VERTICAL} slot="trigger"></ha-icon-button>
+                    ${actions.map(
+                      (action) =>
+                        html`<mwc-list-item
+                          @click=${this.toggleAction(action.action, buttonIndex, cardIndex)}
+                          .graphic=${'icon'}
+                          style="${action.color ? `color: ${action.color}` : ''}"
+                        >
+                          <ha-icon
+                            icon=${action.icon}
+                            slot="graphic"
                             style="${action.color ? `color: ${action.color}` : ''}"
-                          >
-                            <ha-icon
-                              icon=${action.icon}
-                              slot="graphic"
-                              style="${action.color ? `color: ${action.color}` : ''}"
-                            ></ha-icon>
-                            ${action.title}
-                          </mwc-list-item>`
-                      )}
-                    </ha-button-menu>
-                  </div>
+                          ></ha-icon>
+                          ${action.title}
+                        </mwc-list-item>`
+                    )}
+                  </ha-button-menu>
                 </div>
               </div>
             `
@@ -801,7 +811,6 @@ export class PanelButtonCard extends LitElement {
       <div class="sub-header">
         <div class="subcard-icon">
           <ha-icon-button-prev @click=${this.toggleAction('category-back')}></ha-icon-button-prev>
-          <ha-outlined-button @click=${this.toggleAction('category-back')}>Back</ha-outlined-button>
         </div>
         <div class="sub-header-title">${baseCard.title}</div>
         <ha-button @click=${() => this._togglePreview('default', buttonIndex)}
@@ -949,7 +958,7 @@ export class PanelButtonCard extends LitElement {
         <panel-editor-ui
           .hass=${this.hass}
           .config=${this.config}
-          .editor=${this.editor}
+          .cardEditor=${this.cardEditor}
           .buttonIndex=${buttonIndex}
           .activePreview=${this._activePreview}
         ></panel-editor-ui>
@@ -1094,7 +1103,7 @@ export class PanelButtonCard extends LitElement {
             }
             break;
           case 'show-button':
-            this.editor._dispatchEvent('show-button', { buttonIndex: buttonIndex! });
+            this.cardEditor._dispatchEvent('show-button', { buttonIndex: buttonIndex! });
             break;
           case 'category-edit':
             this._cardIndex = cardIndex!;
@@ -1197,7 +1206,7 @@ export class PanelButtonCard extends LitElement {
       this._activePreview = null;
       this.requestUpdate();
       this.updateComplete.then(() => {
-        this.editor._dispatchEvent('toggle-preview', { cardType: null });
+        this.cardEditor._dispatchEvent('toggle-preview', { cardType: null });
         this.hideClearButton();
       });
     }
@@ -1269,13 +1278,13 @@ export class PanelButtonCard extends LitElement {
     };
 
     const sentEvent = (cardType: string | null) => {
-      this.editor._dispatchEvent('toggle-preview', { cardType: cardType });
+      this.cardEditor._dispatchEvent('toggle-preview', { cardType: cardType });
     };
 
     if (this._activePreview === type) {
       this._activePreview = null;
       sentEvent(this._activePreview);
-      this.editor._cleanConfig();
+      this.cardEditor._cleanConfig();
     } else {
       this._activePreview = type;
       if (type === 'default' && index !== null) {

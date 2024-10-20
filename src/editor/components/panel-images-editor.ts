@@ -9,11 +9,10 @@ import editorcss from '../../css/editor.css';
 
 import { fireEvent } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
-import { TabBar } from '../../utils/create';
+import { TabBar, Picker } from '../../utils/create';
+import { ICON } from '../../const/const';
 
-import { Picker } from '../../utils/create';
-
-import { IMAGE_CONFIG_ACTIONS, CONFIG_VALUES } from '../editor-const';
+import { IMAGE_CONFIG_ACTIONS, CONFIG_VALUES, IMAGE_ACTIONS } from '../editor-const';
 
 import Sortable from 'sortablejs';
 
@@ -74,7 +73,6 @@ export class PanelImagesEditor extends LitElement {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          text-wrap: nowrap;
           width: 100%;
           justify-content: space-between;
         }
@@ -162,6 +160,11 @@ export class PanelImagesEditor extends LitElement {
       : html``;
     const dropArea = this._renderDropArea();
 
+    const actionMap = [
+      { title: 'Show Image', icon: 'mdi:eye', action: IMAGE_ACTIONS.SHOW_IMAGE },
+      { title: 'Delete Image', icon: 'mdi:delete', action: IMAGE_ACTIONS.DELETE },
+    ];
+
     const imageList = this._reindexImages
       ? html`<div>Please wait...</div>`
       : html` <div class="images-list" id="images-list">
@@ -181,15 +184,25 @@ export class PanelImagesEditor extends LitElement {
                     @input=${(ev: any) => this._imageInputChanged(ev, idx)}
                   ></ha-textfield>
                 </div>
-                <div class="item-actions hidden">
-                  <div class="action-icon" @click="${this.toggleAction('delete', idx)}">
-                    <ha-icon icon="mdi:close"></ha-icon>
-                  </div>
-                </div>
                 <div class="item-actions">
-                  <div class="action-icon" @click="${this.toggleAction('show-image', idx)}">
-                    <ha-icon icon="mdi:eye"></ha-icon>
-                  </div>
+                  <ha-button-menu
+                    .corner=${'BOTTOM_START'}
+                    .fixed=${true}
+                    .menuCorner=${'START'}
+                    .activatable=${true}
+                    .naturalMenuWidth=${true}
+                    @closed=${(ev: Event) => ev.stopPropagation()}
+                  >
+                    <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                    ${actionMap.map(
+                      (action) => html`
+                        <mwc-list-item @click=${this.toggleAction(action.action, idx)} .graphic=${'icon'}>
+                          <ha-icon slot="graphic" .icon=${action.icon}></ha-icon>
+                          ${action.title}
+                        </mwc-list-item>
+                      `
+                    )}
+                  </ha-button-menu>
                 </div>
               </div>
             `
@@ -198,12 +211,6 @@ export class PanelImagesEditor extends LitElement {
 
     const actionFooter = html`<div class="action-footer">
       <ha-button class="upload-btn" @click=${this.toggleAction('upload')}>Add Image</ha-button>
-
-      ${this.config?.images.length !== 0
-        ? html`<ha-button class="showdelete delete-btn" @click=${this.toggleAction('showDelete')}
-            >Delete Image</ha-button
-          >`
-        : ''}
     </div> `;
     return html` ${infoText} ${dropArea} ${imageList} ${actionFooter} `;
   }
@@ -395,17 +402,6 @@ export class PanelImagesEditor extends LitElement {
         this._debouncedConfigChanged();
       };
 
-      const toggleDeleteIcons = () => {
-        const items = this.shadowRoot?.querySelectorAll('.item-actions');
-        const isHidden = items?.[0].classList.contains('hidden');
-
-        const deleteBtn = this.shadowRoot?.querySelector('.showdelete');
-        if (deleteBtn) {
-          deleteBtn.innerHTML = isHidden ? 'Cancel' : 'Delete';
-          items?.forEach((item) => item.classList.toggle('hidden'));
-        }
-      };
-
       const showDropArea = () => {
         const dropArea = this.shadowRoot?.getElementById('drop-area') as HTMLElement;
         const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
@@ -424,10 +420,6 @@ export class PanelImagesEditor extends LitElement {
 
       const handleImageAction = () => {
         switch (action) {
-          case 'showDelete':
-            toggleDeleteIcons();
-            break;
-
           case 'delete':
             if (idx !== undefined) {
               const imagesList = [...(this.config?.images || [])];

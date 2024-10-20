@@ -9,10 +9,10 @@ import editorcss from '../css/editor.css';
 import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import { Picker, TabBar } from '../utils/create';
 import { loadHaComponents, stickyPreview } from '../utils/loader';
-import './components/panel-button-card';
-import './components/panel-images-editor';
-import './components/panel-indicator';
-import './components/panel-range-info';
+
+import './components/';
+import { PanelImagesEditor, PanelIndicator, PanelButtonCard, PanelEditorUI, PanelRangeInfo } from './components/';
+
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 
 @customElement('vehicle-status-card-editor')
@@ -26,9 +26,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @query('panel-button-card') _buttonCardEditor?: any;
   @state() _helpOverlayActive: boolean = false;
 
-  @query('panel-images-editor') _imagesEditor!: any;
-  @query('panel-indicator') _indicatorEditor?: any;
-  @query('panel-range-info') _rangeInfoEditor?: any;
+  @query('panel-images-editor') _panelImages!: PanelImagesEditor;
+  @query('panel-indicator') _panelIndicator!: PanelIndicator;
+  @query('panel-range-info') _panelRangeInfo!: PanelRangeInfo;
+  @query('panel-editor-ui') _panelEditorUI?: PanelEditorUI;
+  @query('panel-button-card') _panelButtonCard?: PanelButtonCard;
+
   @state() _selectedConfigType: null | string = null;
 
   constructor() {
@@ -52,7 +55,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
     if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
       console.log('Init sortable');
-      this._imagesEditor.initSortable();
+      this._panelImages.initSortable();
     }
   }
 
@@ -102,7 +105,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   private _handlePanelExpandedChanged(ev: Event, panelKey: string): void {
     const panel = ev.target as HTMLElement;
     if (panelKey === 'indicators' && (panel as any).expanded) {
-      this._indicatorEditor?._hideClearButton();
+      this._panelIndicator?._hideClearButton();
     }
   }
 
@@ -117,7 +120,11 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderButtonCard(): TemplateResult {
-    return html`<panel-button-card .hass=${this._hass} .editor=${this} .config=${this._config}></panel-button-card>`;
+    return html`<panel-button-card
+      .hass=${this._hass}
+      .cardEditor=${this}
+      .config=${this._config}
+    ></panel-button-card>`;
   }
 
   private _renderConfigTypeSelector(): TemplateResult {
@@ -509,7 +516,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   /* ---------------------------- PANEL TEMPLATE ---------------------------- */
 
-  private _toggleHelp(selected: string): void {
+  _toggleHelp(selected: string): void {
     const activeType = selected;
     const event = new CustomEvent('editor-event', {
       bubbles: true,

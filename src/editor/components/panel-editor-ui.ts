@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
+import { LitElement, html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 // Custom card helpers
 import { fireEvent, LovelaceCardConfig, HASSDomEvent, LovelaceConfig } from 'custom-card-helpers';
@@ -9,7 +9,7 @@ import { HA as HomeAssistant, VehicleStatusCardConfig, GUIModeChangedEvent } fro
 import { VehicleStatusCardEditor } from '../editor';
 
 import editorcss from '../../css/editor.css';
-import { mdiPlus, mdiCodeBraces, mdiListBoxOutline, mdiDelete, mdiContentCopy, mdiContentCut } from '@mdi/js';
+import { ICON } from '../../const/const';
 
 @customElement('panel-editor-ui')
 export class PanelEditorUI extends LitElement {
@@ -18,7 +18,7 @@ export class PanelEditorUI extends LitElement {
 
   @property({ type: Object })
   protected config!: VehicleStatusCardConfig;
-  @state() editor!: VehicleStatusCardEditor;
+  @state() cardEditor!: VehicleStatusCardEditor;
   @state() cards?: LovelaceCardConfig[] = [];
   @state() buttonIndex!: number;
   @state() activePreview?: string | null;
@@ -73,7 +73,7 @@ export class PanelEditorUI extends LitElement {
         }
         #editor-container {
           padding-inline: 4px;
-          border: 1px solid var(--divider-color);
+          /* border: 1px solid var(--divider-color); */
         }
 
         @media (max-width: 450px) {
@@ -114,7 +114,7 @@ export class PanelEditorUI extends LitElement {
           @iron-activate=${this._handleSelectedCard}
         >
           <paper-tab>
-            <ha-svg-icon .path="${mdiPlus}"></ha-svg-icon>
+            <ha-svg-icon .path="${ICON.PLUS}"></ha-svg-icon>
           </paper-tab>
         </paper-tabs>
       </div>
@@ -123,7 +123,7 @@ export class PanelEditorUI extends LitElement {
     return html`
       <div class="sub-panel">
         ${toolBar}
-        <div id="editor-container">
+        <div id="editor-container" class="button-list">
           ${selected < cardsLength
             ? html`
                 <div id="card-options">
@@ -132,7 +132,7 @@ export class PanelEditorUI extends LitElement {
                     @click=${this._toggleMode}
                     .disabled=${!this._guiModeAvailable}
                     .label=${'Toggle GUI editor mode'}
-                    .path=${isGuiMode ? mdiCodeBraces : mdiListBoxOutline}
+                    .path=${isGuiMode ? ICON.CODE_BRACES : ICON.LIST_BOX_OUTLINE}
                   ></ha-icon-button>
                   <ha-icon-button-arrow-prev
                     .disabled=${selected === 0}
@@ -149,21 +149,26 @@ export class PanelEditorUI extends LitElement {
                   ></ha-icon-button-arrow-next>
                   <ha-icon-button
                     .label=${'Copy'}
-                    .path=${mdiContentCopy}
+                    .path=${ICON.CONTENT_COPY}
                     @click=${this._handleCopyCard}
                   ></ha-icon-button>
 
-                  <ha-icon-button .label=${'Cut'} .path=${mdiContentCut} @click=${this._handleCutCard}></ha-icon-button>
+                  <ha-icon-button
+                    .label=${'Cut'}
+                    .path=${ICON.CONTENT_CUT}
+                    @click=${this._handleCutCard}
+                  ></ha-icon-button>
+
                   <ha-icon-button
                     .label=${'Delete'}
-                    .path=${mdiDelete}
+                    .path=${ICON.DELETE}
                     @click=${this._handleDeleteCard}
                   ></ha-icon-button>
                 </div>
                 <hui-card-element-editor
                   .hass=${this.hass}
                   .value=${this.cards[selected]}
-                  .lovelace=${this.editor.lovelace}
+                  .lovelace=${this.cardEditor.lovelace}
                   @config-changed=${this._handleConfigChanged}
                   @GUImode-changed=${this._handleGUIModeChanged}
                 ></hui-card-element-editor>
@@ -171,7 +176,7 @@ export class PanelEditorUI extends LitElement {
             : html`
                 <hui-card-picker
                   .hass=${this.hass}
-                  .lovelace=${this.editor.lovelace}
+                  .lovelace=${this.cardEditor.lovelace}
                   @config-changed=${this._handleCardPicked}
                   ._clipboard=${this._clipboard}
                 >

@@ -266,21 +266,13 @@ input#hexInput:focus {
 
 .item-actions {
 	display: flex;
-	gap: 8px;
+	/* gap: 8px; */
 	align-items: center;
 	opacity: 1 !important;
 	margin-inline: var(--vic-gutter-gap);
+	color: var(--secondary-text-color);
 }
 
-.item-actions .action-icon {
-	cursor: pointer;
-	color: var(--secondary-text-color);
-	border-radius: 50%;
-	padding: 4px;
-	display: inline-block;
-	--mdc-icon-size: 22px;
-	border: none;
-}
 
 .item-actions .action-icon:hover {
 	color: var(--primary-color);

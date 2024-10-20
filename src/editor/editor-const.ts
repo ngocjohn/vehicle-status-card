@@ -133,6 +133,15 @@ export enum ACTIONS {
 
 type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image';
 
+export enum IMAGE_ACTIONS {
+  ADD = 'add',
+  SHOW_DELETE = 'showDelete',
+  DELETE = 'delete',
+  UPLOAD = 'upload',
+  ADD_NEW_URL = 'add-new-url',
+  SHOW_IMAGE = 'show-image',
+}
+
 const BUTTON_TYPE = [
   { value: 'default', label: 'Default' },
   { value: 'action', label: 'Action' },

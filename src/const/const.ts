@@ -1,4 +1,15 @@
 import { repository, version } from '../../package.json';
+import {
+  mdiDotsVertical,
+  mdiDrag,
+  mdiPencil,
+  mdiPlus,
+  mdiCodeBraces,
+  mdiListBoxOutline,
+  mdiDelete,
+  mdiContentCopy,
+  mdiContentCut,
+} from '@mdi/js';
 
 export const CARD_VERSION = `v${version}`;
 export const REPOSITORY = repository.repo;
@@ -203,4 +214,16 @@ export const DEFAULT_CONFIG = {
   name: 'Vehicle Status Card',
   range_info: [],
   type: 'custom:vehicle-status-card',
+};
+
+export const ICON = {
+  CODE_BRACES: mdiCodeBraces,
+  CONTENT_COPY: mdiContentCopy,
+  CONTENT_CUT: mdiContentCut,
+  DELETE: mdiDelete,
+  DOTS_VERTICAL: mdiDotsVertical,
+  DRAG: mdiDrag,
+  LIST_BOX_OUTLINE: mdiListBoxOutline,
+  PENCIL: mdiPencil,
+  PLUS: mdiPlus,
 };
