@@ -23,8 +23,6 @@ import {
   HA as HomeAssistant,
   VehicleStatusCardConfig,
   TireEntity,
-  TireTemplateConfig,
-  DefaultCardConfig,
   PREVIEW_TYPE,
 } from './types';
 import { HaHelp } from './utils';
@@ -33,25 +31,32 @@ import { isEmpty } from './utils/helpers';
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
-  @property({ type: Object }) private _config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
 
-  @state() private _currentPreview: PREVIEW_TYPE = null;
-  @state() private _cardPreviewElement: LovelaceCardConfig[] = [];
-  @state() private _defaultCardPreview: DefaultCardEntity[] = [];
-  @state() private _tireCardPreview: TireEntity | undefined = undefined;
+  @state() public _currentPreview: PREVIEW_TYPE = null;
+  @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
+  @state() public _defaultCardPreview: DefaultCardEntity[] = [];
+  @state() public _tireCardPreview: TireEntity | undefined = undefined;
 
-  @state() private _buttonCards: ButtonCardEntity = [];
-  @state() private _mapPopupLovelace: LovelaceCardConfig[] = [];
+  @state() public _buttonCards: ButtonCardEntity = [];
+  @state() public _mapPopupLovelace: LovelaceCardConfig[] = [];
 
   @state() public _activeCardIndex: null | number | string = null;
-  @state() private _buttonReady = false;
-
-  @state() private _defaultItems: Map<number, DefaultCardEntity[]> = new Map();
+  @state() public _buttonReady = false;
+  @state() public _defaultItems: Map<number, DefaultCardEntity[]> = new Map();
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
   @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
   @query('vsc-indicators') _indicators!: VscIndicators;
+
+  debug: boolean = true;
+
+  _debugLog(...args: any[]): void {
+    if (this.debug) {
+      console.log('Vehicle:', ...args);
+    }
+  }
 
   constructor() {
     super();
@@ -88,9 +93,7 @@ export class VehicleStatusCard extends LitElement {
       throw new Error('Invalid configuration');
     }
 
-    this._config = {
-      ...config,
-    };
+    this._config = structuredClone(config);
   }
 
   connectedCallback(): void {
@@ -108,8 +111,8 @@ export class VehicleStatusCard extends LitElement {
 
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    this._getButtonCardsConfig();
-    this._setUpPreview();
+    HaHelp._setUpPreview(this);
+    HaHelp.handleFirstUpdated(this);
   }
 
   protected updated(changedProps: PropertyValues) {
@@ -131,7 +134,7 @@ export class VehicleStatusCard extends LitElement {
 
     // Always configure the card preview when there are config changes
     if (changedProps.has('_config') && this._currentPreview !== null) {
-      this._configureCardPreview(this._currentPreview);
+      HaHelp.previewHandler(this._currentPreview, this);
     }
   }
 
@@ -141,126 +144,15 @@ export class VehicleStatusCard extends LitElement {
       return false;
     }
 
-    if (
-      changedProps.has('_config') &&
-      this._config.mini_map?.enable_popup &&
-      this._config.mini_map?.device_tracker &&
-      this._config.layout_config?.hide?.mini_map !== true
-    ) {
-      this._configureMiniMapPopup();
+    if (changedProps.has('_config') && this._config?.mini_map?.enable_popup) {
+      HaHelp._setMapPopup(this);
     }
 
     if (changedProps.has('_hass') && this._activeCardIndex !== null) {
-      this._getDefaultCardItems();
+      HaHelp._getDefaultCardItems(this);
     }
 
     return hasConfigOrEntityChanged(this, changedProps, true);
-  }
-
-  private async _getButtonCardsConfig(): Promise<void> {
-    if (this._currentPreview !== null) return;
-    if (!this._config.button_card) {
-      console.log('No button cards found in config');
-      return;
-    }
-    this._buttonReady = false;
-    this._buttonCards = await HaHelp.getButtonCard(this._hass, this._config.button_card);
-    this._buttonReady = true;
-    this._getDefaultCardItems();
-  }
-
-  private async _getDefaultCardItems(): Promise<void> {
-    const defaultCardItemsMap = new Map<number, DefaultCardEntity[]>();
-    for (let index = 0; index < this._buttonCards.length; index++) {
-      const button = this._buttonCards[index];
-      const cardItems = button.default_card;
-      const items = await HaHelp.getDefaultCard(this._hass, cardItems);
-      if (items) {
-        defaultCardItemsMap.set(index, items);
-      }
-    }
-    this._defaultItems = defaultCardItemsMap;
-  }
-
-  private async _setUpPreview(): Promise<void> {
-    // Ensure a card preview is configured during the first update if applicable
-    if (!this._currentPreview && this._config?.card_preview) {
-      this._currentPreview = 'custom'; // Set a default card preview type if none is set
-    } else if (!this._currentPreview && this._config?.default_card_preview) {
-      this._currentPreview = 'default';
-    } else if (!this._currentPreview && this._config?.tire_preview) {
-      this._currentPreview = 'tire';
-    }
-
-    if (this._currentPreview !== null) {
-      await this._configureCardPreview(this._currentPreview);
-    } else {
-      this._currentPreview = null;
-    }
-  }
-
-  private async _configureCardPreview(cardType: 'custom' | 'default' | 'tire' | null): Promise<void> {
-    if (!cardType && !this.isEditorPreview) return;
-    let cardConfig: LovelaceCardConfig[] | DefaultCardConfig[] | TireTemplateConfig;
-    let cardElement: LovelaceCardConfig[] | DefaultCardEntity[] | TireEntity | undefined;
-
-    switch (cardType) {
-      case 'custom':
-        cardConfig = this._config?.card_preview as LovelaceCardConfig[];
-        if (!cardConfig) return;
-        cardElement = (await HaHelp.createCardElement(this._hass, cardConfig)) as LovelaceCardConfig[];
-        this._cardPreviewElement = cardElement;
-        break;
-      case 'default':
-        cardConfig = this._config?.default_card_preview as DefaultCardConfig[];
-        if (!cardConfig) return;
-        cardElement = (await HaHelp.getDefaultCard(this._hass, cardConfig)) as DefaultCardEntity[];
-        this._defaultCardPreview = cardElement;
-        break;
-      case 'tire':
-        cardConfig = this._config?.tire_preview as TireTemplateConfig;
-        if (!cardConfig) return;
-        cardElement = (await HaHelp.getTireCard(this._hass, cardConfig)) as TireEntity;
-        this._tireCardPreview = cardElement as TireEntity;
-        break;
-      default:
-        return;
-    }
-
-    if (!cardElement) {
-      this._resetCardPreviews();
-      return;
-    }
-
-    this._currentPreview = cardType;
-    this.requestUpdate();
-  }
-
-  private _resetCardPreviews(): void {
-    this._cardPreviewElement = [];
-    this._defaultCardPreview = [];
-    this._tireCardPreview = undefined;
-    this._currentPreview = null;
-    this.requestUpdate();
-  }
-
-  private async _configureMiniMapPopup(): Promise<void> {
-    if (!this._config.mini_map?.enable_popup || !this._config.mini_map?.device_tracker) return;
-    const miniMap = this._config.mini_map || {};
-    const mapCardConfig: LovelaceCardConfig = {
-      default_zoom: miniMap.default_zoom || 14,
-      entities: [
-        {
-          entity: miniMap.device_tracker,
-        },
-      ],
-      hours_to_show: miniMap.hours_to_show || 0,
-      theme_mode: miniMap.theme_mode || 'auto',
-      type: 'map',
-    };
-
-    const mapCardElement = (await HaHelp.createCardElement(this._hass, [mapCardConfig])) as LovelaceCardConfig[];
-    this._mapPopupLovelace = mapCardElement;
   }
 
   protected render(): TemplateResult {
@@ -628,6 +520,7 @@ export class VehicleStatusCard extends LitElement {
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
   private _handleEditorEvent(ev: any): void {
     ev.stopPropagation();
+    if (!this.isEditorPreview) return;
     const { detail } = ev;
     const type = detail.type;
     switch (type) {
@@ -647,9 +540,6 @@ export class VehicleStatusCard extends LitElement {
       case 'toggle-preview':
         const cardType = detail.data.cardType;
         this._currentPreview = cardType;
-        this.updateComplete.then(() => {
-          this._configureCardPreview(cardType);
-        });
         break;
 
       case 'toggle-helper':
@@ -671,7 +561,7 @@ export class VehicleStatusCard extends LitElement {
     return this._hass.themes.darkMode;
   }
 
-  private get isEditorPreview(): boolean {
+  get isEditorPreview(): boolean {
     const parentElementClassPreview = this.offsetParent?.classList.contains('element-preview');
     return parentElementClassPreview || false;
   }

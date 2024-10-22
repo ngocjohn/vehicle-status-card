@@ -16,7 +16,10 @@ import {
   IndicatorConfig,
   IndicatorGroupConfig,
   RangeInfoConfig,
+  VehicleStatusCardConfig,
 } from '../types';
+import { VehicleStatusCard } from '../vehicle-status-card';
+import _ from 'lodash';
 
 export async function getTemplateBoolean(hass: HomeAssistant, templateConfig: string): Promise<boolean> {
   if (!hass || !templateConfig) {
@@ -432,4 +435,127 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<null
     console.error('Error during image upload:', err);
     throw err;
   }
+}
+
+export async function _getDefaultCardItems(card: VehicleStatusCard): Promise<void> {
+  const defaultCardItems = new Map<number, DefaultCardEntity[]>();
+  // console.log('Getting default card items');
+  for (let i = 0; i < card._buttonCards.length; i++) {
+    const buttonCard = card._buttonCards[i];
+    const cardItems = buttonCard.default_card;
+    const items = await getDefaultCard(card._hass, cardItems);
+    if (items) {
+      defaultCardItems.set(i, items);
+    }
+  }
+  card._defaultItems = defaultCardItems;
+}
+
+type cardType = 'custom' | 'default' | 'tire' | null;
+
+export async function previewHandler(cardType: cardType, card: VehicleStatusCard): Promise<void> {
+  if (!cardType && !card.isEditorPreview) return;
+  const hass = card._hass as HomeAssistant;
+  const config = card._config as VehicleStatusCardConfig;
+  let cardConfig: LovelaceCardConfig[] | DefaultCardConfig[] | TireTemplateConfig;
+  let cardElement: LovelaceCardConfig[] | DefaultCardEntity[] | TireEntity | undefined;
+
+  switch (cardType) {
+    case 'custom':
+      cardConfig = config?.card_preview as LovelaceCardConfig[];
+      if (!cardConfig) return;
+      cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
+      card._cardPreviewElement = cardElement;
+      break;
+    case 'default':
+      cardConfig = config?.default_card_preview as DefaultCardConfig[];
+      if (!cardConfig) return;
+      cardElement = (await getDefaultCard(hass, cardConfig)) as DefaultCardEntity[];
+      card._defaultCardPreview = cardElement;
+      break;
+    case 'tire':
+      cardConfig = config?.tire_preview as TireTemplateConfig;
+      if (!cardConfig) return;
+      cardElement = (await getTireCard(hass, cardConfig)) as TireEntity;
+      card._tireCardPreview = cardElement as TireEntity;
+      break;
+    default:
+      return;
+  }
+  if (!cardElement) {
+    _resetCardPreviews(card);
+    return;
+  }
+
+  card._currentPreview = cardType;
+  card.requestUpdate();
+}
+
+const _resetCardPreviews = (card: VehicleStatusCard): void => {
+  card._cardPreviewElement = [];
+  card._defaultCardPreview = [];
+  card._tireCardPreview = undefined;
+  card._currentPreview = null;
+  card.requestUpdate();
+};
+
+export async function handleFirstUpdated(card: VehicleStatusCard): Promise<void> {
+  if (card._currentPreview !== null && !card.isEditorPreview) {
+    return;
+  }
+  const hass = card._hass as HomeAssistant;
+  const config = card._config as VehicleStatusCardConfig;
+
+  console.log('First updated called');
+  card._buttonReady = false;
+  card._buttonCards = await getButtonCard(hass, config.button_card);
+  card._buttonReady = true;
+  _getDefaultCardItems(card);
+}
+export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
+  if (!card._currentPreview && !card.isEditorPreview) return;
+
+  // Ensure a card preview is configured during the first update if applicable
+  if (!card._currentPreview && card._config?.card_preview) {
+    card._currentPreview = 'custom'; // Set a default card preview type if none is set
+  } else if (!card._currentPreview && card._config?.default_card_preview) {
+    card._currentPreview = 'default';
+  } else if (!card._currentPreview && card._config?.tire_preview) {
+    card._currentPreview = 'tire';
+  }
+
+  if (card._currentPreview !== null) {
+    console.log('Setting up preview');
+    await previewHandler(card._currentPreview, card);
+  } else {
+    card._currentPreview = null;
+  }
+}
+
+export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCardConfig[] | void> {
+  const config = card._config as VehicleStatusCardConfig;
+  const hass = card._hass as HomeAssistant;
+  if (
+    !config.mini_map?.enable_popup ||
+    !config.mini_map?.device_tracker ||
+    config.layout_config?.hide?.mini_map !== false
+  )
+    return;
+  console.log('Setting map popup');
+  const miniMap = config.mini_map || {};
+  const cardConfig: LovelaceCardConfig[] = [
+    {
+      type: 'map',
+      default_zoom: miniMap.default_zoom || 14,
+      hours_to_show: miniMap.hours_to_show || 0,
+      theme_mode: miniMap.theme_mode || 'auto',
+      entities: [
+        {
+          entity: miniMap.device_tracker,
+        },
+      ],
+    },
+  ];
+  const cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
+  card._mapPopupLovelace = cardElement;
 }
