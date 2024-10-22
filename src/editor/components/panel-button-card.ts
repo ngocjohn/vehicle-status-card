@@ -1491,8 +1491,9 @@ export class PanelButtonCard extends LitElement {
       updates.button_card = buttonCardConfig;
       console.log('Button action', buttonAction);
     } else if (configType === 'tire_base') {
-      let buttonConfig = { ...buttonCardConfig[configIndex] };
-      let tireCard = buttonConfig.tire_card || ({} as TireTemplateConfig);
+      console.log('Tire base', configType, configValue, configIndex, newValue);
+      const buttonConfig = { ...buttonCardConfig[configIndex] };
+      const tireCard = { ...(buttonConfig.tire_card || ({} as TireTemplateConfig)) };
       tireCard[configValue] = newValue;
       buttonConfig.tire_card = tireCard;
       buttonCardConfig[configIndex] = buttonConfig;
@@ -1500,10 +1501,11 @@ export class PanelButtonCard extends LitElement {
       this._copyTireConfigToPreview(tireCard);
       // console.log('Tire config', tireCard);
     } else if (configType.startsWith('tire_entity_')) {
+      console.log('Tire entity', configType, configValue, newValue);
       const tirePosition = configType.replace('tire_entity_', '');
-      let buttonConfig = { ...buttonCardConfig[configIndex] };
-      let tireCard = buttonConfig.tire_card || ({} as TireTemplateConfig);
-      let tireConfig = tireCard[tirePosition] || ({} as TireEntityConfig);
+      const buttonConfig = { ...buttonCardConfig[configIndex] };
+      const tireCard = { ...(buttonConfig.tire_card || ({} as TireTemplateConfig)) };
+      const tireConfig = { ...(tireCard[tirePosition] || ({} as TireEntityConfig)) };
       tireConfig[configValue] = newValue;
       tireCard[tirePosition] = tireConfig;
       buttonConfig.tire_card = tireCard;
