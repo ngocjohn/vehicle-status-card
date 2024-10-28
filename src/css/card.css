@@ -556,7 +556,7 @@ header h1 {
   transition: all 400ms cubic-bezier(0.3, 0.0, 0.8, 0.15);
 }
 
-.default-card .data-box.hidden {
+.default-card .data-box[hidden] {
   opacity: 0;
   max-height: 0;
   overflow: hidden;
@@ -773,25 +773,25 @@ dialog::backdrop {
   text-align: center;
 }
 
-.frontleft {
+*[tyre=frontleft] {
   top: 0%;
   left: 0%;
   /* transform: translate(-15%, -10%); */
 }
 
-.frontright {
+*[tyre=frontright] {
   top: 0%;
   right: 0%;
   /* transform: translate(15%, -10%); */
 }
 
-.rearleft {
+*[tyre=rearleft] {
   bottom: 0%;
   left: 0%;
   /* transform: translate(-15%, 10%); */
 }
 
-.rearright {
+*[tyre=rearright] {
   bottom: 0%;
   right: 0%;
   /* transform: translate(15%, 10%); */
