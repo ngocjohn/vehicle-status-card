@@ -24,6 +24,7 @@ import {
   VehicleStatusCardConfig,
   TireEntity,
   PREVIEW_TYPE,
+  MapData,
 } from './types';
 import { HaHelp } from './utils';
 import { isEmpty } from './utils/helpers';
@@ -40,6 +41,7 @@ export class VehicleStatusCard extends LitElement {
 
   @state() public _buttonCards: ButtonCardEntity = [];
   @state() public _mapPopupLovelace: LovelaceCardConfig[] = [];
+  @state() public _mapData?: MapData;
 
   @state() public _activeCardIndex: null | number | string = null;
   @state() public _buttonReady = false;
@@ -249,7 +251,7 @@ export class VehicleStatusCard extends LitElement {
     return html`
       <div id="mini_map">
         <mini-map-box
-          .hass=${this._hass}
+          .mapData=${this._mapData}
           .config=${this._config}
           .card=${this}
           @toggle-map-popup=${() => (this._activeCardIndex = 'map')}
@@ -300,7 +302,7 @@ export class VehicleStatusCard extends LitElement {
     </div>`;
 
     const selected_card = isString(index)
-      ? this._mapPopupLovelace
+      ? this._mapData?.popUpCard
       : cardType === 'default'
         ? defaultCard!.map((card: DefaultCardEntity) => this._renderDefaultCardItems(card))
         : cardType === 'tire'
@@ -361,7 +363,7 @@ export class VehicleStatusCard extends LitElement {
     return html`
       <div class="default-card">
         <div class="data-header">${title} ${header}</div>
-        <div class="data-box ${collapsed_items ? 'hidden' : ''}">
+        <div class="data-box" ?hidden=${collapsed_items}>
           ${items.map((item) => itemRender(item.name, item.state, item.entity, item.icon))}
         </div>
       </div>
@@ -400,7 +402,7 @@ export class VehicleStatusCard extends LitElement {
           <div class="background" style="background-image: url(${background})"></div>
           ${Object.keys(tires).map((key) => {
             const cssClass = key.replace('_', '').toLowerCase();
-            return html` <div class="tyre-box ${cssClass}">
+            return html` <div class="tyre-box" tyre=${cssClass}>
               <span class="tyre-value">${tires[key].state}</span>
               <span class="tyre-name">${tires[key].name}</span>
             </div>`;

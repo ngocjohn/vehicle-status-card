@@ -117,6 +117,21 @@ export interface ImageConfig {
 }
 
 /* ----------------------------- MINI MAP CONFIG ---------------------------- */
+export interface Address {
+  streetNumber: string;
+  streetName: string;
+  sublocality: string;
+  city: string;
+  state: string;
+  country: string;
+  postcode: string;
+}
+export interface MapData {
+  lat: number;
+  lon: number;
+  address?: Partial<Address>;
+  popUpCard?: LovelaceCardConfig[];
+}
 
 export interface MiniMapConfig {
   default_zoom: number;

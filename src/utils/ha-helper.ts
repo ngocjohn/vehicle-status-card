@@ -17,9 +17,12 @@ import {
   IndicatorGroupConfig,
   RangeInfoConfig,
   VehicleStatusCardConfig,
+  MapData,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import _ from 'lodash';
+
+import { getAddressFromGoggle, getAddressFromOpenStreet } from './helpers';
 
 export async function getTemplateBoolean(hass: HomeAssistant, templateConfig: string): Promise<boolean> {
   if (!hass || !templateConfig) {
@@ -510,8 +513,45 @@ export async function handleFirstUpdated(card: VehicleStatusCard): Promise<void>
   card._buttonReady = false;
   card._buttonCards = await getButtonCard(hass, config.button_card);
   card._buttonReady = true;
+  _getMapData(card);
   _getDefaultCardItems(card);
 }
+
+export async function _getMapData(card: VehicleStatusCard): Promise<void> {
+  const config = card._config as VehicleStatusCardConfig;
+  if (
+    config.layout_config?.hide?.mini_map === true ||
+    !config.mini_map?.device_tracker ||
+    config.mini_map?.device_tracker === ''
+  ) {
+    return;
+  }
+
+  const hass = card._hass as HomeAssistant;
+  const deviceTracker = config.mini_map?.device_tracker;
+  const apiKey = config.mini_map?.google_api_key;
+  const mapData = {} as MapData;
+  const deviceStateObj = hass.states[deviceTracker];
+  if (!deviceStateObj) return;
+  const { latitude, longitude } = deviceStateObj.attributes as { latitude: number; longitude: number };
+  mapData.lat = latitude;
+  mapData.lon = longitude;
+  const adress = apiKey
+    ? await getAddressFromGoggle(latitude, longitude, apiKey)
+    : await getAddressFromOpenStreet(latitude, longitude);
+  if (adress) {
+    mapData.address = adress;
+  }
+  if (config.mini_map?.enable_popup) {
+    const popup = await _setMapPopup(card);
+    if (popup) {
+      mapData.popUpCard = popup;
+    }
+  }
+
+  card._mapData = mapData;
+}
+
 export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
   if (!card._currentPreview && !card.isEditorPreview) return;
 
@@ -558,4 +598,5 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
   ];
   const cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
   card._mapPopupLovelace = cardElement;
+  return cardElement;
 }
