@@ -556,7 +556,7 @@ header h1 {
   transition: all 400ms cubic-bezier(0.3, 0.0, 0.8, 0.15);
 }
 
-.default-card .data-box[hidden] {
+.default-card .data-box[active] {
   opacity: 0;
   max-height: 0;
   overflow: hidden;

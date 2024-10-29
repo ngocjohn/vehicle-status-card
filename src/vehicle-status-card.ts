@@ -351,15 +351,15 @@ export class VehicleStatusCard extends LitElement {
     };
 
     const header = collapsed_items
-      ? html`<div class="subcard-icon" @click=${(ev: Event) => this.toggleSubCard(ev)}>
-          <ha-icon icon="mdi:chevron-down"></ha-icon>
+      ? html`<div class="subcard-icon" ?active=${collapsed_items} @click=${(ev: Event) => this.toggleSubCard(ev)}>
+          <ha-icon icon="mdi:chevron-up"></ha-icon>
         </div>`
       : html``;
 
     return html`
       <div class="default-card">
         <div class="data-header">${title} ${header}</div>
-        <div class="data-box" ?hidden=${collapsed_items}>
+        <div class="data-box" ?active=${collapsed_items}>
           ${items.map((item) => itemRender(item.name, item.state, item.entity, item.icon))}
         </div>
       </div>
@@ -507,12 +507,14 @@ export class VehicleStatusCard extends LitElement {
     const target = (ev.target as HTMLElement).closest('.default-card');
     if (!target) return;
 
-    const dataBoxElement = target.querySelector('.data-box');
-    if (!dataBoxElement) return;
+    const dataBoxElement = target?.querySelector('.data-box');
+    const subIcon = target?.querySelector('.subcard-icon');
+    if (!dataBoxElement || !subIcon) return;
 
     // Toggle the 'hidden' class and 'active' class on the parent
-    const isHidden = dataBoxElement.classList.toggle('hidden');
-    target.querySelector('.subcard-icon')?.classList.toggle('active', !isHidden);
+    const isHidden = dataBoxElement.hasAttribute('active');
+    subIcon.toggleAttribute('active', !isHidden);
+    dataBoxElement.toggleAttribute('active', !isHidden);
   }
 
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */

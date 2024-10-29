@@ -1130,10 +1130,21 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'category-duplicate':
             if (buttonIndex !== undefined && cardIndex !== undefined) {
+              console.log('Duplicate category', buttonIndex, cardIndex);
               const buttonCardConfig = [...(this.config.button_card || [])];
-              const newCategory = JSON.parse(JSON.stringify(buttonCardConfig[buttonIndex].default_card[cardIndex]));
-              buttonCardConfig[buttonIndex].default_card.push(newCategory);
-              updateChange(buttonCardConfig);
+              const defaultCards = buttonCardConfig[buttonIndex]?.default_card || [];
+              console.log('Default cards', defaultCards);
+              const newCard = JSON.parse(JSON.stringify(defaultCards[cardIndex]));
+              console.log('New card', newCard);
+              this.config = {
+                ...this.config,
+                button_card: [
+                  ...buttonCardConfig.slice(0, buttonIndex),
+                  { ...buttonCardConfig[buttonIndex], default_card: [...defaultCards, newCard] },
+                  ...buttonCardConfig.slice(buttonIndex + 1),
+                ],
+              };
+              fireEvent(this, 'config-changed', { config: this.config });
             }
             break;
           case 'category-add':
