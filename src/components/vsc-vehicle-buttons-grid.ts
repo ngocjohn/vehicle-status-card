@@ -1,11 +1,11 @@
 import { forwardHaptic } from 'custom-card-helpers';
-import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 
 import cardstyles from '../css/card.css';
-import swipercss from '../css/swiper-bundle.css';
+import swipercss from 'swiper/swiper-bundle.css';
 import { ButtonCardEntity, HA as HomeAssistant, VehicleStatusCardConfig, ButtonConfig, ButtonEntity } from '../types';
 import { getTemplateBoolean, getTemplateValue } from '../utils/ha-helper';
 import { addActions } from '../utils/tap-action';
@@ -212,7 +212,7 @@ export class VehicleButtonsGrid extends LitElement {
             </div>
             ${!hideNotify
               ? html`
-                  <div class="item-notify ${notify ? '' : 'hidden'}">
+                  <div class="item-notify" ?hidden=${!notify}>
                     <ha-icon icon="mdi:alert-circle"></ha-icon>
                   </div>
                 `
@@ -220,7 +220,7 @@ export class VehicleButtonsGrid extends LitElement {
           </div>
           <div class="item-content">
             <div class="primary">
-              <span class="title">${primary}</span>
+              <span>${primary}</span>
             </div>
             <span class="secondary">${state}</span>
           </div>
@@ -317,7 +317,7 @@ export class VehicleButtonsGrid extends LitElement {
 
   static get styles(): CSSResultGroup {
     return [
-      swipercss,
+      unsafeCSS(swipercss),
       css`
         #button-swiper {
           --swiper-pagination-bottom: -8px;
@@ -327,6 +327,16 @@ export class VehicleButtonsGrid extends LitElement {
           background: none !important;
           overflow: visible;
         }
+
+        .swiper-container,
+        .swiper-wrapper {
+          display: flex;
+        }
+        .swiper-slide,
+        .swiper-pagination {
+          display: block;
+        }
+
         .swiper-pagination-bullet {
           background-color: var(--swiper-theme-color);
           transition: all 0.3s ease-in-out !important;

@@ -10,6 +10,8 @@ import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
 
 import * as Create from '../../utils/create';
+import { ICON } from '../../const/const';
+import { RANGE_ACTIONS } from '../editor-const';
 
 @customElement('panel-range-info')
 export class PanelRangeInfo extends LitElement {
@@ -18,6 +20,7 @@ export class PanelRangeInfo extends LitElement {
   @property({ type: Object }) config!: VehicleStatusCardConfig;
 
   @state() private _activeIndexItem: number | null = null;
+  @state() private _activeColorPicker: number | null = null;
   @state() private _newColor: string = '';
   @state() private _picker!: iro.ColorPicker;
 
@@ -101,22 +104,14 @@ export class PanelRangeInfo extends LitElement {
     });
   }
   protected render(): TemplateResult {
-    const actionFooter = html`
-      <div class="action-footer">
-        <ha-button class="add-button" @click=${this._toggleAction('add')}>
-          <span>Add new info bar</span>
-        </ha-button>
-        ${this.config.range_info?.length !== 0
-          ? html` <ha-button class="delete-btn" @click=${this._toggleAction('showdelete')}>
-              <span class="showdelete">Delete</span>
-            </ha-button>`
-          : nothing}
+    return html`
+      <div class="card-config">
+        ${this._activeIndexItem !== null ? this._renderRangeConfigContent() : this._renderRangeConfigList()}
       </div>
     `;
-    return html` <div class="indicator-config">${this._renderRangeConfigContent()} ${actionFooter}</div> `;
   }
 
-  private _toggleAction(action?: 'add' | 'delete' | 'showdelete', index?: number): () => void {
+  private _toggleAction(action?: 'add' | 'delete-item' | 'edit-item', index?: number): () => void {
     return () => {
       const updateChanged = (update: any) => {
         fireEvent(this, 'config-changed', { config: { ...this.config, range_info: update } });
@@ -139,25 +134,25 @@ export class PanelRangeInfo extends LitElement {
         rangeInfo.push(newRangeInfo);
         updateChanged(rangeInfo);
       }
-      if (action === 'delete' && index !== undefined) {
+      if (action === 'delete-item' && index !== undefined) {
         const rangeInfo = [...(this.config.range_info || [])];
         rangeInfo.splice(index, 1);
         updateChanged(rangeInfo);
       }
 
-      if (action === 'showdelete') {
-        const deleteButtons = this.shadowRoot?.querySelectorAll('.card-actions');
-        const isHidden = deleteButtons?.[0].classList.contains('hidden'); // Check if the first button is hidden
-        const showDeleteBton = this.shadowRoot?.querySelector('.showdelete') as HTMLElement;
-        showDeleteBton.innerText = isHidden ? 'Cancel' : 'Delete';
-        deleteButtons?.forEach((button) => {
-          button.classList.toggle('hidden');
-        });
+      if (action === 'edit-item' && index !== undefined) {
+        console.log('Edit item', index);
+        this._activeIndexItem = index;
+        this.requestUpdate();
       }
     };
   }
 
-  private _renderRangeConfigContent(): TemplateResult {
+  private _renderRangeConfigContent(): TemplateResult | typeof nothing {
+    if (this._activeIndexItem === null) {
+      return nothing;
+    }
+    const index = this._activeIndexItem;
     const energyConfig = (index: number) => this._renderEnergyLevelConfig(index);
     const rangeConfig = (index: number) => this._renderRangeLevelConfig(index);
     const colorPicker = (index: number) => this._colorPicker(index);
@@ -181,55 +176,99 @@ export class PanelRangeInfo extends LitElement {
       },
     };
 
-    const wrapper = (index: number) => html`
-      <div class="sub-panel-config" data-index=${index}>
-        ${Object.keys(configContent).map(
-          (key) => html`
-            <div class="sub-panel">
-              <div class="sub-header">
-                <span class="title">${configContent[key].title}</span>
-                <ha-icon
-                  class="info-icon"
-                  icon="mdi:help-circle"
-                  @click=${(ev: Event) => this._toggleHelp(ev)}
-                ></ha-icon>
-                ${configContent[key].helper}
+    return html`
+      <div class="sub-header">
+        <div class="icon-title" @click=${() => (this._activeIndexItem = null)}>
+          <ha-icon icon="mdi:arrow-left"></ha-icon>
+          <span>Back to list</span>
+        </div>
+        <div>Range Info #${index + 1}</div>
+      </div>
+        <div class="sub-panel-config" data-index=${index}>
+          ${Object.keys(configContent).map(
+            (key) => html`
+              <div class="sub-panel">
+                <div class="sub-header">
+                  <span>${configContent[key].title}</span>
+                  <ha-icon
+                    class="info-icon"
+                    icon="mdi:help-circle"
+                    @click=${(ev: Event) => this._toggleHelp(ev)}
+                  ></ha-icon>
+                  ${configContent[key].helper}
+                </div>
+                <div class="sub-content">${configContent[key].config(index)}</div>
               </div>
-              <div class="sub-content ${key}">${configContent[key].config(index)}</div>
-            </div>
-          `
-        )}
+            `
+          )}
+        </div>
       </div>
     `;
+  }
+
+  private _renderRangeConfigList(): TemplateResult {
+    const actionMap = [
+      { title: 'Edit', icon: 'mdi:pencil', action: RANGE_ACTIONS.EDIT_ITEM },
+      {
+        title: 'Remove',
+        icon: 'mdi:delete',
+        action: RANGE_ACTIONS.DELETE_ITEM,
+        color: 'var(--error-color)',
+      },
+    ];
     return html`
-      ${repeat(this.config.range_info, (rangeItem: RangeInfoConfig, index: number) => {
-        const entity = rangeItem.energy_level.map((item) => item.entity).join(', ');
-        const icon = rangeItem.energy_level.map((item) => item.icon).join(', ') ?? 'mdi:gas-station';
-        const progressColor = rangeItem.progress_color;
-        return html`
-          <div class="item-row-panel">
-            <ha-expansion-panel
-              class="panel-row"
-              .index=${index}
-              .outlined=${true}
-              .expanded=${false}
-              .header=${'Info bar #' + (index + 1)}
-              .secondary=${entity}
-              .leftChevron=${true}
-            >
-              <div slot="icons" style="color: ${progressColor};">
-                <ha-icon icon=${icon}></ha-icon>
+      <div class="range-info-list">
+        ${repeat(this.config.range_info, (rangeItem: RangeInfoConfig, index: number) => {
+          const entity = rangeItem.energy_level.map((item) => item.entity).join(', ');
+          const icon = rangeItem.energy_level.map((item) => item.icon).join(', ');
+          const progressColor = rangeItem.progress_color;
+          return html`
+            <div class="item-config-row" data-index=${index}>
+              <div class="handle">
+                <ha-icon icon=${icon ? icon : 'mdi:gas-station'} style=${`color: ${progressColor}`}></ha-icon>
               </div>
-              <div class="card-config">${wrapper(index)}</div>
-            </ha-expansion-panel>
-            <div class="card-actions hidden">
-              <ha-icon-button @click=${this._toggleAction('delete', index)}
-                ><ha-icon icon="mdi:close"></ha-icon
-              ></ha-icon-button>
+              <div class="item-content">
+                <div class="primary">Range Info #${index + 1}</div>
+                <div class="secondary">${entity}</div>
+              </div>
+              <div class="item-actions">
+                <ha-button-menu
+                  .corner=${'BOTTOM_START'}
+                  .fixed=${true}
+                  .menuCorner=${'START'}
+                  .activatable=${true}
+                  .naturalMenuWidth=${true}
+                  @closed=${(ev: Event) => ev.stopPropagation()}
+                >
+                  <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                  ${actionMap.map(
+                    (action) => html`
+                      <mwc-list-item
+                        @click=${this._toggleAction(action.action, index)}
+                        .graphic=${'icon'}
+                        style="${action.color ? `color: ${action.color}` : ''}"
+                      >
+                        <ha-icon
+                          .icon=${action.icon}
+                          slot="graphic"
+                          style="${action.color ? `color: ${action.color}` : ''}"
+                        ></ha-icon>
+                        ${action.title}
+                      </mwc-list-item>
+                    `
+                  )}
+                </ha-button-menu>
+              </div>
             </div>
-          </div>
-        `;
-      })}
+          `;
+        })}
+      </div>
+        <div class="action-footer">
+          <ha-button @click=${this._toggleAction('add')}>
+            <span>Add new info bar</span>
+          </ha-button>
+        </div>
+      </div>
     `;
   }
 
@@ -343,7 +382,7 @@ export class PanelRangeInfo extends LitElement {
       <input id="hexInput"></input>
       <div class="item-actions">
         <ha-button @click=${() => this._handleNewColor(index)}>Save</ha-button>
-        <ha-button @click=${() => (this._activeIndexItem = null)}>Cancel</ha-button>
+        <ha-button @click=${() => (this._activeColorPicker = null)}>Cancel</ha-button>
         <ha-button @click=${() => this._picker.color.reset()}>Reset</ha-button>
       </div>
     </div>
@@ -351,7 +390,7 @@ export class PanelRangeInfo extends LitElement {
       <div id="picker"></div>
     </div>
     `;
-    return this._activeIndexItem === index ? colorPicker : defaultContent;
+    return this._activeColorPicker === index ? colorPicker : defaultContent;
   }
 
   private _handleNewColor(index: number): void {
@@ -370,7 +409,7 @@ export class PanelRangeInfo extends LitElement {
   }
 
   private _toggleColorPicker(index: number, color: string): void {
-    this._activeIndexItem = index;
+    this._activeColorPicker = index;
     this.updateComplete.then(() => {
       this._initColorPicker(color);
     });

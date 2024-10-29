@@ -1,4 +1,4 @@
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
@@ -6,7 +6,7 @@ import { Autoplay, Pagination, EffectFade, EffectCoverflow } from 'swiper/module
 import { SwiperOptions } from 'swiper/types';
 
 import cardstyles from '../css/card.css';
-import swipercss from '../css/swiper-bundle.css';
+import swipercss from 'swiper/swiper-bundle.css';
 import { ImageConfig, VehicleStatusCardConfig } from '../types';
 
 @customElement('images-slide')
@@ -132,7 +132,7 @@ export class ImagesSlide extends LitElement {
   static get styles(): CSSResultGroup {
     return [
       cardstyles,
-      swipercss,
+      unsafeCSS(swipercss),
       css`
         :host {
           --swiper-pagination-bottom: 0px;
@@ -141,6 +141,9 @@ export class ImagesSlide extends LitElement {
         section {
           display: block;
           padding: 1rem 0;
+        }
+        .swiper-wrapper {
+          display: flex;
         }
         .swiper-container {
           width: 100%;
@@ -176,6 +179,9 @@ export class ImagesSlide extends LitElement {
           z-index: 1;
         }
 
+        .swiper-pagination {
+          display: block;
+        }
         .swiper-pagination-bullet {
           background-color: var(--swiper-theme-color);
           transition: all 0.3s ease-in-out !important;

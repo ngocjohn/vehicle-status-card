@@ -109,7 +109,7 @@ header h1 {
 
 }
 
-.item.hidden {
+.item[hidden] {
   display: none !important;
 }
 
@@ -302,7 +302,7 @@ header h1 {
   --mdc-icon-size: 1.4rem;
 }
 
-.grid-item .item-notify.hidden {
+.grid-item .item-notify[hidden] {
   display: none;
 }
 
@@ -618,7 +618,7 @@ header h1 {
   cursor: pointer;
 }
 
-.subcard-icon.active {
+.subcard-icon[active] {
   transform: rotate(180deg);
 }
 

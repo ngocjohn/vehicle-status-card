@@ -22,6 +22,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
 
   @state() private activeTabIndex: null | number = null;
+  @state() private _indicatorTabIndex: number = 0;
 
   @query('panel-button-card') _buttonCardEditor?: any;
   @state() _helpOverlayActive: boolean = false;
@@ -179,9 +180,35 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       `
     );
 
-    const content = html` <div class="indicator-config">${singleIndicatorPanel} ${groupIndicatorPanel}</div> `;
+    const single = this._renderSingleIndicator();
+    const group = this._renderGroupIndicator();
 
-    return content;
+    // const content = html` <div class="indicator-config">${singleIndicatorPanel} ${groupIndicatorPanel}</div> `;
+
+    const tabsConfig = [
+      { content: single, key: 'single', label: 'Single' },
+      { content: group, key: 'group', label: 'Group' },
+    ];
+
+    return html`<div class="card-config">
+      ${TabBar({
+        activeTabIndex: this._indicatorTabIndex || 0,
+        onTabChange: (index: number) => (this._indicatorTabIndex = index),
+        tabs: tabsConfig,
+      })}
+    </div>`;
+  }
+
+  private _renderGroupIndicator(): TemplateResult {
+    return html`
+      <panel-indicator .hass=${this._hass} .editor=${this} .config=${this._config} .type=${'group'}></panel-indicator>
+    `;
+  }
+
+  private _renderSingleIndicator(): TemplateResult {
+    return html`
+      <panel-indicator .hass=${this._hass} .editor=${this} .config=${this._config} .type=${'single'}></panel-indicator>
+    `;
   }
 
   private _renderLayoutConfig(): TemplateResult {
@@ -271,7 +298,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const buttonGridWrapper = html`
       <div class="sub-panel-config button-card">
         <div class="sub-header">
-          <div class="sub-header-title">Button Grid Configuration</div>
+          <div>Button Grid Configuration</div>
         </div>
         <div class="sub-panel">
           <div class="sub-content">${buttonGridPicker.map((config) => createPickers(config, sharedButtonConfig))}</div>
@@ -282,7 +309,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const hideWrapper = html`
       <div class="sub-panel-config button-card">
         <div class="sub-header">
-          <div class="sub-header-title">Hide Configuration</div>
+          <div>Hide Configuration</div>
         </div>
         <div class="sub-panel">
           <div class="sub-content">${hidePicker.map((config) => createPickers(config, sharedBoolConfig))}</div>
@@ -292,7 +319,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const themeWrapper = html`
       <div class="sub-panel-config button-card">
         <div class="sub-header">
-          <div class="sub-header-title">Select the name for card</div>
+          <div>Select the name for card</div>
         </div>
         <div class="sub-panel">
           <div class="item-config-row">
@@ -306,7 +333,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
             ></ha-textfield>
           </div>
           <div class="sub-header">
-            <div class="sub-header-title">Theme Configuration</div>
+            <div>Theme Configuration</div>
           </div>
           <div class="sub-panel">
             <div class="sub-content">${themeModeSelect.map((config) => createPickers(config, sharedThemeConfig))}</div>

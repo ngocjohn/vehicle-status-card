@@ -103,11 +103,11 @@ export class VehicleStatusCard extends LitElement {
     if (process.env.ROLLUP_WATCH === 'true') {
       window.VehicleCard = this;
     }
-    window.addEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    document.addEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
   }
 
   disconnectedCallback(): void {
-    window.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    document.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
     super.disconnectedCallback();
   }
 
@@ -144,10 +144,6 @@ export class VehicleStatusCard extends LitElement {
     if (!this._config || !this._hass) {
       console.log('config or hass is null');
       return false;
-    }
-
-    if (changedProps.has('_config') && this._config?.mini_map?.enable_popup) {
-      HaHelp._setMapPopup(this);
     }
 
     if (changedProps.has('_hass') && this._activeCardIndex !== null) {

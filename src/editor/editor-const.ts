@@ -142,6 +142,11 @@ export enum IMAGE_ACTIONS {
   SHOW_IMAGE = 'show-image',
 }
 
+export enum RANGE_ACTIONS {
+  DELETE_ITEM = 'delete-item',
+  EDIT_ITEM = 'edit-item',
+}
+
 const BUTTON_TYPE = [
   { value: 'default', label: 'Default' },
   { value: 'action', label: 'Action' },

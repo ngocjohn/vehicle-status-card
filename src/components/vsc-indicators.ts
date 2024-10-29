@@ -63,7 +63,7 @@ export class VscIndicators extends LitElement {
   protected render(): TemplateResult {
     if (!this._indicatorsLoaded) return html``;
     return html`
-      <div class="indicators">
+      <div>
         <div class="info-box">${this._renderSingleIndicators()} ${this._renderGroupIndicators()}</div>
       </div>
       ${this._renderActiveIndicator()}
@@ -98,7 +98,7 @@ export class VscIndicators extends LitElement {
   private _renderSingleIndicators(): TemplateResult {
     const indicator = Object.values(this._indicatorsSingle).map(
       ({ entity, icon, state, visibility, color }) => html`
-        <div class="item ${visibility === false ? 'hidden' : ''}">
+        <div class="item " ?hidden=${visibility === false}>
           <ha-state-icon
             .hass=${this.hass}
             .stateObj=${entity ? this.hass.states[entity] : undefined}
@@ -126,7 +126,7 @@ export class VscIndicators extends LitElement {
         <ha-icon icon=${icon} style=${color ? `color: ${color}` : ''}></ha-icon>
         <div class="added-item-arrow">
           <span>${label}</span>
-          <div class="subcard-icon ${isActive ? 'active' : ''}" style="margin-bottom: 2px">
+          <div class="subcard-icon" ?active=${isActive} style="margin-bottom: 2px">
             <ha-icon icon="mdi:chevron-down"></ha-icon>
           </div>
         </div>

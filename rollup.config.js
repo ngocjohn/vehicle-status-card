@@ -63,6 +63,7 @@ const plugins = [
       }),
     ],
     extract: false,
+    inject: false,
   }),
   postcssLit(),
   replace(replaceOpts),

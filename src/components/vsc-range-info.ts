@@ -8,8 +8,8 @@ import { isEmpty } from '../utils';
 
 @customElement('vsc-range-info')
 export class VscRangeInfo extends LitElement {
-  @property() private hass!: HomeAssistant;
-  @property() private config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) private hass!: HomeAssistant;
+  @property({ attribute: false }) config!: VehicleStatusCardConfig;
 
   @state() private _rangeInfo: RangeInfoEntity = [];
 

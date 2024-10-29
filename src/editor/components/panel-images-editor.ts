@@ -61,7 +61,7 @@ export class PanelImagesEditor extends LitElement {
           margin-block: var(--vic-card-padding);
         }
 
-        .drop-area.dragging {
+        .drop-area[dragging] {
           background-color: rgba(var(--rgb-primary-text-color), 0.05);
         }
 
@@ -130,7 +130,7 @@ export class PanelImagesEditor extends LitElement {
 
   protected render(): TemplateResult {
     if (!this.config || !this._hass) {
-      return html`<div class="config-wrapper">Loading...</div>`;
+      return html`<div class="card-config">Loading...</div>`;
     }
     const imagesList = this._renderImageList();
     const layoutConfig = this._renderImageLayoutConfig();
@@ -210,7 +210,7 @@ export class PanelImagesEditor extends LitElement {
         </div>`;
 
     const actionFooter = html`<div class="action-footer">
-      <ha-button class="upload-btn" @click=${this.toggleAction('upload')}>Add Image</ha-button>
+      <ha-button id="upload-btn" @click=${this.toggleAction('upload')}>Add Image</ha-button>
     </div> `;
     return html` ${infoText} ${dropArea} ${imageList} ${actionFooter} `;
   }
@@ -219,7 +219,7 @@ export class PanelImagesEditor extends LitElement {
     return html`
       <div id="drop-area" style="display: none;">
         <div
-          class="drop-area ${this.isDragging ? 'dragging' : ''}"
+          class="drop-area" ?dragging=${this.isDragging}
           @dragover=${this._handleDragOver}
           @dragleave=${this._handleDragLeave}
           @drop=${this._handleDrop}
@@ -242,7 +242,7 @@ export class PanelImagesEditor extends LitElement {
             <ha-icon icon="mdi:plus" @click=${this.toggleAction('add-new-url')}></ha-icon>
           </div>
         </div>
-        <ha-alert class="image-alert hidden" alert-type="success">New image added successfully!</ha-alert>
+        <ha-alert id="image-alert" class="hidden" alert-type="success">New image added successfully!</ha-alert>
       </div>
     `;
   }
@@ -325,7 +325,7 @@ export class PanelImagesEditor extends LitElement {
 
     return html` <div class="sub-panel-config button-card">
       <div class="sub-header">
-        <div class="sub-header-title">Slide layout configuration</div>
+        <div>Slide layout configuration</div>
       </div>
       <div class="sub-panel">
         <div>${swiperConfig.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}</div>
@@ -338,7 +338,7 @@ export class PanelImagesEditor extends LitElement {
 
   private generateItemPicker(config: any, wrapperClass = 'item-content'): TemplateResult {
     return html`
-      <div class="${wrapperClass}">
+      <div class=${wrapperClass}>
         ${Picker({
           ...config,
         })}
@@ -405,7 +405,7 @@ export class PanelImagesEditor extends LitElement {
       const showDropArea = () => {
         const dropArea = this.shadowRoot?.getElementById('drop-area') as HTMLElement;
         const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
-        const addImageBtn = this.shadowRoot?.querySelector('.upload-btn') as HTMLElement;
+        const addImageBtn = this.shadowRoot?.getElementById('upload-btn') as HTMLElement;
         const isHidden = dropArea?.style.display === 'none';
         if (isHidden) {
           dropArea.style.display = 'block';
@@ -435,7 +435,7 @@ export class PanelImagesEditor extends LitElement {
 
           case 'add-new-url':
             if (!this._newImage) return;
-            const imageAlert = this.shadowRoot?.querySelector('.image-alert') as HTMLElement;
+            const imageAlert = this.shadowRoot?.getElementById('image-alert') as HTMLElement;
             const imagesList = [...(this.config?.images || [])];
             imagesList.push({ url: this._newImage, title: this._newImage });
             updateChanged(imagesList);

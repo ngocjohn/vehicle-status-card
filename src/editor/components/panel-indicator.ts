@@ -12,7 +12,7 @@ import {
 import editorcss from '../../css/editor.css';
 import { fireEvent } from 'custom-card-helpers';
 import { CONFIG_VALUES } from '../editor-const';
-
+import { ICON } from '../../const/const';
 import Sortable from 'sortablejs';
 
 import * as Create from '../../utils/create';
@@ -31,7 +31,7 @@ export class PanelIndicator extends LitElement {
   @state() private _newIndicator: Map<string, string> = new Map();
 
   @state() _reindexItems: boolean = false;
-
+  @state() _addFormVisible: boolean = false;
   constructor() {
     super();
     this._closeSubPanel = this._closeSubPanel.bind(this);
@@ -92,10 +92,11 @@ export class PanelIndicator extends LitElement {
     return html`
       <div class="sub-panel">
         <div class="sub-header">
-          <div class="sub-header-title">${typeConfigMap[type].header}</div>
-          <div class="subcard-icon" @click=${this._closeSubPanel}>
-            <ha-icon icon="mdi:close"></ha-icon>
+          <div class="icon-title" @click=${this._closeSubPanel}>
+            <ha-icon icon="mdi:arrow-left"></ha-icon>
+            <span>Back to list</span>
           </div>
+          <div>${typeConfigMap[type].header}</div>
         </div>
         ${type === 'single' ? this._renderSingleSubPanelConfig() : this._renderGroupSubPanelConfig()}
       </div>
@@ -259,7 +260,7 @@ export class PanelIndicator extends LitElement {
         <div class="subcard-icon" @click=${() => this._addNewType('item')}>
           <ha-button>Add item</ha-button>
         </div>
-        <div class="sub-header-title">Group items</div>
+        <div>Group items</div>
       </div>
 
       <div class="sub-panel-config">
@@ -279,6 +280,9 @@ export class PanelIndicator extends LitElement {
   /* ----------------------------- TEMPLATE UI ----------------------------- */
 
   private _renderAddTemplate(type: string): TemplateResult {
+    if (!this._addFormVisible) {
+      return html``;
+    }
     const formPicker = {
       single: html`
         <ha-entity-picker
@@ -300,7 +304,7 @@ export class PanelIndicator extends LitElement {
     };
 
     return html`
-      <div class="item-config-row new-item">
+      <div class="item-config-row">
         <div class="item-content">${formPicker[type]}</div>
         <div class="item-actions">
           <div class="action-icon" @click=${() => this._addNewType(type)}>
@@ -370,7 +374,7 @@ export class PanelIndicator extends LitElement {
 
   private _createItemPicker(config: any, wrapperClass = 'item-content'): TemplateResult {
     return html`
-      <div class="${wrapperClass}">
+      <div class=${wrapperClass || 'item-content'}>
         ${Create.Picker({
           ...config,
           component: this,
@@ -438,6 +442,15 @@ export class PanelIndicator extends LitElement {
     getKey: (indicator: T) => string,
     renderContent: (indicator: T, index: number) => TemplateResult
   ): TemplateResult {
+    const actionMap = [
+      { title: 'Edit', icon: 'mdi:pencil', action: (index: number) => this._toggleEditIndicator(index) },
+      {
+        title: 'Remove',
+        icon: 'mdi:delete',
+        action: (index: number) => this._removeIndicatorType(index),
+        color: 'var(--error-color)',
+      },
+    ];
     return html`
       <div class="indicator-list" id="indicator-${this.type}-list">
         ${repeat(
@@ -447,19 +460,42 @@ export class PanelIndicator extends LitElement {
             <div class="item-config-row" data-index=${index}>
               <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
               <div class="item-content">${renderContent(indicator, index)}</div>
-              <div class="item-actions">
-                <div class="action-icon" @click=${() => this._removeIndicatorType(index)}>
-                  <ha-icon icon="mdi:close"></ha-icon>
-                </div>
-                <div class="action-icon" @click=${() => this._toggleEditIndicator(index)}>
-                  <ha-icon icon="mdi:pencil"></ha-icon>
-                </div>
-              </div>
+              <ha-button-menu
+                .corner=${'BOTTOM_START'}
+                .fixed=${true}
+                .menuCorner=${'START'}
+                .activatable=${true}
+                .naturalMenuWidth=${true}
+                @closed=${(ev: Event) => ev.stopPropagation()}
+              >
+                <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                ${actionMap.map(
+                  (action) => html`
+                    <mwc-list-item
+                      @click=${() => action.action(index)}
+                      .graphic=${'icon'}
+                      style="${action.color ? `color: ${action.color}` : ''}"
+                    >
+                      <ha-icon
+                        .icon=${action.icon}
+                        slot="graphic"
+                        style="${action.color ? `color: ${action.color}` : ''}"
+                      ></ha-icon>
+                      ${action.title}
+                    </mwc-list-item>
+                  `
+                )}
+              </ha-button-menu>
             </div>
           `
         )}
       </div>
-      ${this._renderAddTemplate(this.type)}
+      <div class="action-footer">
+        <ha-button @click=${() => (this._addFormVisible = !this._addFormVisible)}
+          >${this._addFormVisible ? 'Cancel' : `Add new ${this.type}`}</ha-button
+        >
+        ${this._renderAddTemplate(this.type)}
+      </div>
     `;
   }
 

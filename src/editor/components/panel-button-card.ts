@@ -363,9 +363,7 @@ export class PanelButtonCard extends LitElement {
             <span>${action.title}</span>
           </div>`
       )}
-      <div class="title" style=${styleMap(styleTitle)}>
-        ${title} ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}
-      </div>
+      <div style=${styleMap(styleTitle)}>${title} ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}</div>
     </div>`;
   }
 
@@ -485,7 +483,7 @@ export class PanelButtonCard extends LitElement {
         </div>
         ${notifyTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
         <div class="sub-header">
-          <div class="sub-header-title">Secondary state display</div>
+          <div>Secondary state display</div>
         </div>
         <div class="sub-content">
           ${pickerSecondary.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
@@ -523,7 +521,7 @@ export class PanelButtonCard extends LitElement {
     // Action selectors mapped from ACTIONSELECTOR
     const actionSelectors = ACTIONSELECTOR.map((action) => {
       return html`
-        <div class="select-action">
+        <div>
           <ha-selector
             .hass=${this.hass}
             .label=${action.label}
@@ -647,7 +645,6 @@ export class PanelButtonCard extends LitElement {
         style="display: none"
         type="file"
         id="file-upload-new"
-        class="file-input"
         @change=${(ev: Event) => this.updateTireBackground(ev, buttonIndex)}
         accept="image/*"
       />
@@ -826,7 +823,7 @@ export class PanelButtonCard extends LitElement {
         <div class="subcard-icon">
           <ha-icon-button-prev @click=${this.toggleAction('category-back')}></ha-icon-button-prev>
         </div>
-        <div class="sub-header-title">${baseCard.title}</div>
+        <div>${baseCard.title}</div>
         <ha-button @click=${() => this._togglePreview('default', buttonIndex)}
           >${this._activePreview !== null ? 'Close Preview' : 'Preview'}</ha-button
         >
@@ -959,7 +956,7 @@ export class PanelButtonCard extends LitElement {
 
     return html`
       <div class="sub-header">
-        <div class="sub-header-title">Custom Card Configuration</div>
+        <div>Custom Card Configuration</div>
         ${!isHidden
           ? html` <div class="subcard-icon">
               <ha-button @click=${() => this._togglePreview('custom', buttonIndex)}>
@@ -1008,7 +1005,7 @@ export class PanelButtonCard extends LitElement {
 
     return html`
       <div class="sub-header">
-        <div class="sub-header-title">${tirePosition.replace('_', ' ').toUpperCase()}</div>
+        <div>${tirePosition.replace('_', ' ').toUpperCase()}</div>
       </div>
       <div class="sub-content">
         ${tirePickers.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
@@ -1024,7 +1021,7 @@ export class PanelButtonCard extends LitElement {
     addedElement?: TemplateResult
   ): TemplateResult {
     const noIcon = html` <div class="sub-header">
-      <div class="sub-header-title">${title}</div>
+      <div>${title}</div>
       ${actions?.map(
         (action) =>
           html` <div class="subcard-icon">
@@ -1039,11 +1036,11 @@ export class PanelButtonCard extends LitElement {
             <ha-icon icon=${ifDefined(action.icon)}></ha-icon>
           </div>`
       )}
-      <div class="sub-header-title">${title}</div>
+      <div>${title}</div>
     </div>`;
 
     const added = html`<div class="sub-header">
-      <div class="sub-header-title">${title}</div>
+      <div>${title}</div>
       <div class="subcard-icon">${addedElement}</div>
     </div>`;
 
@@ -1054,7 +1051,7 @@ export class PanelButtonCard extends LitElement {
             <ha-icon icon=${ifDefined(action.icon)}></ha-icon>
           </div>`
       )}
-      <div class="sub-header-title">${title}</div>
+      <div>${title}</div>
       ${addedElement}
     </div>`;
 
@@ -1183,7 +1180,7 @@ export class PanelButtonCard extends LitElement {
 
   private generateItemPicker(config: any, wrapperClass = 'item-content'): TemplateResult {
     return html`
-      <div class="${wrapperClass}">
+      <div class=${wrapperClass}>
         ${Create.Picker({
           ...config,
           component: this,
