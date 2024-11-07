@@ -10,3 +10,4 @@ scripts/
 src/test/
 .env
 .DS_Store
+*.wiki
