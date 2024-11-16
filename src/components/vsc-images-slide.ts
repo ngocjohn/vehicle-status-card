@@ -3,10 +3,10 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
 import { Autoplay, Pagination, EffectFade, EffectCoverflow } from 'swiper/modules';
+import swipercss from 'swiper/swiper-bundle.css';
 import { SwiperOptions } from 'swiper/types';
 
 import cardstyles from '../css/card.css';
-import swipercss from 'swiper/swiper-bundle.css';
 import { ImageConfig, VehicleStatusCardConfig } from '../types';
 
 @customElement('images-slide')

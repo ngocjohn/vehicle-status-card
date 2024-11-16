@@ -9,10 +9,8 @@ import editorcss from '../css/editor.css';
 import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import { Picker, TabBar } from '../utils/create';
 import { loadHaComponents, stickyPreview } from '../utils/loader';
-
 import './components/';
 import { PanelImagesEditor, PanelIndicator, PanelButtonCard, PanelEditorUI, PanelRangeInfo } from './components/';
-
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 
 @customElement('vehicle-status-card-editor')

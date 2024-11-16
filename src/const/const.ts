@@ -1,4 +1,3 @@
-import { repository, version } from '../../package.json';
 import {
   mdiDotsVertical,
   mdiDrag,
@@ -13,6 +12,8 @@ import {
   mdiChevronRight,
   mdiChevronLeft,
 } from '@mdi/js';
+
+import { repository, version } from '../../package.json';
 
 export const CARD_VERSION = `v${version}`;
 export const REPOSITORY = repository.repo;

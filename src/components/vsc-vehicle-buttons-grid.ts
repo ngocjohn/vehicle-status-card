@@ -3,9 +3,9 @@ import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, Templat
 import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
+import swipercss from 'swiper/swiper-bundle.css';
 
 import cardstyles from '../css/card.css';
-import swipercss from 'swiper/swiper-bundle.css';
 import { ButtonCardEntity, HA as HomeAssistant, VehicleStatusCardConfig, ButtonConfig, ButtonEntity } from '../types';
 import { getTemplateBoolean, getTemplateValue } from '../utils/ha-helper';
 import { addActions } from '../utils/tap-action';

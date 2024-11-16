@@ -20,8 +20,6 @@ import {
   MapData,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
-import _ from 'lodash';
-
 import { getAddressFromGoggle, getAddressFromOpenStreet } from './helpers';
 
 export async function getTemplateBoolean(hass: HomeAssistant, templateConfig: string): Promise<boolean> {

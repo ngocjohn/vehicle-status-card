@@ -4,6 +4,7 @@ import perfectionist from 'eslint-plugin-perfectionist';
 
 export default [
   {
+    files: ['src/**/*.ts'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

@@ -1,10 +1,10 @@
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
+import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import mapstyle from 'leaflet/dist/leaflet.css';
 import { MapData } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
