@@ -10,9 +10,11 @@ import {
 import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { customElement, property, query, state } from 'lit/decorators';
 
 import './components';
+
+import { customElement, property, query, state } from 'lit/decorators';
+
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
 import { DEFAULT_CONFIG, ICON } from './const/const';
 import { TIRE_BG } from './const/img-const';
@@ -300,12 +302,12 @@ export class VehicleStatusCard extends LitElement {
     const selected_card = isString(index)
       ? this._mapData?.popUpCard
       : cardType === 'default'
-        ? defaultCard!.map((card: DefaultCardEntity) => this._renderDefaultCardItems(card))
-        : cardType === 'tire'
-          ? this._renderTireCard(tireCard)
-          : !isEmpty(customCard)
-            ? customCard.map((card: LovelaceCardConfig) => html`<div class="added-cutom">${card}</div>`)
-            : this._showWarning('Card not found');
+      ? defaultCard!.map((card: DefaultCardEntity) => this._renderDefaultCardItems(card))
+      : cardType === 'tire'
+      ? this._renderTireCard(tireCard)
+      : !isEmpty(customCard)
+      ? customCard.map((card: LovelaceCardConfig) => html`<div class="added-cutom">${card}</div>`)
+      : this._showWarning('Card not found');
 
     const content = html`
       <main id="cards-wrapper">
@@ -441,13 +443,10 @@ export class VehicleStatusCard extends LitElement {
       // Filter out only top-level properties for CSS variables and the modes property
       const filteredThemeData = Object.keys(themeData)
         .filter((key) => key !== 'modes')
-        .reduce(
-          (obj, key) => {
-            obj[key] = themeData[key];
-            return obj;
-          },
-          {} as Record<string, string>
-        );
+        .reduce((obj, key) => {
+          obj[key] = themeData[key];
+          return obj;
+        }, {} as Record<string, string>);
 
       // Get the current mode (light or dark)
       const mode = this.isDark ? 'dark' : 'light';
