@@ -11,3 +11,4 @@ src/test/
 .env
 .DS_Store
 *.wiki
+.hass-config/
