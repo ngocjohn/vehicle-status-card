@@ -74,14 +74,14 @@ export async function getSingleIndicators(
     const iconValue = indicator.icon_template
       ? await getTemplateValue(hass, indicator.icon_template)
       : indicator.icon
-        ? indicator.icon
-        : '';
+      ? indicator.icon
+      : '';
 
     const state = indicator.state_template
       ? await getTemplateValue(hass, indicator.state_template)
       : indicator.attribute
-        ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
-        : hass.formatEntityState(stateObj);
+      ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
+      : hass.formatEntityState(stateObj);
 
     const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
 
@@ -124,8 +124,8 @@ export async function getGroupIndicators(
         const state = item.state_template
           ? await getTemplateValue(hass, item.state_template)
           : item.attribute
-            ? hass.formatEntityAttributeValue(stateObj, item.attribute)
-            : hass.formatEntityState(stateObj);
+          ? hass.formatEntityAttributeValue(stateObj, item.attribute)
+          : hass.formatEntityState(stateObj);
 
         return {
           entity: item.entity,
@@ -232,8 +232,8 @@ export async function getDefaultCard(
       const state = item.state_template
         ? await getTemplateValue(hass, item.state_template)
         : item.attribute
-          ? hass.formatEntityAttributeValue(stateObj, item.attribute)
-          : hass.formatEntityState(stateObj);
+        ? hass.formatEntityAttributeValue(stateObj, item.attribute)
+        : hass.formatEntityState(stateObj);
 
       const icon = item.icon || '';
       const name = item.name || stateObj.attributes.friendly_name || '';
@@ -507,7 +507,6 @@ export async function handleFirstUpdated(card: VehicleStatusCard): Promise<void>
   const hass = card._hass as HomeAssistant;
   const config = card._config as VehicleStatusCardConfig;
 
-  console.log('First updated called');
   card._buttonReady = false;
   card._buttonCards = await getButtonCard(hass, config.button_card);
   card._buttonReady = true;
