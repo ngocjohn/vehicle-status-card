@@ -1,4 +1,5 @@
 import { forwardHaptic } from 'custom-card-helpers';
+import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
@@ -7,27 +8,23 @@ import swipercss from 'swiper/swiper-bundle.css';
 
 import cardstyles from '../css/card.css';
 import { ButtonCardEntity, HA as HomeAssistant, VehicleStatusCardConfig, ButtonConfig, ButtonEntity } from '../types';
-import { getTemplateBoolean, getTemplateValue } from '../utils/ha-helper';
 import { addActions } from '../utils/tap-action';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
-export type CustomButtonItem = {
-  notify: boolean;
-  state: string;
-  entity: string;
-  color: string;
-};
+const TEMPLATE_KEYS = ['state_template', 'notify', 'color'] as const;
+type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vehicle-buttons-grid')
 export class VehicleButtonsGrid extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) card!: VehicleStatusCard;
-  @property({ type: Object }) config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) card!: VehicleStatusCard;
+  @property({ attribute: false }) config!: VehicleStatusCardConfig;
   @property({ type: Array }) buttons: ButtonCardEntity = [];
 
-  @state() private _isButtonReady = false;
-  @state() _secondaryInfo: CustomButtonItem[] = [];
+  @state() private _templateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
 
+  @state() private _unsubRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
   private swiper: null | Swiper = null;
 
   constructor() {
@@ -35,33 +32,115 @@ export class VehicleButtonsGrid extends LitElement {
     this._handleClick = this._handleClick.bind(this);
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._tryConnect();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._tryDisconnect();
+  }
+
+  public isTemplate(button: ButtonConfig, key: TemplateKey) {
+    const testTemplates = {
+      state_template: button.secondary[0].state_template,
+      notify: button.notify,
+      color: button.color,
+    };
+    const value = testTemplates[key];
+    return value?.includes('{');
+  }
+
+  private getValue(button: ButtonConfig, key: TemplateKey) {
+    const testTemplates = {
+      state_template: button.secondary[0].state_template,
+      notify: button.notify,
+      color: button.color,
+    };
+    return this.isTemplate(button, key) ? this._templateResults[key]?.result?.toString() : testTemplates[key];
+  }
+
+  private async _tryConnect(): Promise<void> {
+    // console.log('Trying to connect');
+    for (const button of this.buttons) {
+      TEMPLATE_KEYS.forEach((key) => {
+        this._tryConnectKey(button.button, key);
+      });
+    }
+  }
+
+  private async _tryConnectKey(button: ButtonConfig, key: TemplateKey): Promise<void> {
+    if (this._unsubRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(button, key)) {
+      return;
+    }
+    const testTemplates = {
+      state_template: button.secondary[0].state_template,
+      notify: button.notify,
+      color: button.color,
+    };
+
+    try {
+      const sub = subscribeRenderTemplate(
+        this.hass.connection,
+        (result) => {
+          this._templateResults = {
+            ...this._templateResults,
+            [key]: result,
+          };
+        },
+        {
+          template: testTemplates[key] ?? '',
+        }
+      );
+      this._unsubRenderTemplates.set(key, sub);
+      await sub;
+    } catch (_err) {
+      const result = {
+        result: testTemplates[key] ?? '',
+        listeners: {
+          all: false,
+          domains: [],
+          entities: [],
+          time: false,
+        },
+      };
+      this._templateResults = {
+        ...this._templateResults,
+        [key]: result,
+      };
+      this._unsubRenderTemplates.delete(key);
+    }
+  }
+
+  private async _tryDisconnect(): Promise<void> {
+    TEMPLATE_KEYS.forEach((key) => {
+      this._tryDisconnectKey(key);
+    });
+  }
+
+  private async _tryDisconnectKey(key: TemplateKey): Promise<void> {
+    const unsubRenderTemplate = this._unsubRenderTemplates.get(key);
+    if (!unsubRenderTemplate) {
+      return;
+    }
+
+    try {
+      const unsub = await unsubRenderTemplate;
+      unsub();
+      this._unsubRenderTemplates.delete(key);
+    } catch (err: any) {
+      if (err.code === 'not_found' || err.code === 'template_error') {
+        // If we get here, the connection was probably already closed. Ignore.
+      } else {
+        throw err;
+      }
+    }
+  }
+
   protected async firstUpdated(changeProperties: PropertyValues): Promise<void> {
     super.firstUpdated(changeProperties);
-    this._fetchSecondaryInfo();
-  }
-
-  protected updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-    if (changedProperties.has('hass')) {
-      this.checkSecondaryChanged();
-    }
-  }
-
-  private async _fetchSecondaryInfo(): Promise<void> {
-    this._isButtonReady = false;
-    // console.log('Custom Button Ready:', this._isButtonReady);
-
-    const secondaryInfo: CustomButtonItem[] = [];
-
-    for (const button of this.buttons) {
-      const info = (await this._getSecondaryInfo(button.button)) as CustomButtonItem;
-      secondaryInfo.push(info);
-    }
-
-    this._secondaryInfo = secondaryInfo;
-    this._isButtonReady = true;
-
-    // console.log('Custom Button Ready:', this._isButtonReady);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     if (this.useSwiper) {
       this.updateComplete.then(() => {
         this.initSwiper();
@@ -71,63 +150,25 @@ export class VehicleButtonsGrid extends LitElement {
       this._setButtonActions();
     }
   }
-  private async _getSecondaryInfo(button: ButtonConfig): Promise<CustomButtonItem> {
-    if (!button || !button.secondary) {
-      return { notify: false, state: '', entity: '', color: '' };
-    }
 
-    const notify = button.notify ? await getTemplateBoolean(this.hass, button.notify) : false;
-
-    const secondary = button.secondary[0];
-    const entity = secondary.entity || '';
-
-    const state = secondary.state_template
-      ? await getTemplateValue(this.hass, secondary.state_template)
-      : secondary.attribute && secondary.entity
-        ? this.hass.formatEntityAttributeValue(this.hass.states[secondary.entity], secondary.attribute)
-        : secondary.entity && this.hass.states[secondary.entity]
+  private _getTemplateValue(button: ButtonConfig, key: TemplateKey) {
+    switch (key) {
+      case 'state_template':
+        const secondary = button.secondary[0];
+        const state = secondary.state_template
+          ? this.getValue(button, 'state_template') || ''
+          : secondary.attribute && secondary.entity
+          ? this.hass.formatEntityAttributeValue(this.hass.states[secondary.entity], secondary.attribute)
+          : secondary.entity && this.hass.states[secondary.entity]
           ? this.hass.formatEntityState(this.hass.states[secondary.entity])
           : '';
-
-    const color = button.color ? await getTemplateValue(this.hass, button.color) : '';
-    return { notify, state, entity, color };
-  }
-
-  private async checkSecondaryChanged(): Promise<void> {
-    let isChanged = false;
-    const changedIndexes: number[] = [];
-
-    // Ensure _secondaryInfo is an array before iterating
-    if (!Array.isArray(this._secondaryInfo)) {
-      console.error('_secondaryInfo is not an array');
-      return;
-    }
-
-    for (const info of this._secondaryInfo) {
-      const index = this._secondaryInfo.indexOf(info);
-      const oldState = this._secondaryInfo[index].state;
-      const oldNotify = this._secondaryInfo[index].notify;
-      const oldColor = this._secondaryInfo[index].color;
-      const { state, notify, color } = (await this._getSecondaryInfo(this.buttons[index].button)) as CustomButtonItem;
-      if (oldState !== state || oldNotify !== notify || oldColor !== color) {
-        isChanged = true;
-        changedIndexes.push(index);
-      }
-    }
-
-    if (isChanged) {
-      // console.log('Secondary info changed:', isChanged, changedIndexes);
-      const newSecondaryInfo = [...this._secondaryInfo]; // Spread to copy the existing array
-      await Promise.all(
-        changedIndexes.map(async (index) => {
-          const { state, notify, entity, color } = (await this._getSecondaryInfo(
-            this.buttons[index].button
-          )) as CustomButtonItem;
-          newSecondaryInfo[index] = { state, notify, entity, color };
-        })
-      );
-      this._secondaryInfo = newSecondaryInfo;
-      this.requestUpdate();
+        return state;
+      case 'notify':
+        const notify = button.notify ? this.getValue(button, 'notify') === 'true' : false;
+        return notify;
+      case 'color':
+        const color = button.color ? this.getValue(button, 'color') || '' : '';
+        return color;
     }
   }
 
@@ -140,14 +181,13 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this._isButtonReady) {
+    if (!this.buttons || this.buttons.length === 0) {
       return html``;
     }
     const baseButtons = this.buttons.map((button, index) => ({
       ...button.button, // Spread original button properties
       buttonIndex: index, // Add a buttonIndex property to each button
     }));
-
     return html`
       <ha-card id="button-swiper">
         ${this.useSwiper
@@ -192,7 +232,11 @@ export class VehicleButtonsGrid extends LitElement {
   private _renderButton(buttonIndex: number, hideNotify: boolean): TemplateResult {
     const button = this.buttons[buttonIndex]; // Array of button objects
     const { icon, primary } = button.button;
-    const { notify, state, entity, color } = this._secondaryInfo[buttonIndex];
+    // const { notify, state, entity, color } = this._secondaryInfo[buttonIndex];
+    const notify = this._getTemplateValue(button.button, 'notify');
+    const state = this._getTemplateValue(button.button, 'state_template');
+    const entity = button.button.secondary[0].entity || '';
+    const color = this._getTemplateValue(button.button, 'color');
 
     return html`
       <div
