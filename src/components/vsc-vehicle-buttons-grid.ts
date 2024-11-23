@@ -1,4 +1,5 @@
 import { forwardHaptic } from 'custom-card-helpers';
+import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import Swiper from 'swiper';
@@ -7,20 +8,9 @@ import swipercss from 'swiper/swiper-bundle.css';
 
 import cardstyles from '../css/card.css';
 import { ButtonCardEntity, HA as HomeAssistant, VehicleStatusCardConfig, ButtonConfig, ButtonEntity } from '../types';
-import { getTemplateBoolean, getTemplateValue } from '../utils/ha-helper';
 import { addActions } from '../utils/tap-action';
-import { VehicleStatusCard } from '../vehicle-status-card';
-
-export type CustomButtonItem = {
-  notify: boolean;
-  state: string;
-  entity: string;
-  color: string;
-};
-
-import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-
 import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
+import { VehicleStatusCard } from '../vehicle-status-card';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -72,7 +62,7 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   private async _tryConnect(): Promise<void> {
-    console.log('Trying to connect');
+    // console.log('Trying to connect');
     for (const button of this.buttons) {
       TEMPLATE_KEYS.forEach((key) => {
         this._tryConnectKey(button.button, key);

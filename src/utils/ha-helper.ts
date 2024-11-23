@@ -6,142 +6,17 @@ import {
   CardItemEntity,
   DefaultCardConfig,
   HA as HomeAssistant,
-  IndicatorEntity,
-  IndicatorGroupEntity,
   RangeInfoEntity,
   DefaultCardEntity,
   TireTemplateConfig,
   TireEntity,
   ButtonCardConfig,
-  IndicatorConfig,
-  IndicatorGroupConfig,
   RangeInfoConfig,
   VehicleStatusCardConfig,
   MapData,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import { getAddressFromGoggle, getAddressFromOpenStreet } from './helpers';
-
-export async function getTemplateBoolean(hass: HomeAssistant, templateConfig: string): Promise<boolean> {
-  if (!hass || !templateConfig) {
-    return true;
-  }
-
-  try {
-    // Prepare the body with the template
-    const result = await hass.callApi<string>('POST', 'template', { template: templateConfig });
-    if (result.trim().toLowerCase() === 'true') {
-      return true;
-    }
-    return false;
-  } catch (error) {
-    throw new Error(`Error evaluating template: ${error}`);
-  }
-}
-
-export async function getTemplateValue(hass: HomeAssistant, templateConfig: string): Promise<string> {
-  if (!hass || !templateConfig) {
-    return '';
-  }
-
-  try {
-    // Prepare the body with the template
-    const result = await hass.callApi<string>('POST', 'template', { template: templateConfig });
-    return result;
-  } catch (error) {
-    throw new Error(`Error evaluating template: ${error}`);
-  }
-}
-
-export async function getSingleIndicators(
-  hass: HomeAssistant,
-  single: IndicatorConfig[]
-): Promise<IndicatorEntity | void> {
-  const singleIndicator: IndicatorEntity = [];
-
-  // Use Promise.all to handle each indicator concurrently
-  for (const indicator of single) {
-    if (!indicator.entity) {
-      return;
-    }
-
-    const entity = indicator.entity;
-    const stateObj = hass.states[entity];
-    if (!stateObj) {
-      return;
-    }
-
-    const iconValue = indicator.icon_template
-      ? await getTemplateValue(hass, indicator.icon_template)
-      : indicator.icon
-      ? indicator.icon
-      : '';
-
-    const state = indicator.state_template
-      ? await getTemplateValue(hass, indicator.state_template)
-      : indicator.attribute
-      ? hass.formatEntityAttributeValue(stateObj, indicator.attribute)
-      : hass.formatEntityState(stateObj);
-
-    const visibility = indicator.visibility ? await getTemplateBoolean(hass, indicator.visibility) : true;
-
-    const color = indicator.color ? await getTemplateValue(hass, indicator.color) : '';
-
-    singleIndicator.push({ entity, icon: iconValue, state, visibility, color });
-  }
-  return singleIndicator;
-}
-
-export async function getGroupIndicators(
-  hass: HomeAssistant,
-  groups: IndicatorGroupConfig[]
-): Promise<IndicatorGroupEntity | void> {
-  const groupIndicator: IndicatorGroupEntity = [];
-
-  for (const group of groups) {
-    groupIndicator.push({
-      icon: group.icon,
-      items: [],
-      name: group.name,
-      visibility: await getTemplateBoolean(hass, group.visibility),
-      color: group.color ? await getTemplateValue(hass, group.color) : '',
-    });
-
-    if (group.items) {
-      const itemPromises = group.items.map(async (item) => {
-        if (!item.entity) {
-          return null;
-        }
-
-        const entity = item.entity;
-        const stateObj = hass.states[entity];
-        if (!stateObj) {
-          return null;
-        }
-
-        const itemIcon = item.icon_template ? await getTemplateValue(hass, item.icon_template) : item.icon || '';
-
-        const state = item.state_template
-          ? await getTemplateValue(hass, item.state_template)
-          : item.attribute
-          ? hass.formatEntityAttributeValue(stateObj, item.attribute)
-          : hass.formatEntityState(stateObj);
-
-        return {
-          entity: item.entity,
-          icon: itemIcon,
-          name: item.name,
-          state,
-        };
-      });
-      // Resolve all item promises and filter out nulls
-      groupIndicator[groupIndicator.length - 1].items = (await Promise.all(itemPromises)).filter(
-        (item) => item !== null
-      );
-    }
-  }
-  return groupIndicator;
-}
 
 export async function getRangeInfo(
   hass: HomeAssistant,
@@ -230,7 +105,7 @@ export async function getDefaultCard(
       }
 
       const state = item.state_template
-        ? await getTemplateValue(hass, item.state_template)
+        ? item.state_template
         : item.attribute
         ? hass.formatEntityAttributeValue(stateObj, item.attribute)
         : hass.formatEntityState(stateObj);
@@ -439,6 +314,7 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<null
 }
 
 export async function _getDefaultCardItems(card: VehicleStatusCard): Promise<void> {
+  // console.log('Getting default card items');
   const defaultCardItems = new Map<number, DefaultCardEntity[]>();
   // console.log('Getting default card items');
   for (let i = 0; i < card._buttonCards.length; i++) {
@@ -450,6 +326,7 @@ export async function _getDefaultCardItems(card: VehicleStatusCard): Promise<voi
     }
   }
   card._defaultItems = defaultCardItems;
+  card.requestUpdate();
 }
 
 type cardType = 'custom' | 'default' | 'tire' | null;
@@ -578,7 +455,7 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
     config.layout_config?.hide?.mini_map !== false
   )
     return;
-  console.log('Setting map popup');
+  // console.log('Setting map popup');
   const miniMap = config.mini_map || {};
   const cardConfig: LovelaceCardConfig[] = [
     {

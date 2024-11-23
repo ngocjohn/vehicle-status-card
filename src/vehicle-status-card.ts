@@ -9,10 +9,10 @@ import {
 } from 'custom-card-helpers';
 import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 
 import './components';
 
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, query, state } from 'lit/decorators';
 
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
@@ -47,7 +47,7 @@ export class VehicleStatusCard extends LitElement {
 
   @state() public _activeCardIndex: null | number | string = null;
   @state() public _buttonReady = false;
-  @state() public _defaultItems: Map<number, DefaultCardEntity[]> = new Map();
+  @state() _defaultItems: Map<number, DefaultCardEntity[]> = new Map();
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
@@ -119,7 +119,7 @@ export class VehicleStatusCard extends LitElement {
     HaHelp.handleFirstUpdated(this);
   }
 
-  protected updated(changedProps: PropertyValues) {
+  protected async updated(changedProps: PropertyValues): Promise<void> {
     super.updated(changedProps);
     if (!this._config || !this._hass) return;
 
@@ -140,6 +140,10 @@ export class VehicleStatusCard extends LitElement {
     if (changedProps.has('_config') && this._currentPreview !== null) {
       HaHelp.previewHandler(this._currentPreview, this);
     }
+
+    if (changedProps.has('_hass') && this._hass && this._config && this._currentPreview === 'default') {
+      HaHelp._getDefaultCardItems(this);
+    }
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
@@ -148,8 +152,9 @@ export class VehicleStatusCard extends LitElement {
       return false;
     }
 
-    if (changedProps.has('_hass') && this._activeCardIndex !== null) {
+    if (changedProps.has('_hass') && this._hass && this._activeCardIndex !== null) {
       HaHelp._getDefaultCardItems(this);
+      return true;
     }
 
     return hasConfigOrEntityChanged(this, changedProps, true);
@@ -325,33 +330,6 @@ export class VehicleStatusCard extends LitElement {
     const items = data.items;
     const collapsed_items = data.collapsed_items;
 
-    const itemRender = (name: string, state: string, entity: string, icon: string): TemplateResult => {
-      return html`
-        <div class="data-row">
-          <div>
-            <ha-state-icon
-              class="data-icon"
-              @click=${() => {
-                this.toggleMoreInfo(entity);
-              }}
-              .hass=${this._hass}
-              .icon=${icon}
-              .stateObj=${this._hass.states[entity]}
-            ></ha-state-icon>
-            <span> ${name} </span>
-          </div>
-          <div
-            class="data-value-unit"
-            @click=${() => {
-              this.toggleMoreInfo(entity);
-            }}
-          >
-            <span> ${state} </span>
-          </div>
-        </div>
-      `;
-    };
-
     const header = collapsed_items
       ? html`<div class="subcard-icon" ?active=${collapsed_items} @click=${(ev: Event) => this.toggleSubCard(ev)}>
           <ha-icon icon="mdi:chevron-up"></ha-icon>
@@ -362,7 +340,14 @@ export class VehicleStatusCard extends LitElement {
       <div class="default-card">
         <div class="data-header">${title} ${header}</div>
         <div class="data-box" ?active=${collapsed_items}>
-          ${items.map((item) => itemRender(item.name, item.state, item.entity, item.icon))}
+          ${items.map((item) => {
+            return html`<vsc-default-card
+              .key=${item.entity}
+              .hass=${this._hass}
+              .defaultCardItem=${item}
+              ._card=${this as any}
+            ></vsc-default-card>`;
+          })}
         </div>
       </div>
     `;
@@ -496,7 +481,7 @@ export class VehicleStatusCard extends LitElement {
     this.requestUpdate();
   }
 
-  private toggleMoreInfo(entity: string | undefined): void {
+  toggleMoreInfo(entity: string | undefined): void {
     if (!entity) return;
     console.log('Toggled more info:', entity);
     fireEvent(this, 'hass-more-info', { entityId: entity });

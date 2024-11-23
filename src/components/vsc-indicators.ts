@@ -1,67 +1,228 @@
+import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
 import cardcss from '../css/card.css';
-import { HA as HomeAssistant, VehicleStatusCardConfig, IndicatorGroupEntity, IndicatorEntity } from '../types';
-import { HaHelp } from '../utils';
+import {
+  HA as HomeAssistant,
+  VehicleStatusCardConfig,
+  IndicatorConfig,
+  IndicatorGroupConfig,
+  IndicatorGroupItemConfig,
+} from '../types';
 import { isEmpty } from '../utils';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
+
+const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color', 'visibility'] as const;
+type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-indicators')
 export class VscIndicators extends LitElement {
   @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
-  @state() private _indicatorsGroup: IndicatorGroupEntity = [];
-  @state() private _indicatorsSingle: IndicatorEntity = [];
-
   @state() private _activeGroupIndicator: number | null = null;
-  @state() private _indicatorsLoaded = false;
+
+  @state() private _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
+  @state() private _unsubSingleRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
+
+  // group indicators
+  @state() private _groupTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
+  @state() private _unsubGroupRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
+
+  // group items indicators
+  @state() private _groupItemsTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
+  @state() private _unsubGroupItemsRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
 
   static get styles(): CSSResultGroup {
     return [cardcss];
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._tryConnect();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._tryDisconnect();
+  }
+
   protected async firstUpdated(changeProperties: PropertyValues): Promise<void> {
     super.firstUpdated(changeProperties);
-    this._handleFirstUpdate();
   }
 
-  protected shouldUpdate(changedProperties: PropertyValues): boolean {
-    if (!this.config || !this.hass) return false;
-    if (changedProperties.has('hass') && this._indicatorsSingle && this._indicatorsLoaded) {
-      this._getSingleIndicators();
+  protected updated(changeProperties: PropertyValues): void {
+    super.updated(changeProperties);
+  }
+
+  private isTemplate(value: string | undefined): boolean {
+    if (!value || typeof value !== 'string') return false;
+    return value.includes('{');
+  }
+
+  private async _tryConnect(): Promise<void> {
+    // console.log('Trying to connect');
+    if (!isEmpty(this.config.indicators.single)) {
+      const singleIndicators = this.config.indicators.single;
+      for (const singleIndicator of singleIndicators) {
+        TEMPLATE_KEYS.forEach((key) => {
+          this._tryConnectKey(key, singleIndicator);
+          // console.log('Connected to single indicator', singleIndicator[key]);
+        });
+      }
     }
 
-    if (changedProperties.has('hass') && this._indicatorsGroup && this._indicatorsLoaded) {
-      this._getGroupIndicators();
+    if (!isEmpty(this.config.indicators.group)) {
+      const groupIndicators = this.config.indicators.group;
+      for (const groupIndicator of groupIndicators) {
+        TEMPLATE_KEYS.forEach((key) => {
+          this._tryGroupConnectKey(key, groupIndicator);
+          // console.log('Connected to group indicator', groupIndicator[key]);
+        });
+        const groupItems = groupIndicator.items;
+        // console.log('Group items', groupItems);
+        if (!isEmpty(groupItems)) {
+          for (const groupItem of groupItems) {
+            TEMPLATE_KEYS.forEach((key) => {
+              this._tryGroupItemsConnectKey(key, groupItem);
+              // console.log('Connected to group item indicator', groupItem[key]);
+            });
+          }
+        }
+      }
     }
-    return true;
   }
 
-  private async _handleFirstUpdate(): Promise<void> {
-    if (!this.config || !this.hass) return;
-    this._indicatorsLoaded = false;
-    // console.log('setting indicators', this._indicatorsLoaded);
+  private async _tryConnectKey(key: TemplateKey, indicator: IndicatorConfig): Promise<void> {
+    if (this._unsubSingleRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(indicator[key])) {
+      return;
+    }
 
-    const fetchSingle = !isEmpty(this.config.indicators.single) ? this._getSingleIndicators() : Promise.resolve();
-    const fetchGroup = !isEmpty(this.config.indicators.group) ? this._getGroupIndicators() : Promise.resolve();
-
-    await Promise.all([fetchSingle, fetchGroup]);
-
-    this._indicatorsLoaded = true;
-    // console.log('indicators loaded', this._indicatorsLoaded);
+    try {
+      const sub = subscribeRenderTemplate(
+        this.hass.connection,
+        (result) => {
+          this._singleTemplateResults = { ...this._singleTemplateResults, [key]: result };
+        },
+        {
+          template: indicator[key] ?? '',
+        }
+      );
+      this._unsubSingleRenderTemplates.set(key, sub);
+      await sub;
+    } catch (e) {
+      const result = {
+        result: indicator[key] ?? '',
+        listeners: {
+          all: false,
+          domains: [],
+          entities: [],
+          time: false,
+        },
+      };
+      this._singleTemplateResults = { ...this._singleTemplateResults, [key]: result };
+      this._unsubSingleRenderTemplates.delete(key);
+    }
   }
 
-  private async _getSingleIndicators(): Promise<void> {
-    this._indicatorsSingle = (await HaHelp.getSingleIndicators(this.hass, this.config.indicators.single)) || [];
+  private async _tryDisconnect(): Promise<void> {
+    TEMPLATE_KEYS.forEach((key) => {
+      this._tryDisconnectKey(key);
+    });
   }
 
-  private async _getGroupIndicators(): Promise<void> {
-    this._indicatorsGroup = (await HaHelp.getGroupIndicators(this.hass, this.config.indicators.group)) || [];
+  private async _tryDisconnectKey(key: TemplateKey): Promise<void> {
+    const unsubRenderTemplate = this._unsubSingleRenderTemplates.get(key);
+    if (!unsubRenderTemplate) {
+      return;
+    }
+
+    try {
+      const unsub = await unsubRenderTemplate;
+      unsub();
+      this._unsubSingleRenderTemplates.delete(key);
+    } catch (err: any) {
+      if (err.code === 'not_found' || err.code === 'template_error') {
+        // If we get here, the connection was probably already closed. Ignore.
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  private async _tryGroupConnectKey(key: TemplateKey, groupIndicator: IndicatorGroupConfig): Promise<void> {
+    if (this._unsubGroupRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(groupIndicator[key])) {
+      return;
+    }
+
+    try {
+      const sub = subscribeRenderTemplate(
+        this.hass.connection,
+        (result) => {
+          this._groupTemplateResults = { ...this._groupTemplateResults, [key]: result };
+        },
+        {
+          template: groupIndicator[key] ?? '',
+        }
+      );
+      this._unsubGroupRenderTemplates.set(key, sub);
+      await sub;
+    } catch (e) {
+      const result = {
+        result: groupIndicator[key] ?? '',
+        listeners: {
+          all: false,
+          domains: [],
+          entities: [],
+          time: false,
+        },
+      };
+      this._groupTemplateResults = { ...this._groupTemplateResults, [key]: result };
+      this._unsubGroupRenderTemplates.delete(key);
+    }
+  }
+
+  private async _tryGroupItemsConnectKey(
+    key: TemplateKey,
+    groupItemIndicator: IndicatorGroupItemConfig
+  ): Promise<void> {
+    if (
+      this._unsubGroupItemsRenderTemplates.get(key) !== undefined ||
+      !this.hass ||
+      !this.isTemplate(groupItemIndicator[key])
+    ) {
+      return;
+    }
+
+    try {
+      const sub = subscribeRenderTemplate(
+        this.hass.connection,
+        (result) => {
+          this._groupItemsTemplateResults = { ...this._groupItemsTemplateResults, [key]: result };
+        },
+        {
+          template: groupItemIndicator[key] ?? '',
+        }
+      );
+      this._unsubGroupItemsRenderTemplates.set(key, sub);
+      await sub;
+    } catch (e) {
+      const result = {
+        result: groupItemIndicator[key] ?? '',
+        listeners: {
+          all: false,
+          domains: [],
+          entities: [],
+          time: false,
+        },
+      };
+      this._groupItemsTemplateResults = { ...this._groupItemsTemplateResults, [key]: result };
+      this._unsubGroupItemsRenderTemplates.delete(key);
+    }
   }
 
   protected render(): TemplateResult {
-    if (!this._indicatorsLoaded) return html``;
     return html`
       <div>
         <div class="info-box">${this._renderSingleIndicators()} ${this._renderGroupIndicators()}</div>
@@ -72,13 +233,25 @@ export class VscIndicators extends LitElement {
 
   private _renderActiveIndicator(): TemplateResult {
     const activeIndex =
-      this._activeGroupIndicator !== null ? this._activeGroupIndicator : this._indicatorsGroup.length + 1;
-    const items = this._indicatorsGroup[activeIndex]?.items || [];
+      this._activeGroupIndicator !== null ? this._activeGroupIndicator : this.config.indicators.group.length + 1;
+    const items = this.config.indicators.group[activeIndex]?.items || [];
     const activeClass = this._activeGroupIndicator !== null ? 'info-box charge active' : 'info-box charge';
 
     return html`
       <div class=${activeClass}>
-        ${items.map(({ entity, icon, name, state }) => {
+        ${items.map((item) => {
+          const entity = item.entity;
+          const icon = item.icon_template
+            ? this._groupItemsTemplateResults.icon_template?.result
+            : item.icon
+            ? item.icon
+            : '';
+          const state = item.state_template
+            ? this._groupItemsTemplateResults.state_template?.result
+            : item.attribute
+            ? this.hass.formatEntityAttributeValue(this.hass.states[entity], item.attribute)
+            : this.hass.formatEntityState(this.hass.states[entity]);
+          const name = item.name;
           return html`
             <div class="item charge">
               <div class="icon-state">
@@ -96,9 +269,25 @@ export class VscIndicators extends LitElement {
   }
 
   private _renderSingleIndicators(): TemplateResult {
-    const indicator = Object.values(this._indicatorsSingle).map(
-      ({ entity, icon, state, visibility, color }) => html`
-        <div class="item " ?hidden=${visibility === false}>
+    const singleIndicators = this.config.indicators.single;
+    if (!singleIndicators || singleIndicators.length === 0) return html``;
+    const indicator = singleIndicators.map((indicator) => {
+      const entity = indicator.entity;
+      const icon = indicator.icon_template
+        ? this._singleTemplateResults.icon_template?.result
+        : indicator.icon
+        ? indicator.icon
+        : '';
+      const state = indicator.state_template
+        ? this._singleTemplateResults.state_template?.result
+        : indicator.attribute
+        ? this.hass.formatEntityAttributeValue(this.hass.states[entity], indicator.attribute)
+        : this.hass.formatEntityState(this.hass.states[entity]);
+      const visibility = indicator.visibility ? this._singleTemplateResults.visibility?.result : true;
+      const color = indicator.color ? this._singleTemplateResults.color?.result : '';
+
+      return html`
+        <div class="item " ?hidden=${Boolean(visibility) === false}>
           <ha-state-icon
             .hass=${this.hass}
             .stateObj=${entity ? this.hass.states[entity] : undefined}
@@ -107,13 +296,15 @@ export class VscIndicators extends LitElement {
           ></ha-state-icon>
           <div><span>${state}</span></div>
         </div>
-      `
-    );
+      `;
+    });
 
     return html`${indicator}`;
   }
 
   private _renderGroupIndicators(): TemplateResult {
+    const configGroupIndicators = this.config.indicators.group;
+    if (!configGroupIndicators || configGroupIndicators.length === 0) return html``;
     // Helper function to render group
     const groupIndicator = (
       icon: string,
@@ -133,11 +324,26 @@ export class VscIndicators extends LitElement {
       </div>
     `;
 
-    const groupWithItems = this._indicatorsGroup.filter((group) => group.visibility !== false);
+    // const groupWithItems = this._indicatorsGroup.filter((group) => group.visibility !== false);
     // Render group indicators
+    // const groupIndicators = groupWithItems.map((group, index) => {
+    //   const isActive = this._activeGroupIndicator === index;
+    //   return groupIndicator(group.icon, group.name, group.color, () => this._toggleGroupIndicator(index), isActive);
+    // });
+    const groupWithItems = configGroupIndicators.filter((group) => {
+      const visibility = group.visibility ? this._groupTemplateResults.visibility?.result : true;
+      return Boolean(visibility);
+    });
+
     const groupIndicators = groupWithItems.map((group, index) => {
       const isActive = this._activeGroupIndicator === index;
-      return groupIndicator(group.icon, group.name, group.color, () => this._toggleGroupIndicator(index), isActive);
+      return groupIndicator(
+        group.icon,
+        group.name,
+        group.color ?? this._groupTemplateResults.color?.result ?? '',
+        () => this._toggleGroupIndicator(index),
+        isActive
+      );
     });
 
     return html`${groupIndicators}`;
