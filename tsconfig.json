@@ -2,9 +2,9 @@
   "compilerOptions": {
     "target": "es2017",
     "module": "esnext",
-    "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "lib": ["es2017", "dom", "dom.iterable"],
+    "allowSyntheticDefaultImports": true,
     "noEmit": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
@@ -14,10 +14,10 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "typeRoots": ["./node_modules/@types", "./src/declarations.d.ts"],
+    "outDir": "dist",
+    "rootDir": ".",
     "sourceMap": true
   },
-  "include": ["src/*", "src/**/*"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
 }

@@ -73,7 +73,7 @@ export default [
   {
     input: 'src/vehicle-status-card.ts',
     output: {
-      dir: './dist',
+      dir: 'dist',
       format: 'es',
       sourcemap: dev ? true : false,
       inlineDynamicImports: true,
@@ -82,12 +82,16 @@ export default [
     watch: {
       exclude: 'node_modules/**',
     },
+
     plugins: [...plugins],
-    moduleContext: {
-      // Set specific module contexts if needed
-      'node_modules/@formatjs/intl-utils/lib/src/diff.js': 'window',
-      'node_modules/@formatjs/intl-utils/lib/src/resolve-locale.js': 'window',
-      // Add other modules as needed
+    moduleContext: (id) => {
+      const thisAsWindowForModules = [
+        'node_modules/@formatjs/intl-utils/lib/src/diff.js',
+        'node_modules/@formatjs/intl-utils/lib/src/resolve-locale.js',
+      ];
+      if (thisAsWindowForModules.some((id_) => id.trimRight().endsWith(id_))) {
+        return 'window';
+      }
     },
   },
 ];
