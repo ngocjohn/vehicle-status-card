@@ -1,0 +1,11 @@
+repos:
+  - repo: local
+    hooks:
+      - id: eslint
+        name: Run ESLint on Staged TypeScript Files
+        entry: bash -c "npx eslint $(git diff --cached --name-only --diff-filter=ACM | grep -E '^src/.*\.ts$')"
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        always_run: false
+        verbose: true

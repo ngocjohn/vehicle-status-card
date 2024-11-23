@@ -41,9 +41,11 @@
     "es-toolkit": "^1.19.0",
     "eslint": "^8.57.1",
     "eslint-plugin-perfectionist": "^3.7.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
     "leaflet": "^1.9.4",
     "leaflet-providers": "^2.0.0",
     "postcss-preset-env": "^9.5.12",
+    "pre-commit": "^1.0.10",
     "rollup": "^2.70.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-filesize": "^10.0.0",
@@ -60,8 +62,7 @@
   "scripts": {
     "dev": "rollup -c --watch",
     "build": "npm run lint && npm run rollup",
-    "lint": "eslint src/**/*.ts --fix --quiet",
-    "rollup": "rollup -c",
-    "start:hass": "docker run --rm -p8123:8123 -v ${HOME}/Documents/GitHub/custom-cards-project/.hass_dev:/config homeassistant/home-assistant:beta"
+    "lint": "eslint src/**/*.ts",
+    "rollup": "rollup -c"
   }
 }
