@@ -16,8 +16,6 @@ type DefaultCardItem = {
   icon: string;
   state: string;
 };
-const TEMPLATE_KEYS = ['state'] as const;
-type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-default-card')
 export class VehicleDefaultCard extends LitElement {

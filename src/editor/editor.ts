@@ -156,32 +156,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderIndicators(): TemplateResult {
-    const panelKey = 'indicators';
-    const singleIndicatorPanel = this.panelTemplate(
-      panelKey,
-      'single',
-      html`
-        <panel-indicator
-          .hass=${this._hass}
-          .editor=${this}
-          .config=${this._config}
-          .type=${'single'}
-        ></panel-indicator>
-      `
-    );
-
-    const groupIndicatorPanel = this.panelTemplate(
-      panelKey,
-      'group',
-      html`
-        <panel-indicator .hass=${this._hass} .editor=${this} .config=${this._config} .type=${'group'}></panel-indicator>
-      `
-    );
-
     const single = this._renderSingleIndicator();
     const group = this._renderGroupIndicator();
-
-    // const content = html` <div class="indicator-config">${singleIndicatorPanel} ${groupIndicatorPanel}</div> `;
 
     const tabsConfig = [
       { content: single, key: 'single', label: 'Single' },
