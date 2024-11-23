@@ -1,6 +1,9 @@
 <a name="readme-top"></a>
-[![Validate](https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yaml/badge.svg)](https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yaml) ![GitHub last commit](https://img.shields.io/github/last-commit/ngocjohn/vehicle-status-card)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto&label=Downloads&color=%2318BCF2) ![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/latest/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto)
+
+[![hacs][hacs-validate]][hacs-url]
+![Github last commit][git-last-commit-badge]
+![git-download-all][git-download-all-badge]
+![git-download-latest][git-download-latest-badge]
 
 # 🚘 Vehicle status card
 
@@ -260,3 +263,13 @@ This configuration gives you full flexibility to design the card’s layout and 
 [https://github.com/ngocjohn/](https://github.com/ngocjohn/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!--Badges-->
+[hacs-validate]: https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yaml/badge.svg
+[hacs-url]: https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yaml
+[git-last-commit-badge]: https://img.shields.io/github/last-commit/ngocjohn/vehicle-status-card
+[git-download-all-badge]: https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto&label=Downloads&color=%2318BCF2
+[git-download-latest-badge]: https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/latest/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto
+<!--Urls-->
+
