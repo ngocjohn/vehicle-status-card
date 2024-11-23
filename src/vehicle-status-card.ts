@@ -102,9 +102,7 @@ export class VehicleStatusCard extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    if (process.env.ROLLUP_WATCH === 'true') {
-      window.VehicleCard = this;
-    }
+    window.VehicleCard = this;
     document.addEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
   }
 
