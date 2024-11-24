@@ -160,10 +160,6 @@ export interface ButtonConfig {
   secondary: SecondaryInfoConfig;
 }
 
-export interface ButtonEntity extends ButtonConfig {
-  buttonIndex: number;
-}
-
 export interface DefaultCardConfig {
   collapsed_items: boolean;
   items: Array<CardItemConfig>;
@@ -262,7 +258,7 @@ export type DefaultCardEntity = {
   title: string;
 };
 
-export type ButtonCardEntity = Array<{
+export interface ButtonCardEntityItem {
   button: {
     button_action: ButtonActionConfig;
     icon: string;
@@ -281,7 +277,9 @@ export type ButtonCardEntity = Array<{
   }>;
   hide_button: boolean;
   tire_card?: TireEntity;
-}>;
+}
+
+export type ButtonCardEntity = ButtonCardEntityItem[];
 
 export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
 

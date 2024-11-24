@@ -333,6 +333,8 @@ header h1 {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  height: 100%;
+  flex: 1;
 }
 
 .grid-item .item-content .primary {

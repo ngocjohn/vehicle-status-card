@@ -1,13 +1,14 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 // Lit
-import { CSSResultGroup, html, LitElement, nothing, TemplateResult } from 'lit';
+import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 // local
-import { ButtonConfig, HA as HomeAssistant } from '../types';
-
+import { ButtonCardEntityItem, HA as HomeAssistant } from '../types';
 // styles
 import cardstyles from '../css/card.css';
+import { addActions } from '../utils';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
 import { VehicleButtonsGrid } from './vsc-vehicle-buttons-grid';
 
@@ -18,10 +19,8 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 export class VehicleButtonSingle extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) _card!: VehicleButtonsGrid;
-  @property({ attribute: false }) _buttonConfig!: ButtonConfig;
-
-  @property({ type: Boolean }) hideNotify!: boolean;
-  @property({ type: Number }) buttonIndex!: number;
+  @property({ attribute: false }) _buttonConfig!: ButtonCardEntityItem;
+  @property({ attribute: false }) _index!: number;
 
   @state() private _templateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
 
@@ -37,11 +36,38 @@ export class VehicleButtonSingle extends LitElement {
     this._tryDisconnect();
   }
 
+  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
+    super.firstUpdated(_changedProperties);
+    this._setEventListeners();
+  }
+
+  protected updated(changedProperties: PropertyValues): void {
+    super.updated(changedProperties);
+    if (changedProperties.has('hass')) {
+      this._tryConnect();
+    }
+  }
+
+  private _setEventListeners(): void {
+    const buttonType = this._buttonConfig.button_type;
+    const actionConfig = this._buttonConfig.button.button_action;
+    const actionEl = this.shadowRoot?.getElementById('actionBtn');
+
+    if (actionEl && buttonType === 'action' && actionConfig) {
+      addActions(actionEl, actionConfig);
+      console.log('Action added', this._index, actionEl, actionConfig);
+    } else {
+      actionEl?.addEventListener('click', this._handleNavigate.bind(this));
+      console.log('Action not added', this._index, buttonType);
+    }
+  }
+
   public isTemplate(key: TemplateKey) {
+    const button = this._buttonConfig.button;
     const templateMap = {
-      state_template: this._buttonConfig.secondary.state_template,
-      notify: this._buttonConfig.notify,
-      color: this._buttonConfig.color,
+      state_template: button.secondary.state_template,
+      notify: button.notify,
+      color: button.color,
     };
     const value = templateMap[key];
     return value?.includes('{');
@@ -52,7 +78,7 @@ export class VehicleButtonSingle extends LitElement {
   }
 
   private _getTemplateValue(key: TemplateKey) {
-    const button = this._buttonConfig;
+    const button = this._buttonConfig.button;
     switch (key) {
       case 'state_template':
         const secondary = button.secondary;
@@ -83,7 +109,7 @@ export class VehicleButtonSingle extends LitElement {
     if (this._unsubRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(key)) {
       return;
     }
-    const button = this._buttonConfig;
+    const button = this._buttonConfig.button;
     const buttonOptions = {
       state_template: button.secondary.state_template,
       notify: button.notify,
@@ -150,20 +176,18 @@ export class VehicleButtonSingle extends LitElement {
   }
 
   protected render(): TemplateResult {
-    const { buttonIndex, hideNotify } = this;
-    const { icon, primary } = this._buttonConfig;
-    const entity = this._buttonConfig.secondary.entity || '';
-    const state = this._getTemplateValue('state_template');
+    const { hideNotify } = this._card;
+    const { icon, primary, secondary } = this._buttonConfig.button;
+    const entity = secondary.entity || '';
+    const state = this._getTemplateValue('state_template') || unsafeHTML('&nbsp;');
     const color = this._getTemplateValue('color');
     const notify = this._getTemplateValue('notify');
 
     return html`
       <div
-        id="${`button-id-${buttonIndex}`}"
         class="grid-item click-shrink"
-        @click=${() => this._card._handleClick(buttonIndex)}
       >
-        <div class="click-container" id="${`button-action-${buttonIndex}`}">
+        <div class="click-container" id="actionBtn"">
           <div class="item-icon">
             <div class="icon-background">
               <ha-state-icon
@@ -173,13 +197,15 @@ export class VehicleButtonSingle extends LitElement {
                 style=${color ? `color: ${color}` : ''}
               ></ha-state-icon>
             </div>
-            ${!hideNotify
-              ? html`
-                  <div class="item-notify" ?hidden=${!notify}>
-                    <ha-icon icon="mdi:alert-circle"></ha-icon>
-                  </div>
-                `
-              : nothing}
+            ${
+              !hideNotify
+                ? html`
+                    <div class="item-notify" ?hidden=${!notify}>
+                      <ha-icon icon="mdi:alert-circle"></ha-icon>
+                    </div>
+                  `
+                : nothing
+            }
           </div>
           <div class="item-content">
             <div class="primary">
@@ -190,6 +216,10 @@ export class VehicleButtonSingle extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _handleNavigate(): void {
+    this._card._handleClick(this._index);
   }
 }
 declare global {
