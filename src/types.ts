@@ -157,7 +157,7 @@ export interface ButtonConfig {
   notify?: string;
   primary: string;
   color: string;
-  secondary: Array<SecondaryInfoConfig>;
+  secondary: SecondaryInfoConfig;
 }
 
 export interface ButtonEntity extends ButtonConfig {
@@ -268,7 +268,7 @@ export type ButtonCardEntity = Array<{
     icon: string;
     notify: string;
     primary: string;
-    secondary: SecondaryInfoConfig[];
+    secondary: SecondaryInfoConfig;
     color: string;
   };
   button_type: 'action' | 'default';

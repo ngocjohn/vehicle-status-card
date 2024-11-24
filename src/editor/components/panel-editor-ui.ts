@@ -5,11 +5,10 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { fireEvent, LovelaceCardConfig, HASSDomEvent, LovelaceConfig } from 'custom-card-helpers';
 import { cloneDeep } from 'es-toolkit';
 
+import { ICON } from '../../const/const';
+import editorcss from '../../css/editor.css';
 import { HA as HomeAssistant, VehicleStatusCardConfig, GUIModeChangedEvent } from '../../types';
 import { VehicleStatusCardEditor } from '../editor';
-
-import editorcss from '../../css/editor.css';
-import { ICON } from '../../const/const';
 
 @customElement('panel-editor-ui')
 export class PanelEditorUI extends LitElement {
