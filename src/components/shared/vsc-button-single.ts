@@ -1,19 +1,22 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 // Lit
-import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
+// utils
+import tinycolor from 'tinycolor2';
 // local
-import { ButtonCardEntityItem, HA as HomeAssistant } from '../types';
+import { ButtonCardEntityItem, HA as HomeAssistant } from '../../types';
 // styles
-import cardstyles from '../css/card.css';
-import { addActions } from '../utils';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
-import { VehicleButtonsGrid } from './vsc-vehicle-buttons-grid';
+import cardstyles from '../../css/card.css';
+import { addActions } from '../../utils';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../../utils/ws-templates';
+import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
+
+const COLOR_AlPHA = '.2';
 
 @customElement('vsc-button-single')
 export class VehicleButtonSingle extends LitElement {
@@ -55,10 +58,8 @@ export class VehicleButtonSingle extends LitElement {
 
     if (actionEl && buttonType === 'action' && actionConfig) {
       addActions(actionEl, actionConfig);
-      console.log('Action added', this._index, actionEl, actionConfig);
     } else {
       actionEl?.addEventListener('click', this._handleNavigate.bind(this));
-      console.log('Action not added', this._index, buttonType);
     }
   }
 
@@ -171,25 +172,42 @@ export class VehicleButtonSingle extends LitElement {
     }
   }
 
+  private _setColorAlpha(color: string): string {
+    const colorObj = tinycolor(color);
+    return colorObj.setAlpha(COLOR_AlPHA).toRgbString();
+  }
+
+  private _getBackgroundColors(): string {
+    const cssColor = getComputedStyle(this).getPropertyValue('--primary-text-color');
+    const rgbaColor = this._setColorAlpha(cssColor);
+    return rgbaColor;
+  }
+
   static get styles(): CSSResultGroup {
-    return cardstyles;
+    return [
+      cardstyles,
+      css`
+        :host {
+          --vic-icon-shape-color: rgba(var(--primary-text-color), 0.2);
+        }
+      `,
+    ];
   }
 
   protected render(): TemplateResult {
     const { hideNotify } = this._card;
     const { icon, primary, secondary } = this._buttonConfig.button;
     const entity = secondary.entity || '';
-    const state = this._getTemplateValue('state_template') || unsafeHTML('&nbsp;');
+    const state = this._getTemplateValue('state_template');
     const color = this._getTemplateValue('color');
     const notify = this._getTemplateValue('notify');
+    const iconBackground = color ? this._setColorAlpha(color) : this._getBackgroundColors();
 
     return html`
-      <div
-        class="grid-item click-shrink"
-      >
-        <div class="click-container" id="actionBtn"">
+      <div class="grid-item click-shrink">
+        <div class="click-container" id="actionBtn">
           <div class="item-icon">
-            <div class="icon-background">
+            <div class="icon-background" style=${`background-color: ${iconBackground}`}>
               <ha-state-icon
                 .hass=${this.hass}
                 .stateObj=${entity ? this.hass.states[entity] : undefined}
@@ -197,15 +215,10 @@ export class VehicleButtonSingle extends LitElement {
                 style=${color ? `color: ${color}` : ''}
               ></ha-state-icon>
             </div>
-            ${
-              !hideNotify
-                ? html`
-                    <div class="item-notify" ?hidden=${!notify}>
-                      <ha-icon icon="mdi:alert-circle"></ha-icon>
-                    </div>
-                  `
-                : nothing
-            }
+
+            <div class="item-notify" ?hidden=${!notify || hideNotify}>
+              <ha-icon icon="mdi:alert-circle"></ha-icon>
+            </div>
           </div>
           <div class="item-content">
             <div class="primary">
