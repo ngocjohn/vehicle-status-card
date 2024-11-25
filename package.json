@@ -24,7 +24,8 @@
     "custom-card-helpers": "^1.7.2",
     "home-assistant-js-websocket": "^9.4.0",
     "lit": "^3.1.4",
-    "lit-html": "^3.2.1"
+    "lit-html": "^3.2.1",
+    "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",

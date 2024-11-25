@@ -23,9 +23,10 @@ export const DEFAULT_CONFIG = {
     {
       button: {
         icon: 'mdi:new-box',
-        notify: false,
         primary: 'New Button',
-        secondary: 'This is a new button',
+        secondary: {
+          state_template: 'This is a new button',
+        },
       },
       button_type: 'default',
       card_type: 'default',
@@ -73,9 +74,11 @@ export const DEFAULT_CONFIG = {
     {
       button: {
         icon: 'mdi:new-box',
-        notify: false,
+
         primary: 'New Button',
-        secondary: 'This is a new button',
+        secondary: {
+          state_template: 'This is a new button',
+        },
       },
       button_type: 'default',
       card_type: 'custom',
@@ -92,9 +95,10 @@ export const DEFAULT_CONFIG = {
     {
       button: {
         icon: 'mdi:new-box',
-        notify: false,
         primary: 'New Button',
-        secondary: 'This is a new button',
+        secondary: {
+          state_template: 'This is a new button',
+        },
       },
       button_type: 'default',
       card_type: 'default',
@@ -124,9 +128,10 @@ export const DEFAULT_CONFIG = {
     {
       button: {
         icon: 'mdi:new-box',
-        notify: false,
         primary: 'New Button',
-        secondary: 'This is a new button',
+        secondary: {
+          state_template: 'This is a new button',
+        },
       },
       button_type: 'default',
       card_type: 'custom',
@@ -143,9 +148,10 @@ export const DEFAULT_CONFIG = {
     {
       button: {
         icon: 'mdi:new-box',
-        notify: false,
         primary: 'New Button',
-        secondary: 'This is a new button',
+        secondary: {
+          state_template: 'This is a new button',
+        },
       },
       button_type: 'default',
       card_type: 'default',
@@ -175,9 +181,10 @@ export const DEFAULT_CONFIG = {
     {
       button: {
         icon: 'mdi:new-box',
-        notify: false,
         primary: 'New Button',
-        secondary: 'This is a new button',
+        secondary: {
+          state_template: 'This is a new button',
+        },
       },
       card_type: 'custom',
       custom_card: [
@@ -199,6 +206,7 @@ export const DEFAULT_CONFIG = {
   layout_config: {
     button_grid: {
       rows: 2,
+      columns: 2,
       swipe: true,
     },
     hide: {
@@ -206,7 +214,7 @@ export const DEFAULT_CONFIG = {
       buttons: false,
       images: false,
       indicators: false,
-      mini_map: false,
+      mini_map: true,
       range_info: false,
     },
     theme_config: {

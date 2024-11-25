@@ -1,8 +1,14 @@
+import { fireEvent } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
-import { ifDefined } from 'lit/directives/if-defined.js';
-import { customElement, property, state } from 'lit/decorators';
 import { styleMap } from 'lit-html/directives/style-map.js';
+import { customElement, property, state } from 'lit/decorators';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
+import Sortable from 'sortablejs';
+
+import '../../editor/components/panel-editor-ui';
+import { ICON } from '../../const/const';
+import editorcss from '../../css/editor.css';
 import {
   HA as HomeAssistant,
   VehicleStatusCardConfig,
@@ -12,7 +18,9 @@ import {
   TireTemplateConfig,
   TireEntityConfig,
 } from '../../types';
-
+import * as Create from '../../utils/create';
+import { uploadImage } from '../../utils/ha-helper';
+import { VehicleStatusCardEditor } from '../editor';
 import {
   BUTTON_CARD_ACTIONS,
   ACTIONSELECTOR,
@@ -23,21 +31,6 @@ import {
   NEW_BUTTON_CONFIG,
   ACTIONS,
 } from '../editor-const';
-
-import { ICON } from '../../const/const';
-
-import '../../editor/components/panel-editor-ui';
-
-import editorcss from '../../css/editor.css';
-import { fireEvent } from 'custom-card-helpers';
-import { debounce } from 'es-toolkit';
-
-import Sortable from 'sortablejs';
-
-import * as Create from '../../utils/create';
-
-import { uploadImage } from '../../utils/ha-helper';
-import { VehicleStatusCardEditor } from '../editor';
 
 @customElement('panel-button-card')
 export class PanelButtonCard extends LitElement {
@@ -310,8 +303,8 @@ export class PanelButtonCard extends LitElement {
           this._cardIndex === null
             ? this._renderDefaultCardList(defaultCard, buttonIndex)
             : this._itemIndex === null
-              ? this._renderCardItemList(this._cardIndex, buttonIndex)
-              : this._renderItemConfig(this._itemIndex, this._cardIndex, buttonIndex),
+            ? this._renderCardItemList(this._cardIndex, buttonIndex)
+            : this._renderItemConfig(this._itemIndex, this._cardIndex, buttonIndex),
       },
       {
         key: `custom-card-${buttonIndex}`,
@@ -414,11 +407,12 @@ export class PanelButtonCard extends LitElement {
       configIndex: buttonIndex,
     };
 
-    const secondary = button.secondary[0];
-    const entity = secondary.entity;
+    const secondary = button.secondary || {};
+    const entity = secondary.entity || '';
     const attribute = secondary.attribute || '';
     const state_template = secondary.state_template;
     const color = button.color || '';
+    const notify = button.notify || '';
 
     const attributes = entity ? Object.keys(this.hass.states[entity].attributes) : [];
     const attrOpts = [...attributes.map((attr) => ({ value: attr, label: attr }))];
@@ -426,19 +420,6 @@ export class PanelButtonCard extends LitElement {
     const pickerPrimaryIcon = [
       { value: button.primary, label: 'Primary title', configValue: 'primary', pickerType: 'textfield' as 'textfield' },
       { value: button.icon, label: 'Icon', configValue: 'icon', pickerType: 'icon' as 'icon' },
-    ];
-
-    const notifyTemplate = [
-      {
-        value: button.notify,
-        label: 'Notify',
-        configValue: 'notify',
-        pickerType: 'template' as 'template',
-        options: {
-          helperText: 'Use Jinja2 template with result `true` to display notification badge',
-          label: 'Notify template',
-        },
-      },
     ];
 
     const pickerSecondary = [
@@ -469,6 +450,17 @@ export class PanelButtonCard extends LitElement {
         options: {
           label: 'Color template',
           helperText: 'Template for the icon color',
+        },
+      },
+    ];
+    const notifyTemplate = [
+      {
+        value: notify,
+        pickerType: 'template',
+        configValue: 'notify',
+        options: {
+          label: 'Notify template',
+          helperText: 'Use Jinja2 template with result `true` to display notification badge',
         },
       },
     ];
@@ -1378,16 +1370,10 @@ export class PanelButtonCard extends LitElement {
     if (configType === 'button') {
       let buttonConfig = { ...buttonCardConfig[index] };
       let button = { ...buttonConfig.button };
-
+      let secondaryConfig = { ...button.secondary };
       if (['entity', 'attribute', 'state_template'].includes(configValue)) {
-        if (button.secondary[0][configValue] === newValue) {
-          console.log('No change');
-          return;
-        } else {
-          const secondary = [...(button.secondary || [])];
-          secondary[0] = { ...secondary[0], [configValue]: newValue }; // Update the specific field
-          button.secondary = secondary;
-        }
+        secondaryConfig[configValue] = newValue;
+        button.secondary = secondaryConfig;
       } else {
         button[configValue] = newValue;
       }

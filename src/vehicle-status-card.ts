@@ -9,10 +9,10 @@ import {
 } from 'custom-card-helpers';
 import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
+import { styleMap } from 'lit-html/directives/style-map.js';
 
 import './components';
 
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, query, state } from 'lit/decorators';
 
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';

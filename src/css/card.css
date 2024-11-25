@@ -3,7 +3,7 @@
   --vic-card-padding: 12px;
   --vic-icon-size: 36px;
   --vic-icon-border-radius: 50%;
-  --vic-icon-shape-color: rgba(var(--rgb-primary-text-color), 0.05);
+
 }
 
 *:focus {
@@ -157,6 +157,8 @@ header h1 {
   cursor: pointer;
 }
 
+
+
 .info-box.charge {
   overflow: hidden;
   justify-content: space-evenly;
@@ -168,7 +170,7 @@ header h1 {
 .info-box.charge.active {
   max-height: 100px;
   opacity: 1;
-  padding-block: var(--vic-card-padding);
+  padding-top: var(--vic-card-padding);
 }
 
 .info-box.charge .item {
@@ -259,6 +261,7 @@ header h1 {
   gap: var(--vic-gutter-gap);
   /* margin-top: 1rem; */
   position: relative;
+
 }
 
 .grid-item {
@@ -275,6 +278,8 @@ header h1 {
   transition: all 0.3s ease-out;
   opacity: 1;
   cursor: pointer;
+  overflow: hidden;
+  height: 100%;
 }
 
 .grid-item:hover {
@@ -333,6 +338,8 @@ header h1 {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  /* height: 100%; */
+  flex: 1;
 }
 
 .grid-item .item-content .primary {

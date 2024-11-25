@@ -157,11 +157,7 @@ export interface ButtonConfig {
   notify?: string;
   primary: string;
   color: string;
-  secondary: Array<SecondaryInfoConfig>;
-}
-
-export interface ButtonEntity extends ButtonConfig {
-  buttonIndex: number;
+  secondary: SecondaryInfoConfig;
 }
 
 export interface DefaultCardConfig {
@@ -262,13 +258,13 @@ export type DefaultCardEntity = {
   title: string;
 };
 
-export type ButtonCardEntity = Array<{
+export interface ButtonCardEntityItem {
   button: {
     button_action: ButtonActionConfig;
     icon: string;
     notify: string;
     primary: string;
-    secondary: SecondaryInfoConfig[];
+    secondary: SecondaryInfoConfig;
     color: string;
   };
   button_type: 'action' | 'default';
@@ -281,7 +277,9 @@ export type ButtonCardEntity = Array<{
   }>;
   hide_button: boolean;
   tire_card?: TireEntity;
-}>;
+}
+
+export type ButtonCardEntity = ButtonCardEntityItem[];
 
 export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
 
@@ -289,6 +287,7 @@ export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
 export interface LayoutConfig {
   button_grid: {
     rows: number;
+    columns: number;
     swipe: boolean;
   };
   images_swipe: {
