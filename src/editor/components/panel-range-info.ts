@@ -1,16 +1,13 @@
-import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, nothing } from 'lit';
+import iro from '@jaames/iro';
+import { fireEvent } from 'custom-card-helpers';
+import { LitElement, html, TemplateResult, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { HA as HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig } from '../../types';
-
-import iro from '@jaames/iro';
-
-import editorcss from '../../css/editor.css';
-import { fireEvent } from 'custom-card-helpers';
-
-import * as Create from '../../utils/create';
 import { ICON } from '../../const/const';
+import editorcss from '../../css/editor.css';
+import { HA as HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig } from '../../types';
+import * as Create from '../../utils/create';
 import { RANGE_ACTIONS } from '../editor-const';
 
 @customElement('panel-range-info')

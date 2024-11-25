@@ -206,6 +206,7 @@ export const DEFAULT_CONFIG = {
   layout_config: {
     button_grid: {
       rows: 2,
+      columns: 2,
       swipe: true,
     },
     hide: {
@@ -213,7 +214,7 @@ export const DEFAULT_CONFIG = {
       buttons: false,
       images: false,
       indicators: false,
-      mini_map: false,
+      mini_map: true,
       range_info: false,
     },
     theme_config: {

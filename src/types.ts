@@ -287,6 +287,7 @@ export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
 export interface LayoutConfig {
   button_grid: {
     rows: number;
+    columns: number;
     swipe: boolean;
   };
   images_swipe: {

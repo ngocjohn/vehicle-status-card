@@ -8,7 +8,7 @@ import { CARD_VERSION } from '../const/const';
 import editorcss from '../css/editor.css';
 import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import { Picker, TabBar } from '../utils/create';
-import { loadHaComponents, stickyPreview } from '../utils/loader';
+import { _saveConfig, convertSecondaryToObject, loadHaComponents, stickyPreview } from '../utils/loader';
 import './components/';
 import { PanelImagesEditor, PanelIndicator, PanelButtonCard, PanelEditorUI, PanelRangeInfo } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
@@ -33,9 +33,57 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   @state() _selectedConfigType: null | string = null;
 
+  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
+    this._config = { ...config };
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    void loadHaComponents();
+    void stickyPreview();
+    if (process.env.ROLLUP_WATCH === 'true') {
+      window.EditorManager = this;
+    }
+    this._cleanConfig();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+  }
+
   constructor() {
     super();
     this._handleTabChange = this._handleTabChange.bind(this);
+  }
+
+  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
+    super.firstUpdated(_changedProperties);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    this._handleFirstConfig(this._config);
+  }
+
+  private async _handleFirstConfig(config: VehicleStatusCardConfig): Promise<void> {
+    const buttonCard = config.button_card;
+    const isValid = buttonCard.every(
+      (button) =>
+        button.button.secondary !== null &&
+        typeof button.button.secondary === 'object' &&
+        !Array.isArray(button.button.secondary)
+    );
+    if (isValid && config.card_id !== undefined) {
+      console.log('Valid config');
+      this._config = { ...config, card_id: undefined };
+      fireEvent(this, 'config-changed', { config: this._config });
+      console.log('removed cardId');
+      return;
+    } else if (!isValid) {
+      const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
+      const newButtonConfig = convertSecondaryToObject(buttonCard);
+      this._config = { ...this._config, button_card: newButtonConfig, card_id: cardId };
+      fireEvent(this, 'config-changed', { config: this._config });
+      console.log('converted button card', cardId);
+      await _saveConfig(cardId, this._config);
+      console.log('Saved config');
+    }
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -58,6 +106,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
   }
 
+  /* ---------------------------- RENDER FUNCTIONS ---------------------------- */
   protected render(): TemplateResult {
     if (!this._config || !this._hass) {
       return html``;
@@ -121,7 +170,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   private _renderButtonCard(): TemplateResult {
     return html`<panel-button-card
       .hass=${this._hass}
-      .cardEditor=${this}
+      .cardEditor=${this as any}
       .config=${this._config}
     ></panel-button-card>`;
   }
@@ -202,6 +251,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         options: { selector: { number: { max: 10, min: 1, mode: 'box', step: 1 } } },
         pickerType: 'number',
         value: buttonGrid.rows || 2,
+      },
+      {
+        configValue: 'columns',
+        label: 'Columns',
+        options: { selector: { number: { max: 10, min: 1, mode: 'box', step: 1 } } },
+        pickerType: 'number',
+        value: buttonGrid.columns || 2,
       },
       {
         configValue: 'swipe',
@@ -646,24 +702,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       this._config = { ...this._config, ...updates };
       fireEvent(this, 'config-changed', { config: this._config });
     }
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    void loadHaComponents();
-    void stickyPreview();
-    if (process.env.ROLLUP_WATCH === 'true') {
-      window.EditorManager = this;
-    }
-    this._cleanConfig();
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-  }
-
-  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
-    this._config = config;
   }
 
   /* ------------------------- CONFIG CHANGED HANDLER ------------------------- */
