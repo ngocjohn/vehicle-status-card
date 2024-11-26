@@ -1,3 +1,24 @@
+<a id="v1.4.0"></a>
+# [v1.4.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.4.0) - 2024-11-26
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.4.0 -->
+
+## What's New
+This release introduces important fixes and enhancements to improve the functionality and usability of the Vehicle Status Card.
+
+### Fixes 🐛
+- **Render Template Subscription for Non-Admin Users**: Fixed an issue where template subscriptions failed for non-admin users, ensuring compatibility for all user roles. [#32](https://github.com/ngocjohn/vehicle-status-card/pull/32)
+
+### Enhancements ✨
+- **YAML Code Editor**: Added a YAML code editor for single configuration edits, making customization easier and more user-friendly. [#35](https://github.com/ngocjohn/vehicle-status-card/pull/35)
+
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.1...v1.4.0
+
+[Changes][v1.4.0]
+
+
 <a id="v1.3.1"></a>
 # [v1.3.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.3.1) - 2024-10-29
 
@@ -123,6 +144,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.4.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.1...v1.4.0
 [v1.3.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.0...v1.3.1
 [v1.3.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.2.0...v1.3.0
 [v1.2.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.1.1...v1.2.0
