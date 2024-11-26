@@ -28,6 +28,7 @@ export class VscIndicatorSingle extends LitElement {
         .item {
           display: flex;
           gap: 0.4rem;
+          align-items: flex-end;
         }
         .item ha-icon {
           margin-bottom: 3px;
@@ -72,7 +73,15 @@ export class VscIndicatorSingle extends LitElement {
         (result) => {
           this._singleTemplateResults = { ...this._singleTemplateResults, [key]: result };
         },
-        { template: this.indicator[key] ?? '' }
+        {
+          template: this.indicator[key] ?? '',
+          entity_ids: this.indicator.entity ? [this.indicator.entity] : undefined,
+          variables: {
+            user: this.hass.user!.name,
+            config: this.indicator,
+          },
+          strict: true,
+        }
       );
       this._unsubSingleRenderTemplates.set(key, sub);
       await sub;

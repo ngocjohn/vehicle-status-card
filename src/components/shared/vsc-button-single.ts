@@ -127,6 +127,12 @@ export class VehicleButtonSingle extends LitElement {
         },
         {
           template: buttonOptions[key] ?? '',
+          entity_ids: button.secondary.entity ? [button.secondary.entity] : undefined,
+          variables: {
+            config: button,
+            user: this.hass.user!.name,
+          },
+          strict: true,
         }
       );
       this._unsubRenderTemplates.set(key, sub);
@@ -187,8 +193,8 @@ export class VehicleButtonSingle extends LitElement {
     return [
       cardstyles,
       css`
-        :host {
-          --vic-icon-shape-color: rgba(var(--primary-text-color), 0.2);
+        #actionBtn {
+          cursor: pointer;
         }
       `,
     ];

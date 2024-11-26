@@ -83,6 +83,11 @@ export class VscIndicatorGroupItem extends LitElement {
         },
         {
           template: this.item[key] ?? '',
+          variables: {
+            config: this.item,
+            user: this.hass.user!.name,
+          },
+          strict: true,
         }
       );
       this._unsubItemRenderTemplates.set(key, sub);
