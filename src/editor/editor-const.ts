@@ -137,7 +137,7 @@ export enum ACTIONS {
   UNHIDE_BUTTON = 'unhide-button',
 }
 
-type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image';
+type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image' | 'yaml-editor';
 
 export enum IMAGE_ACTIONS {
   ADD = 'add',

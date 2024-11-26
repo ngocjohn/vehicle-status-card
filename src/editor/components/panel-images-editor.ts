@@ -5,6 +5,7 @@ import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
+import './sub-panel-yaml';
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { VehicleStatusCardConfig, ImageConfig, HA as HomeAssistant } from '../../types';
@@ -20,6 +21,7 @@ export class PanelImagesEditor extends LitElement {
   @property({ type: Array }) _images!: ImageConfig[];
   @property({ type: Boolean }) isDragging = false;
 
+  @state() _yamlEditorActive = false;
   @state() _newImage: string = '';
   @state() _sortable: Sortable | null = null;
   @state() _reindexImages: boolean = false;
@@ -155,7 +157,7 @@ export class PanelImagesEditor extends LitElement {
         </ha-alert>`
       : html``;
     const dropArea = this._renderDropArea();
-
+    const yamlEditor = this._renderYamlEditor();
     const actionMap = [
       { title: 'Show Image', icon: 'mdi:eye', action: IMAGE_ACTIONS.SHOW_IMAGE },
       { title: 'Delete Image', icon: 'mdi:delete', action: IMAGE_ACTIONS.DELETE },
@@ -207,8 +209,29 @@ export class PanelImagesEditor extends LitElement {
 
     const actionFooter = html`<div class="action-footer">
       <ha-button id="upload-btn" @click=${this.toggleAction('upload')}>Add Image</ha-button>
+      <ha-button id="yaml-btn" @click=${this.toggleAction('yaml-editor')}>Edit YAML</ha-button>
     </div> `;
-    return html` ${infoText} ${dropArea} ${imageList} ${actionFooter} `;
+    return html` ${infoText} ${dropArea} ${imageList} ${yamlEditor} ${actionFooter} `;
+  }
+  private _renderYamlEditor(): TemplateResult {
+    return html`
+      <div id="yaml-editor" style="display: none;">
+        <vsc-sub-panel-yaml
+          .hass=${this._hass}
+          .config=${this.config}
+          .configDefault=${this.config.images}
+          @yaml-config-changed=${this._yamlChanged}
+        ></vsc-sub-panel-yaml>
+      </div>
+    `;
+  }
+
+  private _yamlChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { isValid, value } = ev.detail;
+    if (!isValid || !this.config) return;
+    this.config = { ...this.config, images: value };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _renderDropArea(): TemplateResult {
@@ -402,6 +425,7 @@ export class PanelImagesEditor extends LitElement {
         const dropArea = this.shadowRoot?.getElementById('drop-area') as HTMLElement;
         const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
         const addImageBtn = this.shadowRoot?.getElementById('upload-btn') as HTMLElement;
+
         const isHidden = dropArea?.style.display === 'none';
         if (isHidden) {
           dropArea.style.display = 'block';
@@ -411,6 +435,25 @@ export class PanelImagesEditor extends LitElement {
           dropArea.style.display = 'none';
           imageList.style.display = 'block';
           addImageBtn.innerHTML = 'Add Image';
+        }
+      };
+
+      const showYamlEditor = () => {
+        const yamlEditor = this.shadowRoot?.getElementById('yaml-editor') as HTMLElement;
+        const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
+        const addImageBtn = this.shadowRoot?.getElementById('upload-btn') as HTMLElement;
+        const yamlBtn = this.shadowRoot?.getElementById('yaml-btn') as HTMLElement;
+        const yamlEditorActive = yamlEditor?.style.display === 'block';
+        if (!yamlEditorActive) {
+          yamlEditor.style.display = 'block';
+          imageList.style.display = 'none';
+          addImageBtn.style.display = 'none';
+          yamlBtn.innerHTML = 'Close YAML Editor';
+        } else {
+          yamlEditor.style.display = 'none';
+          imageList.style.display = 'block';
+          addImageBtn.style.display = 'block';
+          yamlBtn.innerHTML = 'Edit YAML';
         }
       };
 
@@ -445,6 +488,9 @@ export class PanelImagesEditor extends LitElement {
             break;
           case 'show-image':
             this.editor?._dispatchEvent('show-image', { index: idx });
+            break;
+          case 'yaml-editor':
+            showYamlEditor();
             break;
         }
       };

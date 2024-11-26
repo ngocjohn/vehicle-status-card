@@ -32,6 +32,8 @@ export class PanelIndicator extends LitElement {
 
   @state() _reindexItems: boolean = false;
   @state() _addFormVisible: boolean = false;
+  @state() _yamlEditorVisible: boolean = false;
+
   constructor() {
     super();
     this._closeSubPanel = this._closeSubPanel.bind(this);
@@ -279,6 +281,55 @@ export class PanelIndicator extends LitElement {
 
   /* ----------------------------- TEMPLATE UI ----------------------------- */
 
+  private _renderYamlEditor(): TemplateResult {
+    if (!this._yamlEditorVisible) {
+      return html``;
+    }
+    const singleIndicators = this.config.indicators?.single || [];
+    const groupIndicators = this.config.indicators?.group || [];
+    const yamlConfig = {
+      single: singleIndicators,
+      group: groupIndicators,
+    };
+    const header = html`
+      <div class="sub-header">
+        <div class="icon-title" @click=${() => (this._yamlEditorVisible = false)}>
+          <ha-icon icon="mdi:close"></ha-icon>
+          <span>Close editor</span>
+        </div>
+        <div>YAML editor</div>
+      </div>
+    `;
+    return html` ${header}
+      <div class="sub-panel-config">
+        <vsc-sub-panel-yaml
+          .hass=${this.hass}
+          .config=${yamlConfig}
+          .cardEditor=${this.editor}
+          .configDefault=${yamlConfig[this.type]}
+          .configIndex=${0}
+          .configKey=${this.type}
+          @yaml-config-changed=${this._handleYamlConfigChange}
+        ></vsc-sub-panel-yaml>
+      </div>`;
+  }
+
+  private _handleYamlConfigChange(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const detail = ev.detail;
+    const { key, value, isValid } = detail;
+    if (!isValid || !this.config) {
+      return;
+    }
+    if (key === 'single') {
+      this.config = { ...this.config, indicators: { ...this.config.indicators, single: value } };
+    } else if (key === 'group') {
+      this.config = { ...this.config, indicators: { ...this.config.indicators, group: value } };
+    }
+    fireEvent(this, 'config-changed', { config: this.config });
+    console.log('YAML config changed:', key, value);
+  }
+
   private _renderAddTemplate(type: string): TemplateResult {
     if (!this._addFormVisible) {
       return html``;
@@ -398,6 +449,9 @@ export class PanelIndicator extends LitElement {
 
     if (type === 'single') {
       const singleIndicators: IndicatorConfig[] = this.config.indicators?.single || [];
+      if (this._yamlEditorVisible) {
+        return this._renderYamlEditor();
+      }
       return this._renderIndicatorContent(
         singleIndicators,
         (single: IndicatorConfig) => single.entity,
@@ -416,6 +470,9 @@ export class PanelIndicator extends LitElement {
       );
     } else if (type === 'group') {
       const groupIndicators: IndicatorGroupConfig[] = this.config.indicators?.group || [];
+      if (this._yamlEditorVisible) {
+        return this._renderYamlEditor();
+      }
       return this._renderIndicatorContent(
         groupIndicators,
         (group: IndicatorGroupConfig) => group.name,
@@ -494,6 +551,8 @@ export class PanelIndicator extends LitElement {
         <ha-button @click=${() => (this._addFormVisible = !this._addFormVisible)}
           >${this._addFormVisible ? 'Cancel' : `Add new ${this.type}`}</ha-button
         >
+        <ha-button @click=${() => (this._yamlEditorVisible = !this._yamlEditorVisible)}>Edit YAML</ha-button>
+
         ${this._renderAddTemplate(this.type)}
       </div>
     `;
