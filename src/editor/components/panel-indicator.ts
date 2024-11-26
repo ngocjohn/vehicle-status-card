@@ -1,7 +1,11 @@
+import { fireEvent } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
+import Sortable from 'sortablejs';
 
+import { ICON } from '../../const/const';
+import editorcss from '../../css/editor.css';
 import {
   HA as HomeAssistant,
   VehicleStatusCardConfig,
@@ -9,13 +13,9 @@ import {
   IndicatorGroupConfig,
   IndicatorGroupItemConfig,
 } from '../../types';
-import editorcss from '../../css/editor.css';
-import { fireEvent } from 'custom-card-helpers';
-import { CONFIG_VALUES } from '../editor-const';
-import { ICON } from '../../const/const';
-import Sortable from 'sortablejs';
-
 import * as Create from '../../utils/create';
+import { CONFIG_VALUES } from '../editor-const';
+import './sub-panel-yaml';
 
 @customElement('panel-indicator')
 export class PanelIndicator extends LitElement {

@@ -212,9 +212,10 @@ export class VehicleStatusCard extends LitElement {
   private _renderButtons(): TemplateResult | typeof nothing {
     if (isEmpty(this._buttonCards)) return nothing;
     if (!this._buttonReady) return html``;
+    const visibleButtons = this._buttonCards.filter((button) => !button.hide_button);
     return html`
       <div id="button_card">
-        <vehicle-buttons-grid .hass=${this._hass} .card=${this} .config=${this._config} .buttons=${this._buttonCards}>
+        <vehicle-buttons-grid .hass=${this._hass} .card=${this} .config=${this._config} .buttons=${visibleButtons}>
         </vehicle-buttons-grid>
       </div>
     `;
@@ -456,7 +457,7 @@ export class VehicleStatusCard extends LitElement {
       if (isString(this._activeCardIndex)) return;
 
       const cardIndexNum = Number(this._activeCardIndex);
-      const totalCards = this._buttonCards.length;
+      const totalCards = this._buttonCards.filter((button) => !button.hide_button).length;
 
       const isNotActionType = (index: number): boolean => this._buttonCards[index].button_type !== 'action';
 

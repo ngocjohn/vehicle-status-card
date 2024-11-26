@@ -111,7 +111,9 @@ type BUTTON_CARD_ACTIONS =
   | 'show-button'
   | 'show-delete'
   | 'category-duplicate'
-  | 'yaml-editor';
+  | 'yaml-editor'
+  | 'hide-button'
+  | 'unhide-button';
 
 export enum ACTIONS {
   ADD_ITEM = 'add-item',
@@ -120,17 +122,19 @@ export enum ACTIONS {
   CATEGORY_ADD = 'category-add',
   CATEGORY_BACK = 'category-back',
   CATEGORY_DELETE = 'category-delete',
+  CATEGORY_DUPLICATE = 'category-duplicate',
   CATEGORY_EDIT = 'category-edit',
   CUSTOM_CARD_PREVIEW = 'custom-card-preview',
-  DUPLICATE_BUTTON = 'duplicate-button',
   DELETE_BUTTON = 'delete-button',
   DELETE_ITEM = 'delete-item',
+  DUPLICATE_BUTTON = 'duplicate-button',
   EDIT_BUTTON = 'edit-button',
   EDIT_ITEM = 'edit-item',
+  HIDE_BUTTON = 'hide-button',
   ITEM_BACK = 'item-back',
   SHOW_BUTTON = 'show-button',
   SHOW_DELETE = 'show-delete',
-  CATEGORY_DUPLICATE = 'category-duplicate',
+  UNHIDE_BUTTON = 'unhide-button',
 }
 
 type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image';

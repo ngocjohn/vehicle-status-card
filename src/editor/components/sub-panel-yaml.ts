@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fireEvent } from 'custom-card-helpers';
 // Lit
 import { LitElement, html, CSSResultGroup, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -16,9 +15,9 @@ export class SubPanelYaml extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public config!: VehicleStatusCardConfig;
   @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
-
-  @property({ type: Object }) buttonConfig: any = {};
-  @state() buttonIndex!: number;
+  @property({ attribute: false }) configDefault: any = {};
+  @state() configIndex?: number;
+  @state() configKey?: string;
 
   static get styles(): CSSResultGroup {
     return editorcss;
@@ -36,33 +35,33 @@ export class SubPanelYaml extends LitElement {
     if (!this.hass || !this.config) {
       return nothing;
     }
-    this.buttonConfig = this.config.button_card[this.buttonIndex];
+
     return html`
       <div class="card-config">
         <ha-yaml-editor
           .hass=${this.hass}
-          .defaultValue=${this.buttonConfig}
+          .defaultValue=${this.configDefault}
           .copyClipboard=${true}
-          @value-changed=${this._handleYamlChange}
+          @value-changed=${this._onChange}
+          .configValue=${'button_card'}
         ></ha-yaml-editor>
       </div>
     `;
   }
 
-  private _handleYamlChange(ev: CustomEvent): void {
+  private _onChange(ev: CustomEvent): void {
     ev.stopPropagation();
-    const isValid = ev.detail.isValid;
-    const newConfig = ev.detail.value;
-    if (!this.config || !isValid) {
-      return;
-    }
-    let buttonCardConfig = [...(this.config.button_card || [])];
-    let buttonConfig = { ...buttonCardConfig[this.buttonIndex] };
-    console.log('buttonConfig', buttonConfig);
-    buttonConfig = { ...buttonConfig, ...newConfig };
-    console.log('newConfig', newConfig);
-    buttonCardConfig[this.buttonIndex] = buttonConfig;
-    console.log('buttonCardConfig', buttonCardConfig);
-    fireEvent(this, 'config-changed', { config: { ...this.config, button_card: buttonCardConfig } });
+    const detail = ev.detail;
+    const event = new CustomEvent('yaml-config-changed', {
+      detail: {
+        ...detail,
+        key: this.configKey,
+        index: this.configIndex,
+      },
+      composed: true,
+      bubbles: true,
+    });
+
+    this.dispatchEvent(event);
   }
 }

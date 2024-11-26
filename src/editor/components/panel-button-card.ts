@@ -91,6 +91,7 @@ export class PanelButtonCard extends LitElement {
       this._btnSortable = new Sortable(list, {
         handle: '.handle',
         ghostClass: 'sortable-ghost',
+        ignore: '.ignore',
         animation: 150,
         onEnd: (evt) => {
           this._btnHandleSortEnd(evt);
@@ -194,16 +195,7 @@ export class PanelButtonCard extends LitElement {
       return html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`;
     }
 
-    const actionMap = [
-      { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
-      { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
-      {
-        title: 'Delete',
-        action: ACTIONS.DELETE_BUTTON,
-        icon: 'mdi:delete',
-        color: 'var(--error-color)',
-      },
-    ];
+    let foundHiddenDivider = false;
 
     return html`
       <div class="card-config">
@@ -217,69 +209,106 @@ export class PanelButtonCard extends LitElement {
           ? html`<span>No buttons added</span>`
           : html`
               <div class="button-list" id="button-list">
-                ${repeat(
-                  buttons,
-                  (button, index) => html`
-                    <div class="item-config-row" data-index="${index}">
-                      <div class="handle">
-                        <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+                ${buttons.map((button, index) => {
+                  const isHidden = button.hide_button;
+                  // Add a divider before the first hidden button
+                  if (isHidden && !foundHiddenDivider) {
+                    foundHiddenDivider = true;
+                    return html`
+                      <div class="sub-header divider">
+                        <div>Hidden Buttons</div>
                       </div>
-                      <div class="sub-content">
-                        ${Create.Picker({
-                          component: this,
-                          label: `Button #${index + 1}`,
-                          value: button.button.primary,
-                          configType: 'button',
-                          configIndex: index,
-                          configValue: 'primary',
-                          pickerType: 'textfield' as 'textfield',
-                        })}
-                      </div>
-                      <div class="item-actions">
-                        <ha-icon-button
-                          class="action-icon"
-                          @click="${this.toggleAction('edit-button', index)}"
-                          .path=${ICON.PENCIL}
-                        ></ha-icon-button>
-                        <ha-button-menu
-                          .corner=${'BOTTOM_START'}
-                          .fixed=${true}
-                          .menuCorner=${'START'}
-                          .activatable=${true}
-                          .naturalMenuWidth=${true}
-                          @closed=${(ev: Event) => ev.stopPropagation()}
-                        >
-                          <ha-icon-button
-                            class="action-icon"
-                            slot="trigger"
-                            .path=${ICON.DOTS_VERTICAL}
-                          ></ha-icon-button>
-                          ${actionMap.map(
-                            (action) =>
-                              html`<mwc-list-item
-                                @click=${this.toggleAction(action.action, index)}
-                                .graphic=${'icon'}
-                                style="${action.color ? `color: ${action.color}` : ''}"
-                              >
-                                <ha-icon
-                                  icon=${action.icon}
-                                  slot="graphic"
-                                  style="${action.color ? `color: ${action.color}` : ''}"
-                                ></ha-icon>
-                                ${action.title}
-                              </mwc-list-item>`
-                          )}
-                        </ha-button-menu>
-                      </div>
-                    </div>
-                  `
-                )}
+                      ${this._renderButton(button, index)}
+                    `;
+                  }
+                  return this._renderButton(button, index);
+                })}
               </div>
             `}
       </div>
     `;
   }
 
+  private _renderButton(button: any, index: number): TemplateResult {
+    let actionMap = [
+      { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
+      { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
+      { title: 'Hide on card', action: ACTIONS.HIDE_BUTTON, icon: 'mdi:eye-off' },
+      { title: 'Unhide on card', action: ACTIONS.UNHIDE_BUTTON, icon: 'mdi:eye' },
+      {
+        title: 'Delete',
+        action: ACTIONS.DELETE_BUTTON,
+        icon: 'mdi:delete',
+        color: 'var(--error-color)',
+      },
+    ];
+
+    actionMap = actionMap.filter((action) => {
+      if (action.title === 'Show Button' && button.hide_button) {
+        return false;
+      }
+      if (action.title === 'Hide on card' && button.hide_button) {
+        return false;
+      }
+
+      if (action.title === 'Unhide on card' && !button.hide_button) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return html`
+      <div class="item-config-row" data-index="${index}" ?hiddenoncard=${button.hide_button}>
+        <div class=${!button.hide_button ? 'handle' : 'ignore'}>
+          <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+        </div>
+        <div class="sub-content">
+          ${Create.Picker({
+            component: this,
+            label: `Button #${index + 1}`,
+            value: button.button.primary,
+            configType: 'button',
+            configIndex: index,
+            configValue: 'primary',
+            pickerType: 'textfield' as 'textfield',
+          })}
+        </div>
+        <div class="item-actions">
+          <ha-icon-button
+            class="action-icon"
+            @click="${this.toggleAction('edit-button', index)}"
+            .path=${ICON.PENCIL}
+          ></ha-icon-button>
+          <ha-button-menu
+            .corner=${'BOTTOM_START'}
+            .fixed=${true}
+            .menuCorner=${'START'}
+            .activatable=${true}
+            .naturalMenuWidth=${true}
+            @closed=${(ev: Event) => ev.stopPropagation()}
+          >
+            <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+            ${actionMap.map(
+              (action) =>
+                html`<mwc-list-item
+                  @click=${this.toggleAction(action.action, index)}
+                  .graphic=${'icon'}
+                  style="${action.color ? `color: ${action.color}` : ''}"
+                >
+                  <ha-icon
+                    icon=${action.icon}
+                    slot="graphic"
+                    style="${action.color ? `color: ${action.color}` : ''}"
+                  ></ha-icon>
+                  ${action.title}
+                </mwc-list-item>`
+            )}
+          </ha-button-menu>
+        </div>
+      </div>
+    `;
+  }
   private _renderButtonCardConfig(): TemplateResult {
     if (this._buttonIndex === null) {
       return html``;
@@ -342,11 +371,32 @@ export class PanelButtonCard extends LitElement {
                 .hass=${this.hass}
                 .config=${this.config}
                 .cardEditor=${this.cardEditor}
-                .buttonIndex=${buttonIndex}
+                .configIndex=${buttonIndex}
+                .configKey=${'button_card'}
+                .configDefault=${buttonCard}
+                @yaml-config-changed=${this._handleYamlChange}
               ></vsc-sub-panel-yaml>`}
         </div>
       </div>
     `;
+  }
+
+  private _handleYamlChange(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { isValid, value, index } = ev.detail;
+    if (!isValid || !this.config) {
+      return;
+    }
+
+    const newConfig = value;
+    let buttonCardConfig = [...(this.config.button_card || [])];
+    let buttonConfig = { ...buttonCardConfig[index] };
+    console.log('buttonConfig', buttonConfig);
+    buttonConfig = { ...buttonConfig, ...newConfig };
+    console.log('newConfig', newConfig);
+    buttonCardConfig[index] = buttonConfig;
+    console.log('buttonCardConfig', buttonCardConfig);
+    fireEvent(this, 'config-changed', { config: { ...this.config, button_card: buttonCardConfig } });
   }
 
   private _renderHeader(
@@ -381,9 +431,11 @@ export class PanelButtonCard extends LitElement {
   private _renderButtonConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
     const infoText = CONFIG_TYPES.options.button_card.subpanels.button.description;
 
-    const btnTypeCardType = html` ${this._renderSubHeader('Button configuration', [
-        { title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) },
-      ])}
+    const headerActions = !buttonCard.hide_button
+      ? [{ title: 'Show Button', action: this.toggleAction('show-button') }]
+      : [];
+
+    const btnTypeCardType = html` ${this._renderSubHeader('Button configuration', headerActions)}
       ${Create.HaAlert({
         message: infoText,
       })}
@@ -485,9 +537,7 @@ export class PanelButtonCard extends LitElement {
 
     const content = html`
       <div>
-        ${this._renderSubHeader('Primary and icon', [
-          { title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) },
-        ])}
+        ${this._renderSubHeader('Primary and icon', [], false)}
         <div class="sub-content">
           ${pickerPrimaryIcon.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
         </div>
@@ -826,7 +876,7 @@ export class PanelButtonCard extends LitElement {
   private _renderCardItemList(cardIndex: number, buttonIndex: number): TemplateResult {
     if (this._cardIndex === null) return html``;
     const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex];
-    const card = this.config.button_card[buttonIndex].default_card[cardIndex].items || [];
+    const card = this.config.button_card[buttonIndex].default_card[cardIndex]?.items || [];
 
     return html`
       <div class="sub-header">
@@ -1188,6 +1238,29 @@ export class PanelButtonCard extends LitElement {
               updateChange(buttonCardConfig);
             }
             break;
+          case 'hide-button':
+            if (buttonIndex !== undefined) {
+              const buttonCardConfig = [...(this.config.button_card || [])];
+              buttonCardConfig[buttonIndex].hide_button = !buttonCardConfig[buttonIndex].hide_button;
+              // move the button to the end of the list
+              const button = buttonCardConfig.splice(buttonIndex, 1);
+              buttonCardConfig.push(button[0]);
+              updateChange(buttonCardConfig);
+            }
+            break;
+          case 'unhide-button':
+            if (buttonIndex !== undefined) {
+              const buttonCardConfig = [...(this.config.button_card || [])];
+              buttonCardConfig[buttonIndex].hide_button = false;
+              // move the button to the end of visible buttons
+              const button = buttonCardConfig.splice(buttonIndex, 1);
+              const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
+              buttonCardConfig.splice(visibleButtons.length, 0, button[0]);
+
+              updateChange(buttonCardConfig);
+            }
+            break;
+
           case 'yaml-editor':
             this._yamlEditorActive = !this._yamlEditorActive;
             break;
@@ -1235,8 +1308,6 @@ export class PanelButtonCard extends LitElement {
 
     if (this._activePreview !== null) {
       this._activePreview = null;
-      this.cardEditor._cleanConfig();
-
       this.requestUpdate();
       this.updateComplete.then(() => {
         this.cardEditor._dispatchEvent('toggle-preview', { cardType: null });

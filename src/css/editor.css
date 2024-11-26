@@ -54,6 +54,11 @@
 	margin-bottom: var(--vic-gutter-gap);
 }
 
+.divider {
+	color: var(--secondary-text-color);
+
+}
+
 .sub-card-header .label {
 	display: flex;
 	flex-direction: column;
@@ -211,7 +216,13 @@
 	border-bottom: solid 1px var(--divider-color);
 }
 
+.item-config-row[hiddenoncard] {
+	opacity: 0.6;
+}
 
+.item-config-row[hiddenoncard]>.ignore {
+	display: none;
+}
 
 .item-content {
 	display: flex;
