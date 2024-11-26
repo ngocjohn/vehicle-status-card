@@ -11,6 +11,7 @@ import {
   mdiClose,
   mdiChevronRight,
   mdiChevronLeft,
+  mdiCodeJson,
 } from '@mdi/js';
 
 import { repository, version } from '../../package.json';
@@ -241,4 +242,5 @@ export const ICON = {
   PLUS: mdiPlus,
   CHEVRON_RIGHT: mdiChevronRight,
   CHEVRON_LEFT: mdiChevronLeft,
+  CODE_JSON: mdiCodeJson,
 };

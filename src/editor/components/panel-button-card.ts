@@ -7,6 +7,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
 import '../../editor/components/panel-editor-ui';
+import '../../editor/components/sub-panel-yaml';
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import {
@@ -35,8 +36,8 @@ import {
 @customElement('panel-button-card')
 export class PanelButtonCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) cardEditor!: VehicleStatusCardEditor;
-  @property({ type: Object }) config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
+  @property({ attribute: false }) config!: VehicleStatusCardConfig;
 
   @state() _activePreview: string | null = null;
 
@@ -46,12 +47,13 @@ export class PanelButtonCard extends LitElement {
   @state() _cardIndex: number | null = null;
   @state() _itemIndex: number | null = null;
 
-  @state() _yamlConfig: any[] = [];
   @state() _newItemName: Map<string, string> = new Map();
   @state() _selectedAction: string = 'tap_action';
 
   @state() _reindexing: boolean = false;
   @state() _reindexButton: boolean = false;
+
+  @state() _yamlEditorActive: boolean = false;
 
   private _sortable: Sortable | null = null;
   private _btnSortable: Sortable | null = null;
@@ -74,15 +76,11 @@ export class PanelButtonCard extends LitElement {
 
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
-
     this.initBtnSortable();
   }
 
   private initBtnSortable(): void {
     this.updateComplete.then(() => {
-      if (this._activePreview !== null) {
-        return;
-      }
       const list = this.shadowRoot?.getElementById('button-list');
       if (!list) {
         console.log('List not found');
@@ -190,16 +188,10 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderButtonList(): TemplateResult {
+    const buttons = this.config.button_card;
+
     if (this._reindexButton) {
       return html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`;
-    }
-    const footerActions = html` <div class="action-footer">
-      <ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>
-    </div>`;
-
-    const buttons = this.config.button_card;
-    if (!buttons) {
-      return footerActions;
     }
 
     const actionMap = [
@@ -221,61 +213,69 @@ export class PanelButtonCard extends LitElement {
           false,
           html`<ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>`
         )}
-        <div class="button-list" id="button-list">
-          ${repeat(
-            buttons,
-            (button, index) => html`
-              <div class="item-config-row" data-index="${index}">
-                <div class="handle">
-                  <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
-                </div>
-                <div class="sub-content">
-                  ${Create.Picker({
-                    component: this,
-                    label: `Button #${index + 1}`,
-                    value: button.button.primary,
-                    configType: 'button',
-                    configIndex: index,
-                    configValue: 'primary',
-                    pickerType: 'textfield' as 'textfield',
-                  })}
-                </div>
-                <div class="item-actions">
-                  <ha-icon-button
-                    class="action-icon"
-                    @click="${this.toggleAction('edit-button', index)}"
-                    .path=${ICON.PENCIL}
-                  ></ha-icon-button>
-                  <ha-button-menu
-                    .corner=${'BOTTOM_START'}
-                    .fixed=${true}
-                    .menuCorner=${'START'}
-                    .activatable=${true}
-                    .naturalMenuWidth=${true}
-                    @closed=${(ev: Event) => ev.stopPropagation()}
-                  >
-                    <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-                    ${actionMap.map(
-                      (action) =>
-                        html`<mwc-list-item
-                          @click=${this.toggleAction(action.action, index)}
-                          .graphic=${'icon'}
-                          style="${action.color ? `color: ${action.color}` : ''}"
+        ${!buttons.length
+          ? html`<span>No buttons added</span>`
+          : html`
+              <div class="button-list" id="button-list">
+                ${repeat(
+                  buttons,
+                  (button, index) => html`
+                    <div class="item-config-row" data-index="${index}">
+                      <div class="handle">
+                        <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+                      </div>
+                      <div class="sub-content">
+                        ${Create.Picker({
+                          component: this,
+                          label: `Button #${index + 1}`,
+                          value: button.button.primary,
+                          configType: 'button',
+                          configIndex: index,
+                          configValue: 'primary',
+                          pickerType: 'textfield' as 'textfield',
+                        })}
+                      </div>
+                      <div class="item-actions">
+                        <ha-icon-button
+                          class="action-icon"
+                          @click="${this.toggleAction('edit-button', index)}"
+                          .path=${ICON.PENCIL}
+                        ></ha-icon-button>
+                        <ha-button-menu
+                          .corner=${'BOTTOM_START'}
+                          .fixed=${true}
+                          .menuCorner=${'START'}
+                          .activatable=${true}
+                          .naturalMenuWidth=${true}
+                          @closed=${(ev: Event) => ev.stopPropagation()}
                         >
-                          <ha-icon
-                            icon=${action.icon}
-                            slot="graphic"
-                            style="${action.color ? `color: ${action.color}` : ''}"
-                          ></ha-icon>
-                          ${action.title}
-                        </mwc-list-item>`
-                    )}
-                  </ha-button-menu>
-                </div>
+                          <ha-icon-button
+                            class="action-icon"
+                            slot="trigger"
+                            .path=${ICON.DOTS_VERTICAL}
+                          ></ha-icon-button>
+                          ${actionMap.map(
+                            (action) =>
+                              html`<mwc-list-item
+                                @click=${this.toggleAction(action.action, index)}
+                                .graphic=${'icon'}
+                                style="${action.color ? `color: ${action.color}` : ''}"
+                              >
+                                <ha-icon
+                                  icon=${action.icon}
+                                  slot="graphic"
+                                  style="${action.color ? `color: ${action.color}` : ''}"
+                                ></ha-icon>
+                                ${action.title}
+                              </mwc-list-item>`
+                          )}
+                        </ha-button-menu>
+                      </div>
+                    </div>
+                  `
+                )}
               </div>
-            `
-          )}
-        </div>
+            `}
       </div>
     `;
   }
@@ -322,16 +322,28 @@ export class PanelButtonCard extends LitElement {
       <div class="card-config">
         ${this._renderHeader(
           `#${buttonIndex + 1}: ${button.primary.toUpperCase()}`,
-          [{ title: 'Back to list', action: this.toggleAction('back-to-list'), icon: 'mdi:chevron-left' }],
-          `${button.icon}`
+          `${button.icon}`,
+
+          this._yamlEditorActive
+            ? [{ title: 'Close Editor', action: this.toggleAction('yaml-editor') }]
+            : [{ title: 'Back to list', action: this.toggleAction('back-to-list'), icon: 'mdi:chevron-left' }],
+
+          [{ action: this.toggleAction('yaml-editor') }]
         )}
 
         <div class="sub-panel">
-          ${Create.TabBar({
-            tabs: configTabs,
-            activeTabIndex: this._activeTabIndex,
-            onTabChange: (index: number) => (this._activeTabIndex = index),
-          })}
+          ${!this._yamlEditorActive
+            ? Create.TabBar({
+                tabs: configTabs,
+                activeTabIndex: this._activeTabIndex,
+                onTabChange: (index: number) => (this._activeTabIndex = index),
+              })
+            : html`<vsc-sub-panel-yaml
+                .hass=${this.hass}
+                .config=${this.config}
+                .cardEditor=${this.cardEditor}
+                .buttonIndex=${buttonIndex}
+              ></vsc-sub-panel-yaml>`}
         </div>
       </div>
     `;
@@ -339,8 +351,9 @@ export class PanelButtonCard extends LitElement {
 
   private _renderHeader(
     title: string,
+    icon?: string,
     actions?: Array<{ title?: string; action: (ev?: Event) => void; icon?: string }>,
-    icon?: string
+    addedAction?: Array<{ action: (ev?: Event) => void; icon?: string }>
   ): TemplateResult {
     const styleTitle = {
       display: 'flex',
@@ -357,6 +370,11 @@ export class PanelButtonCard extends LitElement {
           </div>`
       )}
       <div style=${styleMap(styleTitle)}>${title} ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}</div>
+      ${addedAction?.map(
+        (action) =>
+          html` <ha-icon-button class="action-icon" @click=${(ev: Event) => action.action(ev)} .path=${ICON.CODE_JSON}>
+          </ha-icon-button>`
+      )}
     </div>`;
   }
 
@@ -808,7 +826,7 @@ export class PanelButtonCard extends LitElement {
   private _renderCardItemList(cardIndex: number, buttonIndex: number): TemplateResult {
     if (this._cardIndex === null) return html``;
     const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex];
-    const card = this.config.button_card[buttonIndex].default_card[cardIndex].items;
+    const card = this.config.button_card[buttonIndex].default_card[cardIndex].items || [];
 
     return html`
       <div class="sub-header">
@@ -887,7 +905,7 @@ export class PanelButtonCard extends LitElement {
   private _renderItemConfig(itemIndex: number, cardIndex: number, buttonIndex: number): TemplateResult {
     if (this._itemIndex === null) return html``;
     const item = this.config.button_card[buttonIndex].default_card[cardIndex].items[itemIndex];
-    const entity = item.entity;
+    const entity = item.entity || '';
     const name = item?.name || '';
     const icon = item.icon;
     const attribute = item.attribute;
@@ -1031,11 +1049,6 @@ export class PanelButtonCard extends LitElement {
       <div>${title}</div>
     </div>`;
 
-    const added = html`<div class="sub-header">
-      <div>${title}</div>
-      <div class="subcard-icon">${addedElement}</div>
-    </div>`;
-
     const addedWithIcon = html`<div class="sub-header">
       ${actions?.map(
         (action) =>
@@ -1085,6 +1098,7 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'back-to-list':
             this._buttonIndex = null;
+            this.initBtnSortable();
             break;
           case 'category-back':
             this._cardIndex = null;
@@ -1174,6 +1188,9 @@ export class PanelButtonCard extends LitElement {
               updateChange(buttonCardConfig);
             }
             break;
+          case 'yaml-editor':
+            this._yamlEditorActive = !this._yamlEditorActive;
+            break;
         }
       };
 
@@ -1218,6 +1235,8 @@ export class PanelButtonCard extends LitElement {
 
     if (this._activePreview !== null) {
       this._activePreview = null;
+      this.cardEditor._cleanConfig();
+
       this.requestUpdate();
       this.updateComplete.then(() => {
         this.cardEditor._dispatchEvent('toggle-preview', { cardType: null });
@@ -1295,7 +1314,7 @@ export class PanelButtonCard extends LitElement {
       this.cardEditor._dispatchEvent('toggle-preview', { cardType: cardType });
     };
 
-    if (this._activePreview === type) {
+    if (this._activePreview !== null) {
       this._activePreview = null;
       sentEvent(this._activePreview);
       this.cardEditor._cleanConfig();

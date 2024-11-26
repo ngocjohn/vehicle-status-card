@@ -71,6 +71,15 @@ header h1 {
   overflow: hidden;
 }
 
+/* #indicators {
+  margin-bottom: var(--vic-gutter-gap);
+} */
+
+#range {
+  margin-top: var(--vic-gutter-gap);
+  display: flex;
+}
+
 .header-info-box {
   display: flex;
   position: relative;
@@ -78,7 +87,7 @@ header h1 {
   height: -moz-fit-content;
   height: fit-content;
   overflow: hidden;
-  gap: var(--vic-gutter-gap);
+  /* gap: var(--vic-gutter-gap); */
   margin-bottom: var(--vic-gutter-gap);
   flex-direction: column;
 }
@@ -129,6 +138,7 @@ header h1 {
 .info-box .item {
   display: flex;
   gap: 0.4rem;
+  align-items: flex-end;
 }
 
 .info-box .item ha-icon {
@@ -277,7 +287,6 @@ header h1 {
   border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
   transition: all 0.3s ease-out;
   opacity: 1;
-  cursor: pointer;
   overflow: hidden;
   height: 100%;
 }

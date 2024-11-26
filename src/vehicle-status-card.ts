@@ -198,13 +198,15 @@ export class VehicleStatusCard extends LitElement {
 
   private _renderIndicators(): TemplateResult {
     if (!this._config.indicators) return html``;
-    return html` <vsc-indicators
-      .hass=${this._hass}
-      .config=${this._config}
-      @indicator-toggle=${(ev: CustomEvent) => {
-        this._rangeInfo?._handleIndicatorClick(ev.detail.active);
-      }}
-    ></vsc-indicators>`;
+    return html` <div id="indicators">
+      <vsc-indicators
+        .hass=${this._hass}
+        .config=${this._config}
+        @indicator-toggle=${(ev: CustomEvent) => {
+          this._rangeInfo?._handleIndicatorClick(ev.detail.active);
+        }}
+      ></vsc-indicators>
+    </div>`;
   }
 
   private _renderButtons(): TemplateResult | typeof nothing {
