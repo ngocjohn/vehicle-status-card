@@ -110,7 +110,8 @@ type BUTTON_CARD_ACTIONS =
   | 'item-back'
   | 'show-button'
   | 'show-delete'
-  | 'category-duplicate';
+  | 'category-duplicate'
+  | 'yaml-editor';
 
 export enum ACTIONS {
   ADD_ITEM = 'add-item',

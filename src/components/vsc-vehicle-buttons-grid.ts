@@ -123,11 +123,7 @@ export class VehicleButtonsGrid extends LitElement {
     const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
 
     this.swiper = new Swiper(swiperCon as HTMLElement, {
-      grabCursor: true,
-      keyboard: {
-        enabled: true,
-        onlyInViewport: true,
-      },
+      grabCursor: false,
       loop: false,
       modules: [Pagination, Grid],
       pagination: {
