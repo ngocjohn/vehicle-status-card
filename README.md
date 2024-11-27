@@ -1,9 +1,6 @@
 <a name="readme-top"></a>
 
-[![hacs][hacs-validate]][hacs-url]
-![Github last commit][git-last-commit-badge]
-![git-download-all][git-download-all-badge]
-![git-download-latest][git-download-latest-badge]
+[![hacs][hacs-validate]][hacs-url] ![Github last commit][git-last-commit-badge] ![git-download-all][git-download-all-badge] ![git-download-latest][git-download-latest-badge]
 
 # 🚘 Vehicle status card
 
@@ -76,7 +73,7 @@ https://github.com/ngocjohn/vehicle-status-card
 </details>
 
 # Configuration
-<!--REDME-CONTENT-START-->
+<!--README-CONTENT-START-->
 
 # Indicators Configuration
 
@@ -264,7 +261,7 @@ This configuration gives you full flexibility to design the card’s layout and 
 ![Config layout](assets/config-layout.gif)
 
 
-<!--REDME-CONTENT-END-->
+<!--README-CONTENT-END-->
 ---
 &copy; 2024 Viet Ngoc
 

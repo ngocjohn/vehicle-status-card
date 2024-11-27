@@ -13,3 +13,5 @@ src/test/
 *.wiki
 .hass-config/
 build/
+scripts/
+TESTREADME.md
