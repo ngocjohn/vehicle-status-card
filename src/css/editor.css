@@ -433,24 +433,43 @@ ha-selector#vic-boolean-selector {
 }
 
 .header-row {
-	display: flex;
+	display: inline-flex;
 	justify-content: space-between;
 	align-items: center;
-	font-size: 18px;
-	margin-block: var(--vic-card-padding);
+	width: 100%;
 }
 
 .icon-title {
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	font-size: 1rem;
 	cursor: pointer;
 	opacity: 0.8;
 	transition: opacity 0.3s ease-in-out;
+	flex: 1;
+	width: fit-content;
 }
 
 .icon-title:hover {
 	opacity: 1;
+}
+
+.header-title {
+	display: flex;
+	align-items: center;
+	gap: var(--vic-gutter-gap);
+	color: var(--secondary-text-color);
+	flex: auto;
+	width: fit-content;
+	justify-content: center;
+}
+
+.header-yaml-icon {
+	flex: 0;
+	width: fit-content;
+	display: inline-flex;
+	align-items: center;
+	color: var(--secondary-text-color);
 }
 
 .config-menu-wrapper {

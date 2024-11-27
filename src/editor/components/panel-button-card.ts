@@ -1,6 +1,5 @@
 import { fireEvent } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -355,7 +354,7 @@ export class PanelButtonCard extends LitElement {
 
           this._yamlEditorActive
             ? [{ title: 'Close Editor', action: this.toggleAction('yaml-editor') }]
-            : [{ title: 'Back to list', action: this.toggleAction('back-to-list'), icon: 'mdi:chevron-left' }],
+            : [{ title: 'Back to list', action: this.toggleAction('back-to-list'), icon: ICON.CHEVRON_LEFT }],
 
           [{ action: this.toggleAction('yaml-editor') }]
         )}
@@ -405,24 +404,22 @@ export class PanelButtonCard extends LitElement {
     actions?: Array<{ title?: string; action: (ev?: Event) => void; icon?: string }>,
     addedAction?: Array<{ action: (ev?: Event) => void; icon?: string }>
   ): TemplateResult {
-    const styleTitle = {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 'var(--vic-gutter-gap)',
-      color: 'var(--secondary-text-color)',
-    };
     return html` <div class="header-row">
       ${actions?.map(
         (action) =>
           html` <div class="icon-title" @click=${(ev: Event) => action.action(ev)}>
-            <ha-icon icon=${ifDefined(action.icon)}></ha-icon>
+            ${ifDefined(action.icon) ? html`<ha-icon-button .path=${action.icon}></ha-icon-button>` : nothing}
             <span>${action.title}</span>
           </div>`
       )}
-      <div style=${styleMap(styleTitle)}>${title} ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}</div>
+      <div class="header-title">${title} ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}</div>
       ${addedAction?.map(
         (action) =>
-          html` <ha-icon-button class="action-icon" @click=${(ev: Event) => action.action(ev)} .path=${ICON.CODE_JSON}>
+          html` <ha-icon-button
+            class="header-yaml-icon"
+            @click=${(ev: Event) => action.action(ev)}
+            .path=${ICON.CODE_JSON}
+          >
           </ha-icon-button>`
       )}
     </div>`;
@@ -542,6 +539,7 @@ export class PanelButtonCard extends LitElement {
           ${pickerPrimaryIcon.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
         </div>
         ${notifyTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
+        ${colorTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
         <div class="sub-header">
           <div>Secondary state display</div>
         </div>
@@ -551,7 +549,6 @@ export class PanelButtonCard extends LitElement {
         ${pickerSecondaryState.map((config) =>
           this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content')
         )}
-        ${colorTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
       </div>
     `;
 
