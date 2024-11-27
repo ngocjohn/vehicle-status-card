@@ -89,7 +89,7 @@ Group indicators allow you toThis is useful when you want to track the status of
 
 For instance, you could create a group indicator to monitor the lock status of all car doors, or to show the pressure levels of all tires at once. Group indicators help to keep the interface cleaner and more organized by bundling similar entities together.
 
-![Indicators](assets/config-indicators.gif)
+![Indicators](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-indicators.gif)
 
 
 # Range Info Bars
@@ -104,7 +104,7 @@ Range info bars are used to display progress bars for entities that represent a 
 
 Range info bars help users keep track of their vehicle’s vital statistics in an intuitive and easy-to-read format, ensuring they always know when they need to refuel or recharge.
 
-![Range info bars](assets/config-range-info.gif)
+![Range info bars](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-range-info.gif)
 
 
 # Images slides
@@ -134,7 +134,7 @@ The latest release introduces advanced swiper configuration options, allowing fo
   - `fade`: A smooth fade between images.
   - `coverflow`: A 3D coverflow effect that adds depth to the transition.
 
-![Images slides](assets/config-images.gif)
+![Images slides](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-images.gif)
 
 
 # Mini map
@@ -149,7 +149,7 @@ The mini map feature displays a real-time map within the card, tracking the loca
 
 The mini map provides an easy way to keep track of where your vehicle is at all times, directly on the card.
 
-![Config mini map](assets/config-mini-map.gif)
+![Config mini map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-mini-map.gif)
 
 
 # Button card
@@ -186,7 +186,7 @@ The **Action Type** feature allows you to define what action should be triggered
 - `navigate`: Navigates to a specified path or view in the interface.
 - `url`: Opens a specific URL.
 
-![Config button](assets/config-button.gif)
+![Config button](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-button.gif)
 
 ## Default Card
 
@@ -200,7 +200,7 @@ The default card configuration allows you to display a set of related entities w
 
 The default card is perfect for grouping and displaying related entities in one place, giving users an at-a-glance view of the vehicle’s key metrics or controls.
 
-![Config Default Card](assets/config-default-card.gif)
+![Config Default Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-default-card.gif)
 
 ## Custom Card
 
@@ -214,7 +214,7 @@ The custom card configuration allows you to integrate any Home Assistant-support
 
 This powerful feature allows you to extend the functionality of the vehicle status card by adding any custom elements or controls that fit your needs.
 
-![Config Custom Card](assets/config-custom-card.gif)
+![Config Custom Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-custom-card.gif)
 
 ## Tire Pressures Card
 
@@ -240,7 +240,7 @@ The card supports complete customization, from setting the vehicle's background 
 - **Image Size & Position**: Customize the size and position of the background image, ensuring that the tire pressure indicators fit well within the image.
 - **Orientation**: Choose whether the layout should be horizontal or vertical, allowing you to display the tires in the correct orientation based on the background image.
 
-  ![Config Tire Pressures Card](assets/config-tire-card.gif)
+  ![Config Tire Pressures Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-tire-card.gif)
 
 
 # Layout configurations
@@ -258,7 +258,7 @@ The layout configuration controls how elements within the vehicle status card ar
 
 This configuration gives you full flexibility to design the card’s layout and optimize it for different devices or user preferences.
 
-![Config layout](assets/config-layout.gif)
+![Config layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout.gif)
 
 
 <!--README-CONTENT-END-->
