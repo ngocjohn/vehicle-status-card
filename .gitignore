@@ -12,3 +12,4 @@ src/test/
 .DS_Store
 *.wiki
 .hass-config/
+build/

@@ -72,13 +72,22 @@ const plugins = [
 export default [
   {
     input: 'src/vehicle-status-card.ts',
-    output: {
-      dir: 'dist',
-      format: 'es',
-      sourcemap: dev ? true : false,
-      inlineDynamicImports: true,
-      banner: custombanner,
-    },
+    output: [
+      {
+        dir: './dist',
+        format: 'es',
+        sourcemap: dev ? true : false,
+        inlineDynamicImports: true,
+        banner: custombanner,
+      },
+      {
+        dir: './build',
+        format: 'es',
+        sourcemap: false,
+        inlineDynamicImports: true,
+        banner: custombanner,
+      },
+    ],
     watch: {
       exclude: 'node_modules/**',
     },
