@@ -10,7 +10,7 @@
 <a href="#"><img src="https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/vehicle-status-header.gif" style="border-radius: 8px"></a>
 
 
-##
+---
 
 <p style="text-align: justify;">This is a custom Home Assistant card designed to display detailed status information about vehicles. It provides several features such as indicators, range progress bars, buttons for interacting with the vehicle's entities, and a mini map to track devices. The card is highly customizable with options to display various types of data and layouts.</p>
 
@@ -40,9 +40,9 @@
 
 </details>
 
-## Installation
+# Installation
 
-### [HACS](https://hacs.xyz) (Home Assistant Community Store)
+## [HACS](https://hacs.xyz) (Home Assistant Community Store)
 
 1. Go to HACS page on your Home Assistant instance
 2. Add this repository via HACS Custom repositories [How to add Custom Repositories](https://hacs.xyz/docs/faq/custom_repositories/)
@@ -59,7 +59,7 @@ https://github.com/ngocjohn/vehicle-status-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ngocjohn&repository=vehicle-status-card&category=plugin)
 
-### Manual
+## Manual
 
 <details>
   <summary>Click to expand installation instructions</summary>
@@ -75,25 +75,27 @@ https://github.com/ngocjohn/vehicle-status-card
 
 </details>
 
-## Configuration
+# Configuration
+<!--REDME-CONTENT-START-->
 
-## Indicators Configuration
+# Indicators Configuration
 
-- **Single Indicators**
+## Single Indicators
 
-  Single indicators are used to display the state of a single entity, such as a sensor or binary sensor, on the card's header. These indicators are ideal for showcasing key information like vehicle battery level, engine status, or lock state. Each single indicator displays the current state of the entity with an optional icon for better visualization.
+Single indicators are used to display the state of a single entity, such as a sensor or binary sensor, on the card's header. These indicators are ideal for showcasing key information like vehicle battery level, engine status, or lock state. Each single indicator displays the current state of the entity with an optional icon for better visualization.
 
-  For example, a single indicator can be used to show whether a car door is locked or unlocked, or to display the remaining battery percentage of the vehicle.
+For example, a single indicator can be used to show whether a car door is locked or unlocked, or to display the remaining battery percentage of the vehicle.
 
-- **Group Indicators**
+## Group Indicators
 
-  Group indicators allow you to combine multiple entities under a single group. This is useful when you want to track the status of related entities together, such as all door locks or all tire pressures. Group indicators display a summary view of the entities they contain, giving you a quick snapshot of their states.
+Group indicators allow you toThis is useful when you want to track the status of related entities together, such as all door locks or all tire pressures. Group indicators display a summary view of the entities they contain, giving you a quick snapshot of their states.
 
-  For instance, you could create a group indicator to monitor the lock status of all car doors, or to show the pressure levels of all tires at once. Group indicators help to keep the interface cleaner and more organized by bundling similar entities together.
+For instance, you could create a group indicator to monitor the lock status of all car doors, or to show the pressure levels of all tires at once. Group indicators help to keep the interface cleaner and more organized by bundling similar entities together.
 
-![Indicators](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-indicators.gif)
+![Indicators](assets/config-indicators.gif)
 
-## Range Info Bars
+
+# Range Info Bars
 
 Range info bars are used to display progress bars for entities that represent a measurable range, such as fuel levels, battery charge, or remaining range. These bars provide a visual representation of how much of a resource is left, making it easy to monitor critical vehicle metrics at a glance.
 
@@ -105,9 +107,10 @@ Range info bars are used to display progress bars for entities that represent a 
 
 Range info bars help users keep track of their vehicle’s vital statistics in an intuitive and easy-to-read format, ensuring they always know when they need to refuel or recharge.
 
-![Range info bars](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-range-info.gif)
+![Range info bars](assets/config-range-info.gif)
 
-## Image Slides
+
+# Images slides
 
 Image slides allow you to upload or link images that will be displayed in a rotating slideshow on the card. This feature can be used to showcase vehicle-related images, such as maps, dashboards, or even real-time snapshots from cameras.
 
@@ -121,7 +124,7 @@ Image slides allow you to upload or link images that will be displayed in a rota
 
 The latest release introduces advanced swiper configuration options, allowing for more control over how images are displayed.
 
-#### Swiper Configurable Options:
+### Swiper Configurable Options:
 
 - **Max Height**: Set the maximum height for the image slides.
 - **Max Width**: Set the maximum width for the image slides.
@@ -134,9 +137,10 @@ The latest release introduces advanced swiper configuration options, allowing fo
   - `fade`: A smooth fade between images.
   - `coverflow`: A 3D coverflow effect that adds depth to the transition.
 
-  ![Images slides](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-images.gif)
+![Images slides](assets/config-images.gif)
 
-## Mini Map
+
+# Mini map
 
 The mini map feature displays a real-time map within the card, tracking the location of a `device_tracker` entity. This is especially useful for monitoring the current location of your vehicle or other trackable devices.
 
@@ -148,9 +152,10 @@ The mini map feature displays a real-time map within the card, tracking the loca
 
 The mini map provides an easy way to keep track of where your vehicle is at all times, directly on the card.
 
-  ![Config mini map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-mini-map.gif)
+![Config mini map](assets/config-mini-map.gif)
 
-# Button Card
+
+# Button card
 
 The button card is a core feature that provides interactive buttons to control or monitor specific entities in your vehicle. Each button can be customized with a primary label, secondary information, icons, and notifications.
 
@@ -171,18 +176,20 @@ A single button allows you to represent an entity or action related to your vehi
 The **Action Type** feature allows you to define what action should be triggered when interacting with a button. Each button can have multiple action types configured, giving you more control over how the button behaves. You can specify different actions for tapping, holding, or double tapping the button.
 
 #### Supported Action Types:
+
 - **tap_action**: The action triggered when the button is tapped.
 - **hold_action**: The action triggered when the button is held down.
 - **double_tap_action**: The action triggered when the button is double tapped.
 
 #### Available Actions:
+
 - `more-info`: Opens the more-info dialog of the entity.
 - `toggle`: Toggles the state of the entity (e.g., from `on` to `off`).
 - `call-service`: Calls a Home Assistant service (e.g., `lock.lock`).
 - `navigate`: Navigates to a specified path or view in the interface.
 - `url`: Opens a specific URL.
 
-![Config button](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-button.gif)
+![Config button](assets/config-button.gif)
 
 ## Default Card
 
@@ -196,7 +203,7 @@ The default card configuration allows you to display a set of related entities w
 
 The default card is perfect for grouping and displaying related entities in one place, giving users an at-a-glance view of the vehicle’s key metrics or controls.
 
-  ![Config Default Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-default-card.gif)
+![Config Default Card](assets/config-default-card.gif)
 
 ## Custom Card
 
@@ -210,7 +217,7 @@ The custom card configuration allows you to integrate any Home Assistant-support
 
 This powerful feature allows you to extend the functionality of the vehicle status card by adding any custom elements or controls that fit your needs.
 
-![Config Custom Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-custom-card.gif)
+![Config Custom Card](assets/config-custom-card.gif)
 
 ## Tire Pressures Card
 
@@ -236,9 +243,10 @@ The card supports complete customization, from setting the vehicle's background 
 - **Image Size & Position**: Customize the size and position of the background image, ensuring that the tire pressure indicators fit well within the image.
 - **Orientation**: Choose whether the layout should be horizontal or vertical, allowing you to display the tires in the correct orientation based on the background image.
 
-  ![Config Tire Pressures Card](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-tire-card.gif)
+  ![Config Tire Pressures Card](assets/config-tire-card.gif)
 
-## Layout Configuration
+
+# Layout configurations
 
 The layout configuration controls how elements within the vehicle status card are displayed, including themes, grid layout, and visibility of certain components.
 
@@ -253,11 +261,11 @@ The layout configuration controls how elements within the vehicle status card ar
 
 This configuration gives you full flexibility to design the card’s layout and optimize it for different devices or user preferences.
 
-![Config layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout.gif)
+![Config layout](assets/config-layout.gif)
+
+
+<!--REDME-CONTENT-END-->
 ---
-
-###
-
 &copy; 2024 Viet Ngoc
 
 [https://github.com/ngocjohn/](https://github.com/ngocjohn/)
