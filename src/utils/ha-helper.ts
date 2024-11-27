@@ -175,14 +175,13 @@ export async function getTireCard(
   const rearLeftEntity = tireCard?.rear_left?.entity; // Missing entity check here
   const rearRightEntity = tireCard?.rear_right?.entity;
 
-  // If the rear_left entity is missing, set default "N/A" state
-  const rearLeftState = rearLeftEntity
-    ? hass.states[rearLeftEntity]
+  // If the entity is missing, set default "N/A" state
+  const rearLeftState =
+    rearLeftEntity && hass.states[rearLeftEntity]
       ? tireCard.rear_left.attribute
         ? hass.formatEntityAttributeValue(hass.states[rearLeftEntity], tireCard.rear_left.attribute)
         : hass.formatEntityState(hass.states[rearLeftEntity])
-      : 'N/A' // If the entity exists but has no state, set 'N/A'
-    : 'N/A'; // If the entity is missing, set 'N/A'
+      : 'N/A'; // If the entity exists but has no state, set 'N/A'
 
   const frontLeftState =
     frontLeftEntity && hass.states[frontLeftEntity]
@@ -210,6 +209,11 @@ export async function getTireCard(
   const rearLeftName = tireCard.rear_left?.name || 'Rear Left';
   const rearRightName = tireCard.rear_right?.name || 'Rear Right';
 
+  const frontLeftColor = tireCard.front_left?.color || '';
+  const frontRightColor = tireCard.front_right?.color || '';
+  const rearLeftColor = tireCard.rear_left?.color || '';
+  const rearRightColor = tireCard.rear_right?.color || '';
+
   tireCardItem = {
     title: tireCard.title || '',
     background: tireCard.background || '',
@@ -218,10 +222,10 @@ export async function getTireCard(
     top: tireCard.top || 50,
     left: tireCard.left || 50,
     tires: {
-      front_left: { state: frontLeftState, name: frontLeftName },
-      front_right: { state: frontRightState, name: frontRightName },
-      rear_left: { state: rearLeftState, name: rearLeftName },
-      rear_right: { state: rearRightState, name: rearRightName },
+      front_left: { state: frontLeftState, name: frontLeftName, color: frontLeftColor },
+      front_right: { state: frontRightState, name: frontRightName, color: frontRightColor },
+      rear_left: { state: rearLeftState, name: rearLeftName, color: rearLeftColor },
+      rear_right: { state: rearRightState, name: rearRightName, color: rearRightColor },
     },
     horizontal: tireCard.horizontal || false,
   };

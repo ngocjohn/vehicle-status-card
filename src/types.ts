@@ -192,6 +192,7 @@ export interface TireEntityConfig {
   entity: string;
   attribute: string;
   name: string;
+  color?: string;
 }
 
 export interface TireTemplateConfig {
@@ -219,18 +220,22 @@ export type TireEntity = {
     front_left: {
       state: string;
       name: string;
+      color: string;
     };
     front_right: {
       state: string;
       name: string;
+      color: string;
     };
     rear_left: {
       state: string;
       name: string;
+      color: string;
     };
     rear_right: {
       state: string;
       name: string;
+      color: string;
     };
   };
   horizontal: boolean;

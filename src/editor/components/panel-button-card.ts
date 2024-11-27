@@ -1050,6 +1050,7 @@ export class PanelButtonCard extends LitElement {
     const entity = tireConfig?.entity || '';
     const attribute = tireConfig?.attribute || '';
     const name = tireConfig?.name || '';
+    const color = tireConfig?.color || '';
     const attributeOptions = entity ? Object.keys(this.hass.states[entity]?.attributes || {}) : [];
     const attributeOpts = [...attributeOptions.map((attr) => ({ value: attr, label: attr }))];
 
@@ -1063,6 +1064,18 @@ export class PanelButtonCard extends LitElement {
 
     const attributePicker = [{ value: attribute, items: attributeOpts, pickerType: 'attribute' as 'attribute' }];
 
+    const colorTemplate = [
+      {
+        value: color,
+        pickerType: 'template',
+        configValue: 'color',
+        options: {
+          label: 'Color template',
+          helperText: 'Template for the state color',
+        },
+      },
+    ];
+
     return html`
       <div class="sub-header">
         <div>${tirePosition.replace('_', ' ').toUpperCase()}</div>
@@ -1070,6 +1083,9 @@ export class PanelButtonCard extends LitElement {
       <div class="sub-content">
         ${tirePickers.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
         ${entity ? attributePicker.map((config) => this.generateItemPicker({ ...config, ...sharedConfig })) : nothing}
+      </div>
+      <div class="sub-content">
+        ${colorTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
       </div>
     `;
   }
