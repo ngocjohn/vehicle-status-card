@@ -14,10 +14,9 @@ import {
   mdiCodeJson,
 } from '@mdi/js';
 
-import { repository, version } from '../../package.json';
+import { version } from '../../package.json';
 
 export const CARD_VERSION = `v${version}`;
-export const REPOSITORY = repository.repo;
 
 export const DEFAULT_CONFIG = {
   button_card: [

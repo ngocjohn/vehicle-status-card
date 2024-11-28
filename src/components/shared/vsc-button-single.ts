@@ -1,17 +1,16 @@
+// External
+import { forwardHaptic } from 'custom-card-helpers';
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-// Lit
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
-
-// utils
 import tinycolor from 'tinycolor2';
 // local
 import { ButtonCardEntityItem, HA as HomeAssistant } from '../../types';
-// styles
-import cardstyles from '../../css/card.css';
 import { addActions } from '../../utils';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../utils/ws-templates';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
+// styles
+import cardstyles from '../../css/card.css';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -59,7 +58,10 @@ export class VehicleButtonSingle extends LitElement {
     if (actionEl && buttonType === 'action' && actionConfig) {
       addActions(actionEl, actionConfig);
     } else {
-      actionEl?.addEventListener('click', this._handleNavigate.bind(this));
+      actionEl?.addEventListener('click', (event) => {
+        // Ensure clicks on child elements like "secondary" trigger this event
+        this._handleNavigate(event);
+      });
     }
   }
 
@@ -210,8 +212,9 @@ export class VehicleButtonSingle extends LitElement {
     const iconBackground = color ? this._setColorAlpha(color) : this._getBackgroundColors();
 
     return html`
-      <div class="grid-item click-shrink">
-        <div class="click-container" id="actionBtn">
+      <div class="grid-item" id="actionBtn">
+        <ha-ripple></ha-ripple>
+        <div class="click-container click-shrink">
           <div class="item-icon">
             <div class="icon-background" style=${`background-color: ${iconBackground}`}>
               <ha-state-icon
@@ -221,15 +224,12 @@ export class VehicleButtonSingle extends LitElement {
                 style=${color ? `color: ${color}` : ''}
               ></ha-state-icon>
             </div>
-
             <div class="item-notify" ?hidden=${!notify || hideNotify}>
               <ha-icon icon="mdi:alert-circle"></ha-icon>
             </div>
           </div>
           <div class="item-content">
-            <div class="primary">
-              <span>${primary}</span>
-            </div>
+            <span class="primary">${primary}</span>
             <span class="secondary">${state}</span>
           </div>
         </div>
@@ -237,7 +237,9 @@ export class VehicleButtonSingle extends LitElement {
     `;
   }
 
-  private _handleNavigate(): void {
+  private _handleNavigate(event: Event): void {
+    forwardHaptic('light');
+    event.stopPropagation();
     this._card._handleClick(this._index);
   }
 }

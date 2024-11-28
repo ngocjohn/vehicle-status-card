@@ -1,8 +1,8 @@
 import { LovelaceConfig } from 'custom-card-helpers';
 
-import { REPOSITORY } from '../const/const';
 import { VehicleStatusCardConfig } from '../types';
-export interface HuiRootElement extends HTMLElement {
+
+interface HuiRootElement extends HTMLElement {
   lovelace: {
     config: LovelaceConfig;
     current_view: number;
@@ -27,32 +27,6 @@ export const loadHaComponents = () => {
   }
 };
 
-export const loadCustomElement = async <T = any>(name: string) => {
-  const Component = customElements.get(name) as T;
-  if (Component) {
-    return Component;
-  }
-  await customElements.whenDefined(name);
-  return customElements.get(name) as T;
-};
-
-export async function fetchLatestReleaseTag() {
-  const apiUrl = `https://api.github.com/repos/${REPOSITORY}/releases/latest`;
-
-  try {
-    const response = await fetch(apiUrl);
-    if (response.ok) {
-      const data = await response.json();
-      const releaseTag = data.tag_name;
-      return releaseTag;
-    } else {
-      console.error('Failed to fetch the latest release tag:', response.statusText);
-    }
-  } catch (error) {
-    console.error('Error fetching the latest release tag:', error);
-  }
-}
-
 export const stickyPreview = () => {
   // Change the default preview element to be sticky
   const root = document.querySelector('body > home-assistant')?.shadowRoot;
@@ -64,15 +38,7 @@ export const stickyPreview = () => {
   }
 };
 
-export const getContentSlot = () => {
-  const root = document.querySelector('body > home-assistant')?.shadowRoot;
-  const dialog = root?.querySelector('hui-dialog-edit-card')?.shadowRoot;
-  const contentSlot = dialog?.querySelector('ha-dialog > div.content') as HTMLSlotElement;
-
-  return contentSlot;
-};
-
-export const getLovelace = () => {
+const getLovelace = () => {
   const root = document.querySelector('home-assistant')?.shadowRoot?.querySelector('home-assistant-main')?.shadowRoot;
 
   const resolver =
@@ -92,7 +58,7 @@ export const getLovelace = () => {
   return null;
 };
 
-export const getDialogEditor = () => {
+const getDialogEditor = () => {
   const root = document.querySelector('home-assistant')?.shadowRoot;
   const editor = root?.querySelector('hui-dialog-edit-card');
   if (editor) {
@@ -118,6 +84,23 @@ export function convertSecondaryToObject(buttoncards: any[]) {
     }
 
     return updatedButtoncard;
+  });
+}
+
+export function convertRangeEntityToObject(rangeEntity: any[]) {
+  return rangeEntity.map((entity) => {
+    // Clone the entity to avoid mutating the original
+    const updatedEntity = { ...entity };
+
+    // If entity is an array, convert it to the first object or null
+    if (Array.isArray(updatedEntity.energy_level)) {
+      updatedEntity.energy_level = updatedEntity.energy_level.length > 0 ? updatedEntity.energy_level[0] : null;
+    }
+    if (Array.isArray(updatedEntity.range_level)) {
+      updatedEntity.range_level = updatedEntity.range_level.length > 0 ? updatedEntity.range_level[0] : null;
+    }
+
+    return updatedEntity;
   });
 }
 

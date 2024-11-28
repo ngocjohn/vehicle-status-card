@@ -349,6 +349,7 @@ header h1 {
   overflow: hidden;
   /* height: 100%; */
   flex: 1;
+  cursor: pointer;
 }
 
 .grid-item .item-content .primary {
@@ -357,7 +358,7 @@ header h1 {
   white-space: nowrap;
   position: relative;
   text-overflow: ellipsis;
-  overflow: hidden;
+
 }
 
 .grid-item .item-content .secondary {
@@ -699,7 +700,7 @@ dialog::backdrop {
 }
 
 .click-shrink:active {
-  transform: scale(0.9);
+  transform: scale(1.1);
 }
 
 

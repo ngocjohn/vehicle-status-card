@@ -1,17 +1,24 @@
+// External
+import { fireEvent, LovelaceCardEditor, LovelaceConfig } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
 
-// Custom card helpers
-import { fireEvent, LovelaceCardEditor, LovelaceConfig } from 'custom-card-helpers';
-
 import { CARD_VERSION } from '../const/const';
-import editorcss from '../css/editor.css';
 import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
-import { Picker, TabBar } from '../utils/create';
-import { _saveConfig, convertSecondaryToObject, loadHaComponents, stickyPreview } from '../utils/loader';
+import {
+  _saveConfig,
+  convertRangeEntityToObject,
+  convertSecondaryToObject,
+  loadHaComponents,
+  stickyPreview,
+  Create,
+} from '../utils';
+// Import all components
 import './components/';
 import { PanelImagesEditor, PanelIndicator, PanelButtonCard, PanelEditorUI, PanelRangeInfo } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
+// Import styles
+import editorcss from '../css/editor.css';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
@@ -61,28 +68,108 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     this._handleFirstConfig(this._config);
   }
 
+  // private async _handleFirstConfig(config: VehicleStatusCardConfig): Promise<void> {
+  //   const buttonCard = config.button_card;
+  //   const rangeInfo = config.range_info;
+
+  //   const isButtonValid = buttonCard.every(
+  //     (button) =>
+  //       button.button.secondary !== null &&
+  //       typeof button.button.secondary === 'object' &&
+  //       !Array.isArray(button.button.secondary)
+  //   );
+
+  //   const isRangeValid = rangeInfo.map((range) => {
+  //     let valid = true;
+  //     const { energy_level, range_level } = range;
+  //     const isEnergyValid = energy_level !== null && typeof energy_level === 'object' && !Array.isArray(energy_level);
+  //     const isRangeLevelValid = range_level !== null && typeof range_level === 'object' && !Array.isArray(range_level);
+  //     if (!isEnergyValid || !isRangeLevelValid) {
+  //       valid = false;
+  //     }
+  //     return valid;
+  //   });
+
+  //   console.log('Button Valid:', isButtonValid, 'Range Valid:', isRangeValid);
+
+  //   if (!isButtonValid) {
+  //     const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
+  //     const newButtonConfig = convertSecondaryToObject(buttonCard);
+  //     this._config = { ...this._config, button_card: newButtonConfig, card_id: cardId };
+  //     fireEvent(this, 'config-changed', { config: this._config });
+  //     console.log('converted button card', cardId);
+  //     await _saveConfig(cardId, this._config);
+  //     console.log('Saved config');
+  //   } else if (!isRangeValid) {
+  //     const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
+  //     const newRangeConfig = convertRangeEntityToObject(rangeInfo);
+  //     this._config = { ...this._config, range_info: newRangeConfig, card_id: cardId };
+  //     fireEvent(this, 'config-changed', { config: this._config });
+  //     console.log('converted range info', cardId);
+  //     await _saveConfig(cardId, this._config);
+  //     console.log('Saved config');
+  //   } else if (isButtonValid && isRangeValid && config.card_id !== undefined) {
+  //     console.log('Valid config');
+  //     this._config = { ...config, card_id: undefined };
+  //     fireEvent(this, 'config-changed', { config: this._config });
+  //     console.log('removed cardId');
+  //     return;
+  //   }
+  // }
   private async _handleFirstConfig(config: VehicleStatusCardConfig): Promise<void> {
-    const buttonCard = config.button_card;
-    const isValid = buttonCard.every(
+    const { button_card: buttonCard, range_info: rangeInfo } = config;
+
+    // Validate button configuration
+    const isButtonValid = buttonCard.every(
       (button) =>
         button.button.secondary !== null &&
         typeof button.button.secondary === 'object' &&
         !Array.isArray(button.button.secondary)
     );
-    if (isValid && config.card_id !== undefined) {
-      console.log('Valid config');
-      this._config = { ...config, card_id: undefined };
-      fireEvent(this, 'config-changed', { config: this._config });
-      console.log('removed cardId');
-      return;
-    } else if (!isValid) {
+
+    // Validate range configuration
+    const isRangeValid = rangeInfo.every(({ energy_level, range_level }) =>
+      [energy_level, range_level].every((level) => level !== null && typeof level === 'object' && !Array.isArray(level))
+    );
+
+    console.log('Button Valid:', isButtonValid, 'Range Valid:', isRangeValid);
+
+    // If button configuration is invalid
+    if (!isButtonValid) {
       const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
       const newButtonConfig = convertSecondaryToObject(buttonCard);
-      this._config = { ...this._config, button_card: newButtonConfig, card_id: cardId };
-      fireEvent(this, 'config-changed', { config: this._config });
-      console.log('converted button card', cardId);
-      await _saveConfig(cardId, this._config);
-      console.log('Saved config');
+      this._updateConfig({ button_card: newButtonConfig, card_id: cardId });
+      console.log('Converted button card and saved:', cardId);
+      return;
+    }
+
+    // If range configuration is invalid
+    if (!isRangeValid) {
+      const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
+      const newRangeConfig = convertRangeEntityToObject(rangeInfo);
+      this._updateConfig({ range_info: newRangeConfig, card_id: cardId });
+      console.log('Converted range info and saved:', cardId);
+      return;
+    }
+
+    // If everything is valid but card_id exists
+    if (isButtonValid && isRangeValid && config.card_id !== undefined) {
+      console.log('Valid config, removing cardId');
+      this._updateConfig({ ...config, card_id: undefined });
+      return;
+    }
+
+    console.log('Configuration is already valid.');
+  }
+
+  // Helper method to update configuration and fire events
+  private async _updateConfig(newConfig: Partial<VehicleStatusCardConfig>): Promise<void> {
+    this._config = { ...this._config, ...newConfig };
+    fireEvent(this, 'config-changed', { config: this._config });
+
+    if (newConfig.card_id) {
+      await _saveConfig(newConfig.card_id, this._config);
+      console.log('Saved config with cardId:', newConfig.card_id);
     }
   }
 
@@ -214,7 +301,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ];
 
     return html`<div class="card-config">
-      ${TabBar({
+      ${Create.TabBar({
         activeTabIndex: this._indicatorTabIndex || 0,
         onTabChange: (index: number) => (this._indicatorTabIndex = index),
         tabs: tabsConfig,
@@ -322,7 +409,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ];
 
     const createPickers = (config: any, sharedConfig: any) => {
-      return Picker({ ...config, ...sharedConfig });
+      return Create.Picker({ ...config, ...sharedConfig });
     };
 
     const buttonGridWrapper = html`
@@ -379,7 +466,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ];
 
     return html`<div class="card-config">
-      ${TabBar({
+      ${Create.TabBar({
         activeTabIndex: this.activeTabIndex || 0,
         onTabChange: (index: number) => (this.activeTabIndex = index),
         tabs: tabsConfig,
@@ -484,7 +571,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ];
 
     const createPickers = (config: any) => {
-      return Picker({ ...sharedConfig, ...config });
+      return Create.Picker({ ...sharedConfig, ...config });
     };
 
     return html`

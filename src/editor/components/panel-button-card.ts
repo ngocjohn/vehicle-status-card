@@ -18,7 +18,7 @@ import {
   TireTemplateConfig,
   TireEntityConfig,
 } from '../../types';
-import * as Create from '../../utils/create';
+import { Create } from '../../utils';
 import { uploadImage } from '../../utils/ha-helper';
 import { VehicleStatusCardEditor } from '../editor';
 import {

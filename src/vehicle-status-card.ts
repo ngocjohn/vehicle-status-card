@@ -43,6 +43,7 @@ export class VehicleStatusCard extends LitElement {
   @state() public _mapData?: MapData;
 
   @state() public _activeCardIndex: null | number | string = null;
+  @state() _currentSwipeIndex?: number;
   @state() public _buttonReady = false;
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
@@ -194,7 +195,13 @@ export class VehicleStatusCard extends LitElement {
     const visibleButtons = this._buttonCards.filter((button) => !button.hide_button);
     return html`
       <div id="button_card">
-        <vehicle-buttons-grid .hass=${this._hass} .card=${this} .config=${this._config} .buttons=${visibleButtons}>
+        <vehicle-buttons-grid
+          .hass=${this._hass}
+          .card=${this}
+          .config=${this._config}
+          .buttons=${visibleButtons}
+          ._cardCurrentSwipeIndex=${this._currentSwipeIndex}
+        >
         </vehicle-buttons-grid>
       </div>
     `;
@@ -245,8 +252,9 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _renderRangeInfo(): TemplateResult {
-    if (!this._config.range_info) return html``;
-    return html`<vsc-range-info .hass=${this._hass} .config=${this._config}></vsc-range-info>`;
+    const { range_info } = this._config;
+    if (!range_info) return html``;
+    return html`<vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>`;
   }
 
   /* -------------------------- CUSTOM CARD RENDERING -------------------------- */

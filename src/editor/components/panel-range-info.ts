@@ -21,7 +21,6 @@ export class PanelRangeInfo extends LitElement {
 
   @state() private _activeIndexItem: number | null = null;
   @state() private _activeColorPicker: number | null = null;
-  @state() private _newColor: string = '';
   @state() private _picker!: iro.ColorPicker;
 
   @state() private _yamlEditorActive = false;
@@ -81,7 +80,6 @@ export class PanelRangeInfo extends LitElement {
             hexInput.value = color.hslString;
             break;
         }
-        this._newColor = hexInput.value;
       }
 
       // Clear the color change timeout
@@ -91,8 +89,8 @@ export class PanelRangeInfo extends LitElement {
 
       // Set a new color change timeout
       this._colorChangeTimeout = window.setTimeout(() => {
-        this._handleColorOnChange(this._newColor);
-      }, 1000);
+        this._handleColorOnChange(hexInput.value);
+      }, 500);
     });
 
     // Add an event listener to the input field to allow manual changes
@@ -129,28 +127,27 @@ export class PanelRangeInfo extends LitElement {
     `;
   }
 
-  private _toggleAction(action: 'add' | 'delete-item' | 'edit-item', index?: number): () => void {
+  private _toggleAction(action: 'add' | 'delete-item' | 'edit-item' | 'edit-yaml', index?: number): () => void {
     return () => {
       const updateChanged = (update: any) => {
         fireEvent(this, 'config-changed', { config: { ...this.config, range_info: update } });
-      };
-
-      const hideAllDeleteButtons = () => {
-        const deleteButtons = this.shadowRoot?.querySelectorAll('.card-actions');
-        deleteButtons?.forEach((button) => {
-          button.classList.add('hidden');
-        });
       };
       console.log('Action', action, 'Index', index);
       const handleAction = () => {
         switch (action) {
           case 'add':
-            hideAllDeleteButtons();
+            const randomHex = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
             const rangeInfo = [...(this.config.range_info || [])];
             const newRangeInfo = {
-              energy_level: [{ entity: '', attribute: '', icon: '' }],
-              range_level: [{ entity: '', attribute: '' }],
-              progress_color: '',
+              energy_level: {
+                entity: '',
+                attribute: '',
+              },
+              range_level: {
+                entity: '',
+                attribute: '',
+              },
+              progress_color: randomHex,
             };
             rangeInfo.push(newRangeInfo);
             updateChanged(rangeInfo);
@@ -211,6 +208,7 @@ export class PanelRangeInfo extends LitElement {
           <span>Back to list</span>
         </div>
         <div>Range Info #${index + 1}</div>
+
       </div>
         <div class="sub-panel-config" data-index=${index}>
           ${Object.keys(configContent).map(
@@ -249,8 +247,8 @@ export class PanelRangeInfo extends LitElement {
         ? html`
             <div class="range-info-list">
               ${repeat(this.config.range_info, (rangeItem: RangeInfoConfig, index: number) => {
-                const entity = rangeItem.energy_level.map((item) => item.entity).join(', ');
-                const icon = rangeItem.energy_level.map((item) => item.icon).join(', ');
+                const entity = rangeItem.energy_level.entity;
+                const icon = rangeItem.energy_level.icon;
                 const progressColor = rangeItem.progress_color;
                 return html`
                   <div class="item-config-row" data-index=${index}>
@@ -351,7 +349,7 @@ export class PanelRangeInfo extends LitElement {
       configIndex: index,
     };
 
-    const energyEntry = this.config.range_info[index].energy_level[0] as RangeItemConfig;
+    const energyEntry = this.config.range_info[index].energy_level as RangeItemConfig;
     const energyEntity = energyEntry.entity || '';
     const energyIcon = energyEntry.icon || '';
 
@@ -395,7 +393,7 @@ export class PanelRangeInfo extends LitElement {
       configIndex: index,
     };
 
-    const rangeEntry = this.config.range_info[index].range_level[0] as RangeItemConfig;
+    const rangeEntry = this.config.range_info[index].range_level as RangeItemConfig;
     const rangeEntity = rangeEntry?.entity;
     const entityAttrs = rangeEntity ? Object.keys(this.hass.states[rangeEntity].attributes) : [];
 
@@ -448,7 +446,6 @@ export class PanelRangeInfo extends LitElement {
       <div id="values"></div>
       <input id="hexInput"></input>
       <div class="item-actions">
-        <ha-button @click=${() => this._handleNewColor(index)}>Save</ha-button>
         <ha-button @click=${() => (this._activeColorPicker = null)}>Cancel</ha-button>
         <ha-button @click=${() => this._picker.color.reset()}>Reset</ha-button>
       </div>
@@ -458,21 +455,6 @@ export class PanelRangeInfo extends LitElement {
     </div>
     `;
     return this._activeColorPicker === index ? colorPicker : defaultContent;
-  }
-
-  private _handleNewColor(index: number): void {
-    if (!this._newColor) {
-      return;
-    }
-    const target = {
-      configType: 'progress_color',
-      value: this._newColor,
-      index: index,
-    };
-    this._valueChanged({ target });
-    console.log(target);
-    this._newColor = '';
-    this.requestUpdate();
   }
 
   private _toggleColorPicker(index: number, color: string): void {
@@ -524,9 +506,9 @@ export class PanelRangeInfo extends LitElement {
       console.log('Updates', updates);
     } else if (configType === 'energy_level' || configType === 'range_level') {
       // Update the entity or attribute value
-      const rangeLevel = rangeInfoItem[configType][0];
+      const rangeLevel = rangeInfoItem[configType];
       rangeLevel[configValue] = newValue;
-      rangeInfoItem[configType][0] = rangeLevel;
+      rangeInfoItem[configType] = rangeLevel;
       rangeInfo[index] = rangeInfoItem;
 
       updates.range_info = rangeInfo;

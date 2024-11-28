@@ -10,7 +10,7 @@ export function addActions(element: HTMLElement, config: ButtonActionConfig) {
   element.style.cursor = 'pointer';
 }
 
-export function sendActionEvent(element: HTMLElement, config: ButtonActionConfig, action: ActionType) {
+function sendActionEvent(element: HTMLElement, config: ButtonActionConfig, action: ActionType) {
   const tapAction = config?.tap_action || { action: 'more-info' };
   const doubleTapAction = config?.double_tap_action || { action: 'toggle' };
   const holdAction = config?.hold_action || { action: 'toggle' };
@@ -23,7 +23,7 @@ export function sendActionEvent(element: HTMLElement, config: ButtonActionConfig
   );
 }
 
-export function callAction(element: HTMLElement, config: ButtonActionConfig, action: ActionType) {
+function callAction(element: HTMLElement, config: ButtonActionConfig, action: ActionType) {
   setTimeout(() => {
     const event = new CustomEvent('hass-action', { bubbles: true, composed: true, detail: { action, config } });
     element.dispatchEvent(event);

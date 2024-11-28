@@ -5,74 +5,13 @@ import {
   ButtonCardEntity,
   DefaultCardConfig,
   HA as HomeAssistant,
-  RangeInfoEntity,
   TireTemplateConfig,
   TireEntity,
   ButtonCardConfig,
-  RangeInfoConfig,
   VehicleStatusCardConfig,
   MapData,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
-import { getAddressFromGoggle, getAddressFromOpenStreet } from './helpers';
-
-export async function getRangeInfo(
-  hass: HomeAssistant,
-  rangeConfig: RangeInfoConfig[]
-): Promise<RangeInfoEntity | void> {
-  if (!rangeConfig) {
-    return;
-  }
-  const rangeInfo: RangeInfoEntity = [];
-
-  for (const range of rangeConfig as RangeInfoConfig[]) {
-    if (!range.energy_level || !range.range_level) {
-      continue;
-    }
-
-    const energyLevel = range.energy_level[0];
-    const rangeLevel = range.range_level[0];
-    const progressColor = range.progress_color;
-
-    let energyState = '';
-    let rangeState = '';
-    let energyIcon = '';
-    let levelState = 0;
-
-    if (!energyLevel.entity) continue;
-    const energyEntity = energyLevel.entity;
-    const energyStateObj = hass.states[energyEntity];
-    if (!energyStateObj) continue;
-    energyState = energyLevel.attribute
-      ? hass.formatEntityAttributeValue(energyStateObj, energyLevel.attribute)
-      : hass.formatEntityState(energyStateObj);
-
-    energyIcon = energyLevel.icon ? energyLevel.icon : energyStateObj.attributes.icon || 'mdi:fuel';
-
-    levelState = parseInt(energyState);
-
-    if (!rangeLevel.entity) continue;
-
-    const rangeEntity = rangeLevel.entity;
-    const rangeStateObj = hass.states[rangeEntity];
-    if (!rangeStateObj) continue;
-
-    rangeState = rangeLevel.attribute
-      ? hass.formatEntityAttributeValue(rangeStateObj, rangeLevel.attribute)
-      : hass.formatEntityState(rangeStateObj);
-
-    rangeInfo.push({
-      energy: energyState,
-      energy_entity: energyEntity,
-      icon: energyIcon,
-      level: levelState,
-      level_entity: rangeEntity,
-      progress_color: progressColor,
-      range: rangeState,
-    });
-  }
-  return rangeInfo;
-}
 
 export async function createCardElement(
   hass: HomeAssistant,
@@ -411,4 +350,82 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
   const cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
   card._mapPopupLovelace = cardElement;
   return cardElement;
+}
+
+async function getAddressFromOpenStreet(lat: number, lon: number) {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2`;
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (response.ok) {
+      // Extract address components from the response
+      const address = {
+        streetNumber: data.address.house_number || '', // Retrieve street number
+        streetName: data.address.road || '',
+        sublocality: data.address.suburb || data.address.village || '',
+        city: data.address.city || data.address.town || '',
+        state: data.address.state || data.address.county || '',
+        country: data.address.country || '',
+        postcode: data.address.postcode || '',
+      };
+
+      return address;
+    } else {
+      throw new Error('Failed to fetch address OpenStreetMap');
+    }
+  } catch (error) {
+    // console.error('Error fetching address:', error);
+    return;
+  }
+}
+
+async function getAddressFromGoggle(lat: number, lon: number, apiKey: string) {
+  console.log('getAddressFromGoggle');
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK') {
+      const addressComponents = data.results[0].address_components;
+      const adress = {
+        streetNumber: '',
+        streetName: '',
+        sublocality: '',
+        city: '',
+      };
+
+      addressComponents.forEach((component) => {
+        if (component.types.includes('street_number')) {
+          adress.streetNumber = component.long_name;
+        }
+        if (component.types.includes('route')) {
+          adress.streetName = component.long_name;
+        }
+        if (component.types.includes('sublocality')) {
+          adress.sublocality = component.short_name;
+        }
+
+        if (component.types.includes('locality')) {
+          adress.city = component.long_name;
+        }
+        // Sometimes city might be under 'administrative_area_level_2' or 'administrative_area_level_1'
+        if (!adress.city && component.types.includes('administrative_area_level_2')) {
+          adress.city = component.short_name;
+        }
+        if (!adress.city && component.types.includes('administrative_area_level_1')) {
+          adress.city = component.short_name;
+        }
+      });
+
+      return adress;
+    } else {
+      throw new Error('No results found');
+    }
+  } catch (error) {
+    console.error('Error fetching address:', error);
+    return;
+  }
 }

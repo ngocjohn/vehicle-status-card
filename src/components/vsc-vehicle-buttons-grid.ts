@@ -1,17 +1,16 @@
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { customElement, property } from 'lit/decorators';
+import { customElement, property, state } from 'lit/decorators';
 // swiper
 import Swiper from 'swiper';
-import { Pagination, Grid } from 'swiper/modules';
+import { Pagination } from 'swiper/modules';
 import swipercss from 'swiper/swiper-bundle.css';
 
 // utils
-import { forwardHaptic } from 'custom-card-helpers';
 import { chunk } from 'es-toolkit';
 // local
 import cardstyles from '../css/card.css';
-import { ButtonCardEntity, ButtonCardEntityItem, HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { ButtonCardEntity, HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import './shared/vsc-button-single';
 
@@ -22,7 +21,9 @@ export class VehicleButtonsGrid extends LitElement {
   @property({ attribute: false }) config!: VehicleStatusCardConfig;
   @property({ type: Array }) buttons: ButtonCardEntity = [];
 
-  private swiper?: Swiper;
+  @state() swiper?: Swiper;
+  @state() private _cardCurrentSwipeIndex?: number;
+  @state() public activeSlideIndex: number = 0;
 
   protected async firstUpdated(changeProperties: PropertyValues): Promise<void> {
     super.firstUpdated(changeProperties);
@@ -60,15 +61,6 @@ export class VehicleButtonsGrid extends LitElement {
             </div>`}
       </div>
     `;
-  }
-
-  private _chunkButtons(): ButtonCardEntityItem[][] {
-    const total = this.gridConfig.rows * this.gridConfig.columns;
-    const buttons = [...this.buttons];
-    const newButtons = buttons.map((button, index) => {
-      return { ...button, index };
-    });
-    return chunk(newButtons, total);
   }
 
   private _renderSwiper(): TemplateResult {
@@ -110,10 +102,10 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   _handleClick(index: number): void {
-    forwardHaptic('light');
     setTimeout(() => {
+      this.card._currentSwipeIndex = this.activeSlideIndex;
       this.card._activeCardIndex = index;
-    }, 150);
+    }, 50);
   }
 
   private initSwiper(): void {
@@ -123,9 +115,9 @@ export class VehicleButtonsGrid extends LitElement {
     const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
 
     this.swiper = new Swiper(swiperCon as HTMLElement, {
-      grabCursor: false,
+      grabCursor: true,
       loop: false,
-      modules: [Pagination, Grid],
+      modules: [Pagination],
       pagination: {
         clickable: true,
         el: paginationEl,
@@ -135,6 +127,16 @@ export class VehicleButtonsGrid extends LitElement {
       spaceBetween: 12,
       speed: 500,
     });
+    this.swiper?.on('slideChange', () => {
+      this.activeSlideIndex = this.swiper?.activeIndex ?? 0;
+    });
+    if (
+      this.swiper &&
+      this._cardCurrentSwipeIndex !== undefined &&
+      this._cardCurrentSwipeIndex !== this.activeSlideIndex
+    ) {
+      this.swiper.slideTo(this._cardCurrentSwipeIndex, 0, false);
+    }
   }
 
   public showButton = (index: number): void => {

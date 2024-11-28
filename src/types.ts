@@ -3,16 +3,16 @@ import { ActionConfig, HomeAssistant, LovelaceCardConfig, Theme, Themes } from '
 import { HassEntity } from 'home-assistant-js-websocket';
 import { Connection } from 'home-assistant-js-websocket';
 
-export interface ModeSpecificTheme {
+interface ModeSpecificTheme {
   dark: Partial<Theme>;
   light: Partial<Theme>;
 }
 
-export interface ExtendedTheme extends Theme {
+interface ExtendedTheme extends Theme {
   modes?: ModeSpecificTheme;
 }
 
-export interface ExtendedThemes extends Themes {
+interface ExtendedThemes extends Themes {
   darkMode: boolean;
   themes: {
     [key: string]: ExtendedTheme;
@@ -47,14 +47,6 @@ export interface IndicatorConfig {
   color?: string;
 }
 
-export type IndicatorEntity = Array<{
-  entity: string;
-  icon: string;
-  state: string;
-  visibility?: boolean;
-  color?: string;
-}>;
-
 // IndicatorGroup configuration for a group of indicators
 export interface IndicatorGroupConfig {
   icon: string;
@@ -74,25 +66,12 @@ export interface IndicatorGroupItemConfig {
   state_template?: string;
 }
 
-export type IndicatorGroupEntity = Array<{
-  icon: string; // Group-level icon
-  items: Array<{
-    entity: string;
-    icon: string;
-    name: string;
-    state: string;
-  }>; // Array of individual indicator items
-  name: string;
-  visibility?: boolean;
-  color: string;
-}>;
-
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
 
 export interface RangeInfoConfig {
-  energy_level: Array<RangeItemConfig>;
+  energy_level: RangeItemConfig;
   progress_color: string;
-  range_level: Array<RangeItemConfig>;
+  range_level: RangeItemConfig;
 }
 
 export interface RangeItemConfig {
@@ -100,16 +79,6 @@ export interface RangeItemConfig {
   entity: string;
   icon?: string;
 }
-
-export type RangeInfoEntity = Array<{
-  energy: string;
-  energy_entity: string;
-  icon: string;
-  level: number;
-  level_entity: string;
-  progress_color: string;
-  range: string;
-}>;
 
 /* ------------------------- CONFIG IMAGES INTERFACE ------------------------ */
 
@@ -119,7 +88,7 @@ export interface ImageConfig {
 }
 
 /* ----------------------------- MINI MAP CONFIG ---------------------------- */
-export interface Address {
+interface Address {
   streetNumber: string;
   streetName: string;
   sublocality: string;
@@ -135,7 +104,7 @@ export interface MapData {
   popUpCard?: LovelaceCardConfig[];
 }
 
-export interface MiniMapConfig {
+interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
   enable_popup: boolean;
@@ -146,7 +115,7 @@ export interface MiniMapConfig {
 
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */
 
-export type SecondaryInfoConfig = {
+type SecondaryInfoConfig = {
   attribute: string;
   entity: string;
   state_template: string;
@@ -271,7 +240,7 @@ export type ButtonCardEntity = ButtonCardEntityItem[];
 export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
 
 /* ----------------------------- LAYOUT CONFIG ----------------------------- */
-export interface LayoutConfig {
+interface LayoutConfig {
   button_grid: {
     rows: number;
     columns: number;
