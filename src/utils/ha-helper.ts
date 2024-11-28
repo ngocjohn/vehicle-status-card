@@ -3,11 +3,9 @@ import { LovelaceCardConfig } from 'custom-card-helpers';
 
 import {
   ButtonCardEntity,
-  CardItemEntity,
   DefaultCardConfig,
   HA as HomeAssistant,
   RangeInfoEntity,
-  DefaultCardEntity,
   TireTemplateConfig,
   TireEntity,
   ButtonCardConfig,
@@ -74,53 +72,6 @@ export async function getRangeInfo(
     });
   }
   return rangeInfo;
-}
-
-export async function getDefaultCard(
-  hass: HomeAssistant,
-  defaultCard: DefaultCardConfig[]
-): Promise<DefaultCardEntity[] | void> {
-  if (!defaultCard) {
-    return;
-  }
-
-  const defaultCardItem: DefaultCardEntity[] = [];
-
-  for (const card of defaultCard) {
-    const title = card.title;
-    const collapsed_items = card.collapsed_items || false;
-
-    // Initialize `items` array for each card separately
-    const items: CardItemEntity[] = [];
-
-    for (const item of card.items) {
-      if (!item.entity) {
-        continue;
-      }
-
-      const entity = item.entity;
-      const stateObj = hass.states[entity];
-      if (!stateObj) {
-        continue;
-      }
-
-      const state = item.state_template
-        ? item.state_template
-        : item.attribute
-        ? hass.formatEntityAttributeValue(stateObj, item.attribute)
-        : hass.formatEntityState(stateObj);
-
-      const icon = item.icon || '';
-      const name = item.name || stateObj.attributes.friendly_name || '';
-
-      items.push({ entity, icon, name, state });
-    }
-
-    // Now that items are populated, add them to the card
-    defaultCardItem.push({ collapsed_items, items, title });
-  }
-
-  return defaultCardItem;
 }
 
 export async function createCardElement(
@@ -313,22 +264,6 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<null
   }
 }
 
-export async function _getDefaultCardItems(card: VehicleStatusCard): Promise<void> {
-  // console.log('Getting default card items');
-  const defaultCardItems = new Map<number, DefaultCardEntity[]>();
-  // console.log('Getting default card items');
-  for (let i = 0; i < card._buttonCards.length; i++) {
-    const buttonCard = card._buttonCards[i];
-    const cardItems = buttonCard.default_card;
-    const items = await getDefaultCard(card._hass, cardItems);
-    if (items) {
-      defaultCardItems.set(i, items);
-    }
-  }
-  card._defaultItems = defaultCardItems;
-  card.requestUpdate();
-}
-
 type cardType = 'custom' | 'default' | 'tire' | null;
 
 export async function previewHandler(cardType: cardType, card: VehicleStatusCard): Promise<void> {
@@ -336,7 +271,7 @@ export async function previewHandler(cardType: cardType, card: VehicleStatusCard
   const hass = card._hass as HomeAssistant;
   const config = card._config as VehicleStatusCardConfig;
   let cardConfig: LovelaceCardConfig[] | DefaultCardConfig[] | TireTemplateConfig;
-  let cardElement: LovelaceCardConfig[] | DefaultCardEntity[] | TireEntity | undefined;
+  let cardElement: LovelaceCardConfig[] | DefaultCardConfig[] | TireEntity | undefined;
 
   switch (cardType) {
     case 'custom':
@@ -348,7 +283,7 @@ export async function previewHandler(cardType: cardType, card: VehicleStatusCard
     case 'default':
       cardConfig = config?.default_card_preview as DefaultCardConfig[];
       if (!cardConfig) return;
-      cardElement = (await getDefaultCard(hass, cardConfig)) as DefaultCardEntity[];
+      cardElement = cardConfig;
       card._defaultCardPreview = cardElement;
       break;
     case 'tire':
@@ -388,7 +323,6 @@ export async function handleFirstUpdated(card: VehicleStatusCard): Promise<void>
   card._buttonCards = await getButtonCard(hass, config.button_card);
   card._buttonReady = true;
   _getMapData(card);
-  _getDefaultCardItems(card);
 }
 
 export async function _getMapData(card: VehicleStatusCard): Promise<void> {

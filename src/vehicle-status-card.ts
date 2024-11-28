@@ -21,12 +21,13 @@ import { TIRE_BG } from './const/img-const';
 import cardcss from './css/card.css';
 import {
   ButtonCardEntity,
-  DefaultCardEntity,
   HA as HomeAssistant,
   VehicleStatusCardConfig,
   TireEntity,
   PREVIEW_TYPE,
   MapData,
+  ButtonCardEntityItem,
+  DefaultCardConfig,
 } from './types';
 import { HaHelp } from './utils';
 import { isEmpty } from './utils/helpers';
@@ -38,7 +39,7 @@ export class VehicleStatusCard extends LitElement {
 
   @state() public _currentPreview: PREVIEW_TYPE = null;
   @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
-  @state() public _defaultCardPreview: DefaultCardEntity[] = [];
+  @state() public _defaultCardPreview: DefaultCardConfig[] = [];
   @state() public _tireCardPreview: TireEntity | undefined = undefined;
 
   @state() public _buttonCards: ButtonCardEntity = [];
@@ -47,7 +48,6 @@ export class VehicleStatusCard extends LitElement {
 
   @state() public _activeCardIndex: null | number | string = null;
   @state() public _buttonReady = false;
-  @state() _defaultItems: Map<number, DefaultCardEntity[]> = new Map();
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
@@ -138,21 +138,12 @@ export class VehicleStatusCard extends LitElement {
     if (changedProps.has('_config') && this._currentPreview !== null) {
       HaHelp.previewHandler(this._currentPreview, this);
     }
-
-    if (changedProps.has('_hass') && this._hass && this._config && this._currentPreview === 'default') {
-      HaHelp._getDefaultCardItems(this);
-    }
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
     if (!this._config || !this._hass) {
       console.log('config or hass is null');
       return false;
-    }
-
-    if (changedProps.has('_hass') && this._hass && this._activeCardIndex !== null) {
-      HaHelp._getDefaultCardItems(this);
-      return true;
     }
 
     return hasConfigOrEntityChanged(this, changedProps, true);
@@ -275,11 +266,12 @@ export class VehicleStatusCard extends LitElement {
   private _renderSelectedCard(): TemplateResult {
     if (this._activeCardIndex === null) return html``;
     const index = this._activeCardIndex;
-    const selectedCard = this._buttonCards[index];
+    const selectedCard = this._buttonCards[index] as ButtonCardEntityItem;
     const cardType = selectedCard.card_type;
-    const defaultCard = this._defaultItems.get(index as number);
+    // const defaultCard = this._defaultItems.get(index as number);
+    const defaultCard = selectedCard.default_card;
     const customCard = selectedCard.custom_card;
-    const tireCard = selectedCard.tire_card;
+    const tireCard = selectedCard.tire_card || null;
 
     const cardHeaderBox = html` <div class="added-card-header">
       <ha-icon-button
@@ -308,7 +300,7 @@ export class VehicleStatusCard extends LitElement {
     const selected_card = isString(index)
       ? this._mapData?.popUpCard
       : cardType === 'default'
-      ? defaultCard!.map((card: DefaultCardEntity) => this._renderDefaultCardItems(card))
+      ? defaultCard!.map((card: DefaultCardConfig) => this._renderDefaultCardItems(card))
       : cardType === 'tire'
       ? this._renderTireCard(tireCard)
       : !isEmpty(customCard)
@@ -326,7 +318,7 @@ export class VehicleStatusCard extends LitElement {
     return content;
   }
 
-  private _renderDefaultCardItems(data: DefaultCardEntity): TemplateResult {
+  private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
     const title = data.title;
     const items = data.items;
     const collapsed_items = data.collapsed_items;

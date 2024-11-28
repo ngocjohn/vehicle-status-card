@@ -3,95 +3,124 @@ import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from
 import { customElement, property, state } from 'lit/decorators';
 
 // Local
-import { HA as HomeAssistant } from '../types';
+import { CardItemConfig, HA as HomeAssistant } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 // Styles
 import cardstyles from '../css/card.css';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
 
-type DefaultCardItem = {
-  name: string;
-  entity: string;
-  icon: string;
-  state: string;
-};
+const TEMPLATE_KEY = ['state_template'] as const;
+type TemplateKey = (typeof TEMPLATE_KEY)[number];
 
 @customElement('vsc-default-card')
 export class VehicleDefaultCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public _card!: VehicleStatusCard;
-  @property({ attribute: false }) public defaultCardItem: DefaultCardItem | null = null;
+  @property({ attribute: false }) public defaultCardItem!: CardItemConfig;
 
-  @state() private _defaultCardItemsTemplate: Record<'state', RenderTemplateResult | undefined> = { state: undefined };
-  @state() private _unsubRenderTemplate: Map<'state', Promise<UnsubscribeFunc>> = new Map();
+  @state() private _defaultCardItemsTemplate: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
+  @state() private _unsubRenderTemplate: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
 
   static get styles(): CSSResultGroup {
     return cardstyles;
   }
 
-  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
-    super.firstUpdated(_changedProperties);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    // console.log('defaultcarditem', this.defaultCardItem);
+  connectedCallback(): void {
+    super.connectedCallback();
     this._tryConnect();
   }
-  protected updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-    if (changedProperties.has('defaultCardItem') && this.defaultCardItem) {
-      // Disconnect the old subscription before subscribing to the new one
-      this._tryDisconnect().then(() => {
-        if (this.defaultCardItem) {
-          this._tryConnect();
-        }
-      });
-    }
+
+  disconnectedCallback(): void {
+    this._tryDisconnect();
+    super.disconnectedCallback();
   }
 
-  private isTemplate(state: string): boolean {
-    return state.includes('{');
+  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
+    super.firstUpdated(_changedProperties);
+  }
+
+  protected updated(changedProperties: PropertyValues): void {
+    super.updated(changedProperties);
+  }
+
+  private isTemplate(key: TemplateKey): boolean {
+    const value = this.defaultCardItem[key];
+    return value?.includes('{');
   }
 
   private async _tryConnect(): Promise<void> {
-    if (!this.defaultCardItem) {
-      return;
-    }
-    const state = this.defaultCardItem.state;
-    if (!this.isTemplate(state)) {
+    TEMPLATE_KEY.forEach((key) => {
+      this._subscribeRenderTemplate(key);
+    });
+  }
+
+  private async _subscribeRenderTemplate(key: TemplateKey): Promise<void> {
+    if (this._unsubRenderTemplate.get(key) !== undefined || !this.hass || !this.isTemplate(key)) {
       return;
     }
 
     try {
-      // Subscribe to the template and listen for updates
       const sub = subscribeRenderTemplate(
         this.hass.connection,
         (result) => {
-          // Update the state and trigger re-render
           this._defaultCardItemsTemplate = {
             ...this._defaultCardItemsTemplate,
-            state: result,
+            [key]: result,
           };
         },
-        { template: state }
+        {
+          template: this.defaultCardItem[key] ?? '',
+          variables: {
+            entity: this.defaultCardItem.entity,
+            config: this.defaultCardItem,
+            user: this.hass.user!.name,
+          },
+          strict: true,
+        }
       );
-
-      this._unsubRenderTemplate.set('state', sub);
-      await sub; // Ensure subscription completes
-    } catch (e) {
-      // Fallback for errors
-      this._defaultCardItemsTemplate.state = {
-        result: state,
-        listeners: { all: false, domains: [], entities: [], time: false },
+      this._unsubRenderTemplate.set(key, sub);
+      await sub;
+    } catch (_err) {
+      const result = {
+        result: this.defaultCardItem[key] ?? '',
+        listeners: {
+          all: false,
+          domains: [],
+          entities: [],
+          time: false,
+        },
       };
-      this._unsubRenderTemplate.delete('state');
+      this._defaultCardItemsTemplate = {
+        ...this._defaultCardItemsTemplate,
+        [key]: result,
+      };
+      this._unsubRenderTemplate.delete(key);
     }
   }
 
   private async _tryDisconnect(): Promise<void> {
-    const unsub = this._unsubRenderTemplate.get('state');
-    if (unsub) {
-      await unsub.then((unsubFunc) => unsubFunc());
-      this._unsubRenderTemplate.delete('state');
+    TEMPLATE_KEY.forEach((key) => {
+      this._tryDisconnectKey(key);
+    });
+  }
+
+  private async _tryDisconnectKey(key: TemplateKey): Promise<void> {
+    const unsubRenderTemplate = this._unsubRenderTemplate.get(key);
+    if (!unsubRenderTemplate) {
+      return;
+    }
+
+    try {
+      const unsub = await unsubRenderTemplate;
+      unsub();
+      this._unsubRenderTemplate.delete(key);
+    } catch (err: any) {
+      if (err.code === 'not_found' || err.code === 'template_error') {
+        // If we get here, the connection was probably already closed. Ignore.
+      } else {
+        throw err;
+      }
     }
   }
 
@@ -99,14 +128,19 @@ export class VehicleDefaultCard extends LitElement {
     if (!this.defaultCardItem) {
       return html``;
     }
-    const name = this.defaultCardItem.name;
-    const entity = this.defaultCardItem.entity;
-    const icon = this.defaultCardItem.icon;
+
+    const item = this.defaultCardItem;
+
+    const name = item.name || this.hass.states[item.entity].attributes.friendly_name;
+    const entity = item.entity;
+    const icon = item.icon;
 
     // Fallback to default state if template state isn't available yet
-    const state = !this.isTemplate(this.defaultCardItem.state)
-      ? this.defaultCardItem.state
-      : this._defaultCardItemsTemplate.state?.result;
+    const state = item.state_template
+      ? this._defaultCardItemsTemplate.state_template?.result || item.state_template
+      : item.attribute && item.entity
+      ? this.hass.formatEntityAttributeValue(this.hass.states[entity], item.attribute)
+      : this.hass.formatEntityState(this.hass.states[entity]);
 
     return html`
       <div class="data-row">

@@ -247,17 +247,6 @@ export interface ButtonCardConfig {
   tire_card?: TireTemplateConfig;
 }
 
-export type DefaultCardEntity = {
-  collapsed_items: boolean;
-  items: Array<{
-    entity: string;
-    icon: string;
-    name: string;
-    state: string;
-  }>;
-  title: string;
-};
-
 export interface ButtonCardEntityItem {
   button: {
     button_action: ButtonActionConfig;
