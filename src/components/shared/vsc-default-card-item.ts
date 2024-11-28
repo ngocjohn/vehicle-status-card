@@ -3,18 +3,18 @@ import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from
 import { customElement, property, state } from 'lit/decorators';
 
 // Local
-import { CardItemConfig, HA as HomeAssistant } from '../types';
-import { VehicleStatusCard } from '../vehicle-status-card';
+import { CardItemConfig, HA as HomeAssistant } from '../../types';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../../utils/ws-templates';
+import { VehicleStatusCard } from '../../vehicle-status-card';
 
 // Styles
-import cardstyles from '../css/card.css';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
+import cardstyles from '../../css/card.css';
 
 const TEMPLATE_KEY = ['state_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEY)[number];
 
-@customElement('vsc-default-card')
-export class VehicleDefaultCard extends LitElement {
+@customElement('vsc-default-card-item')
+export class VehicleDefaultCardItem extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public _card!: VehicleStatusCard;
   @property({ attribute: false }) public defaultCardItem!: CardItemConfig;

@@ -174,13 +174,6 @@ export interface CardItemConfig {
   state_template: string;
 }
 
-export interface CardItemEntity {
-  entity: string;
-  icon: string;
-  name: string;
-  state: string;
-}
-
 export interface ButtonActionConfig {
   double_tap_action: ActionConfig;
   entity: string;

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   applyThemesOnElement,
   fireEvent,
@@ -9,14 +8,11 @@ import {
 } from 'custom-card-helpers';
 import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-
-import './components';
-
 import { customElement, property, query, state } from 'lit/decorators';
 
+import './components';
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
 import { DEFAULT_CONFIG, ICON } from './const/const';
-import cardcss from './css/card.css';
 import {
   ButtonCardEntity,
   HA as HomeAssistant,
@@ -27,8 +23,10 @@ import {
   ButtonCardEntityItem,
   DefaultCardConfig,
 } from './types';
-import { HaHelp } from './utils';
-import { isEmpty } from './utils/helpers';
+import { HaHelp, isEmpty } from './utils';
+
+// Styles
+import cardcss from './css/card.css';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
@@ -51,14 +49,6 @@ export class VehicleStatusCard extends LitElement {
   @query('images-slide') _imagesSlide!: ImagesSlide;
   @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
   @query('vsc-indicators') _indicators!: VscIndicators;
-
-  debug: boolean = true;
-
-  _debugLog(...args: any[]): void {
-    if (this.debug) {
-      console.log('Vehicle:', ...args);
-    }
-  }
 
   constructor() {
     super();
@@ -332,12 +322,12 @@ export class VehicleStatusCard extends LitElement {
         <div class="data-header">${title} ${header}</div>
         <div class="data-box" ?active=${collapsed_items}>
           ${items.map((item) => {
-            return html`<vsc-default-card
+            return html`<vsc-default-card-item
               .key=${item.entity}
               .hass=${this._hass}
               .defaultCardItem=${item}
               ._card=${this as any}
-            ></vsc-default-card>`;
+            ></vsc-default-card-item>`;
           })}
         </div>
       </div>
