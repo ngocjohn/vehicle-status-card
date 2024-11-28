@@ -9,7 +9,6 @@ import {
 } from 'custom-card-helpers';
 import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 
 import './components';
 
@@ -17,7 +16,6 @@ import { customElement, property, query, state } from 'lit/decorators';
 
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
 import { DEFAULT_CONFIG, ICON } from './const/const';
-import { TIRE_BG } from './const/img-const';
 import cardcss from './css/card.css';
 import {
   ButtonCardEntity,
@@ -351,51 +349,7 @@ export class VehicleStatusCard extends LitElement {
       return html`<div class="error">Tire configuration not available</div>`;
     }
 
-    const background = tireConfig.background || TIRE_BG;
-    const isHorizontal = tireConfig.horizontal || false;
-    const tireCardTitle = tireConfig.title || '';
-    const tireCardSize = tireConfig.image_size || 100;
-    const tireValueSize = tireConfig.value_size || 100;
-    const tireTop = tireConfig.top || 50;
-    const tireLeft = tireConfig.left || 50;
-    const tires = tireConfig.tires;
-
-    const sizeStyle = {
-      '--vic-tire-top': `${tireTop}%`,
-      '--vic-tire-left': `${tireLeft}%`,
-      '--vic-tire-size': `${tireCardSize}%`,
-      '--vic-tire-value-size': tireValueSize / 100,
-    };
-
-    return html`
-      <div class="default-card">
-        <div class="data-header">${tireCardTitle}</div>
-        <div class="tyre-toggle-btn click-shrink" @click=${(ev: Event) => this.toggleTireDirection(ev)}>
-          <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
-        </div>
-
-        <div class="data-box tyre-wrapper" rotated=${isHorizontal} style=${styleMap(sizeStyle)}>
-          <div class="background" style="background-image: url(${background})"></div>
-          ${Object.keys(tires).map((key) => {
-            const cssClass = key.replace('_', '').toLowerCase();
-            return html` <div class="tyre-box" tyre=${cssClass}>
-              <span class="tyre-value">${tires[key].state}</span>
-              <span class="tyre-name">${tires[key].name}</span>
-            </div>`;
-          })}
-        </div>
-      </div>
-    `;
-  }
-
-  private toggleTireDirection(ev: Event): void {
-    ev.stopPropagation();
-    const target = ev.target as HTMLElement;
-    const tyreWrapper = target.closest('.default-card')?.querySelector('.tyre-wrapper');
-    if (!tyreWrapper) return;
-
-    const isHorizontal = tyreWrapper.getAttribute('rotated') === 'true';
-    tyreWrapper.setAttribute('rotated', isHorizontal ? 'false' : 'true');
+    return html` <vsc-tire-card .hass=${this._hass} .card=${this as any} .tireConfig=${tireConfig}> </vsc-tire-card> `;
   }
 
   private _showWarning(warning: string): TemplateResult {
