@@ -28,14 +28,21 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: dropdown
     id: version
     attributes:
-      label: Version 📌
+      label: Version 📦
       description: The version of the application where the bug was found
-      placeholder: "e.g., v1.2.3"
+      options:
+        - v1.4.0
+        - v1.3.1
+        - v1.3.0
+        - v1.2.0
+        - v1.1.1
+        - v1.1.0
+        - v1.0.0
     validations:
-      required: false
+      required: true
 
   - type: input
     id: environment
