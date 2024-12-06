@@ -143,6 +143,7 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
       primary: button.primary || '',
       secondary: button.secondary || [],
       color: button.color || '',
+      picture_template: button.picture_template || '',
     };
 
     // const defaultCard = (await getDefaultCard(hass, btnCrd.default_card)) || [];

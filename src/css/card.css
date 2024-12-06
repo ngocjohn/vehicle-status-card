@@ -342,6 +342,12 @@ header h1 {
   transition-timing-function: ease-out;
 }
 
+.icon-picture {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--vic-icon-border-radius);
+}
+
 .grid-item .item-content {
   display: flex;
   flex-direction: column;
