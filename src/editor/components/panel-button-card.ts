@@ -480,6 +480,7 @@ export class PanelButtonCard extends LitElement {
     const state_template = secondary.state_template;
     const color = button.color || '';
     const notify = button.notify || '';
+    const picture = button.picture_template || '';
 
     const attributes = entity ? Object.keys(this.hass.states[entity].attributes) : [];
     const attrOpts = [...attributes.map((attr) => ({ value: attr, label: attr }))];
@@ -532,12 +533,25 @@ export class PanelButtonCard extends LitElement {
       },
     ];
 
+    const pictureTemplate = [
+      {
+        value: picture,
+        pickerType: 'template',
+        configValue: 'picture_template',
+        options: {
+          label: 'Picture (will replace the icon)',
+          helperText: 'You can use a template to display a picture, or url to an image file',
+        },
+      },
+    ];
+
     const content = html`
       <div>
         ${this._renderSubHeader('Primary and icon', [], false)}
         <div class="sub-content">
           ${pickerPrimaryIcon.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
         </div>
+        ${pictureTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
         ${notifyTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
         ${colorTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
         <div class="sub-header">

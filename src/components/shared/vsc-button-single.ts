@@ -12,7 +12,7 @@ import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 // styles
 import cardstyles from '../../css/card.css';
 
-const TEMPLATE_KEYS = ['state_template', 'notify', 'color'] as const;
+const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 const COLOR_AlPHA = '.2';
@@ -71,6 +71,7 @@ export class VehicleButtonSingle extends LitElement {
       state_template: button.secondary.state_template,
       notify: button.notify,
       color: button.color,
+      picture_template: button.picture_template,
     };
     const value = templateMap[key];
     return value?.includes('{');
@@ -99,6 +100,9 @@ export class VehicleButtonSingle extends LitElement {
       case 'color':
         const color = button.color ? this.getValue('color') || button.color : '';
         return color;
+      case 'picture_template':
+        const picture = button.picture_template ? this.getValue('picture_template') || button.picture_template : '';
+        return picture;
     }
   }
   private async _tryConnect(): Promise<void> {
@@ -117,6 +121,7 @@ export class VehicleButtonSingle extends LitElement {
       state_template: button.secondary.state_template,
       notify: button.notify,
       color: button.color,
+      picture_template: button.picture_template,
     };
     try {
       const sub = subscribeRenderTemplate(
@@ -210,19 +215,21 @@ export class VehicleButtonSingle extends LitElement {
     const color = this._getTemplateValue('color');
     const notify = this._getTemplateValue('notify');
     const iconBackground = color ? this._setColorAlpha(color) : this._getBackgroundColors();
-
+    const picture = this._getTemplateValue('picture_template');
     return html`
       <div class="grid-item" id="actionBtn">
         <ha-ripple></ha-ripple>
         <div class="click-container click-shrink">
           <div class="item-icon">
             <div class="icon-background" style=${`background-color: ${iconBackground}`}>
-              <ha-state-icon
-                .hass=${this.hass}
-                .stateObj=${entity ? this.hass.states[entity] : undefined}
-                .icon=${icon}
-                style=${color ? `color: ${color}` : ''}
-              ></ha-state-icon>
+              ${picture
+                ? html`<img class="icon-picture" src=${picture} />`
+                : html` <ha-state-icon
+                    .hass=${this.hass}
+                    .stateObj=${entity ? this.hass.states[entity] : undefined}
+                    .icon=${icon}
+                    style=${color ? `color: ${color}` : ''}
+                  ></ha-state-icon>`}
             </div>
             <div class="item-notify" ?hidden=${!notify || hideNotify}>
               <ha-icon icon="mdi:alert-circle"></ha-icon>

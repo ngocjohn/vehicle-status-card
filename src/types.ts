@@ -127,6 +127,7 @@ export interface ButtonConfig {
   primary: string;
   color: string;
   secondary: SecondaryInfoConfig;
+  picture_template?: string;
 }
 
 export interface DefaultCardConfig {
@@ -222,6 +223,7 @@ export interface ButtonCardEntityItem {
     primary: string;
     secondary: SecondaryInfoConfig;
     color: string;
+    picture_template: string;
   };
   button_type: 'action' | 'default';
   card_type: 'custom' | 'default' | 'tire';
