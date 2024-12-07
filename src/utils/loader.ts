@@ -28,14 +28,25 @@ export const loadHaComponents = () => {
 };
 
 export const stickyPreview = () => {
-  // Change the default preview element to be sticky
+  // Get the root and required elements
   const root = document.querySelector('body > home-assistant')?.shadowRoot;
   const dialog = root?.querySelector('hui-dialog-edit-card')?.shadowRoot;
-  const previewElement = dialog?.querySelector('ha-dialog > div.content > div.element-preview') as HTMLElement;
-  if (previewElement && previewElement.style.position !== 'sticky') {
-    previewElement.style.position = 'sticky';
-    previewElement.style.top = '0';
-  }
+  const content = dialog?.querySelector('ha-dialog')?.shadowRoot?.getElementById('content');
+  const previewElement = dialog?.querySelector('div.element-preview') as HTMLElement;
+  const editorElement = dialog?.querySelector('div.element-editor') as HTMLElement;
+
+  // Exit early if any required element is missing
+  if (!content || !editorElement || !previewElement) return;
+
+  // Apply styles
+  Object.assign(content.style, { padding: '8px' });
+  Object.assign(editorElement.style, { margin: '0 4px' });
+  Object.assign(previewElement.style, {
+    position: 'sticky',
+    top: '0',
+    padding: '0',
+    justifyItems: 'center',
+  });
 };
 
 const getLovelace = () => {
