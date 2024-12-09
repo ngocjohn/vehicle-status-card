@@ -1,3 +1,19 @@
+<a id="v1.4.2"></a>
+# [v1.4.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.4.2) - 2024-12-09
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.4.2 -->
+
+## What's Changed
+### New Features 🎉
+* Add color template for pressure state in tire card by [@ngocjohn](https://github.com/ngocjohn) in [#37](https://github.com/ngocjohn/vehicle-status-card/pull/37)
+* Add picture template to Button config by [@ngocjohn](https://github.com/ngocjohn) in [#40](https://github.com/ngocjohn/vehicle-status-card/pull/40)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.0...v1.4.2
+
+[Changes][v1.4.2]
+
+
 <a id="v1.4.0"></a>
 # [v1.4.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.4.0) - 2024-11-26
 
@@ -144,6 +160,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.4.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.0...v1.4.2
 [v1.4.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.1...v1.4.0
 [v1.3.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.0...v1.3.1
 [v1.3.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.2.0...v1.3.0
