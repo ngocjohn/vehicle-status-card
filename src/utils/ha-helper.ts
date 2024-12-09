@@ -1,6 +1,7 @@
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import { LovelaceCardConfig } from 'custom-card-helpers';
 
+import { DEFAULT_CONFIG } from '../const/const';
 import {
   ButtonCardEntity,
   DefaultCardConfig,
@@ -430,3 +431,26 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string) {
     return;
   }
 }
+
+export const getDefaultConfig = (hass: HomeAssistant) => {
+  const deviceTrackers = Object.keys(hass.states)
+    .filter((entity) => entity.startsWith('device_tracker.'))
+    .filter((entity) => hass.states[entity].attributes.source_type === 'gps');
+  console.log('deviceTrackers:', deviceTrackers);
+  if (deviceTrackers.length > 0) {
+    return {
+      ...DEFAULT_CONFIG,
+      mini_map: {
+        device_tracker: deviceTrackers[0],
+      },
+      layout_config: {
+        ...DEFAULT_CONFIG.layout_config,
+        hide: {
+          ...DEFAULT_CONFIG.layout_config.hide,
+          mini_map: false,
+        },
+      },
+    };
+  }
+  return DEFAULT_CONFIG;
+};

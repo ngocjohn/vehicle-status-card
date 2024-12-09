@@ -12,7 +12,7 @@ import { customElement, property, query, state } from 'lit/decorators';
 
 import './components';
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
-import { DEFAULT_CONFIG, ICON } from './const/const';
+import { ICON } from './const/const';
 import {
   ButtonCardEntity,
   HA as HomeAssistant,
@@ -27,6 +27,7 @@ import { HaHelp, isEmpty } from './utils';
 
 // Styles
 import cardcss from './css/card.css';
+import { getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement {
@@ -70,7 +71,8 @@ export class VehicleStatusCard extends LitElement {
     }
   }
 
-  public static getStubConfig = (): Record<string, unknown> => {
+  public static getStubConfig = (hass: HomeAssistant): Record<string, unknown> => {
+    const DEFAULT_CONFIG = getDefaultConfig(hass);
     return {
       ...DEFAULT_CONFIG,
     };
