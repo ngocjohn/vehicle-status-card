@@ -68,54 +68,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     this._handleFirstConfig(this._config);
   }
 
-  // private async _handleFirstConfig(config: VehicleStatusCardConfig): Promise<void> {
-  //   const buttonCard = config.button_card;
-  //   const rangeInfo = config.range_info;
-
-  //   const isButtonValid = buttonCard.every(
-  //     (button) =>
-  //       button.button.secondary !== null &&
-  //       typeof button.button.secondary === 'object' &&
-  //       !Array.isArray(button.button.secondary)
-  //   );
-
-  //   const isRangeValid = rangeInfo.map((range) => {
-  //     let valid = true;
-  //     const { energy_level, range_level } = range;
-  //     const isEnergyValid = energy_level !== null && typeof energy_level === 'object' && !Array.isArray(energy_level);
-  //     const isRangeLevelValid = range_level !== null && typeof range_level === 'object' && !Array.isArray(range_level);
-  //     if (!isEnergyValid || !isRangeLevelValid) {
-  //       valid = false;
-  //     }
-  //     return valid;
-  //   });
-
-  //   console.log('Button Valid:', isButtonValid, 'Range Valid:', isRangeValid);
-
-  //   if (!isButtonValid) {
-  //     const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
-  //     const newButtonConfig = convertSecondaryToObject(buttonCard);
-  //     this._config = { ...this._config, button_card: newButtonConfig, card_id: cardId };
-  //     fireEvent(this, 'config-changed', { config: this._config });
-  //     console.log('converted button card', cardId);
-  //     await _saveConfig(cardId, this._config);
-  //     console.log('Saved config');
-  //   } else if (!isRangeValid) {
-  //     const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
-  //     const newRangeConfig = convertRangeEntityToObject(rangeInfo);
-  //     this._config = { ...this._config, range_info: newRangeConfig, card_id: cardId };
-  //     fireEvent(this, 'config-changed', { config: this._config });
-  //     console.log('converted range info', cardId);
-  //     await _saveConfig(cardId, this._config);
-  //     console.log('Saved config');
-  //   } else if (isButtonValid && isRangeValid && config.card_id !== undefined) {
-  //     console.log('Valid config');
-  //     this._config = { ...config, card_id: undefined };
-  //     fireEvent(this, 'config-changed', { config: this._config });
-  //     console.log('removed cardId');
-  //     return;
-  //   }
-  // }
   private async _handleFirstConfig(config: VehicleStatusCardConfig): Promise<void> {
     const { button_card: buttonCard, range_info: rangeInfo } = config;
 
