@@ -1,3 +1,18 @@
+<a id="v1.4.3"></a>
+# [v1.4.3](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.4.3) - 2024-12-22
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.4.3 -->
+
+## What's Changed
+### Fixes 🐛
+* Fix: Update leaflet tile provider [#45](https://github.com/ngocjohn/vehicle-status-card/pull/45)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.2...v1.4.3
+
+[Changes][v1.4.3]
+
+
 <a id="v1.4.2"></a>
 # [v1.4.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.4.2) - 2024-12-09
 
@@ -160,6 +175,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.4.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.2...v1.4.3
 [v1.4.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.0...v1.4.2
 [v1.4.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.1...v1.4.0
 [v1.3.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.0...v1.3.1
