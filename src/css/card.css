@@ -360,7 +360,7 @@ header h1 {
 
 .grid-item .item-content .primary {
   font-weight: 500;
-  font-size: 1rem;
+  /* font-size: 1em; */
   white-space: nowrap;
   position: relative;
   text-overflow: ellipsis;
@@ -370,8 +370,8 @@ header h1 {
   color: var(--secondary-text-color);
   /* text-transform: capitalize; */
   letter-spacing: 0.5px;
-  font-size: smaller;
-  text-wrap: nowrap;
+  /* font-size: 0.9em; */
+  white-space: nowrap;
 }
 
 .primary.title-wrap {
