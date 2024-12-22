@@ -1,25 +1,28 @@
-import L from 'leaflet';
+import { LovelaceCardConfig } from 'custom-card-helpers';
 import 'leaflet-providers/leaflet-providers.js';
+import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { MapData } from '../types';
+import { createCloseHeading } from '../utils/create';
+import { _setMapPopup } from '../utils/ha-helper';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 @customElement('mini-map-box')
 export class MiniMapBox extends LitElement {
   @property({ attribute: false }) private mapData!: MapData;
   @property({ attribute: false }) private card!: VehicleStatusCard;
+  @property({ type: Boolean }) private isDark!: boolean;
+  @property({ type: Boolean }) open!: boolean;
 
   @state() private map: L.Map | null = null;
   @state() private marker: L.Marker | null = null;
+  @state() private latLon: L.LatLng | null = null;
   @state() private zoom = 16;
-
-  private get darkMode(): boolean {
-    return this.card.isDark;
-  }
+  @state() private mapCardPopup?: LovelaceCardConfig[];
 
   private get mapPopup(): boolean {
     return this.card._config.mini_map?.enable_popup || false;
@@ -31,11 +34,108 @@ export class MiniMapBox extends LitElement {
 
   protected updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
-    if (changedProperties.has('mapData')) {
+    if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined) {
       this.initMap();
     }
   }
 
+  private calculateLatLngOffset(
+    map: L.Map,
+    lat: number,
+    lng: number,
+    xOffset: number,
+    yOffset: number
+  ): [number, number] {
+    // Convert the lat/lng to a point
+    const point = map.latLngToContainerPoint([lat, lng]);
+    // Apply the offset
+    const newPoint = L.point(point.x - xOffset, point.y - yOffset);
+    // Convert the point back to lat/lng
+    const newLatLng = map.containerPointToLatLng(newPoint);
+    return [newLatLng.lat, newLatLng.lng];
+  }
+
+  private _computeMapStyle() {
+    const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
+    const markerFilter = this.isDark ? 'contrast(1.2) saturate(6) brightness(1.3)' : 'none';
+    const tileFilter = this.isDark
+      ? 'brightness(0.6) invert(1) contrast(6) saturate(0.3) brightness(0.7) opacity(.25)'
+      : 'grayscale(1) contrast(1.1) opacity(0.7)';
+    return styleMap({
+      '--vic-map-marker-color': markerColor,
+      '--vic-marker-filter': markerFilter,
+      '--vic-map-tiles-filter': tileFilter,
+    });
+  }
+
+  initMap(): void {
+    const { lat, lon } = this.mapData;
+    const mapOptions = {
+      dragging: true,
+      zoomControl: false,
+      scrollWheelZoom: true,
+    };
+    const mapContainer = this.shadowRoot?.getElementById('map') as HTMLElement;
+    if (!mapContainer) return;
+    this.map = L.map(mapContainer, mapOptions).setView([lat, lon], this.zoom);
+    const offset: [number, number] = this.calculateLatLngOffset(this.map, lat, lon, this.map.getSize().x / 5, 3);
+
+    this.latLon = L.latLng(offset[0], offset[1]);
+    this.map.setView(this.latLon, this.zoom);
+
+    // Add tile layer to map
+    this._createTileLayer(this.map);
+    // Add marker to map
+    this._createMarker(this.map);
+  }
+  private _createTileLayer(map: L.Map): L.TileLayer {
+    const tileOpts = {
+      tileSize: 256,
+      className: 'map-tiles',
+    };
+
+    const tileLayer = L.tileLayer.provider('CartoDB.Positron', tileOpts).addTo(map);
+    return tileLayer;
+  }
+
+  private _createMarker(map: L.Map): L.Marker {
+    const { lat, lon } = this.mapData;
+    const customIcon = L.divIcon({
+      html: `<div class="marker">
+            </div>`,
+      iconSize: [24, 24],
+      className: 'marker',
+    });
+
+    // Add marker to map
+    const marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
+    // Add click event listener to marker
+    marker.on('click', () => {
+      this._toggleMapDialog();
+    });
+
+    return marker;
+  }
+
+  private resetMap(): void {
+    if (!this.map || !this.latLon) return;
+    this.map.flyTo(this.latLon, this.zoom);
+  }
+
+  render(): TemplateResult {
+    if (!this.mapData) return html`<div class="map-wrapper loading"><span class="loader"></span></div>`;
+    return html`
+      <div class="map-wrapper" style=${this._computeMapStyle()}>
+        <div id="map"></div>
+        <div class="map-overlay"></div>
+        <div class="reset-button" @click=${this.resetMap}>
+          <ha-icon icon="mdi:compass"></ha-icon>
+        </div>
+        ${this._renderAddress()}
+      </div>
+      ${this._renderMapDialog()}
+    `;
+  }
   private _renderAddress(): TemplateResult {
     if (!this.mapData.address) {
       return html`<div class="address" style="left: 10%;"><span class="loader"></span></div>`;
@@ -56,106 +156,53 @@ export class MiniMapBox extends LitElement {
     `;
   }
 
-  private calculateLatLngOffset(
-    map: L.Map,
-    lat: number,
-    lng: number,
-    xOffset: number,
-    yOffset: number
-  ): [number, number] {
-    // Convert the lat/lng to a point
-    const point = map.latLngToContainerPoint([lat, lng]);
-    // Apply the offset
-    const newPoint = L.point(point.x - xOffset, point.y - yOffset);
-    // Convert the point back to lat/lng
-    const newLatLng = map.containerPointToLatLng(newPoint);
-    return [newLatLng.lat, newLatLng.lng];
+  private _renderMapDialog() {
+    if (!this.open) return html``;
+    const styles = html`
+      <style>
+        ha-dialog {
+          --mdc-dialog-min-width: 500px;
+          --mdc-dialog-max-width: 600px;
+          --dialog-backdrop-filter: blur(2px);
+        }
+        @media all and (max-width: 600px), all and (max-height: 500px) {
+          ha-dialog {
+            --mdc-dialog-min-width: 100vw;
+            --mdc-dialog-max-width: 100vw;
+            --mdc-dialog-min-height: 100%;
+            --mdc-dialog-max-height: 100%;
+            --vertical-align-dialog: flex-end;
+            --ha-dialog-border-radius: 0;
+          }
+        }
+      </style>
+    `;
+    return html`
+      <ha-dialog
+        open
+        .heading=${createCloseHeading(this.card._hass, 'Map')}
+        @closed=${() => (this.open = false)}
+        hideActions
+        flexContent
+      >
+        ${styles} ${this.mapCardPopup}
+      </ha-dialog>
+    `;
   }
 
-  private togglePopup(): void {
-    const event = new CustomEvent('toggle-map-popup', {
-      bubbles: true,
-      composed: true,
-      detail: {},
-    });
-    this.dispatchEvent(event);
-  }
-
-  private _computeMapStyle() {
-    return styleMap({
-      '--vic-map-marker-color': this.darkMode ? 'var(--accent-color)' : 'var(--primary-color)',
-      '--vic-marker-filter': this.darkMode ? 'var(--vic-marker-dark-filter)' : 'var(--vic-marker-light-filter)',
-      '--vic-map-tiles-filter': this.darkMode
-        ? 'var(--vic-map-tiles-dark-filter)'
-        : 'var(--vic-map-tiles-light-filter)',
-    });
-  }
-
-  private updateMap(): void {
-    if (!this.map || !this.marker) return;
-    const { lat, lon } = this.mapData;
-    const offset: [number, number] = this.calculateLatLngOffset(this.map, lat, lon, this.map.getSize().x / 5, 3);
-    this.map.setView(offset, this.zoom);
-    this.marker.setLatLng([lat, lon]);
-  }
-
-  initMap(): void {
-    const { lat, lon } = this.mapData;
-    const mapOptions = {
-      dragging: true,
-      zoomControl: false,
-      scrollWheelZoom: true,
-    };
-
-    this.map = L.map(this.shadowRoot?.getElementById('map') as HTMLElement, mapOptions).setView([lat, lon], this.zoom);
-
-    const mapboxToken = `pk.eyJ1IjoiZW1rYXkyazkiLCJhIjoiY2xrcHo5NzJwMXJ3MDNlbzM1bWJhcGx6eiJ9.kyNZp2l02lfkNlD2svnDsg`;
-    const tileUrl = `https://api.mapbox.com/styles/v1/emkay2k9/clyd2zi0o00mu01pgfm6f6cie/tiles/{z}/{x}/{y}@2x?access_token=${mapboxToken}`;
-
-    L.tileLayer(tileUrl, {
-      maxZoom: 18,
-      tileSize: 512,
-      zoomOffset: -1,
-      className: 'map-tiles',
-    }).addTo(this.map);
-
-    // Define custom icon for marker
-    const customIcon = L.divIcon({
-      html: `<div class="marker">
-              <div class="dot"></div>
-              <div class="shadow"></div>
-            </div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-      className: 'marker',
-    });
-
-    // Add marker to map
-    this.marker = L.marker([lat, lon], { icon: customIcon }).addTo(this.map);
-    // Add click event listener to marker
-    if (this.mapPopup) {
-      this.marker.on('click', () => {
-        this.togglePopup();
+  async _toggleMapDialog() {
+    if (!this.mapPopup) return;
+    if (this.mapCardPopup !== undefined) {
+      this.open = !this.open;
+      return;
+    } else {
+      _setMapPopup(this.card).then((popup) => {
+        this.mapCardPopup = popup;
+        setTimeout(() => {
+          this.open = true;
+        }, 50);
       });
     }
-
-    this.updateComplete.then(() => {
-      this.updateMap();
-    });
-  }
-
-  render(): TemplateResult {
-    if (!this.mapData) return html`<div class="map-wrapper loading"><span class="loader"></span></div>`;
-    return html`
-      <div class="map-wrapper" style=${this._computeMapStyle()}>
-        <div id="map"></div>
-        <div class="map-overlay"></div>
-        <div class="reset-button" @click=${this.updateMap}>
-          <ha-icon icon="mdi:compass"></ha-icon>
-        </div>
-        ${this._renderAddress()}
-      </div>
-    `;
   }
 
   static get styles(): CSSResultGroup {
@@ -166,17 +213,10 @@ export class MiniMapBox extends LitElement {
           outline: none;
         }
         :host {
-          --vic-map-marker-color: var(--primary-color);
-          --vic-map-tiles-light-filter: none;
-          --vic-map-tiles-dark-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3)
-            brightness(0.7);
-          --vic-map-tiles-filter: var(--vic-map-tiles-light-filter);
-          --vic-marker-dark-filter: brightness(1) contrast(1.2) saturate(6) brightness(1.3);
-          --vic-marker-light-filter: none;
-          --vic-maker-filter: var(--vic-marker-light-filter);
-          --vic-map-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%),
-            linear-gradient(to bottom, transparent 10%, black 20%, black 90%, transparent 100%);
+          --vic-map-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%),
+            linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
         }
+
         .map-wrapper {
           position: relative;
           width: 100%;
@@ -197,33 +237,54 @@ export class MiniMapBox extends LitElement {
           left: 0;
           width: 100%;
           height: 100%;
-          background-color: var(--card-background-color);
+          /* background-color: var(--ha-card-background, var(--card-background-color)); */
           opacity: 0.6; /* Adjust the opacity as needed */
           pointer-events: none; /* Ensure the overlay does not interfere with map interactions */
         }
         #map {
           height: 100%;
           width: 100%;
-          background: transparent !important;
+          background-color: transparent !important;
           mask-image: var(--vic-map-mask-image);
           mask-composite: intersect;
         }
 
         .map-tiles {
           filter: var(--vic-map-tiles-filter, none);
+          position: relative;
+          width: 100%;
+          height: 100%;
         }
-
         .marker {
           position: relative;
-          width: 46px;
-          height: 46px;
-          filter: var(--vic-marker-filter);
+          width: 24px;
+          height: 24px;
+          /* filter: var(--vic-marker-filter); */
         }
 
-        .dot {
+        .marker::before {
+          content: '';
           position: absolute;
-          width: 14px;
-          height: 14px;
+          width: calc(100% + 1rem);
+          height: calc(100% + 1rem);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-image: radial-gradient(
+            circle,
+            transparent 0%,
+            rgb(from var(--vic-map-marker-color) r g b / 35%) 100%
+          );
+          border-radius: 50%;
+          border: none !important;
+          /* opacity: 0.6; */
+        }
+
+        .marker::after {
+          content: '';
+          position: absolute;
+          width: calc(50% + 1px);
+          height: calc(50% + 1px);
           background-color: var(--vic-map-marker-color);
           border-radius: 50%;
           top: 50%;
@@ -231,22 +292,13 @@ export class MiniMapBox extends LitElement {
           border: 1px solid white;
           transform: translate(-50%, -50%);
           opacity: 1;
+          transition: all 0.2s ease;
         }
-        .shadow {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background-image: radial-gradient(circle, var(--vic-map-marker-color) 0%, transparent 100%);
-          border-radius: 50%;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          border: none !important;
-          opacity: 0.6;
+        .marker:hover::after {
+          width: calc(60% + 1px);
+          height: calc(60% + 1px);
         }
-        .marker:hover .dot {
-          filter: brightness(1.2);
-        }
+
         .leaflet-control-container {
           display: none;
         }
@@ -320,5 +372,11 @@ export class MiniMapBox extends LitElement {
         }
       `,
     ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'mini-map-box': MiniMapBox;
   }
 }

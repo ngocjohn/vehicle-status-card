@@ -54,7 +54,6 @@ export class VehicleButtonSingle extends LitElement {
     const buttonType = this._buttonConfig.button_type;
     const actionConfig = this._buttonConfig.button.button_action;
     const actionEl = this.shadowRoot?.getElementById('actionBtn');
-
     if (actionEl && buttonType === 'action' && actionConfig) {
       addActions(actionEl, actionConfig);
     } else {
@@ -216,8 +215,9 @@ export class VehicleButtonSingle extends LitElement {
     const notify = this._getTemplateValue('notify');
     const iconBackground = color ? this._setColorAlpha(color) : this._getBackgroundColors();
     const picture = this._getTemplateValue('picture_template');
+    const index = this._index;
     return html`
-      <div class="grid-item" id="actionBtn">
+      <div class="grid-item" id="actionBtn" style="animation-delay: ${index * 50}ms">
         <ha-ripple></ha-ripple>
         <div class="click-container click-shrink">
           <div class="item-icon">
