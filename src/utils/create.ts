@@ -1,7 +1,7 @@
+import { mdiClose } from '@mdi/js';
 import { html, TemplateResult } from 'lit';
 
 import { HA as HomeAssistant } from '../types';
-import { mdiClose } from '@mdi/js';
 
 interface PickerOptions {
   cardIndex?: number;
