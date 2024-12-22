@@ -69,6 +69,7 @@ header h1 {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  place-self: center;
 }
 
 /* #indicators {
@@ -414,6 +415,23 @@ header h1 {
 
   100% {
     transform: translateX(0%);
+  }
+}
+
+.zoom-in {
+  animation-duration: 0.5s;
+  animation-fill-mode: both;
+  animation-name: zoomIn;
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale3d(0.3, 0.3, 0.3);
+  }
+
+  50% {
+    opacity: 1;
   }
 }
 

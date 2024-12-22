@@ -1,6 +1,7 @@
 import { html, TemplateResult } from 'lit';
 
 import { HA as HomeAssistant } from '../types';
+import { mdiClose } from '@mdi/js';
 
 interface PickerOptions {
   cardIndex?: number;
@@ -291,3 +292,15 @@ export const HaAlert = ({
     </ha-alert>
   `;
 };
+
+export const createCloseHeading = (hass: HomeAssistant | undefined, title: string | TemplateResult) => html`
+  <div class="header_title">
+    <span>${title}</span>
+    <ha-icon-button
+      .label=${hass?.localize('ui.dialogs.generic.close') ?? 'Close'}
+      .path=${mdiClose}
+      dialogAction="close"
+      class="header_button"
+    ></ha-icon-button>
+  </div>
+`;

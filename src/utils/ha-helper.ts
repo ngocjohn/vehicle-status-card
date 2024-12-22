@@ -295,12 +295,6 @@ export async function _getMapData(card: VehicleStatusCard): Promise<void> {
   if (adress) {
     mapData.address = adress;
   }
-  if (config.mini_map?.enable_popup) {
-    const popup = await _setMapPopup(card);
-    if (popup) {
-      mapData.popUpCard = popup;
-    }
-  }
 
   card._mapData = mapData;
 }
@@ -325,15 +319,9 @@ export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
   }
 }
 
-export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCardConfig[] | void> {
+export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCardConfig[]> {
   const config = card._config as VehicleStatusCardConfig;
   const hass = card._hass as HomeAssistant;
-  if (
-    !config.mini_map?.enable_popup ||
-    !config.mini_map?.device_tracker ||
-    config.layout_config?.hide?.mini_map !== false
-  )
-    return;
   // console.log('Setting map popup');
   const miniMap = config.mini_map || {};
   const cardConfig: LovelaceCardConfig[] = [
@@ -350,7 +338,6 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
     },
   ];
   const cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
-  card._mapPopupLovelace = cardElement;
   return cardElement;
 }
 

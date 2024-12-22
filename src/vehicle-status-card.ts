@@ -11,7 +11,7 @@ import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResu
 import { customElement, property, query, state } from 'lit/decorators';
 
 import './components';
-import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators } from './components';
+import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
 import { ICON } from './const/const';
 import {
   ButtonCardEntity,
@@ -40,17 +40,24 @@ export class VehicleStatusCard extends LitElement {
   @state() public _tireCardPreview: TireEntity | undefined = undefined;
 
   @state() public _buttonCards: ButtonCardEntity = [];
-  @state() public _mapPopupLovelace: LovelaceCardConfig[] = [];
   @state() public _mapData?: MapData;
 
   @state() public _activeCardIndex: null | number | string = null;
   @state() _currentSwipeIndex?: number;
   @state() public _buttonReady = false;
 
+  @state() _resizeInitiated = false;
+  @state() _connected = false;
+  @state() private _resizeObserver: ResizeObserver | null = null;
+  @state() private _resizeEntries: ResizeObserverEntry[] = [];
+  @state() private _cardWidth: number = 0;
+  @state() private _cardHeight: number = 0;
+
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
   @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
   @query('vsc-indicators') _indicators!: VscIndicators;
+  @query('mini-map-box') _miniMap!: MiniMapBox;
 
   constructor() {
     super();
@@ -95,17 +102,60 @@ export class VehicleStatusCard extends LitElement {
     super.connectedCallback();
     window.VehicleCard = this;
     document.addEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    this._connected = true;
+
+    if (!this._resizeInitiated && !this._resizeObserver) {
+      this.delayedAttachResizeObserver();
+    }
   }
 
   disconnectedCallback(): void {
     document.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    this.detachResizeObserver();
+    this._connected = false;
+    this._resizeInitiated = false;
     super.disconnectedCallback();
   }
 
+  delayedAttachResizeObserver(): void {
+    // wait for loading to finish before attaching resize observer
+    setTimeout(() => {
+      this.attachResizeObserver();
+      this._resizeInitiated = true;
+    }, 0);
+  }
+  attachResizeObserver(): void {
+    const ro = new ResizeObserver((entries: ResizeObserverEntry[]) => {
+      this._resizeEntries = entries;
+      this.measureCard();
+    });
+
+    const card = this.shadowRoot?.querySelector('ha-card') as HTMLElement;
+    if (card) {
+      ro.observe(card);
+      this._resizeObserver = ro;
+    }
+  }
+
+  detachResizeObserver(): void {
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
+  }
+
+  private measureCard(): void {
+    if (this._resizeEntries.length > 0) {
+      const entry = this._resizeEntries[0];
+      this._cardWidth = entry.borderBoxSize[0].inlineSize;
+      this._cardHeight = entry.borderBoxSize[0].blockSize;
+    }
+  }
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
     HaHelp._setUpPreview(this);
     HaHelp.handleFirstUpdated(this);
+    this.measureCard();
   }
 
   protected async updated(changedProps: PropertyValues): Promise<void> {
@@ -128,6 +178,10 @@ export class VehicleStatusCard extends LitElement {
     // Always configure the card preview when there are config changes
     if (changedProps.has('_config') && this._currentPreview !== null) {
       HaHelp.previewHandler(this._currentPreview, this);
+    }
+
+    if (changedProps.has('_connected') && this._connected) {
+      this._setUpButtonAnimation();
     }
   }
 
@@ -241,14 +295,8 @@ export class VehicleStatusCard extends LitElement {
     if (!this._config?.mini_map?.device_tracker) return this._showWarning('Device tracker not available');
 
     return html`
-      <div id="mini_map">
-        <mini-map-box
-          .mapData=${this._mapData}
-          .config=${this._config}
-          .card=${this}
-          @toggle-map-popup=${() => (this._activeCardIndex = 'map')}
-        >
-        </mini-map-box>
+      <div id="mini_map" style=${`min-width: ${this._cardWidth}px`}>
+        <mini-map-box .mapData=${this._mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
       </div>
     `;
   }
@@ -295,15 +343,14 @@ export class VehicleStatusCard extends LitElement {
       </div>
     </div>`;
 
-    const selected_card = isString(index)
-      ? this._mapData?.popUpCard
-      : cardType === 'default'
-      ? defaultCard!.map((card: DefaultCardConfig) => this._renderDefaultCardItems(card))
-      : cardType === 'tire'
-      ? this._renderTireCard(tireCard)
-      : !isEmpty(customCard)
-      ? customCard.map((card: LovelaceCardConfig) => html`<div class="added-cutom">${card}</div>`)
-      : this._showWarning('Card not found');
+    const selected_card =
+      cardType === 'default'
+        ? defaultCard!.map((card: DefaultCardConfig) => this._renderDefaultCardItems(card))
+        : cardType === 'tire'
+        ? this._renderTireCard(tireCard)
+        : !isEmpty(customCard)
+        ? customCard.map((card: LovelaceCardConfig) => html`<div class="added-cutom">${card}</div>`)
+        : this._showWarning('Card not found');
 
     const content = html`
       <main id="cards-wrapper">
@@ -447,6 +494,25 @@ export class VehicleStatusCard extends LitElement {
     subIcon.toggleAttribute('active', !isHidden);
     dataBoxElement.toggleAttribute('active', !isHidden);
   }
+
+  private _setUpButtonAnimation = (): void => {
+    if (this.isEditorPreview) return;
+    setTimeout(() => {
+      const gridItems = this._vehicleButtonsGrid.shadowRoot?.querySelectorAll('vsc-button-single');
+      if (!gridItems) return;
+      gridItems.forEach((grid) => {
+        if (grid.shadowRoot) {
+          const gridItem = grid.shadowRoot.querySelector('.grid-item');
+          if (gridItem) {
+            gridItem.classList.add('zoom-in');
+            gridItem.addEventListener('animationend', () => {
+              gridItem.classList.remove('zoom-in');
+            });
+          }
+        }
+      });
+    }, 0);
+  };
 
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
   private _handleEditorEvent(ev: any): void {
