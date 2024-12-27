@@ -6,8 +6,8 @@ import { HA as HomeAssistant } from '../types';
 interface PickerOptions {
   cardIndex?: number;
   component: any;
-  configIndex: number | string;
-  configType: string;
+  configIndex?: number | string;
+  configType?: string;
   configValue?: string;
   itemIndex?: number;
   items?: { label: string; value: boolean | string }[]; // Only for AttributePicker
@@ -232,6 +232,7 @@ export const TabBar = ({
   activeTabIndex: number;
   onTabChange: (index: number) => void;
   tabs: { content: TemplateResult; icon?: string; key: string; label: string; stacked?: boolean }[];
+  onTabKeyChange?: (key: string) => void;
 }): TemplateResult => {
   return html`
     <mwc-tab-bar class="vic-tabbar" @MDCTabBar:activated=${(e: Event) => onTabChange((e.target as any).activeIndex)}>

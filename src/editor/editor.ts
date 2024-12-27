@@ -2,8 +2,10 @@
 import { fireEvent, LovelaceCardEditor, LovelaceConfig } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
+import { repeat } from 'lit/directives/repeat.js';
+import Sortable from 'sortablejs';
 
-import { CARD_VERSION } from '../const/const';
+import { CARD_SECTIONS, CARD_VERSION, ICON, SECTION, SECTION_ORDER } from '../const/const';
 import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import {
   _saveConfig,
@@ -39,6 +41,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @query('panel-button-card') _panelButtonCard?: PanelButtonCard;
 
   @state() _selectedConfigType: null | string = null;
+
+  @state() _sectionSortable: Sortable | null = null;
+  @state() private _reloadSectionList: boolean = false;
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     this._config = { ...config };
@@ -143,6 +148,53 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       console.log('Init sortable');
       this._panelImages.initSortable();
     }
+
+    if (
+      changedProps.has('activeTabIndex') &&
+      this.activeTabIndex === 2 &&
+      this._selectedConfigType === 'layout_config'
+    ) {
+      this._initSectionSortable();
+    }
+  }
+
+  private _initSectionSortable(): void {
+    this.updateComplete.then(() => {
+      const sectionList = this.shadowRoot?.getElementById('section-list') as HTMLElement;
+      if (sectionList) {
+        this._sectionSortable = new Sortable(sectionList, {
+          animation: 150,
+          handle: '.handle',
+          ghostClass: 'sortable-ghost',
+          onEnd: (evt) => {
+            this._handleSectionSort(evt);
+          },
+        });
+      }
+    });
+    console.log('Section sortable initialized');
+  }
+
+  private _handleSectionSort(evt: Sortable.SortableEvent): void {
+    if (!this._config) return;
+    evt.preventDefault();
+    const oldIndex = evt.oldIndex as number;
+    const newIndex = evt.newIndex as number;
+    const sections = [...(this._config.layout_config.section_order || [...SECTION_ORDER])];
+    const [removed] = sections.splice(oldIndex, 1);
+    sections.splice(newIndex, 0, removed);
+
+    this._config.layout_config.section_order = sections;
+
+    fireEvent(this, 'config-changed', { config: this._config });
+    setTimeout(() => {
+      if (this._sectionSortable) {
+        this._sectionSortable.destroy();
+        setTimeout(() => {
+          this._initSectionSortable();
+        }, 0);
+      }
+    }, 50);
   }
 
   /* ---------------------------- RENDER FUNCTIONS ---------------------------- */
@@ -316,16 +368,18 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       pickerType: 'selectorBoolean',
     };
     const hidePicker = [
+      { configValue: 'card_name', label: 'Card Name', value: hide.card_name || false },
+      { configValue: 'indicators', label: 'Indicators', value: hide.indicators || false },
+      { configValue: 'range_info', label: 'Range Info', value: hide.range_info || false },
+      { configValue: 'images', label: 'Images', value: hide.images || false },
+      { configValue: 'mini_map', label: 'Mini Map', value: hide.mini_map || false },
+      { configValue: 'buttons', label: 'Buttons', value: hide.buttons || false },
       {
         configValue: 'button_notify',
         label: 'Notify badge on buttons',
         value: hide.button_notify || false,
       },
-      { configValue: 'mini_map', label: 'Mini Map', value: hide.mini_map || false },
-      { configValue: 'buttons', label: 'Buttons', value: hide.buttons || false },
-      { configValue: 'indicators', label: 'Indicators', value: hide.indicators || false },
-      { configValue: 'range_info', label: 'Range Info', value: hide.range_info || false },
-      { configValue: 'images', label: 'Images', value: hide.images || false },
+      { configValue: 'map_address', label: 'Address on map', value: hide.map_address || false },
     ];
 
     const themeConfig = layout.theme_config || {};
@@ -378,13 +432,20 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const hideWrapper = html`
       <div class="sub-panel-config button-card">
         <div class="sub-header">
-          <div>Hide Configuration</div>
+          <div>Choose the items / sections to hide</div>
         </div>
         <div class="sub-panel">
           <div class="sub-content">${hidePicker.map((config) => createPickers(config, sharedBoolConfig))}</div>
         </div>
       </div>
+      <div class="sub-panel-config button-card">
+        <div class="sub-header">
+          <div>Section Order Configuration</div>
+        </div>
+        <div class="sub-panel">${this._renderSectionOrder()}</div>
+      </div>
     `;
+
     const themeWrapper = html`
       <div class="sub-panel-config button-card">
         <div class="sub-header">
@@ -398,6 +459,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
               .placeholder=${'Vehicle Status Card'}
               .configValue=${'name'}
               .value=${this._config.name}
+              .required=${false}
               @change=${this._valueChanged}
             ></ha-textfield>
           </div>
@@ -414,7 +476,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const tabsConfig = [
       { content: themeWrapper, key: 'theme_config', label: 'Theme' },
       { content: buttonGridWrapper, key: 'button_grid', label: 'Button Grid' },
-      { content: hideWrapper, key: 'hide', label: 'Hide' },
+      { content: hideWrapper, key: 'hide', label: 'Appearance' },
     ];
 
     return html`<div class="card-config">
@@ -423,6 +485,26 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         onTabChange: (index: number) => (this.activeTabIndex = index),
         tabs: tabsConfig,
       })}
+    </div>`;
+  }
+
+  private _renderSectionOrder(): TemplateResult {
+    if (this._reloadSectionList) return html`<div>Loading...</div>`;
+
+    const sectionList = this._config.layout_config.section_order || [...SECTION_ORDER];
+    return html` <div id="section-list">
+      ${repeat(
+        sectionList,
+        (section) => section,
+        (section, index) => html` <div class="item-config-row" data-index="${index}">
+          <div class="handle">
+            <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+          </div>
+          <div class="item-content">
+            <div class="primary">${section.replace(/_/g, ' ').toUpperCase()}</div>
+          </div>
+        </div>`
+      )}
     </div>`;
   }
 
@@ -476,11 +558,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
     const miniMap = this._config?.mini_map || {};
     const deviceTracker = miniMap.device_tracker ?? '';
-    const defaultZoom = miniMap.default_zoom ?? 0;
+    const defaultZoom = miniMap.default_zoom ?? 14;
     const hoursToShow = miniMap.hours_to_show ?? 0;
     const googleApi = miniMap.google_api_key ?? '';
     const themeMode = miniMap.theme_mode ?? 'auto';
     const popupEnable = miniMap.enable_popup ?? false;
+    const mapHeight = miniMap.map_height ?? 150;
 
     const pickerConfig = [
       {
@@ -490,7 +573,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         pickerType: 'entity',
         value: deviceTracker,
       },
-      { configValue: 'google_api_key', label: 'Google API Key', pickerType: 'textfield', value: googleApi },
+      {
+        configValue: 'google_api_key',
+        label: 'Google API Key',
+        pickerType: 'textfield' as 'textfield',
+        value: googleApi ?? '',
+      },
       {
         configValue: 'default_zoom',
         label: 'Default Zoom',
@@ -519,6 +607,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         options: { selector: { boolean: ['true', 'false'] } },
         pickerType: 'selectorBoolean',
         value: popupEnable,
+      },
+      {
+        configValue: 'map_height',
+        label: 'Minimap Height (px)',
+        options: { selector: { number: { max: 500, min: 150, mode: 'slider', step: 10 } } },
+        pickerType: 'number',
+        value: mapHeight,
       },
     ];
 
@@ -646,33 +741,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
   }
 
-  private panelTemplate(
-    panelKey: string,
-    subpanel: string,
-    content: TemplateResult,
-    options?: { expanded?: boolean; helper?: boolean }
-  ): TemplateResult {
-    const { icon, name } = CONFIG_TYPES.options[panelKey].subpanels[subpanel];
-    const expanded = options?.expanded ?? false;
-
-    return html`
-      <ha-expansion-panel
-        id="${panelKey}"
-        .outlined=${true}
-        .expanded=${expanded}
-        .header=${name}
-        .secondary=${''}
-        .leftChevron=${true}
-        @expanded-changed=${(e: Event) => this._handlePanelExpandedChanged(e, panelKey)}
-      >
-        <div slot="icons">
-          <ha-icon icon=${icon ? icon : ''}></ha-icon>
-        </div>
-        <div class="card-config">${content}</div>
-      </ha-expansion-panel>
-    `;
-  }
-
   public _valueChanged(ev: any): void {
     if (!this._config || !this._hass) {
       return;
@@ -684,27 +752,20 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const configIndex = target.configIndex;
 
     // Ensure we handle the boolean value correctly
-    let newValue: any = target.value;
-
-    if (['default_zoom', 'enable_popup', 'hours_to_show', 'theme_mode'].includes(configValue)) {
+    let newValue: any = target.checked !== undefined ? target.checked : target.value;
+    if (['default_zoom', 'enable_popup', 'hours_to_show', 'theme_mode', 'map_height'].includes(configValue)) {
       newValue = ev.detail.value;
-    } else {
-      newValue = target.checked !== undefined ? target.checked : target.value;
     }
-
+    let hiddenChanged = false;
     // console.log('Config Value:', configValue, 'Config Type:', configType, 'New Value:', newValue);
     const updates: Partial<VehicleStatusCardConfig> = {};
 
     if (configType === 'mini_map') {
-      if (['default_zoom', 'hours_to_show', 'theme_mode'].includes(configValue)) {
-        const miniMap = { ...(this._config.mini_map || {}) };
-        miniMap[configValue] = newValue;
-        updates.mini_map = miniMap;
-      } else {
-        const miniMap = { ...this._config.mini_map };
-        miniMap[configValue] = newValue;
-        updates.mini_map = miniMap;
-      }
+      const miniMap = { ...(this._config.mini_map || {}) };
+
+      miniMap[configValue] = newValue;
+      updates.mini_map = miniMap;
+      console.log('Mini Map Updates:', configValue, newValue);
     } else if (configType === 'layout_config') {
       newValue = ev.detail.value;
       if (configIndex === 'button_grid') {
@@ -718,6 +779,34 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         const hide = { ...(layoutConfig.hide || {}) };
         hide[configValue] = newValue;
         layoutConfig.hide = hide;
+
+        if (CARD_SECTIONS.includes(configValue)) {
+          let sectionOrder = [...(layoutConfig.section_order ?? [...SECTION_ORDER])];
+          const section = {
+            indicators: SECTION.INDICATORS,
+            range_info: SECTION.RANGE_INFO,
+            images: SECTION.IMAGES,
+            mini_map: SECTION.MINI_MAP,
+            buttons: SECTION.BUTTONS,
+          };
+          for (const key in section) {
+            if (['indicators', 'range_info'].includes(key)) {
+              if (hide.indicators === true && hide.range_info === true) {
+                sectionOrder = sectionOrder.filter((s) => s !== SECTION.HEADER_INFO);
+              } else if (hide.indicators === false || hide.range_info === false) {
+                sectionOrder.push(SECTION.HEADER_INFO);
+              }
+            } else if (hide[key] === true) {
+              sectionOrder = sectionOrder.filter((s) => s !== key);
+            } else {
+              sectionOrder.push(key);
+            }
+          }
+
+          sectionOrder = SECTION_ORDER.filter((s) => sectionOrder.includes(s));
+          layoutConfig.section_order = sectionOrder;
+          hiddenChanged = true;
+        }
         updates.layout_config = layoutConfig;
       } else if (configIndex === 'theme_config') {
         newValue = ev.detail.value ?? ev.target.value;
@@ -740,6 +829,18 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     if (Object.keys(updates).length > 0) {
       this._config = { ...this._config, ...updates };
       fireEvent(this, 'config-changed', { config: this._config });
+      if (hiddenChanged) {
+        this._reloadSectionList = true;
+        setTimeout(() => {
+          if (this._sectionSortable) {
+            this._sectionSortable.destroy();
+            this._reloadSectionList = false;
+            setTimeout(() => {
+              this._initSectionSortable();
+            }, 0);
+          }
+        }, 50);
+      }
     }
   }
 

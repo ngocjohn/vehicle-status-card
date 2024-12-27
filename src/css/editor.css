@@ -337,9 +337,9 @@ span.info-alert {
 	gap: 8px;
 }
 
-.sub-panel:last-child {
+/* .sub-panel:last-child {
 	margin-bottom: var(--vic-card-padding);
-}
+} */
 
 .sub-panel-config {
 	opacity: 1;
@@ -355,7 +355,11 @@ span.info-alert {
 	border: solid 1px var(--divider-color);
 	padding: var(--vic-gutter-gap);
 	border-radius: var(--ha-card-border-radius, 12px);
+	margin-bottom: var(--vic-gutter-gap);
+}
 
+.sub-panel-config.button-card:last-child {
+	margin-bottom: 0;
 }
 
 .sub-panel-config.closed {

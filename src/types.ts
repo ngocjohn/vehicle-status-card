@@ -100,7 +100,7 @@ interface Address {
 export interface MapData {
   lat: number;
   lon: number;
-  address?: Partial<Address>;
+  address: Partial<Address>;
   popUpCard?: LovelaceCardConfig[];
 }
 
@@ -111,6 +111,7 @@ interface MiniMapConfig {
   google_api_key: string;
   hours_to_show: number;
   theme_mode: 'auto' | 'dark' | 'light';
+  map_height: number;
 }
 
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */
@@ -264,11 +265,14 @@ interface LayoutConfig {
     indicators: boolean;
     mini_map: boolean;
     range_info: boolean;
+    card_name: boolean;
+    map_address: boolean;
   };
   theme_config: {
     mode: 'auto' | 'dark' | 'light';
     theme: string;
   };
+  section_order?: Array<string>;
 }
 
 /**

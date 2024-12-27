@@ -9,10 +9,11 @@ import {
 import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
+import { classMap } from 'lit/directives/class-map.js';
 
 import './components';
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
-import { ICON } from './const/const';
+import { ICON, SECTION, SECTION_ORDER } from './const/const';
 import {
   ButtonCardEntity,
   HA as HomeAssistant,
@@ -194,6 +195,9 @@ export class VehicleStatusCard extends LitElement {
     return hasConfigOrEntityChanged(this, changedProps, true);
   }
 
+  private _isSectionHidden(section: SECTION): boolean {
+    return this._config.layout_config?.hide?.[section] || false;
+  }
   protected render(): TemplateResult {
     if (!this._config || !this._hass) {
       return html``;
@@ -203,9 +207,10 @@ export class VehicleStatusCard extends LitElement {
       return this._renderCardPreview();
     }
 
+    const headerHidden = this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '';
     return html`
-      <ha-card>
-        <header id="name">
+      <ha-card class=${this._computeClasses()} ?no-header=${headerHidden}>
+        <header id="name" ?hidden=${headerHidden}>
           <h1>${this._config.name}</h1>
         </header>
         ${this._activeCardIndex === null ? this._renderMainCard() : this._renderSelectedCard()}
@@ -213,28 +218,31 @@ export class VehicleStatusCard extends LitElement {
     `;
   }
 
-  private _renderMainCard(): TemplateResult | typeof nothing {
-    const hide = this._config.layout_config?.hide || {};
+  private _renderMainCard(): TemplateResult {
+    const sectionOrder = this._config.layout_config?.section_order ?? [...SECTION_ORDER];
 
-    const section = [
-      hide.indicators ? null : this._renderIndicators(),
-      hide.range_info ? null : this._renderRangeInfo(),
-      hide.images ? null : this._renderImagesSlide(),
-      hide.mini_map ? null : this._renderMiniMap(),
-      hide.buttons ? null : this._renderButtons(),
-    ];
-
-    return html`
-      <main id="main-wrapper">
-        <div class="header-info-box">${section.slice(0, 2).map((item) => item)}</div>
-        ${section.slice(2).map((item) => item)}
-      </main>
-    `;
+    return html` <main id="main-wrapper">
+      ${sectionOrder.map((section) => {
+        switch (section) {
+          case SECTION.HEADER_INFO:
+            return html` <div class="header-info-box">${this._renderIndicators()} ${this._renderRangeInfo()}</div>`;
+          case SECTION.IMAGES:
+            return this._renderImagesSlide();
+          case SECTION.MINI_MAP:
+            return this._renderMiniMap();
+          case SECTION.BUTTONS:
+            return this._renderButtons();
+          default:
+            console.log(`Unknown section ${section}`);
+            return html``;
+        }
+      })}
+    </main>`;
   }
 
   private _renderIndicators(): TemplateResult {
     if (!this._config.indicators) return html``;
-    return html` <div id="indicators">
+    return html` <div id="indicators" ?hidden=${this._isSectionHidden(SECTION.INDICATORS)}>
       <vsc-indicators
         .hass=${this._hass}
         .config=${this._config}
@@ -250,7 +258,7 @@ export class VehicleStatusCard extends LitElement {
     if (!this._buttonReady) return html``;
     const visibleButtons = this._buttonCards.filter((button) => !button.hide_button);
     return html`
-      <div id="button_card">
+      <div id="button_card" ?hidden=${this._isSectionHidden(SECTION.BUTTONS)}>
         <vehicle-buttons-grid
           .hass=${this._hass}
           .card=${this}
@@ -285,7 +293,7 @@ export class VehicleStatusCard extends LitElement {
     if (!this._config.images || this._config.images.length === 0) return html``;
 
     return html`
-      <div id="images">
+      <div id="images" ?hidden=${this._isSectionHidden(SECTION.IMAGES)}>
         <images-slide .images=${this._config.images} .config=${this._config}> </images-slide>
       </div>
     `;
@@ -295,7 +303,7 @@ export class VehicleStatusCard extends LitElement {
     if (!this._config?.mini_map?.device_tracker) return this._showWarning('Device tracker not available');
 
     return html`
-      <div id="mini_map" style=${`min-width: ${this._cardWidth}px`}>
+      <div id="mini_map" ?hidden=${this._isSectionHidden(SECTION.MINI_MAP)} style=${`min-width: ${this._cardWidth}px`}>
         <mini-map-box .mapData=${this._mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
       </div>
     `;
@@ -304,7 +312,9 @@ export class VehicleStatusCard extends LitElement {
   private _renderRangeInfo(): TemplateResult {
     const { range_info } = this._config;
     if (!range_info) return html``;
-    return html`<vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>`;
+    return html`<div id="range" ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO)}>
+      <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>
+    </div>`;
   }
 
   /* -------------------------- CUSTOM CARD RENDERING -------------------------- */
@@ -414,6 +424,17 @@ export class VehicleStatusCard extends LitElement {
     }
   }
 
+  private _computeClasses() {
+    if (!this._config) return;
+    const section_order = this._config.layout_config?.section_order || [...SECTION_ORDER];
+    const lastItem = section_order[section_order.length - 1];
+    const firstItem = section_order[0];
+    return classMap({
+      __map_last: lastItem === SECTION.MINI_MAP,
+      __map_first: firstItem === SECTION.MINI_MAP,
+    });
+  }
+
   /* --------------------------- THEME CONFIGURATION -------------------------- */
   private applyTheme(theme: string): void {
     if (!this._config.layout_config?.theme_config?.theme) return;
@@ -496,7 +517,7 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _setUpButtonAnimation = (): void => {
-    if (this.isEditorPreview) return;
+    if (this.isEditorPreview || this._isSectionHidden(SECTION.BUTTONS)) return;
     setTimeout(() => {
       const gridItems = this._vehicleButtonsGrid.shadowRoot?.querySelectorAll('vsc-button-single');
       if (!gridItems) return;
