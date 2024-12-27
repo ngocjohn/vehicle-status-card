@@ -6,6 +6,7 @@ import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, 
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { SECTION, SECTION_ORDER } from '../const/const';
 import { MapData } from '../types';
 import { createCloseHeading } from '../utils/create';
 import { _setMapPopup } from '../utils/ha-helper';
@@ -21,11 +22,15 @@ export class MiniMapBox extends LitElement {
   @state() private map: L.Map | null = null;
   @state() private marker: L.Marker | null = null;
   @state() private latLon: L.LatLng | null = null;
-  @state() private zoom = 16;
   @state() private mapCardPopup?: LovelaceCardConfig[];
+  @state() private _addressReady = false;
 
   private get mapPopup(): boolean {
     return this.card._config.mini_map?.enable_popup || false;
+  }
+
+  private get zoom(): number {
+    return this.card._config.mini_map?.default_zoom || 14;
   }
 
   protected firstUpdated(changedProperties: PropertyValues): void {
@@ -36,6 +41,9 @@ export class MiniMapBox extends LitElement {
     super.updated(changedProperties);
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined) {
       this.initMap();
+      if (this.mapData.address !== undefined) {
+        this._addressReady = true;
+      }
     }
   }
 
@@ -56,6 +64,20 @@ export class MiniMapBox extends LitElement {
   }
 
   private _computeMapStyle() {
+    const map_height = this.card._config.mini_map?.map_height ?? 150;
+    const noHeader = this.card._config.layout_config?.hide.card_name || this.card._config.name?.trim() === '';
+    const section_order = this.card._config.layout_config?.section_order || [...SECTION_ORDER];
+    const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
+    const firstItem = section_order[0] === SECTION.MINI_MAP && noHeader;
+    let maskImage =
+      'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)';
+
+    if (lastItem) {
+      maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
+    } else if (firstItem) {
+      maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
+    }
+
     const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
     const markerFilter = this.isDark ? 'contrast(1.2) saturate(6) brightness(1.3)' : 'none';
     const tileFilter = this.isDark
@@ -65,6 +87,8 @@ export class MiniMapBox extends LitElement {
       '--vic-map-marker-color': markerColor,
       '--vic-marker-filter': markerFilter,
       '--vic-map-tiles-filter': tileFilter,
+      '--vic-map-mask-image': maskImage,
+      height: `${map_height}px`,
     });
   }
 
@@ -123,7 +147,6 @@ export class MiniMapBox extends LitElement {
   }
 
   render(): TemplateResult {
-    if (!this.mapData) return html`<div class="map-wrapper loading"><span class="loader"></span></div>`;
     return html`
       <div class="map-wrapper" style=${this._computeMapStyle()}>
         <div id="map"></div>
@@ -137,10 +160,10 @@ export class MiniMapBox extends LitElement {
     `;
   }
   private _renderAddress(): TemplateResult {
-    if (!this.mapData.address) {
-      return html`<div class="address" style="left: 10%;"><span class="loader"></span></div>`;
-    }
-    const address = this.mapData?.address || {};
+    if (this.card._config.layout_config.hide.map_address) return html``;
+    if (!this._addressReady) return html` <div class="address loading"><span class="loader"></span></div> `;
+
+    const { address } = this.mapData;
     return html`
       <div class="address">
         <div class="address-line">
@@ -212,18 +235,14 @@ export class MiniMapBox extends LitElement {
         *:focus {
           outline: none;
         }
-        :host {
-          --vic-map-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%),
-            linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
-        }
 
         .map-wrapper {
           position: relative;
           width: 100%;
           height: 100%;
-          border: none !important;
-          box-shadow: none !important;
-          background: transparent !important;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .map-wrapper.loading {
           display: flex;
@@ -289,7 +308,7 @@ export class MiniMapBox extends LitElement {
           border-radius: 50%;
           top: 50%;
           left: 50%;
-          border: 1px solid white;
+          /* border: 1px solid white; */
           transform: translate(-50%, -50%);
           opacity: 1;
           transition: all 0.2s ease;
@@ -304,7 +323,7 @@ export class MiniMapBox extends LitElement {
         }
         .reset-button {
           position: absolute;
-          top: 15%;
+          top: 1rem;
           right: 1rem;
           z-index: 2;
           cursor: pointer;
@@ -317,7 +336,7 @@ export class MiniMapBox extends LitElement {
           position: absolute;
           width: max-content;
           height: fit-content;
-          top: 50%;
+          bottom: 15%;
           left: 1rem;
           z-index: 2;
           display: flex;
@@ -326,7 +345,7 @@ export class MiniMapBox extends LitElement {
           flex-direction: column;
           gap: 0.5rem;
           color: var(--primary-text-color);
-          backdrop-filter: blur(1px);
+          backdrop-filter: blur(2px);
           .address-line {
             display: flex;
             gap: 0.5rem;

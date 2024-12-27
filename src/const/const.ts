@@ -243,3 +243,22 @@ export const ICON = {
   CHEVRON_LEFT: mdiChevronLeft,
   CODE_JSON: mdiCodeJson,
 };
+
+export const enum SECTION {
+  INDICATORS = 'indicators',
+  RANGE_INFO = 'range_info',
+  IMAGES = 'images',
+  MINI_MAP = 'mini_map',
+  BUTTONS = 'buttons',
+  HEADER_INFO = 'header_info',
+  CARD_NAME = 'card_name',
+}
+
+export const CARD_SECTIONS = [
+  SECTION.INDICATORS,
+  SECTION.RANGE_INFO,
+  SECTION.IMAGES,
+  SECTION.MINI_MAP,
+  SECTION.BUTTONS,
+];
+export const SECTION_ORDER = [SECTION.HEADER_INFO, SECTION.IMAGES, SECTION.MINI_MAP, SECTION.BUTTONS];

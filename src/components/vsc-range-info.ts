@@ -21,7 +21,7 @@ export class VscRangeInfo extends LitElement {
     });
 
     // Wrap rangeInfo in a div if there are more than one entries
-    return html`<div id="range"><div class="combined-info-box">${rangeInfo}</div></div>`;
+    return html`<div class="combined-info-box">${rangeInfo}</div>`;
   }
 
   private _renderRangeInfo(rangeItem: RangeInfoConfig): TemplateResult {
