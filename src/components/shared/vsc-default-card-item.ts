@@ -1,5 +1,5 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 
 // Local
@@ -18,12 +18,52 @@ export class VehicleDefaultCardItem extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public _card!: VehicleStatusCard;
   @property({ attribute: false }) public defaultCardItem!: CardItemConfig;
+  @property({ type: Boolean }) lastItem = false;
 
   @state() private _defaultCardItemsTemplate: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
   @state() private _unsubRenderTemplate: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
 
   static get styles(): CSSResultGroup {
-    return cardstyles;
+    return [
+      css`
+        .data-row {
+          display: flex;
+          justify-content: space-between;
+          padding: var(--vic-gutter-gap);
+          border-bottom: 1px solid #444;
+          overflow: hidden;
+        }
+
+        .data-row .data-value-unit {
+          cursor: pointer;
+          text-align: end;
+          white-space: nowrap;
+        }
+
+        .data-row .data-label {
+          height: auto;
+          display: inline-block;
+          align-items: flex-end;
+          margin-inline-start: 8px;
+          text-transform: none;
+        }
+
+        .data-row div {
+          display: flex;
+          align-items: center;
+          gap: var(--vic-gutter-gap);
+        }
+
+        .data-icon {
+          color: var(--secondary-text-color);
+        }
+        .data-row[last-item] {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+      `,
+      cardstyles,
+    ];
   }
 
   connectedCallback(): void {
@@ -143,7 +183,7 @@ export class VehicleDefaultCardItem extends LitElement {
       : this.hass.formatEntityState(this.hass.states[entity]);
 
     return html`
-      <div class="data-row">
+      <div class="data-row" ?last-item=${this.lastItem}>
         <div>
           <ha-state-icon
             class="data-icon"
