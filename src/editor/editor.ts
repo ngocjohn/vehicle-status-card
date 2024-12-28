@@ -239,6 +239,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       detail: { data: detail, type },
     });
     this.dispatchEvent(event);
+    console.log('Dispatched event', type, detail);
   }
 
   private _handlePanelExpandedChanged(ev: Event, panelKey: string): void {

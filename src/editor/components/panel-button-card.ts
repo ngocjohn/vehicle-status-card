@@ -429,7 +429,7 @@ export class PanelButtonCard extends LitElement {
     const infoText = CONFIG_TYPES.options.button_card.subpanels.button.description;
 
     const headerActions = !buttonCard.hide_button
-      ? [{ title: 'Show Button', action: this.toggleAction('show-button') }]
+      ? [{ title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) }]
       : [];
 
     const btnTypeCardType = html` ${this._renderSubHeader('Button configuration', headerActions)}
@@ -1197,7 +1197,7 @@ export class PanelButtonCard extends LitElement {
             }
             break;
           case 'show-button':
-            this.cardEditor._dispatchEvent('show-button', { buttonIndex: buttonIndex! });
+            this.cardEditor._dispatchEvent('show-button', { buttonIndex: buttonIndex });
             break;
           case 'category-edit':
             this._cardIndex = cardIndex!;
