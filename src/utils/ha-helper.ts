@@ -279,24 +279,27 @@ export async function _getMapData(card: VehicleStatusCard): Promise<void> {
   ) {
     return;
   }
-
+  console.log('Getting map data');
   const hass = card._hass as HomeAssistant;
   const deviceTracker = config.mini_map?.device_tracker;
-  const apiKey = config.mini_map?.google_api_key;
   const mapData = {} as MapData;
   const deviceStateObj = hass.states[deviceTracker];
   if (!deviceStateObj) return;
   const { latitude, longitude } = deviceStateObj.attributes as { latitude: number; longitude: number };
   mapData.lat = latitude;
   mapData.lon = longitude;
-  const adress = apiKey
-    ? await getAddressFromGoggle(latitude, longitude, apiKey)
-    : await getAddressFromOpenStreet(latitude, longitude);
-  if (adress) {
-    mapData.address = adress;
-  }
-
   card._mapData = mapData;
+}
+
+export async function _getMapAddress(card: VehicleStatusCard, lat: number, lon: number) {
+  if (card._config.layout_config?.hide?.map_address) return;
+  const apiKey = card._config.mini_map?.google_api_key;
+  console.log('Getting address from map data');
+  const adress = apiKey ? await getAddressFromGoggle(lat, lon, apiKey) : await getAddressFromOpenStreet(lat, lon);
+  if (!adress) {
+    return;
+  }
+  return adress;
 }
 
 export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
@@ -343,6 +346,7 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
 
 async function getAddressFromOpenStreet(lat: number, lon: number) {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2`;
+
   try {
     const response = await fetch(url);
     const data = await response.json();
@@ -414,7 +418,7 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string) {
       throw new Error('No results found');
     }
   } catch (error) {
-    console.error('Error fetching address:', error);
+    // console.error('Error fetching address:', error);
     return;
   }
 }

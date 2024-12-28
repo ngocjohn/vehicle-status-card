@@ -7,9 +7,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
-import { MapData } from '../types';
+import { Address, MapData } from '../types';
 import { createCloseHeading } from '../utils/create';
-import { _setMapPopup } from '../utils/ha-helper';
+import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 @customElement('mini-map-box')
@@ -25,6 +25,8 @@ export class MiniMapBox extends LitElement {
   @state() private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
 
+  @state() private _address: Partial<Address> | null = null;
+
   private get mapPopup(): boolean {
     return this.card._config.mini_map?.enable_popup || false;
   }
@@ -33,7 +35,7 @@ export class MiniMapBox extends LitElement {
     return this.card._config.mini_map?.default_zoom || 14;
   }
 
-  protected firstUpdated(changedProperties: PropertyValues): void {
+  protected async firstUpdated(changedProperties: PropertyValues): Promise<void> {
     super.firstUpdated(changedProperties);
   }
 
@@ -41,9 +43,16 @@ export class MiniMapBox extends LitElement {
     super.updated(changedProperties);
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined) {
       this.initMap();
-      if (this.mapData.address !== undefined) {
-        this._addressReady = true;
-      }
+      this._getAddress();
+    }
+  }
+
+  private async _getAddress(): Promise<void> {
+    if (!this.mapData || this.mapData.lat === undefined || this.mapData.lon === undefined) return;
+    const address = await _getMapAddress(this.card, this.mapData.lat, this.mapData.lon);
+    if (address) {
+      this._address = address;
+      this._addressReady = true;
     }
   }
 
@@ -67,22 +76,25 @@ export class MiniMapBox extends LitElement {
     const map_height = this.card._config.mini_map?.map_height ?? 150;
     const noHeader = this.card._config.layout_config?.hide.card_name || this.card._config.name?.trim() === '';
     const section_order = this.card._config.layout_config?.section_order || [...SECTION_ORDER];
-    const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
     const firstItem = section_order[0] === SECTION.MINI_MAP && noHeader;
-    let maskImage =
-      'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)';
+    const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
+    const single = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
 
-    if (lastItem) {
+    let maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)';
+
+    if (lastItem && !firstItem) {
       maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
-    } else if (firstItem) {
+    } else if (firstItem && !lastItem) {
       maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
+    } else if (single) {
+      maskImage = 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)';
     }
 
     const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
     const markerFilter = this.isDark ? 'contrast(1.2) saturate(6) brightness(1.3)' : 'none';
     const tileFilter = this.isDark
       ? 'brightness(0.6) invert(1) contrast(6) saturate(0.3) brightness(0.7) opacity(.25)'
-      : 'grayscale(1) contrast(1.1) opacity(0.7)';
+      : 'grayscale(1) contrast(1.1)';
     return styleMap({
       '--vic-map-marker-color': markerColor,
       '--vic-marker-filter': markerFilter,
@@ -149,21 +161,21 @@ export class MiniMapBox extends LitElement {
   render(): TemplateResult {
     return html`
       <div class="map-wrapper" style=${this._computeMapStyle()}>
-        <div id="map"></div>
-        <div class="map-overlay"></div>
-        <div class="reset-button" @click=${this.resetMap}>
-          <ha-icon icon="mdi:compass"></ha-icon>
+        <div id="overlay-container">
+          <div class="reset-button" @click=${this.resetMap}>
+            <ha-icon icon="mdi:compass"></ha-icon>
+          </div>
+          ${this._renderAddress()}
         </div>
-        ${this._renderAddress()}
+        <div id="map"></div>
       </div>
       ${this._renderMapDialog()}
     `;
   }
   private _renderAddress(): TemplateResult {
-    if (this.card._config.layout_config.hide.map_address) return html``;
-    if (!this._addressReady) return html` <div class="address loading"><span class="loader"></span></div> `;
+    if (this.card._config.layout_config.hide.map_address || !this._addressReady) return html``;
 
-    const { address } = this.mapData;
+    const address = this._address || {};
     return html`
       <div class="address">
         <div class="address-line">
@@ -250,16 +262,16 @@ export class MiniMapBox extends LitElement {
           justify-content: center;
         }
 
-        .map-overlay {
+        #overlay-container {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
           /* background-color: var(--ha-card-background, var(--card-background-color)); */
-          opacity: 0.6; /* Adjust the opacity as needed */
-          pointer-events: none; /* Ensure the overlay does not interfere with map interactions */
+          /* opacity: 0.6;  */
         }
+
         #map {
           height: 100%;
           width: 100%;
@@ -273,6 +285,7 @@ export class MiniMapBox extends LitElement {
           position: relative;
           width: 100%;
           height: 100%;
+          /* z-index: 1; */
         }
         .marker {
           position: relative;
