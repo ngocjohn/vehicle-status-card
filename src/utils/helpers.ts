@@ -1,3 +1,5 @@
+import tinycolor from 'tinycolor2';
+
 export function isEmpty(input: any): boolean {
   if (Array.isArray(input)) {
     // Check if array is empty
@@ -10,3 +12,9 @@ export function isEmpty(input: any): boolean {
     return true;
   }
 }
+
+export const isDarkColor = (color: string): boolean => {
+  const colorObj = tinycolor(color);
+  // console.log('colorObj', colorObj);
+  return colorObj.isLight();
+};

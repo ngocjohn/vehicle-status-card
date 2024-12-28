@@ -24,7 +24,7 @@ import {
   ButtonCardEntityItem,
   DefaultCardConfig,
 } from './types';
-import { HaHelp, isEmpty } from './utils';
+import { HaHelp, isDarkColor, isEmpty } from './utils';
 
 // Styles
 import cardcss from './css/card.css';
@@ -388,8 +388,10 @@ export class VehicleStatusCard extends LitElement {
       <div class="default-card">
         <div class="data-header">${title} ${header}</div>
         <div class="data-box" ?active=${collapsed_items}>
-          ${items.map((item) => {
+          ${items.map((item, index) => {
+            const isLastItem = index === items.length - 1;
             return html`<vsc-default-card-item
+              .lastItem=${isLastItem}
               .key=${item.entity}
               .hass=${this._hass}
               .defaultCardItem=${item}
@@ -429,9 +431,11 @@ export class VehicleStatusCard extends LitElement {
     const section_order = this._config.layout_config?.section_order || [...SECTION_ORDER];
     const lastItem = section_order[section_order.length - 1];
     const firstItem = section_order[0];
+    const mapSingle = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
     return classMap({
-      __map_last: lastItem === SECTION.MINI_MAP,
-      __map_first: firstItem === SECTION.MINI_MAP,
+      __map_last: lastItem === SECTION.MINI_MAP && firstItem !== SECTION.MINI_MAP,
+      __map_first: firstItem === SECTION.MINI_MAP && lastItem !== SECTION.MINI_MAP,
+      __map_single: mapSingle,
     });
   }
 
@@ -567,7 +571,14 @@ export class VehicleStatusCard extends LitElement {
   }
 
   public getCardSize(): number {
-    return 5;
+    return 3;
+  }
+
+  private _isDarkTheme(): boolean {
+    const css = getComputedStyle(this);
+    const primaryTextColor = css.getPropertyValue('--primary-text-color');
+    const isDark = isDarkColor(primaryTextColor);
+    return isDark;
   }
 
   public get isDark(): boolean {
@@ -576,7 +587,7 @@ export class VehicleStatusCard extends LitElement {
     } else if (this._config.layout_config?.theme_config?.mode === 'light') {
       return false;
     }
-    return this._hass.themes.darkMode;
+    return this._hass.selectedTheme?.dark ?? this._isDarkTheme();
   }
 
   get isEditorPreview(): boolean {

@@ -22,6 +22,15 @@ export interface GUIModeChangedEvent {
   guiMode: boolean;
   guiModeAvailable: boolean;
 }
+export interface ThemeSettings {
+  theme: string;
+  // Radio box selection for theme picker. Do not use in Lovelace rendering as
+  // it can be undefined == auto.
+  // Property hass.themes.darkMode carries effective current mode.
+  dark?: boolean;
+  primaryColor?: string;
+  accentColor?: string;
+}
 /**
  * HomeAssistantExtended extends the existing HomeAssistant interface with additional properties.
  */
@@ -31,6 +40,7 @@ export type HA = {
   formatEntityAttributeValue: (entityId: HassEntity, attribute: string) => string;
   formatEntityState: (stateObj: HassEntity) => string;
   themes: ExtendedThemes;
+  selectedTheme: ThemeSettings | null;
   connection: Connection;
 } & HomeAssistant;
 
@@ -88,7 +98,7 @@ export interface ImageConfig {
 }
 
 /* ----------------------------- MINI MAP CONFIG ---------------------------- */
-interface Address {
+export interface Address {
   streetNumber: string;
   streetName: string;
   sublocality: string;
