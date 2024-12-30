@@ -5,8 +5,8 @@ import {
   LovelaceCardConfig,
   LovelaceCardEditor,
   forwardHaptic,
+  LovelaceCard,
 } from 'custom-card-helpers';
-import { isString } from 'es-toolkit';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
 import { classMap } from 'lit/directives/class-map.js';
@@ -31,7 +31,11 @@ import cardcss from './css/card.css';
 import { getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
-export class VehicleStatusCard extends LitElement {
+export class VehicleStatusCard extends LitElement implements LovelaceCard {
+  public setConfig(config: VehicleStatusCardConfig): void {
+    this._config = config;
+  }
+
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
 
@@ -53,6 +57,8 @@ export class VehicleStatusCard extends LitElement {
   @state() private _resizeEntries: ResizeObserverEntry[] = [];
   @state() private _cardWidth: number = 0;
   @state() private _cardHeight: number = 0;
+
+  private _prevTheme?: string;
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
@@ -89,14 +95,6 @@ export class VehicleStatusCard extends LitElement {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import('./editor/editor');
     return document.createElement('vehicle-status-card-editor');
-  }
-
-  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
-    if (!config) {
-      throw new Error('Invalid configuration');
-    }
-
-    this._config = structuredClone(config);
   }
 
   connectedCallback(): void {
@@ -162,36 +160,25 @@ export class VehicleStatusCard extends LitElement {
   protected async updated(changedProps: PropertyValues): Promise<void> {
     super.updated(changedProps);
     if (!this._config || !this._hass) return;
-
-    const oldHass = changedProps.get('_hass') as HomeAssistant | undefined;
-    const oldConfig = changedProps.get('_config') as VehicleStatusCardConfig | undefined;
-
     // Apply theme when the theme configuration changes
-    if (
-      !oldHass ||
-      !oldConfig ||
-      oldHass.themes !== this._hass.themes ||
-      oldConfig.layout_config?.theme_config?.theme !== this._config.layout_config?.theme_config?.theme
-    ) {
+    if (changedProps.has('_config') && !this._prevTheme && this._config.layout_config?.theme_config?.theme) {
       this.applyTheme(this._config.layout_config.theme_config.theme);
+      this._prevTheme = this._config.layout_config.theme_config.theme;
     }
 
     // Always configure the card preview when there are config changes
     if (changedProps.has('_config') && this._currentPreview !== null) {
+      console.log('Reconfiguring card preview');
       HaHelp.previewHandler(this._currentPreview, this);
     }
 
     if (changedProps.has('_connected') && this._connected) {
+      // console.log('set up button animation');
       this._setUpButtonAnimation();
     }
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
-    if (!this._config || !this._hass) {
-      console.log('config or hass is null');
-      return false;
-    }
-
     return hasConfigOrEntityChanged(this, changedProps, true);
   }
 
@@ -225,7 +212,9 @@ export class VehicleStatusCard extends LitElement {
       ${sectionOrder.map((section) => {
         switch (section) {
           case SECTION.HEADER_INFO:
-            return html` <div class="header-info-box">${this._renderIndicators()} ${this._renderRangeInfo()}</div>`;
+            return html` <div class="header-info-box" id=${SECTION.HEADER_INFO}>
+              ${this._renderIndicators()} ${this._renderRangeInfo()}
+            </div>`;
           case SECTION.IMAGES:
             return this._renderImagesSlide();
           case SECTION.MINI_MAP:
@@ -241,8 +230,8 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _renderIndicators(): TemplateResult {
-    if (!this._config.indicators) return html``;
-    return html` <div id="indicators" ?hidden=${this._isSectionHidden(SECTION.INDICATORS)}>
+    if (!this._config.indicators || this._isSectionHidden(SECTION.INDICATORS)) return html``;
+    return html` <div id="${SECTION.INDICATORS}">
       <vsc-indicators
         .hass=${this._hass}
         .config=${this._config}
@@ -254,11 +243,11 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _renderButtons(): TemplateResult | typeof nothing {
-    if (isEmpty(this._buttonCards)) return nothing;
+    if (isEmpty(this._buttonCards) || this._isSectionHidden(SECTION.BUTTONS)) return nothing;
     if (!this._buttonReady) return html``;
     const visibleButtons = this._buttonCards.filter((button) => !button.hide_button);
     return html`
-      <div id="button_card" ?hidden=${this._isSectionHidden(SECTION.BUTTONS)}>
+      <div id=${SECTION.BUTTONS}>
         <vehicle-buttons-grid
           .hass=${this._hass}
           .card=${this}
@@ -290,20 +279,22 @@ export class VehicleStatusCard extends LitElement {
   }
 
   private _renderImagesSlide(): TemplateResult {
-    if (!this._config.images || this._config.images.length === 0) return html``;
+    if (!this._config.images || this._config.images.length === 0 || this._isSectionHidden(SECTION.IMAGES))
+      return html``;
 
     return html`
-      <div id="images" ?hidden=${this._isSectionHidden(SECTION.IMAGES)}>
+      <div id=${SECTION.IMAGES}>
         <images-slide .images=${this._config.images} .config=${this._config}> </images-slide>
       </div>
     `;
   }
 
   private _renderMiniMap(): TemplateResult {
+    if (this._isSectionHidden(SECTION.MINI_MAP)) return html``;
     if (!this._config?.mini_map?.device_tracker) return this._showWarning('Device tracker not available');
 
     return html`
-      <div id="mini_map" ?hidden=${this._isSectionHidden(SECTION.MINI_MAP)} style=${`min-width: ${this._cardWidth}px`}>
+      <div id=${SECTION.MINI_MAP} style=${`min-width: ${this._cardWidth}px`}>
         <mini-map-box .mapData=${this._mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
       </div>
     `;
@@ -451,14 +442,16 @@ export class VehicleStatusCard extends LitElement {
           obj[key] = themeData[key];
           return obj;
         }, {} as Record<string, string>);
-
+      console.log('Applying theme:', theme, 'filteredThemeData:', filteredThemeData);
       // Get the current mode (light or dark)
       const mode = this.isDark ? 'dark' : 'light';
       const modeData = themeData.modes && typeof themeData.modes === 'object' ? themeData.modes[mode] : {};
 
+      console.log('Applying mode data:', mode, 'modeData:', modeData);
+
       // Merge the top-level and mode-specific variables
       const allThemeData = { ...filteredThemeData, ...modeData };
-
+      console.log('All theme data:', allThemeData);
       applyThemesOnElement(
         this,
         { default_theme: this._hass.themes.default_theme, themes: { [theme]: allThemeData } },
@@ -472,7 +465,6 @@ export class VehicleStatusCard extends LitElement {
     forwardHaptic('light');
     setTimeout(() => {
       if (this._activeCardIndex === null) return;
-      if (isString(this._activeCardIndex)) return;
 
       const cardIndexNum = Number(this._activeCardIndex);
       const totalCards = this._buttonCards.filter((button) => !button.hide_button).length;

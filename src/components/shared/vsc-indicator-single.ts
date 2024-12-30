@@ -18,6 +18,7 @@ export class VscIndicatorSingle extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) indicator!: IndicatorConfig;
 
+  @state() _visibility: boolean = true;
   @state() private _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
   @state() private _unsubSingleRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
 
@@ -147,6 +148,7 @@ export class VscIndicatorSingle extends LitElement {
       : this.hass.formatEntityState(this.hass.states[entity]);
     const visibility = indicator.visibility ? this._singleTemplateResults.visibility?.result : true;
     const color = indicator.color ? this._singleTemplateResults.color?.result : '';
+    this._visibility = Boolean(visibility);
 
     return html`
       <div class="item" ?hidden=${Boolean(visibility) === false}>
