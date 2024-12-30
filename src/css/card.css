@@ -119,7 +119,7 @@ header h1 {
   height: fit-content;
   overflow: hidden;
   /* gap: var(--vic-gutter-gap); */
-  margin-bottom: var(--vic-gutter-gap);
+  /* margin-bottom: var(--vic-gutter-gap); */
   flex-direction: column;
 }
 
@@ -134,7 +134,8 @@ header h1 {
 .info-box {
   --mdc-icon-size: 20px;
   display: flex;
-  justify-content: center;
+  /* justify-content: center; */
+  justify-content: space-evenly;
   position: relative;
   width: 100%;
   height: fit-content;

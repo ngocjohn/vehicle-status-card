@@ -48,8 +48,23 @@ export class VscIndicators extends LitElement {
   protected shouldUpdate(changedProperties: PropertyValues): boolean {
     if (changedProperties.has('hass') || changedProperties.has('config')) {
       this._tryConnect();
+      this._checkVisibleSingle();
     }
     return true;
+  }
+
+  private _checkVisibleSingle(): void {
+    const singleIndicators = this.shadowRoot?.querySelectorAll('vsc-indicator-single') as any;
+    if (!singleIndicators || singleIndicators.length === 0) return;
+    console.log(singleIndicators);
+    singleIndicators.forEach((single) => {
+      console.log(single);
+      if (single._visibility === false) {
+        single.style.display = 'none';
+      } else {
+        single.style.display = '';
+      }
+    });
   }
 
   private isTemplate(value: string | undefined): boolean {
