@@ -9,7 +9,7 @@
 
 .card-config {
 	width: 100%;
-	margin-block: 0.5rem;
+	/* margin-block: 0.5rem; */
 }
 
 .sub-card-header {
@@ -139,6 +139,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
+	gap: var(--vic-gutter-gap);
 }
 
 .indicator-config {
@@ -480,7 +481,7 @@ ha-selector#vic-boolean-selector {
 	display: flex;
 	font-size: 1.3rem;
 	align-items: center;
-	margin-bottom: var(--vic-card-padding);
+	/* margin-bottom: var(--vic-card-padding); */
 }
 
 .config-menu-wrapper .menu-wrapper {
