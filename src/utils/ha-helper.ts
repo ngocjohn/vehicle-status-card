@@ -279,7 +279,7 @@ export async function _getMapData(card: VehicleStatusCard): Promise<void> {
   ) {
     return;
   }
-  console.log('Getting map data');
+  // console.log('Getting map data');
   const hass = card._hass as HomeAssistant;
   const deviceTracker = config.mini_map?.device_tracker;
   const mapData = {} as MapData;
@@ -294,7 +294,7 @@ export async function _getMapData(card: VehicleStatusCard): Promise<void> {
 export async function _getMapAddress(card: VehicleStatusCard, lat: number, lon: number) {
   if (card._config.layout_config?.hide?.map_address) return;
   const apiKey = card._config.mini_map?.google_api_key;
-  console.log('Getting address from map data');
+  // console.log('Getting address from map data');
   const adress = apiKey ? await getAddressFromGoggle(lat, lon, apiKey) : await getAddressFromOpenStreet(lat, lon);
   if (!adress) {
     return;
@@ -374,7 +374,7 @@ async function getAddressFromOpenStreet(lat: number, lon: number) {
 }
 
 async function getAddressFromGoggle(lat: number, lon: number, apiKey: string) {
-  console.log('getAddressFromGoggle');
+  // console.log('getAddressFromGoggle');
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`;
 
   try {
