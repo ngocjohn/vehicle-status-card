@@ -5,7 +5,7 @@ import { customElement, property, query, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
-import { CARD_SECTIONS, CARD_VERSION, ICON, SECTION, SECTION_ORDER } from '../const/const';
+import { CARD_SECTIONS, CARD_VERSION, ICON, SECTION } from '../const/const';
 import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
 import {
   _saveConfig,
@@ -75,6 +75,38 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   private async _handleFirstConfig(config: VehicleStatusCardConfig): Promise<void> {
     const { button_card: buttonCard, range_info: rangeInfo } = config;
+    if (config.layout_config?.section_order === undefined) {
+      const layoutConfig = { ...(config.layout_config || {}) };
+      console.log('current layout config:', layoutConfig);
+      let sectionOrder = layoutConfig.section_order || [];
+      const section = {
+        indicators: SECTION.INDICATORS,
+        range_info: SECTION.RANGE_INFO,
+        images: SECTION.IMAGES,
+        mini_map: SECTION.MINI_MAP,
+        buttons: SECTION.BUTTONS,
+      };
+
+      for (const key in section) {
+        if (['indicators', 'range_info'].includes(key)) {
+          if (config.layout_config.hide.range_info === false || config.layout_config.hide.indicators === false) {
+            sectionOrder.push(SECTION.HEADER_INFO);
+          }
+        } else if (config.layout_config.hide[key] === false) {
+          sectionOrder.push(section[key]);
+        }
+      }
+      sectionOrder = [...new Set(sectionOrder)]; // Remove duplicates
+
+      layoutConfig.section_order = sectionOrder;
+      console.log('Updated layout config with new section order:', layoutConfig.section_order);
+      this._config = {
+        ...this._config,
+        layout_config: layoutConfig,
+      };
+      fireEvent(this, 'config-changed', { config: this._config });
+      console.log('Updated config with new layout config:', this._config.layout_config);
+    }
 
     // Validate button configuration
     const isButtonValid = buttonCard.every(
@@ -161,18 +193,17 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   private _initSectionSortable(): void {
     this.updateComplete.then(() => {
       const sectionList = this.shadowRoot?.getElementById('section-list') as HTMLElement;
-      if (sectionList) {
-        this._sectionSortable = new Sortable(sectionList, {
-          animation: 150,
-          handle: '.handle',
-          ghostClass: 'sortable-ghost',
-          onEnd: (evt) => {
-            this._handleSectionSort(evt);
-          },
-        });
-      }
+      if (!sectionList) return;
+      this._sectionSortable = new Sortable(sectionList, {
+        animation: 150,
+        handle: '.handle',
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+          this._handleSectionSort(evt);
+        },
+      });
+      console.log('Section sortable initialized');
     });
-    console.log('Section sortable initialized');
   }
 
   private _handleSectionSort(evt: Sortable.SortableEvent): void {
@@ -180,21 +211,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     evt.preventDefault();
     const oldIndex = evt.oldIndex as number;
     const newIndex = evt.newIndex as number;
-    const sections = [...(this._config.layout_config.section_order || [...SECTION_ORDER])];
+    const sections = [...(this._config.layout_config.section_order || [])];
     const [removed] = sections.splice(oldIndex, 1);
     sections.splice(newIndex, 0, removed);
 
     this._config.layout_config.section_order = sections;
-
     fireEvent(this, 'config-changed', { config: this._config });
-    setTimeout(() => {
-      if (this._sectionSortable) {
-        this._sectionSortable.destroy();
-        setTimeout(() => {
-          this._initSectionSortable();
-        }, 0);
-      }
-    }, 50);
   }
 
   /* ---------------------------- RENDER FUNCTIONS ---------------------------- */
@@ -218,17 +240,22 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       return;
     }
 
-    // Check if any preview key is not null
-    if (PREVIEW_CONFIG_TYPES.some((key) => this._config[key] !== null)) {
+    if (
+      PREVIEW_CONFIG_TYPES.some(
+        (key) => this._config.hasOwnProperty(key) && (this._config[key] === null || this._config[key] !== null)
+      )
+    ) {
       console.log('Cleaning config of preview keys');
       this._config = {
         ...this._config,
         ...PREVIEW_CONFIG_TYPES.reduce((acc: any, key: string) => {
-          acc[key] = null;
+          acc[key] = undefined;
           return acc;
         }, {}),
       };
       fireEvent(this, 'config-changed', { config: this._config });
+    } else {
+      return;
     }
   }
 
@@ -490,9 +517,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderSectionOrder(): TemplateResult {
-    if (this._reloadSectionList) return html`<div>Loading...</div>`;
+    if (this._reloadSectionList) return html``;
 
-    const sectionList = this._config.layout_config.section_order || [...SECTION_ORDER];
+    const sectionList = this._config.layout_config?.section_order || [];
     return html` <div id="section-list">
       ${repeat(
         sectionList,
@@ -782,30 +809,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         layoutConfig.hide = hide;
 
         if (CARD_SECTIONS.includes(configValue)) {
-          let sectionOrder = [...(layoutConfig.section_order ?? [...SECTION_ORDER])];
-          const section = {
-            indicators: SECTION.INDICATORS,
-            range_info: SECTION.RANGE_INFO,
-            images: SECTION.IMAGES,
-            mini_map: SECTION.MINI_MAP,
-            buttons: SECTION.BUTTONS,
-          };
-          for (const key in section) {
-            if (['indicators', 'range_info'].includes(key)) {
-              if (hide.indicators === true && hide.range_info === true) {
-                sectionOrder = sectionOrder.filter((s) => s !== SECTION.HEADER_INFO);
-              } else if (hide.indicators === false || hide.range_info === false) {
-                sectionOrder.push(SECTION.HEADER_INFO);
-              }
-            } else if (hide[key] === true) {
-              sectionOrder = sectionOrder.filter((s) => s !== key);
-            } else {
-              sectionOrder.push(key);
-            }
-          }
-
-          sectionOrder = SECTION_ORDER.filter((s) => sectionOrder.includes(s));
-          layoutConfig.section_order = sectionOrder;
+          const sectionOrder = [...(this._config.layout_config?.section_order || [])];
+          const updatedOrder = this._setOrderList(hide, sectionOrder);
+          layoutConfig.section_order = updatedOrder;
           hiddenChanged = true;
         }
         updates.layout_config = layoutConfig;
@@ -833,16 +839,40 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       if (hiddenChanged) {
         this._reloadSectionList = true;
         setTimeout(() => {
-          if (this._sectionSortable) {
-            this._sectionSortable.destroy();
-            this._reloadSectionList = false;
-            setTimeout(() => {
-              this._initSectionSortable();
-            }, 0);
-          }
-        }, 50);
+          this._reloadSectionList = false;
+          this._initSectionSortable();
+        }, 0);
       }
     }
+  }
+
+  private _setOrderList(hide: VehicleStatusCardConfig['layout_config']['hide'], currentOrder: string[]) {
+    let sectionOrder = [...currentOrder];
+    const section = {
+      indicators: SECTION.INDICATORS,
+      range_info: SECTION.RANGE_INFO,
+      images: SECTION.IMAGES,
+      mini_map: SECTION.MINI_MAP,
+      buttons: SECTION.BUTTONS,
+    };
+    for (const key in section) {
+      if (['indicators', 'range_info'].includes(key)) {
+        if (hide.indicators && hide.range_info) {
+          if (sectionOrder.includes(SECTION.HEADER_INFO)) {
+            sectionOrder = sectionOrder.filter((s) => s !== SECTION.HEADER_INFO);
+          }
+        } else if ((!hide.indicators || !hide.range_info) && !sectionOrder.includes(SECTION.HEADER_INFO)) {
+          sectionOrder.push(SECTION.HEADER_INFO);
+        }
+      } else if (hide[key] && sectionOrder.includes(key)) {
+        sectionOrder = sectionOrder.filter((s) => s !== key);
+      } else if (!hide[key] && !sectionOrder.includes(key)) {
+        sectionOrder.push(key);
+      }
+    }
+
+    sectionOrder = [...new Set(sectionOrder)];
+    return sectionOrder;
   }
 
   /* ------------------------- CONFIG CHANGED HANDLER ------------------------- */

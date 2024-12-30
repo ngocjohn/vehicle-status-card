@@ -142,6 +142,7 @@ export class PanelRangeInfo extends LitElement {
               energy_level: {
                 entity: '',
                 attribute: '',
+                icon: '',
               },
               range_level: {
                 entity: '',
@@ -351,7 +352,12 @@ export class PanelRangeInfo extends LitElement {
 
     const energyEntry = this.config.range_info[index].energy_level as RangeItemConfig;
     const energyEntity = energyEntry.entity || '';
-    const energyIcon = energyEntry.icon || '';
+    let energyIcon = energyEntry.icon;
+    if (!energyIcon && energyEntity) {
+      energyIcon = this.hass.states[energyEntity].attributes.icon;
+    } else if (!energyIcon && !energyEntity) {
+      energyIcon = 'mdi:gas-station';
+    }
 
     const energyAttribute = energyEntry.attribute || '';
     const entityAttrs = energyEntity ? Object.keys(this.hass.states[energyEntity].attributes) : [];
@@ -379,7 +385,7 @@ export class PanelRangeInfo extends LitElement {
       <div class="item-content">
         ${Create.Picker({
           ...configShared,
-          value: energyIcon,
+          value: energyIcon ?? '',
           pickerType: 'icon',
         })}
       </div>
