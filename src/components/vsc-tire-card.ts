@@ -1,7 +1,7 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { CSSResultGroup, html, LitElement, TemplateResult, css } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { customElement, property, state } from 'lit/decorators';
+import { customElement, property, state } from 'lit/decorators.js';
 
 // local
 import { TIRE_BG } from '../const/img-const';

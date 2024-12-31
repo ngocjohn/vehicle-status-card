@@ -1,6 +1,6 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators';
+import { customElement, property, state } from 'lit/decorators.js';
 
 // Local
 import { CardItemConfig, HomeAssistant } from '../../types';

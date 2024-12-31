@@ -1,6 +1,6 @@
 import { applyThemesOnElement, fireEvent, hasConfigOrEntityChanged, forwardHaptic } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
 import './components';

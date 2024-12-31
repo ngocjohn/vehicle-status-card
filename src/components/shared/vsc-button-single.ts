@@ -2,7 +2,7 @@
 import { forwardHaptic } from 'custom-card-helpers';
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators';
+import { customElement, property, state } from 'lit/decorators.js';
 import tinycolor from 'tinycolor2';
 // local
 import { ButtonCardEntityItem, HomeAssistant } from '../../types';

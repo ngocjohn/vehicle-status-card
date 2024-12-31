@@ -1,6 +1,6 @@
 import iro from '@jaames/iro';
 import { LitElement, html, TemplateResult, CSSResultGroup, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators';
+import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 // utils
 import tinycolor from 'tinycolor2';
