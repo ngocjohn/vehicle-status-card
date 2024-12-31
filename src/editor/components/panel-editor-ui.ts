@@ -2,14 +2,17 @@
 import { LitElement, html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 // Custom card helpers
-import { fireEvent, LovelaceCardConfig, HASSDomEvent, LovelaceConfig } from 'custom-card-helpers';
 import { cloneDeep } from 'es-toolkit';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { HA as HomeAssistant, VehicleStatusCardConfig, GUIModeChangedEvent } from '../../types';
+import { HomeAssistant, VehicleStatusCardConfig, LovelaceConfig, LovelaceCardConfig } from '../../types';
+import { fireEvent, HASSDomEvent } from '../../types/ha-frontend/fire-event';
 import { VehicleStatusCardEditor } from '../editor';
-
+export interface GUIModeChangedEvent {
+  guiMode: boolean;
+  guiModeAvailable: boolean;
+}
 @customElement('panel-editor-ui')
 export class PanelEditorUI extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;

@@ -5,9 +5,9 @@ import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult }
 import { customElement, property, state } from 'lit/decorators';
 import tinycolor from 'tinycolor2';
 // local
-import { ButtonCardEntityItem, HA as HomeAssistant } from '../../types';
+import { ButtonCardEntityItem, HomeAssistant } from '../../types';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions } from '../../utils';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../utils/ws-templates';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 // styles
 import cardstyles from '../../css/card.css';

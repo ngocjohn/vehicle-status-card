@@ -37,7 +37,7 @@
 .vic-tabbar {
 	background-color: var(--mdc-button-outline-color);
 	border-bottom: 1px solid var(--divider-color);
-	margin-bottom: var(--vic-card-padding);
+	/* margin-bottom: var(--vic-card-padding); */
 }
 
 .vic-tabbar .mdc-tab--active {
@@ -356,7 +356,7 @@ span.info-alert {
 	border: solid 1px var(--divider-color);
 	padding: var(--vic-gutter-gap);
 	border-radius: var(--ha-card-border-radius, 12px);
-	margin-bottom: var(--vic-gutter-gap);
+	margin-top: var(--vic-gutter-gap);
 }
 
 .sub-panel-config.button-card:last-child {

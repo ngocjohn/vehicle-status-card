@@ -1,12 +1,4 @@
-import {
-  applyThemesOnElement,
-  fireEvent,
-  hasConfigOrEntityChanged,
-  LovelaceCardConfig,
-  LovelaceCardEditor,
-  forwardHaptic,
-  LovelaceCard,
-} from 'custom-card-helpers';
+import { applyThemesOnElement, fireEvent, hasConfigOrEntityChanged, forwardHaptic } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
 import { classMap } from 'lit/directives/class-map.js';
@@ -16,7 +8,7 @@ import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBo
 import { ICON, SECTION, SECTION_ORDER } from './const/const';
 import {
   ButtonCardEntity,
-  HA as HomeAssistant,
+  HomeAssistant,
   VehicleStatusCardConfig,
   TireEntity,
   PREVIEW_TYPE,
@@ -24,6 +16,7 @@ import {
   ButtonCardEntityItem,
   DefaultCardConfig,
 } from './types';
+import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
 import { HaHelp, isDarkColor, isEmpty } from './utils';
 
 // Styles

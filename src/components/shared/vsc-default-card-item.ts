@@ -3,8 +3,8 @@ import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult }
 import { customElement, property, state } from 'lit/decorators';
 
 // Local
-import { CardItemConfig, HA as HomeAssistant } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../utils/ws-templates';
+import { CardItemConfig, HomeAssistant } from '../../types';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 
 // Styles

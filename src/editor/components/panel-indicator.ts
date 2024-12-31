@@ -1,4 +1,3 @@
-import { fireEvent } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
@@ -7,11 +6,12 @@ import Sortable from 'sortablejs';
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import {
-  HA as HomeAssistant,
+  HomeAssistant,
   VehicleStatusCardConfig,
   IndicatorConfig,
   IndicatorGroupConfig,
   IndicatorGroupItemConfig,
+  fireEvent,
 } from '../../types';
 import * as Create from '../../utils/create';
 import { CONFIG_VALUES } from '../editor-const';

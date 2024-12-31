@@ -4,8 +4,8 @@ import { customElement, state, property } from 'lit/decorators.js';
 // Home Assistant
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 // Utils
-import { HA as HomeAssistant, IndicatorConfig } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../utils/ws-templates';
+import { HomeAssistant, IndicatorConfig } from '../../types';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 
 // CSS
 import cardcss from '../../css/card.css';

@@ -10,7 +10,7 @@ import swipercss from 'swiper/swiper-bundle.css';
 import { chunk } from 'es-toolkit';
 // local
 import cardstyles from '../css/card.css';
-import { ButtonCardEntity, HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { ButtonCardEntity, HomeAssistant, VehicleStatusCardConfig } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import './shared/vsc-button-single';
 

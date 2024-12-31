@@ -1,48 +1,7 @@
 // Cutom card helpers:
-import { ActionConfig, HomeAssistant, LovelaceCardConfig, Theme, Themes } from 'custom-card-helpers';
-import { HassEntity } from 'home-assistant-js-websocket';
-import { Connection } from 'home-assistant-js-websocket';
+import { ActionConfig } from 'custom-card-helpers';
 
-interface ModeSpecificTheme {
-  dark: Partial<Theme>;
-  light: Partial<Theme>;
-}
-
-interface ExtendedTheme extends Theme {
-  modes?: ModeSpecificTheme;
-}
-
-interface ExtendedThemes extends Themes {
-  darkMode: boolean;
-  themes: {
-    [key: string]: ExtendedTheme;
-  };
-}
-export interface GUIModeChangedEvent {
-  guiMode: boolean;
-  guiModeAvailable: boolean;
-}
-export interface ThemeSettings {
-  theme: string;
-  // Radio box selection for theme picker. Do not use in Lovelace rendering as
-  // it can be undefined == auto.
-  // Property hass.themes.darkMode carries effective current mode.
-  dark?: boolean;
-  primaryColor?: string;
-  accentColor?: string;
-}
-/**
- * HomeAssistantExtended extends the existing HomeAssistant interface with additional properties.
- */
-
-export type HA = {
-  formatAttributeName: (entityId: string, attribute: string) => string;
-  formatEntityAttributeValue: (entityId: HassEntity, attribute: string) => string;
-  formatEntityState: (stateObj: HassEntity) => string;
-  themes: ExtendedThemes;
-  selectedTheme: ThemeSettings | null;
-  connection: Connection;
-} & HomeAssistant;
+import { LovelaceCardConfig } from './ha-frontend/lovelace/lovelace';
 
 /* ----------------------- INDICATOR CONFIG INTERFACE ----------------------- */
 

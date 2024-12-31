@@ -4,7 +4,7 @@ import { LitElement, html, CSSResultGroup, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 // local
-import { HA as HomeAssistant, VehicleStatusCardConfig } from '../../types';
+import { HomeAssistant, VehicleStatusCardConfig } from '../../types';
 import { VehicleStatusCardEditor } from '../editor';
 
 // styles

@@ -2,7 +2,7 @@ import { CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
 import cardcss from '../css/card.css';
-import { HA as HomeAssistant, RangeInfoConfig } from '../types';
+import { HomeAssistant, RangeInfoConfig } from '../types';
 
 @customElement('vsc-range-info')
 export class VscRangeInfo extends LitElement {

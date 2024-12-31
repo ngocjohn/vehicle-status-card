@@ -5,7 +5,7 @@ import { DEFAULT_CONFIG } from '../const/const';
 import {
   ButtonCardEntity,
   DefaultCardConfig,
-  HA as HomeAssistant,
+  HomeAssistant,
   TireTemplateConfig,
   TireEntity,
   ButtonCardConfig,

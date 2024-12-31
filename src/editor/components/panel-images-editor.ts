@@ -1,4 +1,3 @@
-import { fireEvent } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
 import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
@@ -8,7 +7,7 @@ import Sortable from 'sortablejs';
 import './sub-panel-yaml';
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { VehicleStatusCardConfig, ImageConfig, HA as HomeAssistant } from '../../types';
+import { VehicleStatusCardConfig, ImageConfig, HomeAssistant, fireEvent } from '../../types';
 import { TabBar, Picker } from '../../utils/create';
 import { uploadImage } from '../../utils/ha-helper';
 import { IMAGE_CONFIG_ACTIONS, CONFIG_VALUES, IMAGE_ACTIONS } from '../editor-const';

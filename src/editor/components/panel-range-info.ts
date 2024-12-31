@@ -1,5 +1,4 @@
 import iro from '@jaames/iro';
-import { fireEvent } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
@@ -8,7 +7,7 @@ import tinycolor from 'tinycolor2';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { HA as HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig } from '../../types';
+import { HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig, fireEvent } from '../../types';
 import * as Create from '../../utils/create';
 import { RANGE_ACTIONS } from '../editor-const';
 import './sub-panel-yaml';

@@ -1,12 +1,11 @@
 // External
-import { fireEvent, LovelaceCardEditor, LovelaceConfig } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators';
 import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
 import { CARD_SECTIONS, CARD_VERSION, ICON, SECTION } from '../const/const';
-import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { HomeAssistant, VehicleStatusCardConfig, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../types';
 import {
   _saveConfig,
   convertRangeEntityToObject,

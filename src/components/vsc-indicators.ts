@@ -3,9 +3,9 @@ import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from
 import { customElement, state, property } from 'lit/decorators.js';
 
 import cardcss from '../css/card.css';
-import { HA as HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../types';
 import { isEmpty } from '../utils';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
 // components items
 import './shared/vsc-indicator-single';
 import './shared/vsc-indicator-group-item';
@@ -56,9 +56,9 @@ export class VscIndicators extends LitElement {
   private _checkVisibleSingle(): void {
     const singleIndicators = this.shadowRoot?.querySelectorAll('vsc-indicator-single') as any;
     if (!singleIndicators || singleIndicators.length === 0) return;
-    console.log(singleIndicators);
+    // console.log(singleIndicators);
     singleIndicators.forEach((single) => {
-      console.log(single);
+      // console.log(single);
       if (single._visibility === false) {
         single.style.display = 'none';
       } else {

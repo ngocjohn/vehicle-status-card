@@ -5,11 +5,11 @@ import { customElement, property, state } from 'lit/decorators';
 
 // local
 import { TIRE_BG } from '../const/img-const';
-import { HA as HomeAssistant, TireEntity } from '../types';
+import { HomeAssistant, TireEntity } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 // styles
 import cardstyles from '../css/card.css';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../utils/ws-templates';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../types/ha-frontend/data/ws-templates';
 
 const TEMPLATE_KEYS = ['color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];

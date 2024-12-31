@@ -1,4 +1,3 @@
-import { fireEvent } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -10,13 +9,14 @@ import '../../editor/components/sub-panel-yaml';
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import {
-  HA as HomeAssistant,
+  HomeAssistant,
   VehicleStatusCardConfig,
   ButtonConfig,
   DefaultCardConfig,
   ButtonCardConfig,
   TireTemplateConfig,
   TireEntityConfig,
+  fireEvent,
 } from '../../types';
 import { Create } from '../../utils';
 import { uploadImage } from '../../utils/ha-helper';

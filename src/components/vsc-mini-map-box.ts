@@ -22,6 +22,7 @@ export class MiniMapBox extends LitElement {
   @state() private map: L.Map | null = null;
   @state() private marker: L.Marker | null = null;
   @state() private latLon: L.LatLng | null = null;
+  @state() private tileLayer: L.TileLayer | null = null;
   @state() private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
 
@@ -80,10 +81,11 @@ export class MiniMapBox extends LitElement {
     const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
     const single = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
 
-    let maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)';
+    let maskImage =
+      'linear-gradient(to bottom, black 87%, transparent 100%), linear-gradient(to top, black 87%, transparent 100%)';
 
     if (lastItem && !firstItem) {
-      maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
+      maskImage = 'linear-gradient(to top, black 95%, transparent 100%)';
     } else if (firstItem && !lastItem) {
       maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
     } else if (single) {
@@ -93,7 +95,7 @@ export class MiniMapBox extends LitElement {
     const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
     const markerFilter = this.isDark ? 'contrast(1.2) saturate(6) brightness(1.3)' : 'none';
     const tileFilter = this.isDark
-      ? 'brightness(0.6) invert(1) contrast(6) saturate(0.3) brightness(0.7) opacity(.25)'
+      ? 'brightness(0.7) invert(1) contrast(2.8)  brightness(1.8) opacity(0.17) grayscale(1)'
       : 'grayscale(1) contrast(1.1)';
     return styleMap({
       '--vic-map-marker-color': markerColor,
@@ -105,7 +107,9 @@ export class MiniMapBox extends LitElement {
   }
 
   initMap(): void {
+    console.log('Initializing map...');
     const { lat, lon } = this.mapData;
+
     const mapOptions = {
       dragging: true,
       zoomControl: false,
@@ -120,17 +124,20 @@ export class MiniMapBox extends LitElement {
     this.map.setView(this.latLon, this.zoom);
 
     // Add tile layer to map
-    this._createTileLayer(this.map);
+    this.tileLayer = this._createTileLayer(this.map);
     // Add marker to map
-    this._createMarker(this.map);
+    this.marker = this._createMarker(this.map);
   }
+
   private _createTileLayer(map: L.Map): L.TileLayer {
+    console.log('Creating tile layer...');
     const tileOpts = {
       tileSize: 256,
       className: 'map-tiles',
     };
 
-    const tileLayer = L.tileLayer.provider('CartoDB.Positron', tileOpts).addTo(map);
+    const provider = this.isDark ? 'CartoDB.Positron' : 'CartoDB.Voyager';
+    const tileLayer = L.tileLayer.provider(provider, tileOpts).addTo(map);
     return tileLayer;
   }
 
@@ -161,19 +168,19 @@ export class MiniMapBox extends LitElement {
   render(): TemplateResult {
     return html`
       <div class="map-wrapper" style=${this._computeMapStyle()}>
-        <div id="overlay-container">
-          <div class="reset-button" @click=${this.resetMap}>
-            <ha-icon icon="mdi:compass"></ha-icon>
-          </div>
-          ${this._renderAddress()}
-        </div>
         <div id="map"></div>
+        <div id="overlay-container"></div>
+        <div class="reset-button" @click=${this.resetMap}>
+          <ha-icon icon="mdi:compass"></ha-icon>
+        </div>
+        ${this._renderAddress()}
       </div>
       ${this._renderMapDialog()}
     `;
   }
   private _renderAddress(): TemplateResult {
-    if (this.card._config.layout_config.hide.map_address || !this._addressReady) return html``;
+    if (this.card._config.layout_config.hide.map_address) return html``;
+    if (!this._addressReady) return html` <div class="address loading"><span class="loader"></span></div> `;
 
     const address = this._address || {};
     return html`
@@ -247,6 +254,9 @@ export class MiniMapBox extends LitElement {
         *:focus {
           outline: none;
         }
+        .leaflet-container {
+          background: transparent !important;
+        }
 
         .map-wrapper {
           position: relative;
@@ -269,7 +279,9 @@ export class MiniMapBox extends LitElement {
           width: 100%;
           height: 100%;
           /* background-color: var(--ha-card-background, var(--card-background-color)); */
-          /* opacity: 0.6;  */
+          background-color: rgb(from var(--ha-card-background, var(--card-background-color)) r g b / 15%);
+          /* opacity: 0.6; */
+          pointer-events: none;
         }
 
         #map {
@@ -326,6 +338,7 @@ export class MiniMapBox extends LitElement {
           opacity: 1;
           transition: all 0.2s ease;
         }
+
         .marker:hover::after {
           width: calc(60% + 1px);
           height: calc(60% + 1px);
@@ -334,6 +347,7 @@ export class MiniMapBox extends LitElement {
         .leaflet-control-container {
           display: none;
         }
+
         .reset-button {
           position: absolute;
           top: 1rem;
@@ -345,6 +359,7 @@ export class MiniMapBox extends LitElement {
             opacity: 1;
           }
         }
+
         .address {
           position: absolute;
           width: max-content;
@@ -382,7 +397,7 @@ export class MiniMapBox extends LitElement {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          border: 2px solid #fff;
+          border: 2px solid var(--primary-text-color, #fff);
           position: absolute;
           left: 0;
           top: 0;
