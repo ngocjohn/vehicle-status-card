@@ -12,7 +12,7 @@ import postcssLit from 'rollup-plugin-postcss-lit';
 import filesize from 'rollup-plugin-filesize';
 import replace from '@rollup/plugin-replace';
 import { version } from './package.json';
-import { logCardInfo } from './rollup.config.helper.js';
+import { logCardInfo } from './rollup.config.helper.mjs';
 
 const dev = process.env.ROLLUP_WATCH;
 const port = process.env.PORT || 8235;

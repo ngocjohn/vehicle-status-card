@@ -63,7 +63,7 @@
     "typescript": "^5.7.2"
   },
   "scripts": {
-    "dev": "rollup -c rollup.config.dev.js --watch",
+    "dev": "rollup -c rollup.config.dev.js --bundleConfigAsCjs --watch",
     "build": "npm run lint && npm run rollup",
     "lint": "eslint src/**/*.ts",
     "rollup": "rollup -c",
