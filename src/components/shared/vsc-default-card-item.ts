@@ -2,13 +2,12 @@ import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+// Styles
+import cardstyles from '../../css/card.css';
 // Local
 import { CardItemConfig, HomeAssistant } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { VehicleStatusCard } from '../../vehicle-status-card';
-
-// Styles
-import cardstyles from '../../css/card.css';
 
 const TEMPLATE_KEY = ['state_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEY)[number];
@@ -121,7 +120,8 @@ export class VehicleDefaultCardItem extends LitElement {
       );
       this._unsubRenderTemplate.set(key, sub);
       await sub;
-    } catch (_err) {
+    } catch (e) {
+      console.warn('Error while rendering template', e);
       const result = {
         result: this.defaultCardItem[key] ?? '',
         listeners: {

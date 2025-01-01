@@ -104,6 +104,7 @@ export class VscIndicators extends LitElement {
       this._unsubGroupRenderTemplates[index].set(key, sub);
       await sub;
     } catch (e) {
+      console.warn('Error while rendering template', e);
       const result = {
         result: groupIndicators[index][key] ?? '',
         listeners: {

@@ -5,11 +5,11 @@ import { customElement, property, state } from 'lit/decorators.js';
 
 // local
 import { TIRE_BG } from '../const/img-const';
-import { HomeAssistant, TireEntity } from '../types';
-import { VehicleStatusCard } from '../vehicle-status-card';
 // styles
 import cardstyles from '../css/card.css';
+import { HomeAssistant, TireEntity } from '../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../types/ha-frontend/data/ws-templates';
+import { VehicleStatusCard } from '../vehicle-status-card';
 
 const TEMPLATE_KEYS = ['color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -201,6 +201,7 @@ export class VehicleTireCard extends LitElement {
       this._unsubRenderTemplates[tire].set(key, sub);
       await sub;
     } catch (e) {
+      console.warn('Error while rendering template', e);
       const result = {
         result: tireEntity[key] ?? '',
         listeners: {

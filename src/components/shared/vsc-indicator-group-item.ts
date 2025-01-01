@@ -1,14 +1,14 @@
+// Home Assistant
+import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 // Lit
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
-// Home Assistant
-import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-// Utils
-import { HomeAssistant, IndicatorGroupItemConfig } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 
 // CSS
 import cardcss from '../../css/card.css';
+// Utils
+import { HomeAssistant, IndicatorGroupItemConfig } from '../../types';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -93,6 +93,7 @@ export class VscIndicatorGroupItem extends LitElement {
       this._unsubItemRenderTemplates.set(key, sub);
       await sub;
     } catch (e) {
+      console.warn('Error while rendering template', e);
       const result = {
         result: this.item[key] ?? '',
         listeners: {

@@ -4,13 +4,14 @@ import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import tinycolor from 'tinycolor2';
+
+// styles
+import cardstyles from '../../css/card.css';
 // local
 import { ButtonCardEntityItem, HomeAssistant } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions } from '../../utils';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
-// styles
-import cardstyles from '../../css/card.css';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -143,7 +144,8 @@ export class VehicleButtonSingle extends LitElement {
       );
       this._unsubRenderTemplates.set(key, sub);
       await sub;
-    } catch (_err) {
+    } catch (e) {
+      console.warn('Error while rendering template', e);
       const result = {
         result: buttonOptions[key] ?? '',
         listeners: {
