@@ -1,6 +1,6 @@
-import type { Connection } from 'home-assistant-js-websocket';
-
 import { HomeAssistant } from './../home-assistant';
+
+import type { Connection } from 'home-assistant-js-websocket';
 
 export interface Lovelace {
   config: LovelaceConfig;
@@ -17,7 +17,7 @@ export interface Lovelace {
 }
 
 export function getLovelace(): Lovelace | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   let root: any = document.querySelector('home-assistant');
   root = root && root.shadowRoot;
   root = root && root.querySelector('home-assistant-main');

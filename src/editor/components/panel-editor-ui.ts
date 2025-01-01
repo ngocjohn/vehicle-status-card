@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { LitElement, html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
 // Custom card helpers
 import { cloneDeep } from 'es-toolkit';
+import { LitElement, html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
+import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';

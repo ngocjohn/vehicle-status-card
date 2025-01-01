@@ -6,6 +6,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import './components';
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
 import { ICON, SECTION, SECTION_ORDER } from './const/const';
+import cardcss from './css/card.css';
 import {
   ButtonCardEntity,
   HomeAssistant,
@@ -18,9 +19,6 @@ import {
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
 import { HaHelp, isDarkColor, isEmpty } from './utils';
-
-// Styles
-import cardcss from './css/card.css';
 import { getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')

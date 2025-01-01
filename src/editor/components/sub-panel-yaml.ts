@@ -1,14 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Lit
 import { LitElement, html, CSSResultGroup, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+// styles
+import editorcss from '../../css/editor.css';
 // local
 import { HomeAssistant, VehicleStatusCardConfig } from '../../types';
 import { VehicleStatusCardEditor } from '../editor';
-
-// styles
-import editorcss from '../../css/editor.css';
 
 @customElement('vsc-sub-panel-yaml')
 export class SubPanelYaml extends LitElement {

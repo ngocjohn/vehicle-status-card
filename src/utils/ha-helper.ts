@@ -367,8 +367,8 @@ async function getAddressFromOpenStreet(lat: number, lon: number) {
     } else {
       throw new Error('Failed to fetch address OpenStreetMap');
     }
-  } catch (error) {
-    // console.error('Error fetching address:', error);
+  } catch (e) {
+    console.warn('Error fetching address:', e);
     return;
   }
 }
@@ -417,8 +417,8 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string) {
     } else {
       throw new Error('No results found');
     }
-  } catch (error) {
-    // console.error('Error fetching address:', error);
+  } catch (e) {
+    console.warn('Failed to fetch address from Google:', e);
     return;
   }
 }

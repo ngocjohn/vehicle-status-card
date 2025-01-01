@@ -5,7 +5,11 @@ import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
 import { CARD_SECTIONS, CARD_VERSION, ICON, SECTION } from '../const/const';
+// Import styles
+import editorcss from '../css/editor.css';
 import { HomeAssistant, VehicleStatusCardConfig, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../types';
+// Import all components
+import './components/';
 import {
   _saveConfig,
   convertRangeEntityToObject,
@@ -14,12 +18,8 @@ import {
   stickyPreview,
   Create,
 } from '../utils';
-// Import all components
-import './components/';
 import { PanelImagesEditor, PanelIndicator, PanelButtonCard, PanelEditorUI, PanelRangeInfo } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
-// Import styles
-import editorcss from '../css/editor.css';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
