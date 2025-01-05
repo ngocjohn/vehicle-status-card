@@ -49,10 +49,13 @@ export class MiniMapBox extends LitElement {
   }
 
   private async _getAddress(): Promise<void> {
-    if (!this.mapData || this.mapData.lat === undefined || this.mapData.lon === undefined) return;
-    const address = await _getMapAddress(this.card, this.mapData.lat, this.mapData.lon);
+    const { lat, lon } = this.mapData;
+    if (!lat || !lon) return;
+    const address = await _getMapAddress(this.card, lat, lon);
     if (address) {
       this._address = address;
+      this._addressReady = true;
+    } else if (!address) {
       this._addressReady = true;
     }
   }
@@ -74,6 +77,7 @@ export class MiniMapBox extends LitElement {
   }
 
   private _computeMapStyle() {
+    // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const map_height = this.card._config.mini_map?.map_height ?? 150;
     const noHeader = this.card._config.layout_config?.hide.card_name || this.card._config.name?.trim() === '';
     const section_order = this.card._config.layout_config?.section_order || [...SECTION_ORDER];
@@ -107,7 +111,7 @@ export class MiniMapBox extends LitElement {
   }
 
   initMap(): void {
-    console.log('Initializing map...');
+    // console.log('Initializing map...');
     const { lat, lon } = this.mapData;
 
     const mapOptions = {
@@ -130,7 +134,7 @@ export class MiniMapBox extends LitElement {
   }
 
   private _createTileLayer(map: L.Map): L.TileLayer {
-    console.log('Creating tile layer...');
+    // console.log('Creating tile layer...');
     const tileOpts = {
       tileSize: 256,
       className: 'map-tiles',
@@ -166,8 +170,9 @@ export class MiniMapBox extends LitElement {
   }
 
   render(): TemplateResult {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     return html`
-      <div class="map-wrapper" style=${this._computeMapStyle()}>
+      <div class="map-wrapper" ?safari=${isSafari} style=${this._computeMapStyle()}>
         <div id="map"></div>
         <div id="overlay-container"></div>
         <div class="reset-button" @click=${this.resetMap}>
@@ -179,20 +184,16 @@ export class MiniMapBox extends LitElement {
     `;
   }
   private _renderAddress(): TemplateResult {
-    if (this.card._config.layout_config.hide.map_address) return html``;
-    if (!this._addressReady) return html` <div class="address loading"><span class="loader"></span></div> `;
+    if (this.card._config.layout_config.hide.map_address || !this._address) return html``;
+    if (!this._addressReady) return html` <div class="address-line loading"><span class="loader"></span></div> `;
 
     const address = this._address || {};
     return html`
-      <div class="address">
-        <div class="address-line">
-          <ha-icon icon="mdi:map-marker"></ha-icon>
-          <div>
-            <span>${address.streetNumber} ${address.streetName}</span><br /><span
-              style="text-transform: uppercase; opacity: 0.8; letter-spacing: 1px"
-              >${!address.sublocality ? address.city : address.sublocality}</span
-            >
-          </div>
+      <div class="address-line">
+        <ha-icon icon="mdi:map-marker"></ha-icon>
+        <div class="address-info">
+          <span class="secondary">${address.streetNumber} ${address.streetName}</span>
+          <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
         </div>
       </div>
     `;
@@ -266,6 +267,11 @@ export class MiniMapBox extends LitElement {
           align-items: center;
           justify-content: center;
         }
+        .map-wrapper[safari] {
+          width: calc(100% + 0.6rem);
+          left: -0.5rem;
+        }
+
         .map-wrapper.loading {
           display: flex;
           align-items: center;
@@ -360,28 +366,36 @@ export class MiniMapBox extends LitElement {
           }
         }
 
-        .address {
+        .address-line {
           position: absolute;
           width: max-content;
           height: fit-content;
-          bottom: 15%;
+          bottom: 1rem;
           left: 1rem;
           z-index: 2;
           display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          flex-direction: column;
+          align-items: center;
           gap: 0.5rem;
           color: var(--primary-text-color);
           backdrop-filter: blur(2px);
-          .address-line {
+          text-shadow: 0 0 black;
+          ha-icon {
+            color: var(--secondary-text-color);
+          }
+          .address-info {
             display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            text-shadow: 0 0 black;
-            span {
-              font-size: 0.9rem;
-            }
+            flex-direction: column;
+          }
+          .address-info span {
+            font-weight: 400;
+            font-size: 12px;
+            letter-spacing: 0.4px;
+            line-height: 16px;
+          }
+          .primary {
+            text-transform: uppercase;
+            opacity: 0.8;
+            letter-spacing: 1px;
           }
         }
         .loader {
@@ -397,11 +411,12 @@ export class MiniMapBox extends LitElement {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          border: 2px solid var(--primary-text-color, #fff);
+          border: 2px solid var(--primary-text-color);
           position: absolute;
           left: 0;
           top: 0;
           animation: animloader 2s linear infinite;
+          opacity: 0;
         }
         .loader::after {
           animation-delay: 1s;
@@ -410,7 +425,7 @@ export class MiniMapBox extends LitElement {
         @keyframes animloader {
           0% {
             transform: scale(0);
-            opacity: 1;
+            opacity: 0.5;
           }
           100% {
             transform: scale(1);

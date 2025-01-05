@@ -62,9 +62,6 @@ export interface Address {
   streetName: string;
   sublocality: string;
   city: string;
-  state: string;
-  country: string;
-  postcode: string;
 }
 export interface MapData {
   lat: number;

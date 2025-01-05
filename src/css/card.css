@@ -93,6 +93,7 @@ header h1 {
   background-position: center;
 }
 
+
 #mini_map {
   position: relative;
   width: 100%;
@@ -128,7 +129,9 @@ header h1 {
   width: 100%;
   height: -moz-fit-content;
   height: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(50%, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(49%, 1fr));
+  column-gap: 0.5rem;
+
 }
 
 .info-box {
