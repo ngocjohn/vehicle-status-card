@@ -15,9 +15,6 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "outDir": "dist",
-    "rootDir": ".",
     "sourceMap": true
-  },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules"]
+  }
 }
