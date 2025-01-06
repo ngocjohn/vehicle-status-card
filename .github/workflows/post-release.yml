@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check if release is pre-release
-        run: "Is pre-release: ${{ github.event.release.prerelease }}"
+        run: |
+          echo "Is pre-release: ${{ github.event.release.prerelease }}"
 
       - if: ${{ !github.event.release.prerelease }}
         uses: actions/checkout@v4
