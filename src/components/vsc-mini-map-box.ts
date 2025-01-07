@@ -184,7 +184,7 @@ export class MiniMapBox extends LitElement {
     `;
   }
   private _renderAddress(): TemplateResult {
-    if (this.card._config.layout_config.hide.map_address || !this._address) return html``;
+    if (this.card._config.layout_config.hide.map_address) return html``;
     if (!this._addressReady) return html` <div class="address-line loading"><span class="loader"></span></div> `;
 
     const address = this._address || {};
@@ -389,10 +389,10 @@ export class MiniMapBox extends LitElement {
           .address-info span {
             font-weight: 400;
             font-size: 12px;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.5px;
             line-height: 16px;
           }
-          .primary {
+          span.primary {
             text-transform: uppercase;
             opacity: 0.8;
             letter-spacing: 1px;

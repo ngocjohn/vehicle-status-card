@@ -354,14 +354,14 @@ async function getAddressFromOpenStreet(lat: number, lon: number): Promise<Addre
     }
 
     const data = await response.json();
-    const { house_number, road, suburb, village, city, town } = data.address;
+    const { house_number, road, suburb, village, city, town, neighbourhood } = data.address;
     console.log('Address:', data.address);
 
     return {
       streetNumber: house_number || '',
       streetName: road || '',
-      sublocality: suburb || village || '',
-      city: city || town || '',
+      sublocality: neighbourhood || village || '',
+      city: suburb || city || town || '',
     };
   } catch (error) {
     console.warn('Error fetching address:', error);
