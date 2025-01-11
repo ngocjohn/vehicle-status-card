@@ -10,14 +10,7 @@ import editorcss from '../css/editor.css';
 import { HomeAssistant, VehicleStatusCardConfig, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../types';
 // Import all components
 import './components/';
-import {
-  _saveConfig,
-  convertRangeEntityToObject,
-  convertSecondaryToObject,
-  loadHaComponents,
-  stickyPreview,
-  Create,
-} from '../utils';
+import { loadHaComponents, stickyPreview, Create } from '../utils';
 import { PanelImagesEditor, PanelIndicator, PanelButtonCard, PanelEditorUI, PanelRangeInfo } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 
@@ -73,7 +66,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private async _handleFirstConfig(config: VehicleStatusCardConfig): Promise<void> {
-    const { button_card: buttonCard, range_info: rangeInfo } = config;
     if (config.layout_config?.section_order === undefined) {
       const layoutConfig = { ...(config.layout_config || {}) };
       console.log('current layout config:', layoutConfig);
@@ -105,59 +97,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       };
       fireEvent(this, 'config-changed', { config: this._config });
       console.log('Updated config with new layout config:', this._config.layout_config);
-    }
-
-    // Validate button configuration
-    const isButtonValid = buttonCard.every(
-      (button) =>
-        button.button.secondary !== null &&
-        typeof button.button.secondary === 'object' &&
-        !Array.isArray(button.button.secondary)
-    );
-
-    // Validate range configuration
-    const isRangeValid = rangeInfo.every(({ energy_level, range_level }) =>
-      [energy_level, range_level].every((level) => level !== null && typeof level === 'object' && !Array.isArray(level))
-    );
-
-    console.log('Button Valid:', isButtonValid, 'Range Valid:', isRangeValid);
-
-    // If button configuration is invalid
-    if (!isButtonValid) {
-      const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
-      const newButtonConfig = convertSecondaryToObject(buttonCard);
-      this._updateConfig({ button_card: newButtonConfig, card_id: cardId });
-      console.log('Converted button card and saved:', cardId);
-      return;
-    }
-
-    // If range configuration is invalid
-    if (!isRangeValid) {
-      const cardId = `vsc-${Math.random().toString(36).substring(2, 9)}`;
-      const newRangeConfig = convertRangeEntityToObject(rangeInfo);
-      this._updateConfig({ range_info: newRangeConfig, card_id: cardId });
-      console.log('Converted range info and saved:', cardId);
-      return;
-    }
-
-    // If everything is valid but card_id exists
-    if (isButtonValid && isRangeValid && config.card_id !== undefined) {
-      console.log('Valid config, removing cardId');
-      this._updateConfig({ ...config, card_id: undefined });
-      return;
-    }
-
-    console.log('Configuration is already valid.');
-  }
-
-  // Helper method to update configuration and fire events
-  private async _updateConfig(newConfig: Partial<VehicleStatusCardConfig>): Promise<void> {
-    this._config = { ...this._config, ...newConfig };
-    fireEvent(this, 'config-changed', { config: this._config });
-
-    if (newConfig.card_id) {
-      await _saveConfig(newConfig.card_id, this._config);
-      console.log('Saved config with cardId:', newConfig.card_id);
     }
   }
 
@@ -591,6 +530,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const themeMode = miniMap.theme_mode ?? 'auto';
     const popupEnable = miniMap.enable_popup ?? false;
     const mapHeight = miniMap.map_height ?? 150;
+    const usFormat = miniMap.us_format ?? false;
 
     const pickerConfig = [
       {
@@ -634,6 +574,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         options: { selector: { boolean: ['true', 'false'] } },
         pickerType: 'selectorBoolean',
         value: popupEnable,
+      },
+      {
+        configValue: 'us_format',
+        label: 'US Format',
+        options: { selector: { boolean: ['true', 'false'] } },
+        pickerType: 'selectorBoolean',
+        value: usFormat,
       },
       {
         configValue: 'map_height',
@@ -780,7 +727,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
     // Ensure we handle the boolean value correctly
     let newValue: any = target.checked !== undefined ? target.checked : target.value;
-    if (['default_zoom', 'enable_popup', 'hours_to_show', 'theme_mode', 'map_height'].includes(configValue)) {
+    if (
+      ['default_zoom', 'enable_popup', 'hours_to_show', 'theme_mode', 'map_height', 'us_format'].includes(configValue)
+    ) {
       newValue = ev.detail.value;
     }
     let hiddenChanged = false;

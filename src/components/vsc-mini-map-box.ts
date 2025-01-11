@@ -188,11 +188,15 @@ export class MiniMapBox extends LitElement {
     if (!this._addressReady) return html` <div class="address-line loading"><span class="loader"></span></div> `;
 
     const address = this._address || {};
+    const formattedStreet = this.card._config.mini_map?.us_format
+      ? `${address.streetNumber} ${address.streetName}`
+      : `${address.streetName} ${address.streetNumber}`;
+
     return html`
       <div class="address-line">
         <ha-icon icon="mdi:map-marker"></ha-icon>
         <div class="address-info">
-          <span class="secondary">${address.streetNumber} ${address.streetName}</span>
+          <span class="secondary">${formattedStreet}</span>
           <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
         </div>
       </div>
