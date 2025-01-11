@@ -255,11 +255,11 @@ header h1 {
   width: var(--vic-range-width);
 }
 
-.fuel-level-bar.electric {
+.fuel-level-bar.charging {
   background-color: #2196f3 !important;
 }
 
-.fuel-level-bar.electric::after {
+.fuel-level-bar.charging::after {
   content: '';
   position: absolute;
   width: 15%;
@@ -271,9 +271,57 @@ header h1 {
   display: none;
 }
 
-.fuel-level-bar.electric.show-after::after {
+.fuel-level-bar.charging.show-after::after {
   display: block !important;
 }
+
+.charging-icon {
+  --mdc-icon-size: inherit;
+  -webkit-animation: ping 1.2s ease-in-out infinite both alternate;
+  animation: ping 1.2s ease-in-out infinite both alternate;
+}
+
+.charging-icon[animate] {
+  -webkit-animation: ping 1.2s ease-in-out infinite both alternate;
+  animation: ping 1.2s ease-in-out infinite both alternate;
+}
+
+@keyframes ping {
+  0% {
+    -webkit-transform: scale(0.2);
+    transform: scale(0.2);
+    opacity: 0.8;
+  }
+
+  80% {
+    -webkit-transform: scale(1.2);
+    transform: scale(1.2);
+    opacity: 0;
+  }
+
+  100% {
+    -webkit-transform: scale(2.2);
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes fill-in {
+  0% {
+    opacity: 0.8;
+    clip-path: inset(100% 0 0 0);
+    /* Start from bottom */
+  }
+
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    /* Fully filled */
+  }
+}
+
+
+
 
 @keyframes pulse {
   0% {

@@ -25,7 +25,7 @@ export class VscRangeInfo extends LitElement {
   }
 
   private _renderRangeInfo(rangeItem: RangeInfoConfig): TemplateResult {
-    const { energy_level, progress_color, range_level } = rangeItem;
+    const { energy_level, range_level, progress_color, charging_entity } = rangeItem;
     const { attribute: energyAttribute, entity: energyEntity } = energy_level || {};
     const { attribute: rangeAttribute, entity: rangeEntity } = range_level || {};
 
@@ -48,13 +48,18 @@ export class VscRangeInfo extends LitElement {
       : this.hass.formatEntityState(this.hass.states[rangeEntity]);
 
     const level = parseInt(energyState, 10) || 0;
-
     const barColor = progress_color || `var(--accent-color)`;
 
+    const chargingState = charging_entity ? this.hass.states[charging_entity].state : false;
+    const booleanChargingState = chargingState === 'charging' || chargingState === 'on' || chargingState === 'true';
     return html` <div class="info-box range">
       <div class="item">
         <ha-icon icon="${icon}"></ha-icon>
-        <div><span>${energyState}</span></div>
+        <div>
+          <span>${energyState}</span>
+          <ha-icon icon="mdi:flash" class="charging-icon" style="color: ${barColor}" ?hidden="${!booleanChargingState}">
+          </ha-icon>
+        </div>
       </div>
       <div class="fuel-wrapper">
         <div class="fuel-level-bar" style="--vic-range-width: ${level}%; background-color:${barColor};"></div>
