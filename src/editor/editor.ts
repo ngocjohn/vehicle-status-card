@@ -547,6 +547,39 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         value: googleApi ?? '',
       },
       {
+        configValue: 'enable_popup',
+        label: 'Enable Popup',
+        options: { selector: { boolean: ['true', 'false'] } },
+        pickerType: 'selectorBoolean',
+        value: popupEnable,
+      },
+      {
+        configValue: 'us_format',
+        label: 'US Address Format',
+        options: { selector: { boolean: ['true', 'false'] } },
+        pickerType: 'selectorBoolean',
+        value: usFormat,
+      },
+      {
+        configIndex: 'hide',
+        configType: 'layout_config',
+        options: { selector: { boolean: ['true', 'false'] } },
+        pickerType: 'selectorBoolean',
+        configValue: 'map_address',
+        label: 'Address on map',
+        value: this._config.layout_config.hide?.map_address || false,
+      },
+      {
+        configValue: 'map_height',
+        label: 'Minimap Height (px)',
+        options: { selector: { number: { max: 500, min: 150, mode: 'slider', step: 10 } } },
+        pickerType: 'number',
+        value: mapHeight,
+      },
+    ];
+
+    const mapPopupConfig = [
+      {
         configValue: 'default_zoom',
         label: 'Default Zoom',
         options: { selector: selectorNumber },
@@ -568,27 +601,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         pickerType: 'attribute',
         value: themeMode,
       },
-      {
-        configValue: 'enable_popup',
-        label: 'Enable Popup',
-        options: { selector: { boolean: ['true', 'false'] } },
-        pickerType: 'selectorBoolean',
-        value: popupEnable,
-      },
-      {
-        configValue: 'us_format',
-        label: 'US Format',
-        options: { selector: { boolean: ['true', 'false'] } },
-        pickerType: 'selectorBoolean',
-        value: usFormat,
-      },
-      {
-        configValue: 'map_height',
-        label: 'Minimap Height (px)',
-        options: { selector: { number: { max: 500, min: 150, mode: 'slider', step: 10 } } },
-        pickerType: 'number',
-        value: mapHeight,
-      },
     ];
 
     const createPickers = (config: any) => {
@@ -596,10 +608,16 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     };
 
     return html`
-      <div class="sub-panel">
+      <div class="sub-panel-config button-card">
         <div class="sub-header">Mini Map Configuration</div>
-        <div class="sub-panel-config">
+        <div class="sub-panel">
           <div class="sub-content">${pickerConfig.map((config) => createPickers(config))}</div>
+        </div>
+      </div>
+      <div class="sub-panel-config button-card">
+        <div class="sub-header">Map popup configuration</div>
+        <div class="sub-panel">
+          <div class="sub-content">${mapPopupConfig.map((config) => createPickers(config))}</div>
         </div>
       </div>
     `;
