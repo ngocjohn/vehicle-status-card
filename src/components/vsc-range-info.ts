@@ -3,6 +3,7 @@ import { customElement, state, property } from 'lit/decorators.js';
 
 import cardcss from '../css/card.css';
 import { HomeAssistant, RangeInfoConfig } from '../types';
+import { fireEvent } from '../types/ha-frontend/fire-event';
 
 @customElement('vsc-range-info')
 export class VscRangeInfo extends LitElement {
@@ -52,19 +53,28 @@ export class VscRangeInfo extends LitElement {
 
     const chargingState = charging_entity ? this.hass.states[charging_entity].state : false;
     const booleanChargingState = chargingState === 'charging' || chargingState === 'on' || chargingState === 'true';
+
+    const moreInfo = (entity: string) => {
+      fireEvent(this, 'hass-more-info', { entityId: entity });
+    };
+
     return html` <div class="info-box range">
-      <div class="item">
+      <div class="item" @click="${() => moreInfo(energyEntity)}">
         <ha-icon icon="${icon}"></ha-icon>
-        <div>
-          <span>${energyState}</span>
-          <ha-icon icon="mdi:flash" class="charging-icon" style="color: ${barColor}" ?hidden="${!booleanChargingState}">
-          </ha-icon>
-        </div>
+        <span>${energyState}</span>
+        <ha-icon
+          icon="mdi:battery-high"
+          class="charging-icon"
+          style="--range-bar-color: ${barColor}"
+          ?hidden="${!booleanChargingState}"
+          title="Charging"
+        >
+        </ha-icon>
       </div>
       <div class="fuel-wrapper">
         <div class="fuel-level-bar" style="--vic-range-width: ${level}%; background-color:${barColor};"></div>
       </div>
-      <div class="item">
+      <div class="item" @click="${() => moreInfo(rangeEntity)}">
         <span>${rangeState}</span>
       </div>
     </div>`;
