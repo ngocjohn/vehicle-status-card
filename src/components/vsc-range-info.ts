@@ -3,6 +3,7 @@ import { customElement, state, property } from 'lit/decorators.js';
 
 import cardcss from '../css/card.css';
 import { HomeAssistant, RangeInfoConfig } from '../types';
+import { fireEvent } from '../types/ha-frontend/fire-event';
 
 @customElement('vsc-range-info')
 export class VscRangeInfo extends LitElement {
@@ -25,7 +26,7 @@ export class VscRangeInfo extends LitElement {
   }
 
   private _renderRangeInfo(rangeItem: RangeInfoConfig): TemplateResult {
-    const { energy_level, progress_color, range_level } = rangeItem;
+    const { energy_level, range_level, progress_color, charging_entity } = rangeItem;
     const { attribute: energyAttribute, entity: energyEntity } = energy_level || {};
     const { attribute: rangeAttribute, entity: rangeEntity } = range_level || {};
 
@@ -48,18 +49,32 @@ export class VscRangeInfo extends LitElement {
       : this.hass.formatEntityState(this.hass.states[rangeEntity]);
 
     const level = parseInt(energyState, 10) || 0;
-
     const barColor = progress_color || `var(--accent-color)`;
 
+    const chargingState = charging_entity ? this.hass.states[charging_entity].state : false;
+    const booleanChargingState = chargingState === 'charging' || chargingState === 'on' || chargingState === 'true';
+
+    const moreInfo = (entity: string) => {
+      fireEvent(this, 'hass-more-info', { entityId: entity });
+    };
+
     return html` <div class="info-box range">
-      <div class="item">
+      <div class="item" @click="${() => moreInfo(energyEntity)}">
         <ha-icon icon="${icon}"></ha-icon>
-        <div><span>${energyState}</span></div>
+        <span>${energyState}</span>
+        <ha-icon
+          icon="mdi:battery-high"
+          class="charging-icon"
+          style="--range-bar-color: ${barColor}"
+          ?hidden="${!booleanChargingState}"
+          title="Charging"
+        >
+        </ha-icon>
       </div>
       <div class="fuel-wrapper">
         <div class="fuel-level-bar" style="--vic-range-width: ${level}%; background-color:${barColor};"></div>
       </div>
-      <div class="item">
+      <div class="item" @click="${() => moreInfo(rangeEntity)}">
         <span>${rangeState}</span>
       </div>
     </div>`;

@@ -355,7 +355,7 @@ async function getAddressFromOpenStreet(lat: number, lon: number): Promise<Addre
 
     const data = await response.json();
     const { house_number, road, suburb, village, city, town, neighbourhood } = data.address;
-    console.log('Address:', data.address);
+    // console.log('Address:', data.address);
 
     return {
       streetNumber: house_number || '',

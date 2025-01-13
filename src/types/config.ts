@@ -41,6 +41,7 @@ export interface RangeInfoConfig {
   energy_level: RangeItemConfig;
   progress_color: string;
   range_level: RangeItemConfig;
+  charging_entity?: string;
 }
 
 export interface RangeItemConfig {

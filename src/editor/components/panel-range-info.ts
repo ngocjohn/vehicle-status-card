@@ -148,6 +148,7 @@ export class PanelRangeInfo extends LitElement {
                 attribute: '',
               },
               progress_color: randomHex,
+              charging_entity: '',
             };
             rangeInfo.push(newRangeInfo);
             updateChanged(rangeInfo);
@@ -180,6 +181,7 @@ export class PanelRangeInfo extends LitElement {
     const index = this._activeIndexItem;
     const energyConfig = (index: number) => this._renderEnergyLevelConfig(index);
     const rangeConfig = (index: number) => this._renderRangeLevelConfig(index);
+    const chargingEntity = (index: number) => this._renderChargingEntityConfig(index);
     const colorPicker = (index: number) => this._colorPicker(index);
     const infoAlert = (helper: string) =>
       html`<span slot="message" class="info-alert" style="display: none"> ${helper} </span>`;
@@ -193,6 +195,11 @@ export class PanelRangeInfo extends LitElement {
         title: 'Range Level',
         helper: infoAlert('Entity to display the range level (e.g., distance, range)'),
         config: rangeConfig,
+      },
+      charging_entity: {
+        title: 'Charging Entity',
+        helper: infoAlert('Entity to display the charging status'),
+        config: chargingEntity,
       },
       progress_color: {
         title: 'Progress Color',
@@ -425,6 +432,26 @@ export class PanelRangeInfo extends LitElement {
     `;
   }
 
+  private _renderChargingEntityConfig(index: number): TemplateResult {
+    const configShared = {
+      component: this,
+      configType: 'charging_entity',
+      configIndex: index,
+    };
+
+    const chargingEntity = this.config.range_info[index].charging_entity || '';
+    return html`
+      <div class="item-content">
+        ${Create.Picker({
+          ...configShared,
+          value: chargingEntity,
+          label: 'Charging Entity',
+          pickerType: 'entity',
+        })}
+      </div>
+    `;
+  }
+
   private _colorPicker(index: number): TemplateResult {
     const rangeItem = this.config.range_info[index];
     const progressColor = rangeItem.progress_color;
@@ -509,13 +536,18 @@ export class PanelRangeInfo extends LitElement {
       updates.range_info = rangeInfo; // Apply the updates
       console.log(`Range info [${index}] progress_color changed to`, newValue);
       console.log('Updates', updates);
+    } else if (configType === 'charging_entity') {
+      // Update the entity value
+      rangeInfoItem.charging_entity = newValue;
+      rangeInfo[index] = rangeInfoItem;
+      updates.range_info = rangeInfo;
+      console.log(`Range info [${index}] charging_entity changed to`, newValue);
     } else if (configType === 'energy_level' || configType === 'range_level') {
       // Update the entity or attribute value
       const rangeLevel = rangeInfoItem[configType];
       rangeLevel[configValue] = newValue;
       rangeInfoItem[configType] = rangeLevel;
       rangeInfo[index] = rangeInfoItem;
-
       updates.range_info = rangeInfo;
     }
 
