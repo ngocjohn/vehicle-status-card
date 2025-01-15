@@ -294,7 +294,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   private _renderRangeInfo(): TemplateResult {
     const { range_info } = this._config;
     if (!range_info) return html``;
-    return html`<div id="range" ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO)}>
+    return html`<div id="range" ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}>
       <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>
     </div>`;
   }

@@ -198,11 +198,6 @@ export const DEFAULT_CONFIG = {
       hide_button: false,
     },
   ],
-  images: [],
-  indicators: {
-    group: [],
-    single: [],
-  },
   layout_config: {
     button_grid: {
       rows: 2,
@@ -216,15 +211,14 @@ export const DEFAULT_CONFIG = {
       indicators: false,
       mini_map: true,
       range_info: false,
+      map_address: false,
     },
     theme_config: {
       mode: 'auto',
       theme: 'default',
     },
   },
-  mini_map: {},
   name: 'Vehicle Status Card',
-  range_info: [],
   type: 'custom:vehicle-status-card',
 };
 

@@ -109,7 +109,7 @@ header h1 {
 } */
 
 #range {
-  margin-top: var(--vic-gutter-gap);
+  padding-top: var(--vic-gutter-gap);
 }
 
 .header-info-box {
@@ -159,7 +159,7 @@ header h1 {
 
 .info-box.range {
   flex-wrap: nowrap !important;
-  justify-content: center;
+  justify-content: space-around;
   text-wrap: nowrap;
   align-items: center;
 }
@@ -202,6 +202,13 @@ header h1 {
   cursor: pointer;
 }
 
+.item.active-btn[active] {
+  color: var(--group-indicator-color, var(--primary-color));
+}
+
+.item.active-btn>ha-icon {
+  color: var(--group-indicator-color);
+}
 
 
 .info-box.charge {
