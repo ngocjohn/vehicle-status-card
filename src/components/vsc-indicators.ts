@@ -1,6 +1,6 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
-import { customElement, state, property } from 'lit/decorators.js';
+import { customElement, state, property, query } from 'lit/decorators.js';
 
 import cardcss from '../css/card.css';
 import { HomeAssistant, VehicleStatusCardConfig } from '../types';
@@ -9,6 +9,7 @@ import { isEmpty } from '../utils';
 // components items
 import './shared/vsc-indicator-single';
 import './shared/vsc-indicator-group-item';
+import { VscIndicatorGroupItem } from './shared/vsc-indicator-group-item';
 
 const TEMPLATE_KEYS = ['color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -19,6 +20,7 @@ export class VscIndicators extends LitElement {
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() private _activeGroupIndicator: number | null = null;
+  @query('vsc-indicator-group-item') private _groupIndicatorItem!: VscIndicatorGroupItem;
 
   // group indicators
   @state() private _groupTemplateResults: Record<
@@ -51,6 +53,25 @@ export class VscIndicators extends LitElement {
       this._checkVisibleSingle();
     }
     return true;
+  }
+
+  protected updated(changedProperties: PropertyValues): void {
+    super.updated(changedProperties);
+    if (changedProperties.has('_activeGroupIndicator') && this._activeGroupIndicator !== null) {
+      setTimeout(() => {
+        this._addEventListeners();
+      }, 0);
+    }
+  }
+
+  private async _addEventListeners(): Promise<void> {
+    const groupIndicators = this.shadowRoot?.querySelectorAll(
+      'vsc-indicator-group-item'
+    ) as NodeListOf<VscIndicatorGroupItem>;
+    if (!groupIndicators || groupIndicators.length === 0) return;
+    groupIndicators.forEach((groupIndicator: VscIndicatorGroupItem) => {
+      groupIndicator._setEventListeners();
+    });
   }
 
   private _checkVisibleSingle(): void {

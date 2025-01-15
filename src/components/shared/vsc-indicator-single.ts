@@ -9,6 +9,7 @@ import cardcss from '../../css/card.css';
 // Utils
 import { HomeAssistant, IndicatorConfig } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
+import { addActions } from '../../utils';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -46,6 +47,11 @@ export class VscIndicatorSingle extends LitElement {
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._tryDisconnect();
+  }
+
+  protected async firstUpdated(changeProperties: PropertyValues): Promise<void> {
+    super.firstUpdated(changeProperties);
+    this._setEventListeners();
   }
 
   private isTemplate(value: string | undefined): boolean {
@@ -134,6 +140,15 @@ export class VscIndicatorSingle extends LitElement {
     return true;
   }
 
+  private _setEventListeners(): void {
+    const actionConfig = this.indicator.action_config;
+    if (!actionConfig) return;
+    const actionEl = this.shadowRoot?.getElementById('single-action');
+    if (actionEl && actionConfig) {
+      addActions(actionEl, actionConfig);
+    }
+  }
+
   protected render(): TemplateResult {
     const indicator = this.indicator;
     const entity = indicator.entity;
@@ -152,7 +167,7 @@ export class VscIndicatorSingle extends LitElement {
     this._visibility = Boolean(visibility);
 
     return html`
-      <div class="item" ?hidden=${Boolean(visibility) === false}>
+      <div class="item" ?hidden=${Boolean(visibility) === false} id="single-action">
         <ha-state-icon
           .hass=${this.hass}
           .stateObj=${entity ? this.hass.states[entity] : undefined}
