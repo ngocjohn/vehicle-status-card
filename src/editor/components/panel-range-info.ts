@@ -250,7 +250,7 @@ export class PanelRangeInfo extends LitElement {
       },
     ];
     return html`${
-      !this._yamlEditorActive
+      !this._yamlEditorActive && this.config.range_info
         ? html`
             <div class="range-info-list">
               ${repeat(this.config.range_info, (rangeItem: RangeInfoConfig, index: number) => {
