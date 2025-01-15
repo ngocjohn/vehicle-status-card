@@ -1,3 +1,33 @@
+<a id="v1.5.0"></a>
+# [v1.5.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.5.0) - 2025-01-15
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.5.0 -->
+
+## What's Changed
+This release introduces exciting new features, including section order customization, enhanced map functionality with address display.
+
+If you find this card helpful, please consider giving the repository a ⭐! 
+
+### New Features 🎉
+* **Section Order Customization** [#47](https://github.com/ngocjohn/vehicle-status-card/pull/47)
+Introduced the ability to define the order of sections in the card, providing greater flexibility in customizing the layout.
+
+![benz-section-order2](https://github.com/user-attachments/assets/610bd5e8-1ddb-4be2-a34c-acceb4efb439)
+![benz-section](https://github.com/user-attachments/assets/af1ca788-0a00-45e4-9f84-19c9d7a44c08)
+![benz-map-anim](https://github.com/user-attachments/assets/db730a3e-9d76-49d6-a0c5-39e2ca0c04e6)
+
+* Add charging entity support and an animated charging icon [#53](https://github.com/ngocjohn/vehicle-status-card/pull/53)
+![charging-icon](https://github.com/user-attachments/assets/c4dae2e8-822f-44bb-8905-7f0327e30ece)
+
+### 🛠️ Improvements
+* Enhance address formatting by [@ngocjohn](https://github.com/ngocjohn) in [#52](https://github.com/ngocjohn/vehicle-status-card/pull/52)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.3...v1.5.0
+
+[Changes][v1.5.0]
+
+
 <a id="v1.4.3"></a>
 # [v1.4.3](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.4.3) - 2024-12-22
 
@@ -175,6 +205,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.5.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.3...v1.5.0
 [v1.4.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.2...v1.4.3
 [v1.4.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.0...v1.4.2
 [v1.4.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.3.1...v1.4.0
