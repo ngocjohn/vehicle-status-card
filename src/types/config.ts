@@ -14,6 +14,7 @@ export interface IndicatorConfig {
   state_template?: string;
   visibility?: string;
   color?: string;
+  action_config: ButtonActionConfig;
 }
 
 // IndicatorGroup configuration for a group of indicators
@@ -33,6 +34,7 @@ export interface IndicatorGroupItemConfig {
   icon_template?: string;
   name: string;
   state_template?: string;
+  action_config: ButtonActionConfig;
 }
 
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
@@ -114,8 +116,8 @@ export interface CardItemConfig {
 }
 
 export interface ButtonActionConfig {
-  double_tap_action: ActionConfig;
   entity: string;
+  double_tap_action: ActionConfig;
   hold_action: ActionConfig;
   tap_action: ActionConfig;
 }

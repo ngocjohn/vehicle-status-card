@@ -9,6 +9,7 @@ import cardcss from '../../css/card.css';
 // Utils
 import { HomeAssistant, IndicatorGroupItemConfig } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
+import { addActions } from '../../utils';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -56,6 +57,19 @@ export class VscIndicatorGroupItem extends LitElement {
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._tryDisconnect();
+  }
+
+  protected async firstUpdated(changeProperties: PropertyValues): Promise<void> {
+    super.firstUpdated(changeProperties);
+    this._setEventListeners();
+  }
+
+  public _setEventListeners(): void {
+    const actionConfig = this.item.action_config;
+    if (!actionConfig) return;
+    const actionEl = this.shadowRoot?.getElementById('group-item-action');
+    if (!actionEl) return;
+    addActions(actionEl, actionConfig);
   }
 
   private isTemplate(value: string | undefined): boolean {
@@ -152,7 +166,7 @@ export class VscIndicatorGroupItem extends LitElement {
       : this.hass.formatEntityState(this.hass.states[entity]);
 
     return html`
-      <div class="item charge">
+      <div class="item charge" id="group-item-action">
         <div class="icon-state">
           <ha-state-icon .hass=${this.hass} .stateObj=${this.hass.states[entity]} .icon=${icon}></ha-state-icon>
           <span>${state}</span>

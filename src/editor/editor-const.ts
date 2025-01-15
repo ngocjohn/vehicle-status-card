@@ -169,7 +169,7 @@ const ACTIONSELECTOR = [
   {
     name: 'tap_action',
     label: 'Tap action',
-    defaultAction: 'more-info',
+    defaultAction: 'none',
   },
   {
     name: 'hold_action',
