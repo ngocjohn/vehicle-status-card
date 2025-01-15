@@ -161,8 +161,8 @@ export class VscIndicators extends LitElement {
   }
 
   private _renderActiveIndicator(): TemplateResult {
-    const activeIndex =
-      this._activeGroupIndicator !== null ? this._activeGroupIndicator : this.config.indicators.group.length + 1;
+    if (!this.config.indicators.group) return html``;
+    const activeIndex = this._activeGroupIndicator !== null ? this._activeGroupIndicator : 1;
     const items = this.config.indicators.group[activeIndex]?.items || [];
     const activeClass = this._activeGroupIndicator !== null ? 'info-box charge active' : 'info-box charge';
 
@@ -196,10 +196,16 @@ export class VscIndicators extends LitElement {
       const color = group.color ? this._groupTemplateResults[index]?.color?.result : group.color || '';
       const name = group.name;
       const active = this._activeGroupIndicator === index;
+      const activeColor = color ? `--group-indicator-color: ${color}` : '';
       return visible
         ? html`
-            <div class="item active-btn" @click=${() => this._toggleGroupIndicator(index)}>
-              <ha-icon icon=${icon} style=${color ? `color: ${color}` : ''}></ha-icon>
+            <div
+              class="item active-btn"
+              style=${activeColor}
+              @click=${() => this._toggleGroupIndicator(index)}
+              ?active=${active}
+            >
+              <ha-icon icon=${icon}></ha-icon>
               <div class="added-item-arrow">
                 <span>${name}</span>
                 <div class="subcard-icon" ?active=${active} style="margin-bottom: 2px">

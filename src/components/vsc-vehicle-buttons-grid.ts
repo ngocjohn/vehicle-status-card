@@ -53,7 +53,7 @@ export class VehicleButtonsGrid extends LitElement {
     }
 
     return html`
-      <div id="button-swiper">
+      <div id="button-swiper" style=${this.computeBaseStyles()}>
         ${this.useSwiper
           ? this._renderSwiper()
           : html`<div class="grid-container" style=${this._computeGridColumns()}>
@@ -61,6 +61,14 @@ export class VehicleButtonsGrid extends LitElement {
             </div>`}
       </div>
     `;
+  }
+
+  private computeBaseStyles() {
+    const order = this.config.layout_config?.section_order || [];
+    const isMiniMapPrev = order.indexOf('buttons') - order.indexOf('mini_map') === 1;
+    return styleMap({
+      marginTop: !isMiniMapPrev ? 'var(--vic-card-padding)' : '',
+    });
   }
 
   private _renderSwiper(): TemplateResult {

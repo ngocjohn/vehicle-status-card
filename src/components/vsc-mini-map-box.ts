@@ -85,15 +85,16 @@ export class MiniMapBox extends LitElement {
     const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
     const single = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
 
-    let maskImage =
-      'linear-gradient(to bottom, black 87%, transparent 100%), linear-gradient(to top, black 87%, transparent 100%)';
+    let maskImage = 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)';
 
     if (lastItem && !firstItem) {
-      maskImage = 'linear-gradient(to top, black 95%, transparent 100%)';
+      maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
     } else if (firstItem && !lastItem) {
       maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
     } else if (single) {
       maskImage = 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)';
+    } else {
+      maskImage;
     }
 
     const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
@@ -134,14 +135,12 @@ export class MiniMapBox extends LitElement {
   }
 
   private _createTileLayer(map: L.Map): L.TileLayer {
-    // console.log('Creating tile layer...');
     const tileOpts = {
       tileSize: 256,
       className: 'map-tiles',
     };
 
-    const provider = this.isDark ? 'CartoDB.Positron' : 'CartoDB.Voyager';
-    const tileLayer = L.tileLayer.provider(provider, tileOpts).addTo(map);
+    const tileLayer = L.tileLayer.provider('CartoDB.Positron', tileOpts).addTo(map);
     return tileLayer;
   }
 
