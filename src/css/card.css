@@ -216,14 +216,14 @@ header h1 {
 .info-box.charge {
   overflow: hidden;
   justify-content: space-evenly;
-  max-height: 0;
   opacity: 0;
+  max-height: 0;
   transition: all 400ms cubic-bezier(0.3, 0.0, 0.8, 0.15);
 }
 
 .info-box.charge.active {
-  max-height: 100px;
   opacity: 1;
+  max-height: 100px;
   padding-top: var(--vic-card-padding);
 }
 
