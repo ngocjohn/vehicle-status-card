@@ -70,6 +70,8 @@ export class VscIndicators extends LitElement {
     ) as NodeListOf<VscIndicatorGroupItem>;
     if (!groupIndicators || groupIndicators.length === 0) return;
     groupIndicators.forEach((groupIndicator: VscIndicatorGroupItem) => {
+      const actionConfig = groupIndicator.item.action_config;
+      if (!actionConfig) return;
       groupIndicator._setEventListeners();
     });
   }
@@ -183,7 +185,7 @@ export class VscIndicators extends LitElement {
 
   private _renderActiveIndicator(): TemplateResult {
     if (!this.config.indicators.group) return html``;
-    const activeIndex = this._activeGroupIndicator !== null ? this._activeGroupIndicator : 1;
+    const activeIndex = this._activeGroupIndicator!;
     const items = this.config.indicators.group[activeIndex]?.items || [];
     const activeClass = this._activeGroupIndicator !== null ? 'info-box charge active' : 'info-box charge';
 

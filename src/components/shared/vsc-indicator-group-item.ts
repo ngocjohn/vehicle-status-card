@@ -66,10 +66,10 @@ export class VscIndicatorGroupItem extends LitElement {
 
   public _setEventListeners(): void {
     const actionConfig = this.item.action_config;
-    if (!actionConfig) return;
     const actionEl = this.shadowRoot?.getElementById('group-item-action');
-    if (!actionEl) return;
-    addActions(actionEl, actionConfig);
+    if (actionEl && actionConfig !== undefined) {
+      addActions(actionEl, actionConfig);
+    }
   }
 
   private isTemplate(value: string | undefined): boolean {
