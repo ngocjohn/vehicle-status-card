@@ -12,7 +12,7 @@ export class SubPanelYaml extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public config!: VehicleStatusCardConfig;
   @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
-  @property({ attribute: false }) configDefault: any = {};
+  @property({ attribute: false }) configDefault: any;
   @state() configIndex?: number;
   @state() configKey?: string;
 

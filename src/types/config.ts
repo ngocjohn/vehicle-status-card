@@ -252,6 +252,7 @@ interface LayoutConfig {
 export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   button_card: Array<ButtonCardConfig>;
   images: Array<ImageConfig>;
+  image_entities?: Array<string>;
   indicators: {
     group: Array<IndicatorGroupConfig>;
     single: Array<IndicatorConfig>;
