@@ -270,12 +270,13 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   }
 
   private _renderImagesSlide(): TemplateResult {
-    if (!this._config.images || this._config.images.length === 0 || this._isSectionHidden(SECTION.IMAGES))
-      return html``;
+    const imageEntities = this._config.image_entities || [];
+    const configImages = this._config?.images || [];
+    if ((!configImages.length && !imageEntities.length) || this._isSectionHidden(SECTION.IMAGES)) return html``;
 
     return html`
       <div id=${SECTION.IMAGES}>
-        <images-slide .images=${this._config.images} .config=${this._config}> </images-slide>
+        <images-slide .hass=${this._hass} .config=${this._config}> </images-slide>
       </div>
     `;
   }

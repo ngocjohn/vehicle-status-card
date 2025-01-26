@@ -17,7 +17,7 @@ export class PanelImagesEditor extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ type: Object }) public editor?: any;
   @property({ type: Object }) public config!: VehicleStatusCardConfig;
-  @property({ type: Array }) _images!: ImageConfig[];
+  @property({ type: Array }) _images: ImageConfig[] = [];
   @property({ type: Boolean }) isDragging = false;
 
   @state() _yamlEditorActive = false;
@@ -25,6 +25,7 @@ export class PanelImagesEditor extends LitElement {
   @state() _sortable: Sortable | null = null;
   @state() _reindexImages: boolean = false;
   @state() private _activeTabIndex: number = 0;
+  @state() _newItemName: Map<string, string> = new Map();
   private _helpDismissed = false;
   private _debouncedConfigChanged = debounce(this.configChanged.bind(this), 300);
 
@@ -96,7 +97,7 @@ export class PanelImagesEditor extends LitElement {
   }
 
   protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-    if (_changedProperties.has('config')) {
+    if (_changedProperties.has('config') && this.config.images && this.config.images.length > 0) {
       this._images = this.config.images;
       return true;
     }
@@ -131,9 +132,11 @@ export class PanelImagesEditor extends LitElement {
     }
     const imagesList = this._renderImageList();
     const layoutConfig = this._renderImageLayoutConfig();
+    const imageEntity = this._renderImageEntity();
 
     const tabsconfig = [
       { key: 'image_list', label: 'Images', content: imagesList },
+      { key: 'image_entity', label: 'Image Entities', content: imageEntity },
       { key: 'layout_config', label: 'Slide config', content: layoutConfig },
     ];
 
@@ -142,6 +145,111 @@ export class PanelImagesEditor extends LitElement {
         ${TabBar({ tabs: tabsconfig, activeTabIndex: this._activeTabIndex, onTabChange: this._handleTabChange })}
       </div>
     `;
+  }
+
+  private _renderImageEntity(): TemplateResult {
+    const imageEntities = this.config?.image_entities || [];
+    const emptyEntityPicker = html`<div class="item-config-row">
+      <div class="item-content">
+        <ha-entity-picker
+          .hass=${this._hass}
+          .value=${this._newItemName.get('entity')}
+          .label=${'Image Entity'}
+          .configType=${'image_entities'}
+          @value-changed=${this._handleNewImageEntity}
+          .allowCustomEntity=${false}
+          .includeDomains=${'image'}
+        ></ha-entity-picker>
+      </div>
+    </div>`;
+    return html` <div class="sub-panel-config button-card">
+      <div class="sub-header">
+        <div>Image Entities Configuration</div>
+      </div>
+      <div class="default-card-list">
+        ${repeat(
+          imageEntities,
+          (entity) => entity,
+          (entity, idx) => html`
+            <div class="item-config-row">
+              <div class="item-content">
+                <ha-entity-picker
+                  .hass=${this._hass}
+                  .value=${entity}
+                  .label=${'Image Entity'}
+                  .configType=${'image_entities'}
+                  .configIndex=${idx}
+                  @value-changed=${this._handleImageEntityChange}
+                  .allowCustomEntity=${false}
+                  .includeDomains=${'image'}
+                ></ha-entity-picker>
+              </div>
+              <div class="item-actions">
+                <ha-icon-button
+                  class="action-icon"
+                  .path=${ICON.DELETE}
+                  @click=${this._deleteImageEntity(idx)}
+                ></ha-icon-button>
+              </div>
+            </div>
+          `
+        )}
+        ${emptyEntityPicker}
+      </div>
+    </div>`;
+  }
+
+  private _handleNewImageEntity(ev: any): void {
+    ev.stopPropagation();
+    const value = ev.target.value;
+    const newEntity = new Map(this._newItemName);
+    newEntity.set('entity', value);
+
+    this._newItemName = newEntity;
+
+    this.requestUpdate();
+    this._handleAddNewImageEntity();
+  }
+
+  private _handleAddNewImageEntity(): void {
+    const resetNewEntity = () => {
+      this._newItemName.clear();
+    };
+
+    this.updateComplete.then(() => {
+      const newEntity = this._newItemName.get('entity');
+      if (!newEntity) return;
+
+      const imageEntities = [...(this.config.image_entities || [])];
+      imageEntities.push(newEntity);
+      this.config = { ...this.config, image_entities: imageEntities };
+      this._debouncedConfigChanged();
+      resetNewEntity();
+    });
+  }
+
+  private _handleImageEntityChange(ev: any): void {
+    const entity = ev.target.value;
+    const idx = ev.target.configIndex;
+    if (idx === undefined) return;
+    if (!entity || entity === '') {
+      this._deleteImageEntity(idx)();
+      return;
+    }
+    const imageEntities = [...(this.config.image_entities || [])];
+    imageEntities[idx] = entity;
+    this.config = { ...this.config, image_entities: imageEntities };
+    this._debouncedConfigChanged();
+  }
+
+  private _deleteImageEntity(idx: number): () => void {
+    return () => {
+      if (idx === undefined) return;
+      const imageEntities = [...(this.config.image_entities || [])];
+      imageEntities.splice(idx, 1);
+      this.config = { ...this.config, image_entities: imageEntities };
+      this._debouncedConfigChanged();
+    };
   }
 
   private _renderImageList(): TemplateResult {
@@ -161,57 +269,61 @@ export class PanelImagesEditor extends LitElement {
       { title: 'Show Image', icon: 'mdi:eye', action: IMAGE_ACTIONS.SHOW_IMAGE },
       { title: 'Delete Image', icon: 'mdi:delete', action: IMAGE_ACTIONS.DELETE },
     ];
-
-    const imageList = this._reindexImages
-      ? html`<div>Please wait...</div>`
-      : html` <div class="images-list" id="images-list">
-          ${repeat(
-            this._images || [],
-            (image) => image.url,
-            (image, idx) => html`
-              <div class="item-config-row" data-url="${image.url}">
-                <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
-                <div class="item-content">
-                  <ha-textfield
-                    .label=${`Image #${idx + 1}`}
-                    .value=${image.title}
-                    .configType=${'images'}
-                    .configIndex=${idx}
-                    .configValue=${'url'}
-                    @input=${(ev: any) => this._imageInputChanged(ev, idx)}
-                  ></ha-textfield>
+    const images = this.config?.images || [];
+    const imageList =
+      this._reindexImages || !images.length
+        ? html`<div></div>`
+        : html` <div class="images-list" id="images-list">
+            ${repeat(
+              images,
+              (image) => image.url,
+              (image, idx) => html`
+                <div class="item-config-row" data-url="${image.url}">
+                  <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
+                  <div class="item-content">
+                    <ha-textfield
+                      .label=${`Image #${idx + 1}`}
+                      .value=${image.title}
+                      .configType=${'images'}
+                      .configIndex=${idx}
+                      .configValue=${'url'}
+                      @input=${(ev: any) => this._imageInputChanged(ev, idx)}
+                    ></ha-textfield>
+                  </div>
+                  <div class="item-actions">
+                    <ha-button-menu
+                      .corner=${'BOTTOM_START'}
+                      .fixed=${true}
+                      .menuCorner=${'START'}
+                      .activatable=${true}
+                      .naturalMenuWidth=${true}
+                      @closed=${(ev: Event) => ev.stopPropagation()}
+                    >
+                      <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                      ${actionMap.map(
+                        (action) => html`
+                          <mwc-list-item @click=${this.toggleAction(action.action, idx)} .graphic=${'icon'}>
+                            <ha-icon slot="graphic" .icon=${action.icon}></ha-icon>
+                            ${action.title}
+                          </mwc-list-item>
+                        `
+                      )}
+                    </ha-button-menu>
+                  </div>
                 </div>
-                <div class="item-actions">
-                  <ha-button-menu
-                    .corner=${'BOTTOM_START'}
-                    .fixed=${true}
-                    .menuCorner=${'START'}
-                    .activatable=${true}
-                    .naturalMenuWidth=${true}
-                    @closed=${(ev: Event) => ev.stopPropagation()}
-                  >
-                    <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-                    ${actionMap.map(
-                      (action) => html`
-                        <mwc-list-item @click=${this.toggleAction(action.action, idx)} .graphic=${'icon'}>
-                          <ha-icon slot="graphic" .icon=${action.icon}></ha-icon>
-                          ${action.title}
-                        </mwc-list-item>
-                      `
-                    )}
-                  </ha-button-menu>
-                </div>
-              </div>
-            `
-          )}
-        </div>`;
+              `
+            )}
+          </div>`;
 
     const actionFooter = html`<div class="action-footer">
       <ha-button id="upload-btn" @click=${this.toggleAction('upload')}>Add Image</ha-button>
-      <ha-button id="yaml-btn" @click=${this.toggleAction('yaml-editor')}>Edit YAML</ha-button>
+      <ha-button id="yaml-btn" @click=${this.toggleAction('yaml-editor')} class=${!images.length ? 'hidden' : ''}
+        >Edit YAML</ha-button
+      >
     </div> `;
     return html` ${infoText} ${dropArea} ${imageList} ${yamlEditor} ${actionFooter} `;
   }
+
   private _renderYamlEditor(): TemplateResult {
     return html`
       <div id="yaml-editor" style="display: none;">
@@ -334,7 +446,7 @@ export class PanelImagesEditor extends LitElement {
         pickerType: 'selectorBoolean' as 'selectorBoolean',
       },
       {
-        value: image.loop || true,
+        value: image.loop || false,
         configValue: 'loop',
         label: 'Loop',
         pickerType: 'selectorBoolean' as 'selectorBoolean',
@@ -424,16 +536,20 @@ export class PanelImagesEditor extends LitElement {
         const dropArea = this.shadowRoot?.getElementById('drop-area') as HTMLElement;
         const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
         const addImageBtn = this.shadowRoot?.getElementById('upload-btn') as HTMLElement;
-
         const isHidden = dropArea?.style.display === 'none';
         if (isHidden) {
           dropArea.style.display = 'block';
-          imageList.style.display = 'none';
+          if (imageList) {
+            imageList.style.display = 'none';
+          }
           addImageBtn.innerHTML = 'Cancel';
         } else {
           dropArea.style.display = 'none';
-          imageList.style.display = 'block';
+          if (imageList) {
+            imageList.style.display = 'block';
+          }
           addImageBtn.innerHTML = 'Add Image';
+          this.initSortable();
         }
       };
 
