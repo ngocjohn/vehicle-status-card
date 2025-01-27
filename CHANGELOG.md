@@ -1,3 +1,22 @@
+<a id="v1.6.0"></a>
+# [v1.6.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.6.0) - 2025-01-27
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.6.0 -->
+
+## What's Changed
+### New Features 🎉
+* Add image entity support [#62](https://github.com/ngocjohn/vehicle-status-card/pull/62)
+Introduce support for image entities, allowing dynamic image rendering based on entity states. This enhancement includes new interfaces and methods for image handling, improving the overall functionality and user experience.
+
+### Fixes 🐛
+* Improve action configuration handling by [@ngocjohn](https://github.com/ngocjohn) in [#57](https://github.com/ngocjohn/vehicle-status-card/pull/57)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.5.0...v1.6.0
+
+[Changes][v1.6.0]
+
+
 <a id="v1.5.0"></a>
 # [v1.5.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.5.0) - 2025-01-15
 
@@ -18,6 +37,9 @@ Introduced the ability to define the order of sections in the card, providing gr
 
 * Add charging entity support and an animated charging icon [#53](https://github.com/ngocjohn/vehicle-status-card/pull/53)
 ![charging-icon](https://github.com/user-attachments/assets/c4dae2e8-822f-44bb-8905-7f0327e30ece)
+
+* Add action configuration handling for indicators [#55](https://github.com/ngocjohn/vehicle-status-card/issues/55) 
+Introduce action configuration for single and group indicator items, enabling customizable actions based on user interactions.
 
 ### 🛠️ Improvements
 * Enhance address formatting by [@ngocjohn](https://github.com/ngocjohn) in [#52](https://github.com/ngocjohn/vehicle-status-card/pull/52)
@@ -205,6 +227,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.6.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.5.0...v1.6.0
 [v1.5.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.3...v1.5.0
 [v1.4.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.2...v1.4.3
 [v1.4.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.0...v1.4.2
