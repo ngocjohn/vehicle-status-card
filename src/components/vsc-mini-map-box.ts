@@ -11,6 +11,7 @@ import { Address, MapData } from '../types';
 import { createCloseHeading } from '../utils/create';
 import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
 import { VehicleStatusCard } from '../vehicle-status-card';
+import './shared/vsc-maptiler-popup';
 
 @customElement('mini-map-box')
 export class MiniMapBox extends LitElement {
@@ -37,10 +38,6 @@ export class MiniMapBox extends LitElement {
     return this.card._config.mini_map?.default_zoom || 14;
   }
 
-  protected async firstUpdated(changedProperties: PropertyValues): Promise<void> {
-    super.firstUpdated(changedProperties);
-  }
-
   protected updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined) {
@@ -55,6 +52,7 @@ export class MiniMapBox extends LitElement {
     const address = await _getMapAddress(this.card, lat, lon);
     if (address) {
       this._address = address;
+      this.mapData.address = address;
       this._addressReady = true;
     } else if (!address) {
       this._addressReady = true;
@@ -139,7 +137,7 @@ export class MiniMapBox extends LitElement {
       const bounds = this.map!.getBounds();
       const isMarkerVisible = bounds.contains(this.marker!.getLatLng());
       this._locateIconVisible = isMarkerVisible;
-      console.log('Marker visible:', isMarkerVisible);
+      // console.log('Marker visible:', isMarkerVisible);
     });
   }
 
@@ -178,6 +176,7 @@ export class MiniMapBox extends LitElement {
   }
 
   render(): TemplateResult {
+    const maptilerKey = this.card._config.mini_map?.maptiler_api_key;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     return html`
       <div class="map-wrapper" ?safari=${isSafari} style=${this._computeMapStyle()}>
@@ -188,7 +187,7 @@ export class MiniMapBox extends LitElement {
         </div>
         ${this._renderAddress()}
       </div>
-      ${this._renderMapDialog()}
+      ${maptilerKey ? this._renderMaptilerDialog() : this._renderMapDialog()}
     `;
   }
   private _renderAddress(): TemplateResult {
@@ -208,6 +207,48 @@ export class MiniMapBox extends LitElement {
           <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
         </div>
       </div>
+    `;
+  }
+
+  private _renderMaptilerDialog() {
+    const maptiler_api_key = this.card._config.mini_map?.maptiler_api_key;
+    if (!this.open || !maptiler_api_key) return html``;
+    const styles = html`
+      <style>
+        ha-dialog {
+          --mdc-dialog-min-width: 85vw;
+          --mdc-dialog-max-width: 85vw;
+          --dialog-backdrop-filter: blur(2px);
+          --dialog-content-padding: 0;
+        }
+
+        @media all and (max-width: 600px), all and (max-height: 500px) {
+          ha-dialog {
+            --mdc-dialog-min-width: 100vw;
+            --mdc-dialog-max-width: 100vw;
+            --mdc-dialog-min-height: 100%;
+            --mdc-dialog-max-height: 100%;
+            --vertical-align-dialog: flex-end;
+            --ha-dialog-border-radius: 0;
+            --dialog-content-padding: 0;
+          }
+          .mdc-dialog .mdc-dialog__content {
+            padding: 0;
+          }
+        }
+      </style>
+    `;
+    return html`
+      <ha-dialog open @closed=${() => (this.open = false)} hideActions flexContent>
+        ${styles}
+        <vsc-maptiler-popup
+          .mapData=${this.mapData}
+          .card=${this.card}
+          @close-dialog=${() => {
+            this.open = false;
+          }}
+        ></vsc-maptiler-popup>
+      </ha-dialog>
     `;
   }
 
