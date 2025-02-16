@@ -25,6 +25,7 @@ export class MiniMapBox extends LitElement {
   @state() private tileLayer: L.TileLayer | null = null;
   @state() private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
+  @state() private _locateIconVisible = false;
 
   @state() private _address: Partial<Address> | null = null;
 
@@ -132,6 +133,14 @@ export class MiniMapBox extends LitElement {
     this.tileLayer = this._createTileLayer(this.map);
     // Add marker to map
     this.marker = this._createMarker(this.map);
+
+    this.map.on('moveend zoomend', () => {
+      // check visibility of marker icon on view
+      const bounds = this.map!.getBounds();
+      const isMarkerVisible = bounds.contains(this.marker!.getLatLng());
+      this._locateIconVisible = isMarkerVisible;
+      console.log('Marker visible:', isMarkerVisible);
+    });
   }
 
   private _createTileLayer(map: L.Map): L.TileLayer {
@@ -174,7 +183,7 @@ export class MiniMapBox extends LitElement {
       <div class="map-wrapper" ?safari=${isSafari} style=${this._computeMapStyle()}>
         <div id="map"></div>
         <div id="overlay-container"></div>
-        <div class="reset-button" @click=${this.resetMap}>
+        <div class="reset-button" @click=${this.resetMap} .hidden=${this._locateIconVisible}>
           <ha-icon icon="mdi:compass"></ha-icon>
         </div>
         ${this._renderAddress()}
