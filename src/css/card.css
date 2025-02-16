@@ -467,18 +467,18 @@ header h1 {
 }
 
 .zoom-in {
-  animation-duration: 0.5s;
+  animation-duration: 0.3s;
   animation-fill-mode: both;
   animation-name: zoomIn;
 }
 
 @keyframes zoomIn {
   from {
-    opacity: 0;
+    opacity: 0.5;
     transform: scale3d(0.3, 0.3, 0.3);
   }
 
-  50% {
+  to {
     opacity: 1;
   }
 }
