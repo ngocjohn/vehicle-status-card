@@ -12,6 +12,7 @@ import {
   mdiChevronRight,
   mdiChevronLeft,
   mdiCodeJson,
+  mdiThemeLightDark,
 } from '@mdi/js';
 
 import { version } from '../../package.json';
@@ -236,6 +237,7 @@ export const ICON = {
   CHEVRON_RIGHT: mdiChevronRight,
   CHEVRON_LEFT: mdiChevronLeft,
   CODE_JSON: mdiCodeJson,
+  THEME_LIGHT_DARK: mdiThemeLightDark,
 };
 
 export const enum SECTION {
@@ -256,3 +258,22 @@ export const CARD_SECTIONS = [
   SECTION.BUTTONS,
 ];
 export const SECTION_ORDER = [SECTION.HEADER_INFO, SECTION.IMAGES, SECTION.MINI_MAP, SECTION.BUTTONS];
+
+export const MAPTILER_THEME = {
+  backgroundColor: {
+    light: '#fff',
+    dark: '#222222',
+  },
+  fill: {
+    light: '#333',
+    dark: '#c1c1c1',
+  },
+  boxShadow: {
+    light: '0 0 0 2px rgba(0, 0, 0, 0.1)',
+    dark: '0 0 0 2px rgba(255, 255, 255, 0.1)',
+  },
+  borderTop: {
+    light: '1px solid #ddd',
+    dark: '1px solid #424242',
+  },
+};
