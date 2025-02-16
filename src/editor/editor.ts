@@ -44,9 +44,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     super.connectedCallback();
     void loadHaComponents();
     void stickyPreview();
-    if (process.env.ROLLUP_WATCH === 'true') {
-      window.EditorManager = this;
-    }
+
+    window.EditorManager = this;
     this._cleanConfig();
   }
 
