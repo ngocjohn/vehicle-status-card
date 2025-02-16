@@ -294,9 +294,14 @@ export async function _getMapData(card: VehicleStatusCard): Promise<void> {
 
 export async function _getMapAddress(card: VehicleStatusCard, lat: number, lon: number) {
   if (card._config.layout_config?.hide?.map_address) return;
+  const maptilerKey = card._config.mini_map?.maptiler_api_key;
   const apiKey = card._config.mini_map?.google_api_key;
   // console.log('Getting address from map data');
-  const adress = apiKey ? await getAddressFromGoggle(lat, lon, apiKey) : await getAddressFromOpenStreet(lat, lon);
+  const adress = maptilerKey
+    ? await getAddressFromMapTiler(lat, lon, maptilerKey)
+    : apiKey
+    ? await getAddressFromGoggle(lat, lon, apiKey)
+    : await getAddressFromOpenStreet(lat, lon);
   if (!adress) {
     return;
   }
@@ -345,6 +350,56 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
   return cardElement;
 }
 
+async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
+  console.log('Getting address from MapTiler');
+  const filterParams: Record<string, keyof Address> = {
+    address: 'streetName', // Street name
+    locality: 'sublocality', // Sublocality
+    municipality: 'city', // City
+  };
+
+  const url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch address from MapTiler');
+    }
+
+    const data = await response.json();
+    if (data && data.features && data.features.length > 0) {
+      let address: Partial<Address> = {};
+
+      // Iterate through each feature
+      data.features.forEach((feature: any) => {
+        const placeType = feature.place_type[0]; // e.g. "address", "locality", "municipality"
+        if (filterParams[placeType]) {
+          const key = filterParams[placeType];
+          const text = feature.text;
+
+          // Check if the place type is an address and street number is available
+          if (placeType === 'address') {
+            address.streetNumber = feature.address ? `${feature.address}` : '';
+          }
+          // Assign filtered data to the corresponding property in the address object
+          address[key] = `${text}`;
+          // console.log(`Found ${key}:`, address[key], 'from', placeType);
+        }
+      });
+
+      // Validate if the necessary parts of the address were found
+      if (address.streetName && address.city) {
+        return address as Address;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.warn('Error fetching address from MapTiler:', error);
+    return null;
+  }
+}
+
 async function getAddressFromOpenStreet(lat: number, lon: number): Promise<Address | null> {
   try {
     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2`);
@@ -368,44 +423,49 @@ async function getAddressFromOpenStreet(lat: number, lon: number): Promise<Addre
     return null;
   }
 }
-
 async function getAddressFromGoggle(lat: number, lon: number, apiKey: string): Promise<Address | null> {
-  // console.log('getAddressFromGoggle');
+  console.log('Getting address from Google');
+  const filterParams: Record<string, keyof Address> = {
+    street_number: 'streetNumber',
+    route: 'streetName',
+    neighborhood: 'sublocality',
+  };
+
+  const filterCity = ['locality', 'administrative_area_level_2', 'administrative_area_level_1'];
 
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`;
 
   try {
     const response = await fetch(url);
     const data = await response.json();
-    // console.log('Google address data:', data);
     if (data.status !== 'OK') {
       throw new Error('No results found');
     }
+
     const addressComponents = data.results[0].address_components;
     let address: Partial<Address> = {};
 
     addressComponents.forEach((comp) => {
-      if (comp.types.includes('street_number')) {
-        address.streetNumber = comp.short_name;
-      }
-      if (comp.types.includes('route')) {
-        address.streetName = comp.short_name;
-      }
-      if (comp.types.includes('neighborhood')) {
-        address.sublocality = comp.short_name;
-      }
-      if (
-        ['locality', 'administrative_area_level_2', 'administrative_area_level_1'].some((type) =>
-          comp.types.includes(type)
-        ) &&
-        !address.city
-      ) {
+      const placeType = comp.types[0];
+      if (filterParams[placeType]) {
+        const key = filterParams[placeType];
+        const text = comp.short_name;
+
+        address[key] = text;
+        // console.log(`Found ${key}:`, text, 'from', placeType);
+      } else if (filterCity.some((type) => comp.types.includes(type)) && !address.city) {
         address.city = comp.short_name;
+        // console.log('Found city:', address.city);
       }
     });
-    return address as Address;
+
+    if (address.streetName && address.city) {
+      return address as Address;
+    }
+
+    return null;
   } catch (error) {
-    console.warn('Failed to fetch address from Google:', error);
+    console.warn('Error fetching address from Google:', error);
     return null;
   }
 }
