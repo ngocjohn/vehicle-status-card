@@ -539,8 +539,9 @@ export class PanelButtonCard extends LitElement {
         pickerType: 'template',
         configValue: 'picture_template',
         options: {
-          label: 'Picture (will replace the icon)',
-          helperText: 'You can use a template to display a picture, or url to an image file',
+          label: 'Picture & Icon template',
+          helperText:
+            'Result starts with `http` or "/" will be treated as image URL, otherwise as icon. (this change picked icon)',
         },
       },
     ];
