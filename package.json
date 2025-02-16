@@ -19,6 +19,7 @@
   "module": "vehicle-status-card.js",
   "license": "MIT",
   "dependencies": {
+    "@maptiler/sdk": "^3.0.1",
     "@mdi/js": "^7.4.47",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-node-resolve": "^16.0.0",
