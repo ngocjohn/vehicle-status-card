@@ -10,7 +10,7 @@ import cardstyles from '../../css/card.css';
 // local
 import { ButtonCardEntityItem, HomeAssistant } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
-import { addActions } from '../../utils';
+import { addActions, hasTemplate, strStartsWith } from '../../utils';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template'] as const;
@@ -74,7 +74,7 @@ export class VehicleButtonSingle extends LitElement {
       picture_template: button.picture_template,
     };
     const value = templateMap[key];
-    return value?.includes('{');
+    return hasTemplate(value);
   }
 
   private getValue(key: TemplateKey) {
@@ -216,7 +216,16 @@ export class VehicleButtonSingle extends LitElement {
     const color = this._getTemplateValue('color');
     const notify = this._getTemplateValue('notify');
     const iconBackground = color ? this._setColorAlpha(color) : this._getBackgroundColors();
-    const picture = this._getTemplateValue('picture_template');
+    const picture = String(this._getTemplateValue('picture_template'));
+    const isPictureUrl = strStartsWith(picture, 'http') || strStartsWith(picture, '/');
+
+    let changedIcon: string;
+    if (picture && !isPictureUrl) {
+      changedIcon = picture;
+    } else {
+      changedIcon = icon;
+    }
+
     const index = this._index;
     return html`
       <div class="grid-item" id="actionBtn" style="animation-delay: ${index * 50}ms">
@@ -224,12 +233,12 @@ export class VehicleButtonSingle extends LitElement {
         <div class="click-container click-shrink">
           <div class="item-icon">
             <div class="icon-background" style=${`background-color: ${iconBackground}`}>
-              ${picture
+              ${isPictureUrl
                 ? html`<img class="icon-picture" src=${picture} />`
                 : html` <ha-state-icon
                     .hass=${this.hass}
                     .stateObj=${entity ? this.hass.states[entity] : undefined}
-                    .icon=${icon}
+                    .icon=${changedIcon}
                     style=${color ? `color: ${color}` : ''}
                   ></ha-state-icon>`}
             </div>

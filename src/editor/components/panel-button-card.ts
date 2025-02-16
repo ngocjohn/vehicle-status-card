@@ -539,8 +539,9 @@ export class PanelButtonCard extends LitElement {
         pickerType: 'template',
         configValue: 'picture_template',
         options: {
-          label: 'Picture (will replace the icon)',
-          helperText: 'You can use a template to display a picture, or url to an image file',
+          label: 'Picture & Icon template',
+          helperText:
+            'Result starts with `http` or "/" will be treated as image URL, otherwise as icon. (this change picked icon)',
         },
       },
     ];
@@ -1491,10 +1492,11 @@ export class PanelButtonCard extends LitElement {
       if (['entity', 'attribute', 'state_template'].includes(configValue)) {
         secondaryConfig[configValue] = newValue;
         button.secondary = secondaryConfig;
+      } else if (['_template', 'notify', 'color'].some((value) => configValue.includes(value))) {
+        if (newValue.trim() === '') return;
       } else {
         button[configValue] = newValue;
       }
-
       buttonConfig.button = button;
       buttonCardConfig[index] = buttonConfig;
       updates.button_card = buttonCardConfig;

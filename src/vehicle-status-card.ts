@@ -505,14 +505,17 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   }
 
   private _setUpButtonAnimation = (): void => {
-    if (this.isEditorPreview || this._isSectionHidden(SECTION.BUTTONS)) return;
-    setTimeout(() => {
+    if (this.isEditorPreview || this._isSectionHidden(SECTION.BUTTONS) || !this._vehicleButtonsGrid) return;
+
+    const observeGridItems = () => {
       const gridItems = this._vehicleButtonsGrid.shadowRoot?.querySelectorAll('vsc-button-single');
-      if (!gridItems) return;
-      gridItems.forEach((grid) => {
+      if (!gridItems || gridItems.length === 0) return; // Wait if grid items are not yet available
+
+      gridItems.forEach((grid, index) => {
         if (grid.shadowRoot) {
-          const gridItem = grid.shadowRoot.querySelector('.grid-item');
+          const gridItem = grid.shadowRoot.querySelector('.grid-item') as HTMLElement;
           if (gridItem) {
+            gridItem.style.animationDelay = `${index * 50}ms`;
             gridItem.classList.add('zoom-in');
             gridItem.addEventListener('animationend', () => {
               gridItem.classList.remove('zoom-in');
@@ -520,7 +523,17 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
           }
         }
       });
-    }, 0);
+      observer.disconnect(); // Stop observing once items are found
+    };
+
+    const observer = new MutationObserver(observeGridItems);
+    const config = { childList: true, subtree: true }; // Observe child elements
+
+    // Start observing the DOM changes
+    observer.observe(this._vehicleButtonsGrid.shadowRoot as Node, config);
+
+    // Set a timeout as a fallback in case the items are already rendered
+    setTimeout(observeGridItems, 0);
   };
 
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
