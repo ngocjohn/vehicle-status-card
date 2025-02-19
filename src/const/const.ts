@@ -276,4 +276,8 @@ export const MAPTILER_THEME = {
     light: '1px solid #ddd',
     dark: '1px solid #424242',
   },
+  themeBtn: {
+    light: `mdi:weather-sunny`,
+    dark: `mdi:weather-night`,
+  },
 };
