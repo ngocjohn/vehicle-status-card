@@ -1,3 +1,25 @@
+<a id="v1.7.0"></a>
+# [v1.7.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.7.0) - 2025-02-19
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.7.0 -->
+
+## What's Changed
+This release introduces support for the MapTiler API key, providing a new popup map design and improved mapping functionality. 
+
+If you find this card helpful, please consider giving the repository a ⭐! 
+
+### New Features 🎉
+* Added icon_template to with picture_template. Allows more dynamic icon display.  [#72](https://github.com/ngocjohn/vehicle-status-card/pull/72)
+* Added MapTiler API key support to enhance the mapping functionality. [#73](https://github.com/ngocjohn/vehicle-status-card/pull/73)
+
+![maptiler-map-popup](https://github.com/user-attachments/assets/bd575f30-8d2f-4cfc-b9e2-151486bf6137)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.6.0...v1.7.0
+
+[Changes][v1.7.0]
+
+
 <a id="v1.6.0"></a>
 # [v1.6.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.6.0) - 2025-01-27
 
@@ -11,6 +33,7 @@ Introduce support for image entities, allowing dynamic image rendering based on 
 ### Fixes 🐛
 * Improve action configuration handling by [@ngocjohn](https://github.com/ngocjohn) in [#57](https://github.com/ngocjohn/vehicle-status-card/pull/57)
 
+If you find this card helpful, please consider giving the repository a ⭐! 
 
 **Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.5.0...v1.6.0
 
@@ -227,6 +250,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.7.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.6.0...v1.7.0
 [v1.6.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.5.0...v1.6.0
 [v1.5.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.3...v1.5.0
 [v1.4.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.4.2...v1.4.3
