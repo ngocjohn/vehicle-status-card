@@ -44,7 +44,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     super.connectedCallback();
     void loadHaComponents();
     void stickyPreview();
-
     window.EditorManager = this;
     this._cleanConfig();
   }
@@ -501,6 +500,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderMiniMap(): TemplateResult {
+    const maptilerInfo = `How to get Maptiler API Key?`;
+    const docLink = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup';
+
     const selectorNumber = {
       number: {
         max: 24,
@@ -526,25 +528,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const defaultZoom = miniMap.default_zoom ?? 14;
     const hoursToShow = miniMap.hours_to_show ?? 0;
     const googleApi = miniMap.google_api_key ?? '';
+    const maptilerApi = miniMap.maptiler_api_key ?? '';
     const themeMode = miniMap.theme_mode ?? 'auto';
     const popupEnable = miniMap.enable_popup ?? false;
     const mapHeight = miniMap.map_height ?? 150;
     const usFormat = miniMap.us_format ?? false;
 
     const pickerConfig = [
-      {
-        configValue: 'device_tracker',
-        label: 'Device Tracker',
-        options: { includeDomains: ['device_tracker', 'person'] },
-        pickerType: 'entity',
-        value: deviceTracker,
-      },
-      {
-        configValue: 'google_api_key',
-        label: 'Google API Key',
-        pickerType: 'textfield' as 'textfield',
-        value: googleApi ?? '',
-      },
       {
         configValue: 'enable_popup',
         label: 'Enable Popup',
@@ -577,6 +567,27 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       },
     ];
 
+    const mapFormFields = [
+      {
+        configValue: 'device_tracker',
+        label: 'Device Tracker',
+        options: { includeDomains: ['device_tracker', 'person'] },
+        pickerType: 'entity',
+        value: deviceTracker,
+      },
+      {
+        configValue: 'google_api_key',
+        label: 'Google API Key (Optional)',
+        pickerType: 'textfield' as 'textfield',
+        value: googleApi ?? '',
+      },
+      {
+        configValue: 'maptiler_api_key',
+        label: 'Maptiler API Key (Optional)',
+        pickerType: 'textfield' as 'textfield',
+        value: maptilerApi ?? '',
+      },
+    ];
     const mapPopupConfig = [
       {
         configValue: 'default_zoom',
@@ -603,10 +614,23 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ];
 
     const createPickers = (config: any) => {
-      return Create.Picker({ ...sharedConfig, ...config });
+      return html`<div class="item-content">${Create.Picker({ ...sharedConfig, ...config })}</div>`;
     };
 
     return html`
+      <div class="sub-panel-config button-card">
+        <div class="sub-header">
+          <div>map configuration</div>
+        </div>
+
+        <div class="sub-panel">
+          <div class="sub-content">${mapFormFields.map((config) => createPickers(config))}</div>
+        </div>
+        <ha-alert alert-type="info">
+          ${maptilerInfo}
+          <mwc-button slot="action" @click="${() => window.open(docLink)}" label="More"></mwc-button>
+        </ha-alert>
+      </div>
       <div class="sub-panel-config button-card">
         <div class="sub-header">Mini Map Configuration</div>
         <div class="sub-panel">

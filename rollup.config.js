@@ -41,7 +41,7 @@ const replaceOpts = {
 };
 
 const plugins = [
-  nodeResolve(),
+  nodeResolve({ preferBuiltins: false }),
   commonjs(),
   typescript(),
   json(),

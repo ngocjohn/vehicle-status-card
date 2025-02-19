@@ -78,6 +78,7 @@ interface MiniMapConfig {
   device_tracker: string;
   enable_popup: boolean;
   google_api_key: string;
+  maptiler_api_key: string;
   us_format: boolean;
   hours_to_show: number;
   theme_mode: 'auto' | 'dark' | 'light';
