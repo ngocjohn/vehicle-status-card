@@ -292,20 +292,28 @@ export async function _getMapData(card: VehicleStatusCard): Promise<void> {
   card._mapData = mapData;
 }
 
-export async function _getMapAddress(card: VehicleStatusCard, lat: number, lon: number) {
+export async function _getMapAddress(card: VehicleStatusCard, lat: number, lon: number): Promise<Address | void> {
   if (card._config.layout_config?.hide?.map_address) return;
   const maptilerKey = card._config.mini_map?.maptiler_api_key;
   const apiKey = card._config.mini_map?.google_api_key;
   // console.log('Getting address from map data');
-  const adress = maptilerKey
+  const address = maptilerKey
     ? await getAddressFromMapTiler(lat, lon, maptilerKey)
     : apiKey
     ? await getAddressFromGoggle(lat, lon, apiKey)
     : await getAddressFromOpenStreet(lat, lon);
-  if (!adress) {
+  if (!address) {
     return;
   }
-  return adress;
+  let formattedAddress: string;
+  if (card._config.mini_map?.us_format) {
+    formattedAddress = `${address.streetNumber} ${address.streetName}`;
+  } else {
+    formattedAddress = `${address.streetName} ${address.streetNumber}`;
+  }
+  address.streetName = formattedAddress;
+
+  return address;
 }
 
 export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
