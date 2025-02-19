@@ -149,6 +149,22 @@ The mini map feature displays a real-time map within the card, tracking the loca
 
 The mini map provides an easy way to keep track of where your vehicle is at all times, directly on the card.
 
+### Maptiler Popup
+<details>
+
+<summary>How to get API Key</summary>
+
+For detailed maps popup, get a MapTiler API Key by following these steps:
+
+   1. Create free account
+      <https://www.maptiler.com/>
+   2. Copy new key
+      <https://cloud.maptiler.com/account/keys/>
+   3. In config editor paste key into Mini Map configuration > Maptiler API
+   4. Click Save
+
+</details>
+
 ![Config mini map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-mini-map.gif)
 
 
