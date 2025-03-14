@@ -1481,26 +1481,27 @@ export class PanelButtonCard extends LitElement {
     } else {
       newValue = target.value;
     }
+
+    // console.log('Config type', configType, 'Config value', configValue, 'New value', newValue);
     const updates: Partial<VehicleStatusCardConfig> = {};
 
     let buttonCardConfig = [...(this.config.button_card || [])];
 
     if (configType === 'button') {
-      let buttonConfig = { ...buttonCardConfig[index] };
-      let button = { ...buttonConfig.button };
-      let secondaryConfig = { ...button.secondary };
+      let buttonConfig = { ...(buttonCardConfig[index] || {}) };
+      let button = { ...(buttonConfig.button || {}) };
+      let secondaryConfig = { ...(button.secondary || {}) };
       if (['entity', 'attribute', 'state_template'].includes(configValue)) {
         secondaryConfig[configValue] = newValue;
         button.secondary = secondaryConfig;
-      } else if (['_template', 'notify', 'color'].some((value) => configValue.includes(value))) {
-        if (newValue.trim() === '') return;
-      } else {
-        button[configValue] = newValue;
+      } else if (['picture_template', 'notify', 'color'].some((value) => configValue.includes(value))) {
+        let templateValue = newValue.trim() === '' ? null : newValue;
+        button[configValue] = templateValue;
+        buttonConfig.button = button;
+        buttonCardConfig[index] = buttonConfig;
+        updates.button_card = buttonCardConfig;
+        console.log('Button config', buttonConfig);
       }
-      buttonConfig.button = button;
-      buttonCardConfig[index] = buttonConfig;
-      updates.button_card = buttonCardConfig;
-      console.log('updates', updates.button_card[index].button);
     } else if (['base', 'default_card', 'card_item'].includes(configType)) {
       console.log('Config type', configType, 'Config value', configValue, 'New value', newValue);
       const updateButtonConfig = (buttonConfig: any) => {
