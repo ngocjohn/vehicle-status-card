@@ -502,6 +502,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   private _renderMiniMap(): TemplateResult {
     const maptilerInfo = `How to get Maptiler API Key?`;
     const docLink = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup';
+    const mapTilerAlert = 'This option is only for default HA map popup.';
 
     const selectorNumber = {
       number: {
@@ -638,10 +639,11 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         </div>
       </div>
       <div class="sub-panel-config button-card">
-        <div class="sub-header">Map popup configuration</div>
+        <div class="sub-header">HA Map card configuration</div>
         <div class="sub-panel">
           <div class="sub-content">${mapPopupConfig.map((config) => createPickers(config))}</div>
         </div>
+        <ha-alert alert-type="info">${mapTilerAlert}</ha-alert>
       </div>
     `;
   }
