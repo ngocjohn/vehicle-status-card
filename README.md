@@ -1,6 +1,6 @@
 <a name="readme-top"></a>
 
-[![hacs][hacs-validate]][hacs-url] ![Github last commit][git-last-commit-badge] ![git-download-all][git-download-all-badge] ![git-download-latest][git-download-latest-badge]
+[![hacs][hacs-validate]][hacs-url] ![Github last commit][git-last-commit-badge] ![git-download-all][git-download-all-badge] ![git-download-latest][git-download-latest-badge] [![forum][forum-badge]][forum-url]
 
 # 🚘 Vehicle status card
 
@@ -292,5 +292,7 @@ This configuration gives you full flexibility to design the card’s layout and 
 [git-last-commit-badge]: https://img.shields.io/github/last-commit/ngocjohn/vehicle-status-card
 [git-download-all-badge]: https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto&label=Downloads&color=%2318BCF2
 [git-download-latest-badge]: https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/latest/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto
+[forum-url]: https://community.home-assistant.io/t/vehicle-status-custom-card/
+[forum-badge]:https://img.shields.io/badge/forum-community?style=flat&logo=homeassistant&label=community&color=blue
 <!--Urls-->
 
