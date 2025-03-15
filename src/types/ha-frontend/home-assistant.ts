@@ -98,3 +98,7 @@ export interface HomeAssistant {
   formatEntityAttributeValue(stateObj: HassEntity, attribute: string, value?: any): string;
   formatEntityAttributeName(stateObj: HassEntity, attribute: string): string;
 }
+
+/** Return if a component is loaded. */
+export const isComponentLoaded = (hass: HomeAssistant, component: string): boolean =>
+  hass && hass.config.components.includes(component);

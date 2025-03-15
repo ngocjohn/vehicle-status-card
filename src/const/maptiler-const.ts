@@ -1,3 +1,5 @@
+import { html } from 'lit';
+
 export const STYLE_SCHEMA = [
   {
     name: 'Navigation and city exploration',
@@ -150,3 +152,57 @@ export const MAP_STYLE_OPTIONS = [
 ];
 
 export const DARK_AVAILABLE_STYLES = ['STREETS', 'BASIC', 'BRIGHT', 'DATAVIZ', 'VOYAGER', 'BACKDROP'];
+
+export enum MAP_STORAGE {
+  THEME_STYLE = 'vsc-mapstyle',
+  DARK = 'vsc-mapDark',
+  PATH_HIDDEN = 'vsc-pathHidden',
+}
+
+export enum MAP_SOURCE {
+  POINTS = 'points',
+  ROUTE = 'route',
+}
+
+export const MAPTILER_DIALOG_STYLES = html`
+  <style>
+    ha-dialog {
+      --mdc-dialog-min-width: 85vw;
+      --mdc-dialog-max-width: 85vw;
+      --dialog-backdrop-filter: blur(2px);
+      --dialog-content-padding: 0;
+    }
+    @media all and (max-width: 600px), all and (max-height: 500px) {
+      ha-dialog {
+        --mdc-dialog-min-width: 100vw;
+        --mdc-dialog-max-width: 100vw;
+        --mdc-dialog-min-height: 100%;
+        --mdc-dialog-max-height: 100%;
+        --vertical-align-dialog: flex-end;
+        --ha-dialog-border-radius: 0;
+        --dialog-content-padding: 0;
+      }
+      .mdc-dialog .mdc-dialog__content {
+        padding: 0;
+      }
+    }
+  </style>
+`;
+
+export const DEFAULT_DIALOG_STYLES = html` <style>
+  ha-dialog {
+    --mdc-dialog-min-width: 500px;
+    --mdc-dialog-max-width: 600px;
+    --dialog-backdrop-filter: blur(2px);
+  }
+  @media all and (max-width: 600px), all and (max-height: 500px) {
+    ha-dialog {
+      --mdc-dialog-min-width: 100vw;
+      --mdc-dialog-max-width: 100vw;
+      --mdc-dialog-min-height: 100%;
+      --mdc-dialog-max-height: 100%;
+      --vertical-align-dialog: flex-end;
+      --ha-dialog-border-radius: 0;
+    }
+  }
+</style>`;

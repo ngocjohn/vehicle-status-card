@@ -2,16 +2,22 @@ import { LovelaceCardConfig } from 'custom-card-helpers';
 import 'leaflet-providers/leaflet-providers.js';
 import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
-import { Address, MapData } from '../types';
+import { DEFAULT_DIALOG_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
+import * as historyData from '../test/mocked_history.json';
+import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistoryStatesTimeWindow } from '../types';
+import './shared/vsc-maptiler-popup';
+import { _getHistoryPoints } from '../utils';
 import { createCloseHeading } from '../utils/create';
 import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
 import { VehicleStatusCard } from '../vehicle-status-card';
-import './shared/vsc-maptiler-popup';
+
+export const DEFAULT_HOURS_TO_SHOW = 0;
+export const DEFAULT_ZOOM = 14;
 
 @customElement('mini-map-box')
 export class MiniMapBox extends LitElement {
@@ -27,8 +33,10 @@ export class MiniMapBox extends LitElement {
   @state() private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
   @state() private _locateIconVisible = false;
-
   @state() private _address: Partial<Address> | null = null;
+
+  private _subscribed?: Promise<(() => Promise<void>) | undefined>;
+  private _stateHistory?: HistoryStates;
 
   private get mapPopup(): boolean {
     return this.card._config.mini_map?.enable_popup || false;
@@ -36,6 +44,58 @@ export class MiniMapBox extends LitElement {
 
   private get zoom(): number {
     return this.card._config.mini_map?.default_zoom || 14;
+  }
+
+  public connectedCallback() {
+    super.connectedCallback();
+    if (this.hasUpdated && this.card._config.mini_map?.hours_to_show !== 0) {
+      this._subscribeHistory();
+    }
+  }
+
+  public disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubscribeHistory();
+  }
+
+  private _subscribeHistory() {
+    const _config = this.card._config;
+    const hass = this.card._hass;
+    if (
+      !isComponentLoaded(hass!, 'history') ||
+      this._subscribed ||
+      !(_config.mini_map?.hours_to_show ?? DEFAULT_HOURS_TO_SHOW)
+    ) {
+      return;
+    }
+
+    this._subscribed = subscribeHistoryStatesTimeWindow(
+      hass!,
+      (combinedHistory) => {
+        if (!this._subscribed) {
+          // Message came in before we had a chance to unload
+          return;
+        }
+        this._stateHistory = combinedHistory;
+        // console.log('History updated:', this._stateHistory);
+      },
+      _config.mini_map!.hours_to_show ?? DEFAULT_HOURS_TO_SHOW,
+      [_config.mini_map!.device_tracker],
+      false,
+      false,
+      false
+    ).catch((err) => {
+      this._subscribed = undefined;
+      console.error('Error subscribing to history', err);
+      return undefined;
+    });
+  }
+
+  private _unsubscribeHistory() {
+    if (this._subscribed) {
+      this._subscribed.then((unsub) => unsub?.());
+      this._subscribed = undefined;
+    }
   }
 
   protected updated(changedProperties: PropertyValues): void {
@@ -207,40 +267,18 @@ export class MiniMapBox extends LitElement {
     `;
   }
 
-  private _renderMaptilerDialog() {
+  private _renderMaptilerDialog(): TemplateResult | typeof nothing {
     const maptiler_api_key = this.card._config.mini_map?.maptiler_api_key;
-    if (!this.open || !maptiler_api_key) return html``;
-    const styles = html`
-      <style>
-        ha-dialog {
-          --mdc-dialog-min-width: 85vw;
-          --mdc-dialog-max-width: 85vw;
-          --dialog-backdrop-filter: blur(2px);
-          --dialog-content-padding: 0;
-        }
-
-        @media all and (max-width: 600px), all and (max-height: 500px) {
-          ha-dialog {
-            --mdc-dialog-min-width: 100vw;
-            --mdc-dialog-max-width: 100vw;
-            --mdc-dialog-min-height: 100%;
-            --mdc-dialog-max-height: 100%;
-            --vertical-align-dialog: flex-end;
-            --ha-dialog-border-radius: 0;
-            --dialog-content-padding: 0;
-          }
-          .mdc-dialog .mdc-dialog__content {
-            padding: 0;
-          }
-        }
-      </style>
-    `;
+    if (!this.open || !maptiler_api_key) return nothing;
+    // const pathData = this._getHistoryPoints();
+    const pathData = _getHistoryPoints(this.card._config.mini_map!, this._stateHistory);
     return html`
       <ha-dialog open @closed=${() => (this.open = false)} hideActions flexContent>
-        ${styles}
+        ${MAPTILER_DIALOG_STYLES}
         <vsc-maptiler-popup
           .mapData=${this.mapData}
           .card=${this.card}
+          ._paths=${pathData}
           @close-dialog=${() => {
             this.open = false;
           }}
@@ -249,27 +287,18 @@ export class MiniMapBox extends LitElement {
     `;
   }
 
-  private _renderMapDialog() {
-    if (!this.open) return html``;
-    const styles = html`
-      <style>
-        ha-dialog {
-          --mdc-dialog-min-width: 500px;
-          --mdc-dialog-max-width: 600px;
-          --dialog-backdrop-filter: blur(2px);
-        }
-        @media all and (max-width: 600px), all and (max-height: 500px) {
-          ha-dialog {
-            --mdc-dialog-min-width: 100vw;
-            --mdc-dialog-max-width: 100vw;
-            --mdc-dialog-min-height: 100%;
-            --mdc-dialog-max-height: 100%;
-            --vertical-align-dialog: flex-end;
-            --ha-dialog-border-radius: 0;
-          }
-        }
-      </style>
-    `;
+  private _getHistoryPoints(): any | undefined {
+    if (!this._stateHistory || !(this.card._config.mini_map?.hours_to_show ?? 0)) {
+      return undefined;
+    }
+    const history = {};
+    history[this.card._config.mini_map!.device_tracker] = historyData['default']['mocked'];
+
+    return _getHistoryPoints(this.card._config.mini_map!, history);
+  }
+
+  private _renderMapDialog(): TemplateResult | typeof nothing {
+    if (!this.open) return nothing;
     return html`
       <ha-dialog
         open
@@ -278,7 +307,7 @@ export class MiniMapBox extends LitElement {
         hideActions
         flexContent
       >
-        ${styles} ${this.mapCardPopup}
+        ${DEFAULT_DIALOG_STYLES} ${this.mapCardPopup}
       </ha-dialog>
     `;
   }

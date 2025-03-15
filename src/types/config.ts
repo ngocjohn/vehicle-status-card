@@ -73,7 +73,7 @@ export interface MapData {
   popUpCard?: LovelaceCardConfig[];
 }
 
-interface MiniMapConfig {
+export interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
   enable_popup: boolean;

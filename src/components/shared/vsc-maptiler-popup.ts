@@ -5,7 +5,7 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { ICON, MAPTILER_THEME } from '../../const/const';
-import { STYLE_SCHEMA } from '../../const/maptiler-const';
+import { MAP_SOURCE, MAP_STORAGE, STYLE_SCHEMA } from '../../const/maptiler-const';
 import { MapData } from '../../types';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 
@@ -19,6 +19,7 @@ const MAPTILER_STYLE = {
 export class VscMaptilerPopup extends LitElement {
   @property({ attribute: false }) mapData!: MapData;
   @property({ attribute: false }) card!: VehicleStatusCard;
+  @property({ attribute: false }) _paths?: any;
 
   @state() private _themeMode?: 'dark' | 'light';
   @state() private map!: maptilersdk.Map;
@@ -52,14 +53,14 @@ export class VscMaptilerPopup extends LitElement {
   protected updated(changedProps: Map<string | number | symbol, unknown>): void {
     if (changedProps.has('_themeMode') && this._themeMode !== undefined) {
       if (this._themeMode === 'dark') {
-        localStorage.setItem('vsc-mapDark', 'true');
+        localStorage.setItem(MAP_STORAGE.DARK, 'true');
       } else {
-        localStorage.removeItem('vsc-mapDark');
+        localStorage.removeItem(MAP_STORAGE.DARK);
       }
     }
 
     if (changedProps.has('_currentStyle') && this._currentStyle !== undefined) {
-      localStorage.setItem('vsc-mapStyle', this._currentStyle);
+      localStorage.setItem(MAP_STORAGE.THEME_STYLE, this._currentStyle);
     }
   }
 
@@ -155,8 +156,8 @@ export class VscMaptilerPopup extends LitElement {
   }
 
   private _handleInitialTheme() {
-    const mapDark = localStorage.getItem('vsc-mapDark');
-    const mapSelectedStyle = localStorage.getItem('vsc-mapStyle');
+    const mapDark = localStorage.getItem(MAP_STORAGE.DARK);
+    const mapSelectedStyle = localStorage.getItem(MAP_STORAGE.THEME_STYLE);
     if (mapDark) {
       console.log('Map Dark:', mapDark);
       this._themeMode = mapDark === 'true' ? 'dark' : 'light';
@@ -175,13 +176,14 @@ export class VscMaptilerPopup extends LitElement {
       this._currentStyle = mapSelectedStyle;
     } else {
       this._currentStyle = this._themeMode === 'dark' ? MAPTILER_STYLE.dark : MAPTILER_STYLE.light;
-      localStorage.setItem('vsc-mapStyle', this._currentStyle);
+      localStorage.setItem(MAP_STORAGE.THEME_STYLE, this._currentStyle);
     }
   }
 
   private _initMap(): void {
     const mapConfig = this.card._config.mini_map;
     const apiKey = mapConfig.maptiler_api_key;
+
     const defaultZoom = mapConfig.default_zoom || 13.5;
     const { lat, lon } = this.mapData;
 
@@ -221,7 +223,8 @@ export class VscMaptilerPopup extends LitElement {
     this.map.addControl(
       {
         onAdd: () => {
-          const findCar = this._renderFindCarControl() as HTMLElement;
+          // const findCar = this._renderFindCarControl() as HTMLElement;
+          const findCar = this._createButton('mdi:target');
           findCar.style.display = 'unset';
           findCar.addEventListener('click', () => {
             const isBearing = this.map.getBearing() === 0;
@@ -240,10 +243,27 @@ export class VscMaptilerPopup extends LitElement {
       'top-right'
     );
 
+    if (this._paths) {
+      this.map.addControl(
+        {
+          onAdd: () => {
+            const pathControl = this._createButton('mdi:map-marker-path');
+            pathControl.style.display = 'unset';
+            pathControl.addEventListener('click', this._mapToggleLayer);
+            return pathControl;
+          },
+          onRemove: () => {
+            return null;
+          },
+        },
+        'top-right'
+      );
+    }
+
     this.map.addControl(
       {
         onAdd: () => {
-          const themeBtn = this._themeTogglerBtn() as HTMLElement;
+          const themeBtn = this._createButton(this.getModeColor('themeBtn') as string);
           const haIcon = themeBtn.querySelector('ha-icon') as HTMLElement;
           themeBtn.style.display = 'unset';
           haIcon.style.color = 'var(--vic-map-button-color)';
@@ -271,12 +291,24 @@ export class VscMaptilerPopup extends LitElement {
       const padding = { left: isCollapsed ? 250 : 0 };
       this.map.easeTo({ padding, duration: 1000 });
     });
+    // Add popups on click (Optional)
+    this.map.on('click', 'points', (e: any) => {
+      const properties = e.features[0].properties;
+      new maptilersdk.Popup()
+        .setLngLat(e.features[0].geometry.coordinates)
+        .setHTML(`<b>${properties.friendly_name}</b>Last Update: ${properties.last_updated}`)
+        .addTo(this.map);
+    });
 
-    this.map.on('error', (e) => {
-      console.log('Error loading map:', e.error);
-      this._loadError = true;
-      this.map.setStyle(MAPTILER_STYLE.demo);
-      this.map.setZoom(5);
+    this.map.on('error', (e: any) => {
+      console.warn('Error loading map:', e);
+      if (e.style !== undefined) {
+        this._loadError = true;
+        this.map.setStyle(MAPTILER_STYLE.demo);
+        this.map.setZoom(5);
+      } else {
+        return;
+      }
     });
 
     this.map.on('styleimagemissing', (e) => {
@@ -285,6 +317,29 @@ export class VscMaptilerPopup extends LitElement {
         height: 0,
         data: new Uint8Array(0),
       });
+    });
+
+    this.map.on('styledata', async (e: any) => {
+      const styleLoadStatus = e.style._loaded;
+      const pointsLoaded = this.map.getSource(MAP_SOURCE.POINTS) !== undefined;
+      const routeLoaded = this.map.getSource(MAP_SOURCE.ROUTE) !== undefined;
+      if (styleLoadStatus && (!pointsLoaded || !routeLoaded)) {
+        const { route, points } = this._paths || {};
+
+        if (!pointsLoaded && points) {
+          // console.log('Points Loaded:', pointsLoaded);
+          this.map.addSource(MAP_SOURCE.POINTS, points);
+          this._mapAddLayer(MAP_SOURCE.POINTS);
+          return;
+        } else if (!routeLoaded && route) {
+          // console.log('Route Loaded:', routeLoaded);
+          this.map.addSource(MAP_SOURCE.ROUTE, route);
+          this._mapAddLayer(MAP_SOURCE.ROUTE);
+          return;
+        }
+      } else {
+        return;
+      }
     });
   }
 
@@ -328,6 +383,74 @@ export class VscMaptilerPopup extends LitElement {
     </div>`;
   }
 
+  private _mapAddLayer(type: 'points' | 'route'): void {
+    const pointsLoaded = this.map.isSourceLoaded(MAP_SOURCE.POINTS) && this.map.getLayer('points') !== undefined;
+    const routeLoaded = this.map.isSourceLoaded(MAP_SOURCE.ROUTE) && this.map.getLayer('route') !== undefined;
+    console.log('Points Loaded:', pointsLoaded, 'Route Loaded:', routeLoaded);
+    const pathHidden = localStorage.getItem(MAP_STORAGE.PATH_HIDDEN) === 'true';
+    const pathColors = this.getPathColor();
+    switch (type) {
+      case 'points':
+        if (pointsLoaded) {
+          return;
+        } else {
+          this.map.addLayer({
+            id: 'points',
+            type: 'circle',
+            source: 'points',
+            paint: {
+              'circle-radius': 8, // Size of circles
+              'circle-color': pathColors, // Color of circles
+              'circle-opacity': ['get', 'opacity'],
+              'circle-stroke-width': 1,
+              'circle-stroke-color': pathColors,
+            },
+          });
+          this.map.setLayoutProperty('points', 'visibility', pathHidden ? 'none' : null);
+        }
+        break;
+      case 'route':
+        if (routeLoaded) {
+          return;
+        } else {
+          this.map.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
+            paint: {
+              'line-color': pathColors, // Line color
+              'line-width': 3, // Line thickness
+              'line-opacity': ['get', 'opacity'], // Dynamically get opacity from each segment
+            },
+          });
+          this.map.setLayoutProperty('route', 'visibility', pathHidden ? 'none' : null);
+        }
+
+        break;
+    }
+  }
+
+  private _mapToggleLayer = (): void => {
+    const pointsLayer = this.map.getLayer('points');
+    const routeLayer = this.map.getLayer('route');
+    if (!pointsLayer && !routeLayer) return;
+
+    const pathHidden = localStorage.getItem(MAP_STORAGE.PATH_HIDDEN) === 'true';
+    if (pathHidden) {
+      localStorage.removeItem(MAP_STORAGE.PATH_HIDDEN);
+      this.map.setLayoutProperty('points', 'visibility', null);
+      this.map.setLayoutProperty('route', 'visibility', null);
+    } else {
+      localStorage.setItem(MAP_STORAGE.PATH_HIDDEN, 'true');
+      this.map.setLayoutProperty('points', 'visibility', 'none');
+      this.map.setLayoutProperty('route', 'visibility', 'none');
+    }
+  };
+
   private _toggleSidebar(ev: Event) {
     ev.preventDefault();
     const target = ev.target as HTMLElement;
@@ -338,33 +461,19 @@ export class VscMaptilerPopup extends LitElement {
     this.map.easeTo({ padding, duration: 1000 });
   }
 
-  private _renderFindCarControl(): HTMLElement {
-    const geolocateControl = document.createElement('div');
-    geolocateControl.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+  private _createButton = (icon: string): HTMLElement => {
+    const div = document.createElement('div');
+    div.className = 'maplibregl-ctrl maplibregl-ctrl-group';
     const button = document.createElement('button');
     const haIcon = document.createElement('ha-icon');
-    haIcon.setAttribute('icon', 'mdi:target');
+    haIcon.setAttribute('icon', icon);
     haIcon.style.color = 'var(--vic-map-button-color)';
     button.appendChild(haIcon);
-    geolocateControl.appendChild(button);
-    geolocateControl.style.display = 'none';
+    div.appendChild(button);
+    div.style.display = 'none';
 
-    return geolocateControl;
-  }
-
-  private _themeTogglerBtn(): HTMLElement {
-    // const iconStyle = `background-image: url(${this._themeMode === 'dark' ? SUN_LIGHT_ICON : MOON_DARK_MODE});`;
-    const themeBtn = document.createElement('div');
-    themeBtn.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-    const button = document.createElement('button');
-    const haIcon = document.createElement('ha-icon');
-    haIcon.className = 'theme-btn';
-    haIcon.setAttribute('icon', this.getModeColor('themeBtn') as string);
-    button.appendChild(haIcon);
-    themeBtn.appendChild(button);
-    themeBtn.style.display = 'none';
-    return themeBtn;
-  }
+    return div;
+  };
 
   private addMarker(): HTMLElement {
     const deviceTracker = this.card._config.mini_map?.device_tracker;
@@ -479,7 +588,7 @@ export class VscMaptilerPopup extends LitElement {
     ev.stopPropagation();
     const value = ev.detail.value;
     this._currentStyle = value as string;
-    localStorage.setItem('vsc-mapStyle', this._currentStyle);
+    localStorage.setItem(MAP_STORAGE.THEME_STYLE, this._currentStyle);
     this._themeMode = this._currentStyle.includes('DARK') ? 'dark' : 'light';
     this._changeMapStyle(this._currentStyle);
   }
@@ -532,6 +641,15 @@ export class VscMaptilerPopup extends LitElement {
 
   private getModeColor = (key: string): string => {
     return this._themeMode === 'dark' ? MAPTILER_THEME[key].dark : MAPTILER_THEME[key].light;
+  };
+
+  private getPathColor = () => {
+    const computedStyle = getComputedStyle(this);
+    const color =
+      this._themeMode === 'dark'
+        ? computedStyle.getPropertyValue('--accent-color')
+        : computedStyle.getPropertyValue('--primary-color');
+    return color;
   };
 
   private _computeMapStyle() {
