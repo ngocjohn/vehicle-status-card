@@ -8,7 +8,6 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
 import { DEFAULT_DIALOG_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
-import * as historyData from '../test/mocked_history.json';
 import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistoryStatesTimeWindow } from '../types';
 import './shared/vsc-maptiler-popup';
 import { _getHistoryPoints } from '../utils';
@@ -285,16 +284,6 @@ export class MiniMapBox extends LitElement {
         ></vsc-maptiler-popup>
       </ha-dialog>
     `;
-  }
-
-  private _getHistoryPoints(): any | undefined {
-    if (!this._stateHistory || !(this.card._config.mini_map?.hours_to_show ?? 0)) {
-      return undefined;
-    }
-    const history = {};
-    history[this.card._config.mini_map!.device_tracker] = historyData['default']['mocked'];
-
-    return _getHistoryPoints(this.card._config.mini_map!, history);
   }
 
   private _renderMapDialog(): TemplateResult | typeof nothing {
