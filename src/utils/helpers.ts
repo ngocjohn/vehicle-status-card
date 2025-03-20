@@ -2,7 +2,6 @@ import tinycolor from 'tinycolor2';
 
 import { HistoryStates } from '../types';
 import { MiniMapConfig } from '../types/config';
-import { getAddressFromMapTiler } from './ha-helper';
 
 export function isEmpty(input: any): boolean {
   if (Array.isArray(input)) {
@@ -45,7 +44,7 @@ export const strStartsWith = (value: string, search: string) => value.substring(
 
 const formatTimestamp = (ts: number): string => {
   const date = new Date(ts * 1000);
-  return date.toLocaleTimeString();
+  return date.toLocaleString();
 };
 
 export const _getHistoryPoints = async (config: MiniMapConfig, history?: HistoryStates): Promise<any | undefined> => {
@@ -67,7 +66,7 @@ export const _getHistoryPoints = async (config: MiniMapConfig, history?: History
     return undefined;
   }
 
-  const apiKey = config.maptiler_api_key!;
+  // const apiKey = config.maptiler_api_key!;
 
   // Create source data for LineString and Point features
   const totalPoints = locations.length;
@@ -105,15 +104,9 @@ export const _getHistoryPoints = async (config: MiniMapConfig, history?: History
       },
     });
 
-    // **Wait for description before pushing to pointFeatures**
-    const address = (await getAddressFromMapTiler(start.a.latitude, start.a.longitude, apiKey)) ?? '';
-    const formatAddress = address ? `${address.streetName}` : '';
+    // Create description for the Point
 
-    const description = `
-      <b>${start.a.friendly_name}</b>
-      <span>${formatAddress}</span>
-      <i>${formatTimestamp(start.lu)}</i>
-    `;
+    const description = `<b>${start.a.friendly_name}</b><i>${formatTimestamp(start.lu)}</i>`;
 
     // Create Point features for each segment
     pointFeatures.push({

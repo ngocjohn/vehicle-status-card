@@ -774,10 +774,15 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
     if (configType === 'mini_map') {
       const miniMap = { ...(this._config.mini_map || {}) };
-
-      miniMap[configValue] = newValue;
-      updates.mini_map = miniMap;
-      console.log('Mini Map Updates:', configValue, newValue);
+      if (newValue.trim() === '' || newValue === '') {
+        miniMap[configValue] = undefined;
+        updates.mini_map = miniMap;
+        console.log('Mini Map Updates:', configValue, newValue);
+      } else {
+        miniMap[configValue] = newValue;
+        updates.mini_map = miniMap;
+        console.log('Mini Map Updates:', configValue, newValue);
+      }
     } else if (configType === 'layout_config') {
       newValue = ev.detail.value;
       if (configIndex === 'button_grid') {

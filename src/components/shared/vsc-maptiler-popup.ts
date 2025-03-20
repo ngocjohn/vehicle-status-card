@@ -15,6 +15,7 @@ import {
   STYLE_SCHEMA,
 } from '../../const/maptiler-const';
 import { MapData } from '../../types';
+import { getAddressFromMapTiler } from '../../utils/ha-helper';
 import { getInitials } from '../../utils/helpers';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 
@@ -50,7 +51,7 @@ export class VscMaptilerPopup extends LitElement {
   @state() private _popup: maptilersdk.Popup | null = null;
 
   private _bounds: maptilersdk.LngLatBounds | null = null;
-  private _loadError: boolean = false;
+  @state() private _loadError: boolean = false;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -119,6 +120,7 @@ export class VscMaptilerPopup extends LitElement {
     this._bounds = this._getMapBounds();
 
     const mapEl = this.shadowRoot!.getElementById('map') as HTMLElement;
+
     maptilersdk.config.apiKey = apiKey;
 
     const mapOptions: maptilersdk.MapOptions = {
@@ -380,8 +382,10 @@ export class VscMaptilerPopup extends LitElement {
     });
   }
 
-  private _setupPointInteractions(): void {
+  private _setupPointInteractions() {
+    const apiKey = this.card._config.mini_map?.maptiler_api_key!;
     // Create a popup, but don't add it to the map yet.
+
     const pointPopup = new maptilersdk.Popup({
       closeButton: false,
       closeOnClick: false,
@@ -389,7 +393,7 @@ export class VscMaptilerPopup extends LitElement {
 
     let currentFeatureCoordinates: string | undefined;
 
-    this.map.on('mousemove', 'points', (e: any) => {
+    this.map.on('mousemove', 'points', async (e: any) => {
       const feature = e.features?.[0];
       if (!feature) return;
 
@@ -407,6 +411,13 @@ export class VscMaptilerPopup extends LitElement {
         }
 
         pointPopup.setLngLat(coordinates).setHTML(description).addTo(this.map);
+        const formattedAddress = await getAddressFromMapTiler(coordinates[1], coordinates[0], apiKey);
+        if (formattedAddress) {
+          const updatedAddress = `${description}${formattedAddress.streetName}`;
+          if (pointPopup.isOpen()) {
+            pointPopup.setHTML(updatedAddress);
+          }
+        }
       }
     });
 

@@ -339,7 +339,7 @@ export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
 export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCardConfig[]> {
   const config = card._config as VehicleStatusCardConfig;
   const hass = card._hass as HomeAssistant;
-  // console.log('Setting map popup');
+  console.log('Setting map popup');
   const miniMap = config.mini_map || {};
   const cardConfig: LovelaceCardConfig[] = [
     {
@@ -354,7 +354,9 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
       ],
     },
   ];
+
   const cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
+
   return cardElement;
 }
 
@@ -408,7 +410,8 @@ export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: s
   }
 }
 
-async function getAddressFromOpenStreet(lat: number, lon: number): Promise<Address | null> {
+export async function getAddressFromOpenStreet(lat: number, lon: number): Promise<Address | null> {
+  console.log('Getting address from OpenStreetMap');
   try {
     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2`);
 
