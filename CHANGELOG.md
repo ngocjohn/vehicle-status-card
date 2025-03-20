@@ -1,3 +1,20 @@
+<a id="v1.8.1"></a>
+# [v1.8.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.8.1) - 2025-03-20
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.8.1 -->
+
+## What's Changed
+### 🎉 New Features
+- **Added Path Color Option**: Now you can customize the path color in the minimap settings. [#80](https://github.com/ngocjohn/vehicle-status-card/pull/80)
+
+### 🛠️ Bug Fixes
+- **Fixed History Data Retrieval**: Resolved an issue where the function to fetch history data was not working correctly.
+
+🔗 **Full Changelog**: [Compare v1.8.0 → v1.8.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.0...v1.8.1)
+
+[Changes][v1.8.1]
+
+
 <a id="v1.8.0"></a>
 # [v1.8.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.8.0) - 2025-03-15
 
@@ -271,6 +288,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.8.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.0...v1.8.1
 [v1.8.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.7.0...v1.8.0
 [v1.7.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.6.0...v1.7.0
 [v1.6.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.5.0...v1.6.0
