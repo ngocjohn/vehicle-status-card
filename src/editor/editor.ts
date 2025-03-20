@@ -354,26 +354,39 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       configType: 'layout_config',
     };
 
+    const themeMode = [
+      { value: 'auto', label: 'Auto' },
+      { value: 'dark', label: 'Dark' },
+      { value: 'light', label: 'Light' },
+    ];
     const themeModeSelect = [
-      { label: 'Theme', pickerType: 'theme', value: themeConfig.theme || 'default' },
+      {
+        configValue: 'theme',
+        label: 'Theme',
+        pickerType: 'baseSelector',
+        value: themeConfig.theme || 'default',
+        options: {
+          selector: {
+            theme: {
+              include_default: true,
+            },
+          },
+          required: true,
+        },
+      },
       {
         configValue: 'mode',
-        items: [
-          {
-            label: 'Auto',
-            value: 'auto',
+        options: {
+          selector: {
+            select: {
+              sort: true,
+              mode: 'dropdown',
+              options: themeMode,
+            },
           },
-          {
-            label: 'Light',
-            value: 'light',
-          },
-          {
-            label: 'Dark',
-            value: 'dark',
-          },
-        ],
+        },
         label: 'Theme Mode',
-        pickerType: 'attribute',
+        pickerType: 'baseSelector',
         value: themeConfig.mode || 'auto',
       },
     ];
@@ -500,152 +513,125 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderMiniMap(): TemplateResult {
-    const maptilerInfo = `How to get Maptiler API Key?`;
     const docLink = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup';
-    const mapTilerAlert = 'This option is only for default HA map popup.';
 
-    const selectorNumber = {
-      number: {
-        max: 24,
-        min: 0,
-        mode: 'box',
-        step: 1,
-      },
-    };
-
-    const sharedConfig = {
-      component: this,
-      configIndex: 0,
-      configType: 'mini_map',
-    };
-    const themeModeSelect = [
-      { label: 'Auto', value: 'auto' },
-      { label: 'Light', value: 'light' },
-      { label: 'Dark', value: 'dark' },
-    ];
+    const sharedConfig = { component: this, configIndex: 0, configType: 'mini_map' };
 
     const miniMap = this._config?.mini_map || {};
-    const deviceTracker = miniMap.device_tracker ?? '';
-    const defaultZoom = miniMap.default_zoom ?? 14;
-    const hoursToShow = miniMap.hours_to_show ?? 0;
-    const googleApi = miniMap.google_api_key ?? '';
-    const maptilerApi = miniMap.maptiler_api_key ?? '';
-    const themeMode = miniMap.theme_mode ?? 'auto';
-    const popupEnable = miniMap.enable_popup ?? false;
-    const mapHeight = miniMap.map_height ?? 150;
-    const usFormat = miniMap.us_format ?? false;
+    const layoutConfig = this._config?.layout_config?.hide || {};
 
-    const pickerConfig = [
-      {
-        configValue: 'enable_popup',
-        label: 'Enable Popup',
-        options: { selector: { boolean: ['true', 'false'] } },
-        pickerType: 'selectorBoolean',
-        value: popupEnable,
-      },
-      {
-        configValue: 'us_format',
-        label: 'US Address Format',
-        options: { selector: { boolean: ['true', 'false'] } },
-        pickerType: 'selectorBoolean',
-        value: usFormat,
-      },
-      {
-        configIndex: 'hide',
-        configType: 'layout_config',
-        options: { selector: { boolean: ['true', 'false'] } },
-        pickerType: 'selectorBoolean',
-        configValue: 'map_address',
-        label: 'Address on map',
-        value: this._config.layout_config.hide?.map_address || false,
-      },
-      {
-        configValue: 'map_height',
-        label: 'Minimap Height (px)',
-        options: { selector: { number: { max: 500, min: 150, mode: 'slider', step: 10 } } },
-        pickerType: 'number',
-        value: mapHeight,
-      },
+    const getBooleanPicker = (
+      configValue: string,
+      label: string,
+      value: boolean,
+      configType?: string,
+      configIndex?: string | number
+    ) => ({
+      configValue,
+      label,
+      pickerType: 'selectorBoolean',
+      value,
+      options: { selector: { boolean: ['true', 'false'] } },
+      configType: configType || 'mini_map',
+      configIndex: configIndex || 0,
+    });
+
+    const getNumberPicker = (
+      configValue: string,
+      label: string,
+      value: number,
+      max = 500,
+      min = 0,
+      step = 1,
+      mode = 'box'
+    ) => ({
+      configValue,
+      label,
+      pickerType: 'number',
+      value,
+      options: { selector: { number: { max, min, step, mode } } },
+    });
+
+    const configFields = [
+      getBooleanPicker('enable_popup', 'Enable Popup', miniMap.enable_popup ?? false),
+      getBooleanPicker('us_format', 'US Address Format', miniMap.us_format ?? false),
+      getBooleanPicker('map_address', 'Hide Address', layoutConfig.map_address ?? false, 'layout_config', 'hide'),
+      getNumberPicker('map_height', 'Minimap Height (px)', miniMap.map_height ?? 150, 500, 150, 10, 'slider'),
     ];
 
-    const mapFormFields = [
+    const apiKeys = [
       {
         configValue: 'device_tracker',
         label: 'Device Tracker',
-        options: { includeDomains: ['device_tracker', 'person'] },
         pickerType: 'entity',
-        value: deviceTracker,
+        value: miniMap.device_tracker ?? '',
+        options: { includeDomains: ['device_tracker', 'person'] },
       },
       {
         configValue: 'google_api_key',
         label: 'Google API Key (Optional)',
-        pickerType: 'textfield' as 'textfield',
-        value: googleApi ?? '',
+        pickerType: 'textfield',
+        value: miniMap.google_api_key ?? '',
       },
       {
         configValue: 'maptiler_api_key',
         label: 'Maptiler API Key (Optional)',
-        pickerType: 'textfield' as 'textfield',
-        value: maptilerApi ?? '',
+        pickerType: 'textfield',
+        value: miniMap.maptiler_api_key ?? '',
       },
     ];
-    const mapPopupConfig = [
-      {
-        configValue: 'default_zoom',
-        label: 'Default Zoom',
-        options: { selector: selectorNumber },
-        pickerType: 'number',
-        value: defaultZoom,
-      },
-      {
-        configValue: 'hours_to_show',
-        label: 'Hours to Show',
-        options: { selector: selectorNumber },
-        pickerType: 'number',
-        value: hoursToShow,
-      },
 
+    const popupConfig = [
+      getNumberPicker('default_zoom', 'Default Zoom', miniMap.default_zoom ?? 14),
+      getNumberPicker('hours_to_show', 'Hours to Show', miniMap.hours_to_show ?? 0),
       {
         configValue: 'theme_mode',
-        items: themeModeSelect,
         label: 'Theme Mode',
         pickerType: 'attribute',
-        value: themeMode,
+        value: miniMap.theme_mode ?? 'auto',
+        items: [
+          { label: 'Auto', value: 'auto' },
+          { label: 'Light', value: 'light' },
+          { label: 'Dark', value: 'dark' },
+        ],
+      },
+      {
+        configValue: 'path_color',
+        label: 'Path Color',
+        pickerType: 'baseSelector',
+        value: miniMap.path_color ?? 'none',
+        options: { selector: { ui_color: { include_none: true, include_state: false } } },
       },
     ];
 
-    const createPickers = (config: any) => {
-      return html`<div class="item-content">${Create.Picker({ ...sharedConfig, ...config })}</div>`;
-    };
+    const createPickers = (configs: any[]) =>
+      configs.map((config) => html`<div class="item-content">${Create.Picker({ ...sharedConfig, ...config })}</div>`);
 
-    return html`
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">
-          <div>map configuration</div>
-        </div>
+    const expansionPanels = [
+      {
+        options: { header: 'Map Configuration' },
+        content: html`
+          <div class="sub-content">${createPickers(apiKeys)}</div>
+          <ha-alert alert-type="info">
+            How to get Maptiler API Key?
+            <mwc-button slot="action" @click="${() => window.open(docLink)}" label="More"></mwc-button>
+          </ha-alert>
+        `,
+      },
+      {
+        options: { header: 'Mini Map Layout' },
+        content: html`<div class="sub-content">${createPickers(configFields)}</div>`,
+      },
+      {
+        options: { header: 'Popup Configuration' },
+        content: html`
+          <div class="sub-content">${createPickers(popupConfig)}</div>
+          <ha-alert alert-type="info">This options is for Map popup.</ha-alert>
+        `,
+      },
+    ];
 
-        <div class="sub-panel">
-          <div class="sub-content">${mapFormFields.map((config) => createPickers(config))}</div>
-        </div>
-        <ha-alert alert-type="info">
-          ${maptilerInfo}
-          <mwc-button slot="action" @click="${() => window.open(docLink)}" label="More"></mwc-button>
-        </ha-alert>
-      </div>
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">Mini Map Configuration</div>
-        <div class="sub-panel">
-          <div class="sub-content">${pickerConfig.map((config) => createPickers(config))}</div>
-        </div>
-      </div>
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">HA Map card configuration</div>
-        <div class="sub-panel">
-          <div class="sub-content">${mapPopupConfig.map((config) => createPickers(config))}</div>
-        </div>
-        <ha-alert alert-type="info">${mapTilerAlert}</ha-alert>
-      </div>
-    `;
+    return html`${expansionPanels.map(Create.ExpansionPanel)}`;
   }
 
   private _renderRangeInfo(): TemplateResult {
@@ -768,11 +754,18 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const configType = target.configType;
     const configIndex = target.configIndex;
 
+    const SELECTOR_VALUES = [
+      'default_zoom',
+      'enable_popup',
+      'hours_to_show',
+      'theme_mode',
+      'map_height',
+      'us_format',
+      'path_color',
+    ];
     // Ensure we handle the boolean value correctly
     let newValue: any = target.checked !== undefined ? target.checked : target.value;
-    if (
-      ['default_zoom', 'enable_popup', 'hours_to_show', 'theme_mode', 'map_height', 'us_format'].includes(configValue)
-    ) {
+    if (SELECTOR_VALUES.includes(configValue)) {
       newValue = ev.detail.value;
     }
     let hiddenChanged = false;
