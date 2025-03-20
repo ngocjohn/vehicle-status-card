@@ -582,8 +582,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ];
 
     const popupConfig = [
-      getNumberPicker('default_zoom', 'Default Zoom', miniMap.default_zoom ?? 14),
-      getNumberPicker('hours_to_show', 'Hours to Show', miniMap.hours_to_show ?? 0),
+      getNumberPicker('default_zoom', 'Default Zoom', miniMap.default_zoom || 14),
+      getNumberPicker('hours_to_show', 'Hours to Show', miniMap.hours_to_show || 0),
       {
         configValue: 'theme_mode',
         label: 'Theme Mode',
@@ -599,8 +599,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         configValue: 'path_color',
         label: 'Path Color',
         pickerType: 'baseSelector',
-        value: miniMap.path_color ?? 'none',
-        options: { selector: { ui_color: { include_none: true, include_state: false } } },
+        value: miniMap.path_color,
+        options: { selector: { ui_color: { include_none: false, include_state: false } } },
       },
     ];
 
@@ -774,10 +774,16 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
     if (configType === 'mini_map') {
       const miniMap = { ...(this._config.mini_map || {}) };
-      if (newValue.trim() === '' || newValue === '') {
-        miniMap[configValue] = undefined;
-        updates.mini_map = miniMap;
-        console.log('Mini Map Updates:', configValue, newValue);
+      if (['google_api_key', 'maptiler_api_key'].includes(configValue)) {
+        if (newValue.trim() === '' || newValue === '') {
+          miniMap[configValue] = undefined;
+          updates.mini_map = miniMap;
+          console.log('Api delete', configValue, newValue);
+        } else {
+          miniMap[configValue] = newValue;
+          updates.mini_map = miniMap;
+          console.log('Api changes', configValue, newValue);
+        }
       } else {
         miniMap[configValue] = newValue;
         updates.mini_map = miniMap;
