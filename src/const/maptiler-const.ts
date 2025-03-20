@@ -153,6 +153,38 @@ export const MAP_STYLE_OPTIONS = [
 
 export const DARK_AVAILABLE_STYLES = ['STREETS', 'BASIC', 'BRIGHT', 'DATAVIZ', 'VOYAGER', 'BACKDROP'];
 
+export const DEFAULT_HOURS_TO_SHOW = 0;
+export const DEFAULT_ZOOM = 14;
+
+export const MAPTILER_THEME = {
+  backgroundColor: {
+    light: '#fff',
+    dark: '#222222',
+  },
+  fill: {
+    light: '#333',
+    dark: '#c1c1c1',
+  },
+  boxShadow: {
+    light: '0 0 0 2px rgba(0, 0, 0, 0.1)',
+    dark: '0 0 0 2px rgba(255, 255, 255, 0.1)',
+  },
+  borderTop: {
+    light: '1px solid #ddd',
+    dark: '1px solid #424242',
+  },
+  themeBtn: {
+    light: `mdi:weather-sunny`,
+    dark: `mdi:weather-night`,
+  },
+};
+
+export const MAPTILER_STYLE = {
+  dark: 'STREETS.DARK',
+  light: 'STREETS',
+  demo: 'https://demotiles.maplibre.org/style.json',
+};
+
 export enum MAP_STORAGE {
   THEME_STYLE = 'vsc-mapstyle',
   DARK = 'vsc-mapDark',
@@ -163,6 +195,8 @@ export enum MAP_SOURCE {
   POINTS = 'points',
   ROUTE = 'route',
 }
+
+export type MAP_TYPES = 'points' | 'route';
 
 export const MAPTILER_DIALOG_STYLES = html`
   <style>

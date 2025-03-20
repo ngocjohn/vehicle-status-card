@@ -83,6 +83,7 @@ export interface MiniMapConfig {
   hours_to_show: number;
   theme_mode: 'auto' | 'dark' | 'light';
   map_height: number;
+  path_color?: string;
 }
 
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */

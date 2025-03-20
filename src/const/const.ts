@@ -258,26 +258,3 @@ export const CARD_SECTIONS = [
   SECTION.BUTTONS,
 ];
 export const SECTION_ORDER = [SECTION.HEADER_INFO, SECTION.IMAGES, SECTION.MINI_MAP, SECTION.BUTTONS];
-
-export const MAPTILER_THEME = {
-  backgroundColor: {
-    light: '#fff',
-    dark: '#222222',
-  },
-  fill: {
-    light: '#333',
-    dark: '#c1c1c1',
-  },
-  boxShadow: {
-    light: '0 0 0 2px rgba(0, 0, 0, 0.1)',
-    dark: '0 0 0 2px rgba(255, 255, 255, 0.1)',
-  },
-  borderTop: {
-    light: '1px solid #ddd',
-    dark: '1px solid #424242',
-  },
-  themeBtn: {
-    light: `mdi:weather-sunny`,
-    dark: `mdi:weather-night`,
-  },
-};

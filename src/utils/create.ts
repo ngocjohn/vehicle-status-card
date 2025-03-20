@@ -3,6 +3,18 @@ import { html, TemplateResult } from 'lit';
 
 import { HomeAssistant } from '../types';
 
+type PICKER_TYPE =
+  | 'action'
+  | 'attribute'
+  | 'boolean'
+  | 'entity'
+  | 'icon'
+  | 'number'
+  | 'selectorBoolean'
+  | 'template'
+  | 'textfield'
+  | 'theme'
+  | 'baseSelector';
 interface PickerOptions {
   cardIndex?: number;
   component: any;
@@ -15,18 +27,7 @@ interface PickerOptions {
   options?: {
     [key: string]: any;
   };
-  pickerType:
-    | 'action'
-    | 'attribute'
-    | 'boolean'
-    | 'entity'
-    | 'icon'
-    | 'number'
-    | 'selectorBoolean'
-    | 'template'
-    | 'textfield'
-    | 'theme'
-    | 'new_template';
+  pickerType: PICKER_TYPE;
   value: boolean | number | string;
 }
 
@@ -153,27 +154,7 @@ export const Picker = ({
         .required=${false}
       ></ha-selector>
     `,
-    new_template: html`
-      <div>
-        <p>${options?.label}</p>
-        <ha-code-editor
-          .hass=${hass}
-          .mode=${'jinja2'}
-          .dir=${'ltr'}
-          .value=${value}
-          .configValue=${configValue}
-          .configType=${configType}
-          .configIndex=${configIndex}
-          .index=${configIndex}
-          @value-changed=${handleValueChange}
-          .linewrap=${false}
-          .autofocus=${true}
-          .autocompleteEntities=${true}
-          .autocompleteIcons=${true}
-        ></ha-code-editor>
-        <ha-input-helper-text>${options?.helperText}</ha-input-helper-text>
-      </div>
-    `,
+
     template: html`
       <ha-selector
         .hass=${hass}
@@ -219,6 +200,19 @@ export const Picker = ({
       >
       </ha-theme-picker>
     `,
+    baseSelector: html`
+      <ha-selector
+        .hass=${hass}
+        .value=${value}
+        .configValue=${configValue}
+        .configType=${configType}
+        .configIndex=${configIndex}
+        .label=${label}
+        .selector=${options?.selector}
+        @value-changed=${handleValueChange}
+        .required=${options?.required || false}
+      ></ha-selector>
+    `,
   };
 
   return pickers[pickerType];
@@ -250,11 +244,11 @@ export const ExpansionPanel = ({
   options,
 }: {
   content: TemplateResult;
-  options: { expanded?: boolean; header: string; icon?: string; secondary?: string };
+  options: { expanded?: boolean; header: string; icon?: string; secondary?: string; outlined?: boolean };
 }): TemplateResult => {
   return html`
     <ha-expansion-panel
-      .outlined=${true}
+      .outlined=${options?.outlined || true}
       .expanded=${options?.expanded || false}
       .header=${options.header}
       .secondary=${options?.secondary || ''}

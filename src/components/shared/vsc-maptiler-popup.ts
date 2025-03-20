@@ -4,15 +4,37 @@ import { LitElement, html, css, TemplateResult, unsafeCSS, CSSResultGroup, nothi
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import { ICON, MAPTILER_THEME } from '../../const/const';
-import { MAP_SOURCE, MAP_STORAGE, STYLE_SCHEMA } from '../../const/maptiler-const';
+import { ICON } from '../../const/const';
+import {
+  DEFAULT_ZOOM,
+  MAP_SOURCE,
+  MAP_TYPES,
+  MAP_STORAGE,
+  MAPTILER_STYLE,
+  MAPTILER_THEME,
+  STYLE_SCHEMA,
+} from '../../const/maptiler-const';
 import { MapData } from '../../types';
+import { getInitials } from '../../utils/helpers';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 
-const MAPTILER_STYLE = {
-  dark: 'STREETS.DARK',
-  light: 'STREETS',
-  demo: 'https://demotiles.maplibre.org/style.json',
+enum THEME_MODE {
+  DARK = 'dark',
+  LIGHT = 'light',
+}
+
+const BOUNDS_OPTS = {
+  padding: 50,
+  animate: true,
+  maxZoom: 15,
+  pitch: 0,
+  bearing: 0,
+};
+
+const MARKER_FLYTO_OPTS = {
+  zoom: 17.5,
+  pitch: 45,
+  bearing: -17.6,
 };
 
 @customElement('vsc-maptiler-popup')
@@ -21,16 +43,14 @@ export class VscMaptilerPopup extends LitElement {
   @property({ attribute: false }) card!: VehicleStatusCard;
   @property({ attribute: false }) _paths?: any;
 
-  @state() private _themeMode?: 'dark' | 'light';
-  @state() private map!: maptilersdk.Map;
-  @state() private _popup: maptilersdk.Popup | null = null;
-  @state() private _marker: maptilersdk.Marker | null = null;
-
+  @state() private _themeMode?: THEME_MODE;
   @state() private _currentStyle?: string;
 
+  @state() private map!: maptilersdk.Map;
+  @state() private _popup: maptilersdk.Popup | null = null;
+
+  private _bounds: maptilersdk.LngLatBounds | null = null;
   private _loadError: boolean = false;
-  private observer?: MutationObserver | null;
-  private _observerReady = false;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -45,14 +65,11 @@ export class VscMaptilerPopup extends LitElement {
   protected async firstUpdated(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
     this._initMap();
-    if (this.map && !this._observerReady) {
-      this._addObserver();
-    }
   }
 
   protected updated(changedProps: Map<string | number | symbol, unknown>): void {
     if (changedProps.has('_themeMode') && this._themeMode !== undefined) {
-      if (this._themeMode === 'dark') {
+      if (this._themeMode === THEME_MODE.DARK) {
         localStorage.setItem(MAP_STORAGE.DARK, 'true');
       } else {
         localStorage.removeItem(MAP_STORAGE.DARK);
@@ -64,111 +81,20 @@ export class VscMaptilerPopup extends LitElement {
     }
   }
 
-  private async _addObserver() {
-    if (this._observerReady) return;
-    // Initialize the MutationObserver to observe changes in the map controls
-    this.observer = new MutationObserver((mutations) => {
-      let themeChangeRequired = false;
-
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          themeChangeRequired = true; // Only change theme if childList mutations are detected
-        }
-      });
-
-      if (themeChangeRequired) {
-        // Use requestAnimationFrame to debounce the theme change if multiple mutations occur
-        requestAnimationFrame(() => {
-          this._changeControlTheme();
-        });
-      }
-    });
-    // Wait for the map container to be available and observe changes in the controls
-    const mapContainer = this.shadowRoot?.querySelector('#map') as HTMLElement;
-    if (mapContainer) {
-      const controlContainer = mapContainer.querySelector('.maplibregl-control-container') as HTMLElement;
-      if (controlContainer) {
-        this.observer.observe(controlContainer, { childList: true, subtree: true });
-        this._observerReady = true; // Mark the observer as ready
-      } else {
-        // Retry observing after a small delay if controlContainer isn't available
-        setTimeout(() => this._addObserver(), 500); // Adjust delay as needed
-      }
-    }
-  }
-
-  // Your existing change control theme logic here
-  _changeControlTheme() {
-    // Your existing implementation for applying themes to the controls
-    const setTheme = (key: string) => this.getModeColor(key);
-
-    const mapContainer = this.shadowRoot?.querySelector('#map') as HTMLElement;
-    const controlContainer = mapContainer.querySelector('.maplibregl-control-container') as HTMLElement;
-
-    if (controlContainer) {
-      const controlButtons = [
-        controlContainer?.querySelector('.maplibregl-ctrl-top-left'),
-        controlContainer?.querySelector('.maplibregl-ctrl-top-right'),
-        controlContainer?.querySelector('.maplibregl-ctrl-bottom-right'),
-      ].filter(Boolean) as HTMLElement[];
-
-      if (!controlButtons.length || controlButtons.length === 0) return;
-      // Apply styles to control buttons
-      for (const controlButtonGroup of controlButtons) {
-        const controlGroups = Array.from(
-          controlButtonGroup!.querySelectorAll('.maplibregl-ctrl.maplibregl-ctrl-group')
-        );
-        for (const controlGroup of controlGroups) {
-          const element = controlGroup as HTMLElement;
-          element.style.backgroundColor = setTheme('backgroundColor') as string;
-          element.style.boxShadow = setTheme('boxShadow') as string;
-
-          const buttons = Array.from(controlGroup.querySelectorAll('button'));
-          for (const button of buttons) {
-            const buttonEl = button as HTMLButtonElement;
-
-            const spanEl = button?.querySelector('span') as HTMLSpanElement;
-            if (spanEl) {
-              const computedStyle = window.getComputedStyle(spanEl);
-              const backgroundImage = computedStyle.backgroundImage;
-              if (backgroundImage.startsWith('url("data:image/svg+xml')) {
-                const fillColor = setTheme('fill') as string;
-                const svgUri = backgroundImage.slice(5, -2);
-                const decodedSvg = decodeURIComponent(svgUri.split(',')[1]);
-
-                const updatedSvg = decodedSvg
-                  .replace(/fill:[^;"]*/g, `fill:${fillColor}`)
-                  .replace(/fill="[^"]*"/g, `fill="${fillColor}"`);
-
-                const encodedSvg = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(updatedSvg)}`;
-                spanEl.style.backgroundImage = `url("${encodedSvg}")`;
-              }
-            }
-
-            const prevButton = button?.previousElementSibling as HTMLButtonElement;
-            if (prevButton && prevButton.type === 'button') {
-              buttonEl.style.borderTop = setTheme('borderTop') as string;
-            }
-          }
-        }
-      }
-    }
-  }
-
   private _handleInitialTheme() {
     const mapDark = localStorage.getItem(MAP_STORAGE.DARK);
     const mapSelectedStyle = localStorage.getItem(MAP_STORAGE.THEME_STYLE);
     if (mapDark) {
       console.log('Map Dark:', mapDark);
-      this._themeMode = mapDark === 'true' ? 'dark' : 'light';
+      this._themeMode = mapDark === 'true' ? THEME_MODE.DARK : THEME_MODE.LIGHT;
     } else if (mapSelectedStyle) {
-      this._themeMode = mapSelectedStyle.includes('DARK') ? 'dark' : 'light';
+      this._themeMode = mapSelectedStyle.includes('DARK') ? THEME_MODE.DARK : THEME_MODE.LIGHT;
     } else {
       const mapConfigMode = this.card._config.mini_map?.theme_mode || 'auto';
       if (mapConfigMode === 'auto') {
-        this._themeMode = this.card.isDark ? 'dark' : 'light';
+        this._themeMode = this.card.isDark ? THEME_MODE.DARK : THEME_MODE.LIGHT;
       } else {
-        this._themeMode = mapConfigMode as 'dark' | 'light';
+        this._themeMode = (mapConfigMode as string) === 'dark' ? THEME_MODE.DARK : THEME_MODE.LIGHT;
       }
     }
 
@@ -178,14 +104,19 @@ export class VscMaptilerPopup extends LitElement {
       this._currentStyle = this._themeMode === 'dark' ? MAPTILER_STYLE.dark : MAPTILER_STYLE.light;
       localStorage.setItem(MAP_STORAGE.THEME_STYLE, this._currentStyle);
     }
+
+    console.log('Initial Theme Mode:', this._themeMode, 'Current Style:', this._currentStyle);
   }
 
   private _initMap(): void {
     const mapConfig = this.card._config.mini_map;
     const apiKey = mapConfig.maptiler_api_key;
 
-    const defaultZoom = mapConfig.default_zoom || 13.5;
+    const defaultZoom = mapConfig.default_zoom || DEFAULT_ZOOM;
     const { lat, lon } = this.mapData;
+
+    const initStyle = this._themeMode === THEME_MODE.DARK ? MAPTILER_STYLE.dark : MAPTILER_STYLE.light;
+    this._bounds = this._getMapBounds();
 
     const mapEl = this.shadowRoot!.getElementById('map') as HTMLElement;
     maptilersdk.config.apiKey = apiKey;
@@ -193,12 +124,13 @@ export class VscMaptilerPopup extends LitElement {
     const mapOptions: maptilersdk.MapOptions = {
       container: mapEl,
       zoom: defaultZoom,
-      geolocateControl: true,
+      geolocateControl: false,
       fullscreenControl: false,
       navigationControl: false,
       attributionControl: false,
       fadeDuration: 0,
       minZoom: 3,
+      style: initStyle,
       canvasContextAttributes: { antialias: true },
     };
 
@@ -208,100 +140,61 @@ export class VscMaptilerPopup extends LitElement {
 
     this.map.on('load', async () => {
       const markerEl = this.addMarker() as HTMLElement;
-      this._marker = new maptilersdk.Marker({ element: markerEl }).setLngLat([lon, lat]).addTo(this.map!);
+      new maptilersdk.Marker({ element: markerEl }).setLngLat([lon, lat]).addTo(this.map!);
       markerEl.style.display = 'block';
+
       const geolocationIp = await maptilersdk.geolocation.info();
       const { country_languages } = geolocationIp;
       if (country_languages && country_languages.length > 0) {
         const language = country_languages[0];
-        this.map.setLanguage(language);
+        this.map!.setLanguage(language);
+      }
+      if (!this._bounds!.isEmpty()) {
+        this.map!.fitBounds(this._bounds!, { ...BOUNDS_OPTS, maxZoom: defaultZoom });
+      }
+    });
+
+    this.map.on('style.load', async () => {
+      this._changeControlTheme();
+      // Add sources & layers if available
+      if (this._paths) {
+        this._addSourceAndLayer(MAP_SOURCE.POINTS, this._paths.points, 'points');
+        this._addSourceAndLayer(MAP_SOURCE.ROUTE, this._paths.route, 'route');
       }
     });
 
     this.map.addControl(new maptilersdk.NavigationControl({ visualizePitch: true }), 'top-right');
 
-    this.map.addControl(
-      {
-        onAdd: () => {
-          // const findCar = this._renderFindCarControl() as HTMLElement;
-          const findCar = this._createButton('mdi:target');
-          findCar.style.display = 'unset';
-          findCar.addEventListener('click', () => {
-            const isBearing = this.map.getBearing() === 0;
-            if (isBearing) {
-              this.map.flyTo({ center: [lon, lat], zoom: 17.5, pitch: 45, bearing: -17.6 });
-            } else {
-              this.map.easeTo({ center: [lon, lat], zoom: defaultZoom, pitch: 0, bearing: 0 });
-            }
-          });
-          return findCar;
-        },
-        onRemove: () => {
-          return null;
-        },
-      },
-      'top-right'
-    );
+    // Add Find Car Button
+    this._addMapControl('mdi:target', 'top-right', () => {
+      const isBearing = this.map!.getBearing() === 0;
+      if (isBearing) {
+        this.map!.flyTo({ center: [lon, lat], ...MARKER_FLYTO_OPTS });
+      } else {
+        this.map!.fitBounds(this._bounds!, { ...BOUNDS_OPTS, maxZoom: defaultZoom });
+      }
+    });
 
+    // Add Path Control Button (Only if paths exist)
     if (this._paths) {
-      this.map.addControl(
-        {
-          onAdd: () => {
-            const pathControl = this._createButton('mdi:map-marker-path');
-            pathControl.style.display = 'unset';
-            pathControl.addEventListener('click', this._mapToggleLayer);
-            return pathControl;
-          },
-          onRemove: () => {
-            return null;
-          },
-        },
-        'top-right'
-      );
+      this._addMapControl('mdi:map-marker-path', 'top-right', this._toggleMapLayers);
     }
 
-    this.map.addControl(
-      {
-        onAdd: () => {
-          const themeBtn = this._createButton(this.getModeColor('themeBtn') as string);
-          const haIcon = themeBtn.querySelector('ha-icon') as HTMLElement;
-          themeBtn.style.display = 'unset';
-          haIcon.style.color = 'var(--vic-map-button-color)';
-          themeBtn.addEventListener('click', () => {
-            this._handleThemeToggle();
-            haIcon.setAttribute('icon', this.getModeColor('themeBtn') as string);
-          });
-          return themeBtn;
-        },
-        onRemove: () => {
-          return null;
-        },
-      },
-      'bottom-right'
-    );
-
-    this.map.on('click', () => {
-      const sideBarEl = this.shadowRoot?.getElementById('left') as HTMLElement;
-      const sidebarToggle = sideBarEl.querySelector('ha-icon-button.sidebar-toggle') as HTMLElement;
-      const isCollapsed = sideBarEl.classList.contains('collapsed');
-      if (isCollapsed) return;
-      sideBarEl.classList.toggle('collapsed', !isCollapsed);
-      sidebarToggle.classList.toggle('activated', isCollapsed);
-
-      const padding = { left: isCollapsed ? 250 : 0 };
-      this.map.easeTo({ padding, duration: 1000 });
+    // Add Theme Toggle Button
+    this._addMapControl(this.getModeColor('themeBtn') as string, 'bottom-right', (event) => {
+      const themeBtn = event.currentTarget as HTMLElement;
+      const haIcon = themeBtn.querySelector('ha-icon') as HTMLElement;
+      this._handleThemeToggle();
+      haIcon.setAttribute('icon', this.getModeColor('themeBtn') as string);
     });
-    // Add popups on click (Optional)
-    this.map.on('click', 'points', (e: any) => {
-      const properties = e.features[0].properties;
-      new maptilersdk.Popup()
-        .setLngLat(e.features[0].geometry.coordinates)
-        .setHTML(`<b>${properties.friendly_name}</b>Last Update: ${properties.last_updated}`)
-        .addTo(this.map);
-    });
+
+    // Add a click event to toggle the sidebar
+    this._setupToggleSidebar();
+
+    // Setup point interactions
+    this._setupPointInteractions();
 
     this.map.on('error', (e: any) => {
-      console.warn('Error loading map:', e);
       if (e.style !== undefined) {
         this._loadError = true;
         this.map.setStyle(MAPTILER_STYLE.demo);
@@ -318,29 +211,212 @@ export class VscMaptilerPopup extends LitElement {
         data: new Uint8Array(0),
       });
     });
+  }
 
-    this.map.on('styledata', async (e: any) => {
-      const styleLoadStatus = e.style._loaded;
-      const pointsLoaded = this.map.getSource(MAP_SOURCE.POINTS) !== undefined;
-      const routeLoaded = this.map.getSource(MAP_SOURCE.ROUTE) !== undefined;
-      if (styleLoadStatus && (!pointsLoaded || !routeLoaded)) {
-        const { route, points } = this._paths || {};
+  private _changeControlTheme() {
+    const setTheme = (key: string) => this.getModeColor(key);
+    const elements = Array.from(this.shadowRoot!.querySelectorAll('.maplibregl-ctrl'));
 
-        if (!pointsLoaded && points) {
-          // console.log('Points Loaded:', pointsLoaded);
-          this.map.addSource(MAP_SOURCE.POINTS, points);
-          this._mapAddLayer(MAP_SOURCE.POINTS);
-          return;
-        } else if (!routeLoaded && route) {
-          // console.log('Route Loaded:', routeLoaded);
-          this.map.addSource(MAP_SOURCE.ROUTE, route);
-          this._mapAddLayer(MAP_SOURCE.ROUTE);
-          return;
+    for (const element of elements) {
+      const buttons = Array.from(element.querySelectorAll('button'));
+      for (const button of buttons) {
+        const buttonEl = button as HTMLButtonElement;
+        buttonEl.style.backgroundColor = setTheme('backgroundColor') as string;
+        buttonEl.style.boxShadow = setTheme('boxShadow') as string;
+        const spanEl = button.querySelector('span') as HTMLSpanElement;
+        if (spanEl) {
+          const computedStyle = window.getComputedStyle(spanEl);
+          const backgroundImage = computedStyle.backgroundImage;
+          if (backgroundImage.startsWith('url("data:image/svg+xml')) {
+            const fillColor = this.getModeColor('fill') as string;
+            const svgUri = backgroundImage.slice(5, -2);
+            const decodedSvg = decodeURIComponent(svgUri.split(',')[1]);
+
+            const updatedSvg = decodedSvg
+              .replace(/fill:[^;"]*/g, `fill:${fillColor}`)
+              .replace(/fill="[^"]*"/g, `fill="${fillColor}"`);
+
+            const encodedSvg = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(updatedSvg)}`;
+            spanEl.style.backgroundImage = `url("${encodedSvg}")`;
+          }
         }
-      } else {
-        return;
+      }
+    }
+  }
+
+  private _getMapBounds(): maptilersdk.LngLatBounds {
+    const { lon, lat } = this.mapData;
+    let bounds = new maptilersdk.LngLatBounds();
+    bounds.extend([lon, lat]);
+    if (this._paths) {
+      const features = this._paths?.points.data.features;
+      features.forEach((feature) => {
+        if (feature.geometry.type === 'Point') {
+          const [lng, lat] = feature.geometry.coordinates;
+          if (lng !== null && lat !== null) {
+            bounds.extend([lng, lat]);
+          }
+        }
+      });
+    }
+    return bounds;
+  }
+
+  private _addSourceAndLayer(sourceId: string, sourceData: any, type: MAP_TYPES): void {
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, sourceData);
+    }
+
+    if (!this.map.getLayer(type)) {
+      this._addLayer(type);
+    }
+  }
+
+  private _addLayer(type: MAP_TYPES): void {
+    const pathHidden = localStorage.getItem(MAP_STORAGE.PATH_HIDDEN) === 'true';
+    const pathColors = this.getPathColor();
+
+    const layerConfig =
+      type === 'points'
+        ? ({
+            id: 'points',
+            type: 'circle',
+            source: MAP_SOURCE.POINTS,
+            layout: {
+              'circle-sort-key': ['get', 'last_updated'],
+              visibility: pathHidden ? 'none' : 'visible',
+            },
+            paint: {
+              'circle-radius': 8,
+              'circle-color': pathColors,
+              'circle-opacity': ['get', 'opacity'],
+              'circle-stroke-width': 1,
+              'circle-stroke-color': pathColors,
+            },
+          } as maptilersdk.CircleLayerSpecification)
+        : ({
+            id: 'route',
+            type: 'line',
+            source: MAP_SOURCE.ROUTE,
+            layout: {
+              'line-sort-key': ['get', 'order_id'],
+              'line-join': 'round',
+              'line-cap': 'round',
+              visibility: pathHidden ? 'none' : 'visible',
+            },
+            paint: {
+              'line-color': pathColors,
+              'line-width': 3,
+              'line-opacity': ['get', 'opacity'],
+            },
+          } as maptilersdk.LineLayerSpecification);
+
+    this.map.addLayer(layerConfig);
+    // this.map.setLayoutProperty(type, 'visibility', pathHidden ? 'none' : null);
+  }
+
+  /**
+   * Helper function to add a control button to the map
+   */
+  private _addMapControl(icon: string, position: 'top-right' | 'bottom-right', onClick: EventListener) {
+    this.map.addControl(
+      {
+        onAdd: () => {
+          const button = this._createButton(icon);
+          button.style.display = 'unset';
+          button.addEventListener('click', onClick);
+          return button;
+        },
+        onRemove: () => null,
+      },
+      position
+    );
+  }
+
+  private _createButton = (icon: string): HTMLElement => {
+    const div = document.createElement('div');
+    div.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+    const button = document.createElement('button');
+    const haIcon = document.createElement('ha-icon');
+    haIcon.setAttribute('icon', icon);
+    haIcon.style.color = 'var(--vic-map-button-color)';
+    button.appendChild(haIcon);
+    div.appendChild(button);
+    div.style.display = 'none';
+
+    return div;
+  };
+
+  private _toggleMapLayers = (): void => {
+    const pathHidden = localStorage.getItem(MAP_STORAGE.PATH_HIDDEN) === 'true';
+    const newVisibility = pathHidden ? null : 'none';
+
+    // Toggle localStorage state
+    localStorage.setItem(MAP_STORAGE.PATH_HIDDEN, String(!pathHidden));
+
+    // Define layers to toggle
+    const layers = [MAP_SOURCE.POINTS, MAP_SOURCE.ROUTE];
+
+    // Loop through layers and update visibility
+    layers.forEach((layerId) => {
+      if (this.map.getLayer(layerId)) {
+        this.map.setLayoutProperty(layerId, 'visibility', newVisibility);
       }
     });
+  };
+
+  private _setupToggleSidebar() {
+    // Add a click event to toggle the sidebar
+    this.map.on('click', () => {
+      const sideBarEl = this.shadowRoot?.getElementById('left') as HTMLElement;
+      const sidebarToggle = sideBarEl.querySelector('ha-icon-button.sidebar-toggle') as HTMLElement;
+      const isCollapsed = sideBarEl.classList.contains('collapsed');
+      if (isCollapsed) return;
+      sideBarEl.classList.toggle('collapsed', !isCollapsed);
+      sidebarToggle.classList.toggle('activated', isCollapsed);
+
+      const padding = { left: isCollapsed ? 250 : 0 };
+      this.map!.easeTo({ padding, duration: 1000 });
+    });
+  }
+
+  private _setupPointInteractions(): void {
+    // Create a popup, but don't add it to the map yet.
+    const pointPopup = new maptilersdk.Popup({
+      closeButton: false,
+      closeOnClick: false,
+    });
+
+    let currentFeatureCoordinates: string | undefined;
+
+    this.map.on('mousemove', 'points', (e: any) => {
+      const feature = e.features?.[0];
+      if (!feature) return;
+
+      const featureCoordinates = feature.geometry.coordinates.toString();
+      if (currentFeatureCoordinates !== featureCoordinates) {
+        currentFeatureCoordinates = featureCoordinates;
+        this.map.getCanvas().style.cursor = 'pointer';
+
+        const coordinates = e.features[0].geometry.coordinates.slice();
+        const description = feature.properties.description;
+
+        // Adjust longitude for world wrap
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        }
+
+        pointPopup.setLngLat(coordinates).setHTML(description).addTo(this.map);
+      }
+    });
+
+    this.map.on('mouseleave', 'points', () => {
+      currentFeatureCoordinates = undefined;
+      this.map.getCanvas().style.cursor = '';
+      pointPopup.remove();
+    });
+
+    this.map.on('dblclick', 'points', (e: any) => e.preventDefault()); // Disable double-click zoom
   }
 
   protected render(): TemplateResult {
@@ -383,74 +459,6 @@ export class VscMaptilerPopup extends LitElement {
     </div>`;
   }
 
-  private _mapAddLayer(type: 'points' | 'route'): void {
-    const pointsLoaded = this.map.isSourceLoaded(MAP_SOURCE.POINTS) && this.map.getLayer('points') !== undefined;
-    const routeLoaded = this.map.isSourceLoaded(MAP_SOURCE.ROUTE) && this.map.getLayer('route') !== undefined;
-    console.log('Points Loaded:', pointsLoaded, 'Route Loaded:', routeLoaded);
-    const pathHidden = localStorage.getItem(MAP_STORAGE.PATH_HIDDEN) === 'true';
-    const pathColors = this.getPathColor();
-    switch (type) {
-      case 'points':
-        if (pointsLoaded) {
-          return;
-        } else {
-          this.map.addLayer({
-            id: 'points',
-            type: 'circle',
-            source: 'points',
-            paint: {
-              'circle-radius': 8, // Size of circles
-              'circle-color': pathColors, // Color of circles
-              'circle-opacity': ['get', 'opacity'],
-              'circle-stroke-width': 1,
-              'circle-stroke-color': pathColors,
-            },
-          });
-          this.map.setLayoutProperty('points', 'visibility', pathHidden ? 'none' : null);
-        }
-        break;
-      case 'route':
-        if (routeLoaded) {
-          return;
-        } else {
-          this.map.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
-            paint: {
-              'line-color': pathColors, // Line color
-              'line-width': 3, // Line thickness
-              'line-opacity': ['get', 'opacity'], // Dynamically get opacity from each segment
-            },
-          });
-          this.map.setLayoutProperty('route', 'visibility', pathHidden ? 'none' : null);
-        }
-
-        break;
-    }
-  }
-
-  private _mapToggleLayer = (): void => {
-    const pointsLayer = this.map.getLayer('points');
-    const routeLayer = this.map.getLayer('route');
-    if (!pointsLayer && !routeLayer) return;
-
-    const pathHidden = localStorage.getItem(MAP_STORAGE.PATH_HIDDEN) === 'true';
-    if (pathHidden) {
-      localStorage.removeItem(MAP_STORAGE.PATH_HIDDEN);
-      this.map.setLayoutProperty('points', 'visibility', null);
-      this.map.setLayoutProperty('route', 'visibility', null);
-    } else {
-      localStorage.setItem(MAP_STORAGE.PATH_HIDDEN, 'true');
-      this.map.setLayoutProperty('points', 'visibility', 'none');
-      this.map.setLayoutProperty('route', 'visibility', 'none');
-    }
-  };
-
   private _toggleSidebar(ev: Event) {
     ev.preventDefault();
     const target = ev.target as HTMLElement;
@@ -460,20 +468,6 @@ export class VscMaptilerPopup extends LitElement {
     const padding = { left: isCollapsed ? 250 : 0 };
     this.map.easeTo({ padding, duration: 1000 });
   }
-
-  private _createButton = (icon: string): HTMLElement => {
-    const div = document.createElement('div');
-    div.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-    const button = document.createElement('button');
-    const haIcon = document.createElement('ha-icon');
-    haIcon.setAttribute('icon', icon);
-    haIcon.style.color = 'var(--vic-map-button-color)';
-    button.appendChild(haIcon);
-    div.appendChild(button);
-    div.style.display = 'none';
-
-    return div;
-  };
 
   private addMarker(): HTMLElement {
     const deviceTracker = this.card._config.mini_map?.device_tracker;
@@ -490,13 +484,9 @@ export class VscMaptilerPopup extends LitElement {
     buttonEl.id = 'marker';
     buttonEl.style.backgroundImage = `url(${pictureUrl || 'none'})`;
     if (!pictureUrl) {
-      buttonEl.style.backgroundColor = '#000';
-      const haStateIcon = document.createElement('ha-state-icon') as any;
-      haStateIcon.hass = this.card._hass;
-      haStateIcon.stateObj = stateObj;
-      haStateIcon.style.setProperty('--mdc-icon-size', '2.5rem');
-      haStateIcon.style.color = '#fff';
-      buttonEl.appendChild(haStateIcon);
+      const entityName = stateObj?.attributes.friendly_name;
+      const initials = getInitials(entityName!);
+      buttonEl.textContent = initials;
     }
     markerEl.appendChild(buttonEl);
 
@@ -584,12 +574,29 @@ export class VscMaptilerPopup extends LitElement {
     </div>`;
   }
 
+  private _handleThemeToggle() {
+    const currentStyle = this._currentStyle!.split('.')[0];
+    const styleToChange = this._themeMode === THEME_MODE.DARK ? `${currentStyle}.LIGHT` : `${currentStyle}.DARK`;
+    const mode = this._themeMode;
+    if (mode === THEME_MODE.DARK) {
+      this._changeMapStyle(styleToChange);
+      this._currentStyle = styleToChange;
+      this._themeMode = THEME_MODE.LIGHT;
+      console.log('Switching to Light Theme', styleToChange, 'Current Style:', this._currentStyle);
+    } else {
+      this._changeMapStyle(styleToChange);
+      this._currentStyle = styleToChange;
+      this._themeMode = THEME_MODE.DARK;
+      console.log('Switching to Dark Theme', styleToChange, 'Current Style:', this._currentStyle);
+    }
+  }
+
   private _handleThemePicked(ev: CustomEvent) {
     ev.stopPropagation();
     const value = ev.detail.value;
     this._currentStyle = value as string;
     localStorage.setItem(MAP_STORAGE.THEME_STYLE, this._currentStyle);
-    this._themeMode = this._currentStyle.includes('DARK') ? 'dark' : 'light';
+    this._themeMode = this._currentStyle.includes('DARK') ? THEME_MODE.DARK : THEME_MODE.LIGHT;
     this._changeMapStyle(this._currentStyle);
   }
 
@@ -622,31 +629,17 @@ export class VscMaptilerPopup extends LitElement {
     this.dispatchEvent(new CustomEvent('close-dialog', { bubbles: true, composed: true }));
   }
 
-  private _handleThemeToggle() {
-    const currentStyle = this._currentStyle!.split('.')[0];
-    const styleToChange = this._themeMode === 'dark' ? `${currentStyle}.LIGHT` : `${currentStyle}.DARK`;
-    const mode = this._themeMode;
-    if (mode === 'dark') {
-      this._changeMapStyle(styleToChange);
-      this._currentStyle = styleToChange;
-      this._themeMode = 'light';
-      console.log('Switching to Light Theme', styleToChange, 'Current Style:', this._currentStyle);
-    } else {
-      this._changeMapStyle(styleToChange);
-      this._currentStyle = styleToChange;
-      console.log('Switching to Dark Theme', styleToChange, 'Current Style:', this._currentStyle);
-      this._themeMode = 'dark';
-    }
-  }
-
   private getModeColor = (key: string): string => {
     return this._themeMode === 'dark' ? MAPTILER_THEME[key].dark : MAPTILER_THEME[key].light;
   };
 
   private getPathColor = () => {
     const computedStyle = getComputedStyle(this);
+    const configPathColor = this.card._config.mini_map?.path_color;
     const color =
-      this._themeMode === 'dark'
+      configPathColor !== 'none' && configPathColor
+        ? computedStyle.getPropertyValue(`--${configPathColor}-color`)
+        : this._themeMode === THEME_MODE.DARK
         ? computedStyle.getPropertyValue('--accent-color')
         : computedStyle.getPropertyValue('--primary-color');
     return color;
@@ -654,11 +647,18 @@ export class VscMaptilerPopup extends LitElement {
 
   private _computeMapStyle() {
     const getStyle = (key: string) => this.getModeColor(key);
+    const configPathColor = this.card._config.mini_map?.path_color;
 
     const deviceTracker = this.card._config.mini_map?.device_tracker;
     const entityPic = this.card._hass.states[deviceTracker]?.attributes.entity_picture;
 
-    const markerColor = this._themeMode === 'dark' ? 'var(--accent-color)' : 'var(--primary-color)';
+    const markerColor =
+      configPathColor !== 'none' && configPathColor
+        ? `var(--${configPathColor}-color)`
+        : this._themeMode === 'dark'
+        ? 'var(--accent-color)'
+        : 'var(--primary-color)';
+
     const picBgcolor = entityPic ? 'rgba(0, 0, 0, 0.5)' : markerColor;
     // const markerSize = entityPic ? '3.5rem' : '2rem';
     const markerSize = '3.5rem';
@@ -782,6 +782,7 @@ export class VscMaptilerPopup extends LitElement {
           border-radius: 10px;
           box-shadow: var(--vic-map-button-shadow);
         }
+
         .option-selector {
           display: flex;
           flex-direction: column;
@@ -880,6 +881,7 @@ export class VscMaptilerPopup extends LitElement {
           height: var(--vic-map-marker-size);
           display: none;
         }
+
         .marker-container .pulse {
           position: absolute;
           width: 100%;
@@ -888,6 +890,11 @@ export class VscMaptilerPopup extends LitElement {
           border: 2px solid transparent;
           border-radius: 50%;
           animation: pulse 5s infinite;
+          transform-origin: center;
+          top: 0;
+          left: 0;
+          right: 0;
+          border: 0;
         }
 
         button#marker {
@@ -901,6 +908,11 @@ export class VscMaptilerPopup extends LitElement {
           border-radius: 50%;
           cursor: pointer;
           color: white;
+          font-size: 1.5rem;
+          align-items: center;
+          text-align: center;
+          display: flex;
+          justify-content: center;
         }
 
         .maplibregl-ctrl-bottom-left,
@@ -908,7 +920,6 @@ export class VscMaptilerPopup extends LitElement {
         .maplibregl-ctrl-top-left,
         .maplibregl-ctrl-top-right {
           padding: 0.5rem;
-          color: var(--vic-map-button-color);
         }
 
         .maplibregl-popup-content {
