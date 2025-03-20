@@ -20,4 +20,6 @@ jobs:
         with:
           draft: true
           generate_release_notes: true
-          files: dist/*.js
+          files: |
+            dist/*.js
+            build/*.js
