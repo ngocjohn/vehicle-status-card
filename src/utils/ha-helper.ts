@@ -358,8 +358,8 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
   return cardElement;
 }
 
-async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
-  console.log('Getting address from MapTiler');
+export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
+  // console.log('Getting address from MapTiler');
   const filterParams: Record<string, keyof Address> = {
     address: 'streetName', // Street name
     locality: 'sublocality', // Sublocality

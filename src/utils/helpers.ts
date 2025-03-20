@@ -2,6 +2,7 @@ import tinycolor from 'tinycolor2';
 
 import { HistoryStates } from '../types';
 import { MiniMapConfig } from '../types/config';
+import { getAddressFromMapTiler } from './ha-helper';
 
 export function isEmpty(input: any): boolean {
   if (Array.isArray(input)) {
@@ -47,12 +48,14 @@ const formatTimestamp = (ts: number): string => {
   return date.toLocaleTimeString();
 };
 
-export const _getHistoryPoints = (config: MiniMapConfig, history?: HistoryStates): any | undefined => {
+export const _getHistoryPoints = async (config: MiniMapConfig, history?: HistoryStates): Promise<any | undefined> => {
   if (!history || !(config.hours_to_show ?? 0)) {
     return undefined;
   }
   console.log('history', history);
   const paths = {};
+
+  // Get the history for the device
   const entityStates = history[config.device_tracker];
   if (!entityStates) {
     return undefined;
@@ -63,6 +66,8 @@ export const _getHistoryPoints = (config: MiniMapConfig, history?: HistoryStates
   if (locations.length < 2) {
     return undefined;
   }
+
+  const apiKey = config.maptiler_api_key!;
 
   // Create source data for LineString and Point features
   const totalPoints = locations.length;
@@ -85,6 +90,7 @@ export const _getHistoryPoints = (config: MiniMapConfig, history?: HistoryStates
 
     lineSegments.push({
       type: 'Feature',
+      id: `line-${i}`,
       geometry: {
         type: 'LineString',
         coordinates: [
@@ -93,9 +99,21 @@ export const _getHistoryPoints = (config: MiniMapConfig, history?: HistoryStates
         ],
       },
       properties: {
+        line_id: `line-${i}`,
+        order_id: i,
         opacity: opacity, // Keep 2 decimal places for smoother transition
       },
     });
+
+    // **Wait for description before pushing to pointFeatures**
+    const address = (await getAddressFromMapTiler(start.a.latitude, start.a.longitude, apiKey)) ?? '';
+    const formatAddress = address ? `${address.streetName}` : '';
+
+    const description = `
+      <b>${start.a.friendly_name}</b>
+      <span>${formatAddress}</span>
+      <i>${formatTimestamp(start.lu)}</i>
+    `;
 
     // Create Point features for each segment
     pointFeatures.push({
@@ -106,7 +124,8 @@ export const _getHistoryPoints = (config: MiniMapConfig, history?: HistoryStates
       },
       properties: {
         friendly_name: start.a.friendly_name,
-        last_updated: formatTimestamp(start.lu),
+        last_updated: start.lu,
+        description: description,
         opacity: opacity,
       },
     });
@@ -132,4 +151,13 @@ export const _getHistoryPoints = (config: MiniMapConfig, history?: HistoryStates
   paths['points'] = pointSource;
   console.log('paths', paths);
   return paths;
+};
+
+export const getInitials = (name: string): string => {
+  if (!name) return ''; // Handle empty or undefined names
+
+  return name
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('');
 };

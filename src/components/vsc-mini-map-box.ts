@@ -29,6 +29,7 @@ export class MiniMapBox extends LitElement {
   @state() private marker: L.Marker | null = null;
   @state() private latLon: L.LatLng | null = null;
   @state() private tileLayer: L.TileLayer | null = null;
+
   @state() private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
   @state() private _locateIconVisible = false;
@@ -36,6 +37,7 @@ export class MiniMapBox extends LitElement {
 
   private _subscribed?: Promise<(() => Promise<void>) | undefined>;
   private _stateHistory?: HistoryStates;
+  private _historyPoints?: any | undefined;
 
   private get mapPopup(): boolean {
     return this.card._config.mini_map?.enable_popup || false;
@@ -47,9 +49,7 @@ export class MiniMapBox extends LitElement {
 
   public connectedCallback() {
     super.connectedCallback();
-    if (this.hasUpdated && this.card._config.mini_map?.hours_to_show !== 0) {
-      this._subscribeHistory();
-    }
+    this._subscribeHistory();
   }
 
   public disconnectedCallback() {
@@ -65,6 +65,15 @@ export class MiniMapBox extends LitElement {
       this._subscribed ||
       !(_config.mini_map?.hours_to_show ?? DEFAULT_HOURS_TO_SHOW)
     ) {
+      console.log(
+        'History not loaded or already subscribed',
+        'History:',
+        hass?.config.components.includes('history'),
+        'Subscribed:',
+        this._subscribed,
+        'Hours:',
+        _config.mini_map?.hours_to_show
+      );
       return;
     }
 
@@ -234,7 +243,7 @@ export class MiniMapBox extends LitElement {
     this.map.flyTo(this.latLon, this.zoom);
   }
 
-  render(): TemplateResult {
+  protected render(): TemplateResult {
     const maptilerKey = this.card._config.mini_map?.maptiler_api_key;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     return html`
@@ -270,14 +279,13 @@ export class MiniMapBox extends LitElement {
     const maptiler_api_key = this.card._config.mini_map?.maptiler_api_key;
     if (!this.open || !maptiler_api_key) return nothing;
     // const pathData = this._getHistoryPoints();
-    const pathData = _getHistoryPoints(this.card._config.mini_map!, this._stateHistory);
     return html`
       <ha-dialog open @closed=${() => (this.open = false)} hideActions flexContent>
         ${MAPTILER_DIALOG_STYLES}
         <vsc-maptiler-popup
           .mapData=${this.mapData}
           .card=${this.card}
-          ._paths=${pathData}
+          ._paths=${this._historyPoints}
           @close-dialog=${() => {
             this.open = false;
           }}
@@ -303,9 +311,16 @@ export class MiniMapBox extends LitElement {
 
   async _toggleMapDialog() {
     if (!this.mapPopup) return;
-    if (this.mapCardPopup !== undefined) {
+    if (this.mapCardPopup !== undefined || this._historyPoints !== undefined) {
       this.open = !this.open;
       return;
+    } else if (this.card._config.mini_map?.maptiler_api_key !== undefined) {
+      _getHistoryPoints(this.card._config.mini_map, this._stateHistory).then((points) => {
+        this._historyPoints = points;
+        setTimeout(() => {
+          this.open = true;
+        }, 50);
+      });
     } else {
       _setMapPopup(this.card).then((popup) => {
         this.mapCardPopup = popup;
