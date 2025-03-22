@@ -6,12 +6,13 @@ package-lock.json
 dist/
 .vscode/
 !.vscode/launch.json
-scripts/
+
 src/test/
 .env
 .DS_Store
 *.wiki
 .hass-config/
 build/
-!scripts/update-bug-template.js
 TESTREADME.md
+scripts/*
+!scripts/update-bug-template.js
