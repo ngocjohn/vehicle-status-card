@@ -74,87 +74,13 @@ export const STYLE_SCHEMA = [
     },
   },
 ];
-export const MAP_STYLE_OPTIONS = [
-  {
-    label: 'Navigation and city exploration',
-    options: [
-      { value: 'STREETS', label: 'STREETS' },
-      { value: 'STREETS.DARK', label: 'STREETS.DARK' },
-      { value: 'STREETS.LIGHT', label: 'STREETS.LIGHT' },
-      { value: 'STREETS.PASTEL', label: 'STREETS.PASTEL' },
-    ],
-  },
-  { value: 'OUTDOOR', label: 'OUTDOOR' },
-  { value: 'WINTER', label: 'WINTER' },
-  { value: 'SATELLITE', label: 'SATELLITE' },
-  { value: 'HYBRID', label: 'HYBRID' },
-  {
-    label: 'Data visualization',
-    options: [
-      { value: 'DATAVIZ', label: 'DATAVIZ' },
-      { value: 'DATAVIZ.DARK', label: 'DATAVIZ.DARK' },
-      { value: 'DATAVIZ.LIGHT', label: 'DATAVIZ.LIGHT' },
-    ],
-  },
-  {
-    label: 'Minimalist and general purpose',
-    options: [
-      { value: 'BASIC', label: 'BASIC' },
-      { value: 'BASIC.DARK', label: 'BASIC.DARK' },
-      { value: 'BASIC.LIGHT', label: 'BASIC.LIGHT' },
-    ],
-  },
-  {
-    label: 'High contrast navigation',
-    options: [
-      { value: 'BRIGHT', label: 'BRIGHT' },
-      { value: 'BRIGHT.DARK', label: 'BRIGHT.DARK' },
-      { value: 'BRIGHT.LIGHT', label: 'BRIGHT.LIGHT' },
-      { value: 'BRIGHT.PASTEL', label: 'BRIGHT.PASTEL' },
-    ],
-  },
-  {
-    label: 'Topographic study',
-    options: [
-      { value: 'TOPO', label: 'TOPO' },
-      { value: 'TOPO.SHINY', label: 'TOPO.SHINY' },
-      { value: 'TOPO.PASTEL', label: 'TOPO.PASTEL' },
-      { value: 'TOPO.TOPOGRAPHIQUE', label: 'TOPO.TOPOGRAPHIQUE' },
-    ],
-  },
-  {
-    label: 'Minimalist',
-    options: [
-      { value: 'VOYAGER', label: 'VOYAGER' },
-      { value: 'VOYAGER.DARK', label: 'VOYAGER.DARK' },
-      { value: 'VOYAGER.LIGHT', label: 'VOYAGER.LIGHT' },
-      { value: 'VOYAGER.VINTAGE', label: 'VOYAGER.VINTAGE' },
-    ],
-  },
-  {
-    label: 'High contrast',
-    options: [
-      { value: 'TONER', label: 'TONER' },
-      { value: 'TONER.BACKGROUND', label: 'TONER.BACKGROUND' },
-      { value: 'TONER.LITE', label: 'TONER.LITE' },
-      { value: 'TONER.LINES', label: 'TONER.LINES' },
-    ],
-  },
-  {
-    label: 'Neutral greyscale style with hillshading',
-    options: [
-      { value: 'BACKDROP', label: 'BACKDROP' },
-      { value: 'BACKDROP.DARK', label: 'BACKDROP.DARK' },
-      { value: 'BACKDROP.LIGHT', label: 'BACKDROP.LIGHT' },
-    ],
-  },
-  { value: 'OPENSTREETMAP', label: 'OPENSTREETMAP' },
-];
 
 export const DARK_AVAILABLE_STYLES = ['STREETS', 'BASIC', 'BRIGHT', 'DATAVIZ', 'VOYAGER', 'BACKDROP'];
 
 export const DEFAULT_HOURS_TO_SHOW = 0;
 export const DEFAULT_ZOOM = 14;
+export const MARKER_CIRCLE_RADIUS = 0.05;
+export const MARKER_CIRCLE_STEPS = 64;
 
 export const MAPTILER_THEME = {
   backgroundColor: {
@@ -194,9 +120,10 @@ export enum MAP_STORAGE {
 export enum MAP_SOURCE {
   POINTS = 'points',
   ROUTE = 'route',
+  MARKER_CIRCLE = 'marker-circle',
 }
 
-export type MAP_TYPES = 'points' | 'route';
+export type MAP_TYPES = 'points' | 'route' | 'circle-radius' | 'circle-outline';
 
 export const MAPTILER_DIALOG_STYLES = html`
   <style>
