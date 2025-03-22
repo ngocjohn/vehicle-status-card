@@ -182,9 +182,10 @@ export class PanelRangeInfo extends LitElement {
     const energyConfig = (index: number) => this._renderEnergyLevelConfig(index);
     const rangeConfig = (index: number) => this._renderRangeLevelConfig(index);
     const chargingEntity = (index: number) => this._renderChargingEntityConfig(index);
+    const colorTemplate = (index: number) => this._renderColorTemplate(index);
     const colorPicker = (index: number) => this._colorPicker(index);
     const infoAlert = (helper: string) =>
-      html`<span slot="message" class="info-alert" style="display: none"> ${helper} </span>`;
+      html`<span slot="message" class="info-alert" style="flex: 0; display: none"> ${helper} </span>`;
     const configContent = {
       energy_level: {
         title: 'Energy Level',
@@ -206,6 +207,10 @@ export class PanelRangeInfo extends LitElement {
         helper: infoAlert('Color to display the progress bar'),
         config: colorPicker,
       },
+      color_template: {
+        title: 'Color Template',
+        config: colorTemplate,
+      },
     };
 
     return html`
@@ -223,11 +228,15 @@ export class PanelRangeInfo extends LitElement {
               <div class="sub-panel">
                 <div class="sub-header">
                   <span>${configContent[key].title}</span>
-                  <ha-icon
-                    class="info-icon"
-                    icon="mdi:help-circle"
-                    @click=${(ev: Event) => this._toggleHelp(ev)}
-                  ></ha-icon>
+                  ${configContent[key].helper
+                    ? html`
+                        <ha-icon
+                          class="info-icon"
+                          icon="mdi:help-circle"
+                          @click=${(ev: Event) => this._toggleHelp(ev)}
+                        ></ha-icon>
+                      `
+                    : nothing}
                   ${configContent[key].helper}
                 </div>
                 <div class="sub-content">${configContent[key].config(index)}</div>
@@ -452,6 +461,29 @@ export class PanelRangeInfo extends LitElement {
     `;
   }
 
+  private _renderColorTemplate(index: number): TemplateResult {
+    const configShared = {
+      component: this,
+      configType: 'color_template',
+      configIndex: index,
+    };
+
+    const colorTemplate = this.config.range_info[index].color_template || '';
+    return html`
+      <div class="item-content">
+        ${Create.Picker({
+          ...configShared,
+          value: colorTemplate,
+          pickerType: 'template' as 'template',
+          options: {
+            helperText: 'Template to set the color of the progress bar, this will replace the progress_color',
+            label: '',
+          },
+        })}
+      </div>
+    `;
+  }
+
   private _colorPicker(index: number): TemplateResult {
     const rangeItem = this.config.range_info[index];
     const progressColor = rangeItem.progress_color;
@@ -508,7 +540,7 @@ export class PanelRangeInfo extends LitElement {
 
     let newValue: any = target.value;
 
-    if (configValue === 'attribute') {
+    if (['attribute'].includes(configValue)) {
       newValue = ev.detail.value;
     } else {
       newValue = target.value;
@@ -542,6 +574,13 @@ export class PanelRangeInfo extends LitElement {
       rangeInfo[index] = rangeInfoItem;
       updates.range_info = rangeInfo;
       console.log(`Range info [${index}] charging_entity changed to`, newValue);
+    } else if (configType === 'color_template') {
+      // Update the entity value
+      newValue = ev.detail.value;
+      rangeInfoItem.color_template = newValue;
+      rangeInfo[index] = rangeInfoItem;
+      updates.range_info = rangeInfo;
+      console.log(`Range info [${index}] color_template changed to`, newValue);
     } else if (configType === 'energy_level' || configType === 'range_level') {
       // Update the entity or attribute value
       const rangeLevel = rangeInfoItem[configType];

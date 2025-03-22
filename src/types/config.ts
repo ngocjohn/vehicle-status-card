@@ -44,6 +44,7 @@ export interface RangeInfoConfig {
   progress_color: string;
   range_level: RangeItemConfig;
   charging_entity?: string;
+  color_template?: string;
 }
 
 export interface RangeItemConfig {
