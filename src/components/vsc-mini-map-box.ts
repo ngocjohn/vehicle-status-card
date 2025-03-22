@@ -2,7 +2,7 @@ import { LovelaceCardConfig } from 'custom-card-helpers';
 import 'leaflet-providers/leaflet-providers.js';
 import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
-import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -22,8 +22,7 @@ export const DEFAULT_ZOOM = 14;
 export class MiniMapBox extends LitElement {
   @property({ attribute: false }) private mapData!: MapData;
   @property({ attribute: false }) private card!: VehicleStatusCard;
-  @property({ type: Boolean }) private isDark!: boolean;
-  @property({ type: Boolean }) open!: boolean;
+  @property({ type: Boolean }) private isDark: boolean = false;
 
   @state() private map: L.Map | null = null;
   @state() private marker: L.Marker | null = null;
@@ -35,6 +34,7 @@ export class MiniMapBox extends LitElement {
   @state() private _locateIconVisible = false;
   @state() private _address: Partial<Address> | null = null;
 
+  @state() private open!: boolean;
   private _subscribed?: Promise<(() => Promise<void>) | undefined>;
   private _stateHistory?: HistoryStates;
   private _historyPoints?: any | undefined;
@@ -44,7 +44,11 @@ export class MiniMapBox extends LitElement {
   }
 
   private get zoom(): number {
-    return this.card._config.mini_map?.default_zoom || 14;
+    return this.card._config.mini_map?.map_zoom || 14;
+  }
+
+  private get useMapTiler(): boolean {
+    return !!this.card._config.mini_map.maptiler_api_key;
   }
 
   public connectedCallback() {
@@ -65,15 +69,6 @@ export class MiniMapBox extends LitElement {
       this._subscribed ||
       !(_config.mini_map?.hours_to_show ?? DEFAULT_HOURS_TO_SHOW)
     ) {
-      console.log(
-        'History not loaded or already subscribed',
-        'History:',
-        hass?.config.components.includes('history'),
-        'Subscribed:',
-        this._subscribed,
-        'Hours:',
-        _config.mini_map?.hours_to_show
-      );
       return;
     }
 
@@ -91,7 +86,7 @@ export class MiniMapBox extends LitElement {
       [_config.mini_map!.device_tracker],
       false,
       false,
-      false
+      true
     ).catch((err) => {
       this._subscribed = undefined;
       console.error('Error subscribing to history', err);
@@ -106,23 +101,23 @@ export class MiniMapBox extends LitElement {
     }
   }
 
-  protected updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-    if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined) {
+  protected async firstUpdated(): Promise<void> {
+    if (this.mapData) {
       this.initMap();
-      this._getAddress();
+      if (!this._addressReady) {
+        await this._getAddress();
+      }
     }
   }
 
   private async _getAddress(): Promise<void> {
     const { lat, lon } = this.mapData;
-    if (!lat || !lon) return;
     const address = await _getMapAddress(this.card, lat, lon);
     if (address) {
       this._address = address;
       this.mapData.address = address;
       this._addressReady = true;
-    } else if (address === null) {
+    } else if (address === undefined) {
       this._addressReady = true;
     }
   }
@@ -178,7 +173,7 @@ export class MiniMapBox extends LitElement {
     });
   }
 
-  initMap(): void {
+  private initMap(): void {
     // console.log('Initializing map...');
     const { lat, lon } = this.mapData;
 
@@ -222,8 +217,6 @@ export class MiniMapBox extends LitElement {
   private _createMarker(map: L.Map): L.Marker {
     const { lat, lon } = this.mapData;
     const customIcon = L.divIcon({
-      html: `<div class="marker">
-            </div>`,
       iconSize: [24, 24],
       className: 'marker',
     });
@@ -276,9 +269,9 @@ export class MiniMapBox extends LitElement {
   }
 
   private _renderMaptilerDialog(): TemplateResult | typeof nothing {
-    const maptiler_api_key = this.card._config.mini_map?.maptiler_api_key;
-    if (!this.open || !maptiler_api_key) return nothing;
+    if (!this.open || !this.useMapTiler) return nothing;
     // const pathData = this._getHistoryPoints();
+    this._historyPoints = _getHistoryPoints(this.card._config.mini_map!, this._stateHistory);
     return html`
       <ha-dialog open @closed=${() => (this.open = false)} hideActions flexContent>
         ${MAPTILER_DIALOG_STYLES}
@@ -309,25 +302,18 @@ export class MiniMapBox extends LitElement {
     `;
   }
 
-  async _toggleMapDialog() {
+  private _toggleMapDialog(): void {
     if (!this.mapPopup) return;
-    if (this.mapCardPopup !== undefined || this._historyPoints !== undefined) {
-      this.open = !this.open;
-      return;
-    } else if (this.card._config.mini_map?.maptiler_api_key !== undefined) {
-      _getHistoryPoints(this.card._config.mini_map, this._stateHistory).then((points) => {
-        this._historyPoints = points;
-        setTimeout(() => {
-          this.open = true;
-        }, 50);
-      });
-    } else {
+    if (!this.useMapTiler && !this.mapCardPopup && !this.open) {
       _setMapPopup(this.card).then((popup) => {
         this.mapCardPopup = popup;
         setTimeout(() => {
           this.open = true;
         }, 50);
       });
+    } else {
+      this.open = !this.open;
+      return;
     }
   }
 
@@ -398,11 +384,8 @@ export class MiniMapBox extends LitElement {
         .marker::before {
           content: '';
           position: absolute;
-          width: calc(100% + 1rem);
-          height: calc(100% + 1rem);
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
+          width: 24px;
+          height: 24px;
           background-image: radial-gradient(
             circle,
             transparent 0%,
@@ -411,6 +394,24 @@ export class MiniMapBox extends LitElement {
           border-radius: 50%;
           border: none !important;
           /* opacity: 0.6; */
+          transform: scale(2);
+        }
+
+        @keyframes pulse {
+          0% {
+            transform: scale(1);
+            opacity: 0;
+          }
+          30% {
+            opacity: 0.5;
+          }
+          60% {
+            transform: scale(2);
+            opacity: 0;
+          }
+          100% {
+            opacity: 0;
+          }
         }
 
         .marker::after {

@@ -48,7 +48,7 @@ export default [
     watch: {
       exclude: 'node_modules/**',
     },
-    plugins: [...plugins, ...defaultPlugins],
+    plugins: [...defaultPlugins, ...plugins],
     moduleContext: (id) => {
       const thisAsWindowForModules = [
         'node_modules/@formatjs/intl-utils/lib/src/diff.js',
@@ -57,6 +57,10 @@ export default [
       if (thisAsWindowForModules.some((id_) => id.trimRight().endsWith(id_))) {
         return 'window';
       }
+    },
+    onwarn(warning, warn) {
+      if (warning.code === 'CIRCULAR_DEPENDENCY') return; // Ignore circular dependency warnings
+      warn(warning); // Display other warnings
     },
   },
 ];

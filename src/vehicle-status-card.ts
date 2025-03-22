@@ -13,13 +13,12 @@ import {
   VehicleStatusCardConfig,
   TireEntity,
   PREVIEW_TYPE,
-  MapData,
   ButtonCardEntityItem,
   DefaultCardConfig,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
 import { HaHelp, isDarkColor, isEmpty } from './utils';
-import { getDefaultConfig } from './utils/ha-helper';
+import { _getMapData, getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement implements LovelaceCard {
@@ -36,7 +35,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @state() public _tireCardPreview: TireEntity | undefined = undefined;
 
   @state() public _buttonCards: ButtonCardEntity = [];
-  @state() public _mapData?: MapData;
 
   @state() public _activeCardIndex: null | number | string = null;
   @state() _currentSwipeIndex?: number;
@@ -144,7 +142,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
     HaHelp._setUpPreview(this);
-    HaHelp.handleFirstUpdated(this);
+    await HaHelp.handleFirstUpdated(this);
     this.measureCard();
   }
 
@@ -284,10 +282,10 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   private _renderMiniMap(): TemplateResult {
     if (this._isSectionHidden(SECTION.MINI_MAP)) return html``;
     if (!this._config?.mini_map?.device_tracker) return this._showWarning('Device tracker not available');
-
+    const mapData = _getMapData(this);
     return html`
       <div id=${SECTION.MINI_MAP} style=${`min-width: ${this._cardWidth}px`}>
-        <mini-map-box .mapData=${this._mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
+        <mini-map-box .mapData=${mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
       </div>
     `;
   }

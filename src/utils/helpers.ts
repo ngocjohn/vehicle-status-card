@@ -1,7 +1,10 @@
+import { formatDateNumeric, formatTime } from 'custom-card-helpers';
+import memoizeOne from 'memoize-one';
 import tinycolor from 'tinycolor2';
 
 import { HistoryStates } from '../types';
 import { MiniMapConfig } from '../types/config';
+import { FrontendLocaleData } from '../types/ha-frontend/data/frontend-local-data';
 
 export function isEmpty(input: any): boolean {
   if (Array.isArray(input)) {
@@ -47,7 +50,7 @@ const formatTimestamp = (ts: number): string => {
   return date.toLocaleString();
 };
 
-export const _getHistoryPoints = async (config: MiniMapConfig, history?: HistoryStates): Promise<any | undefined> => {
+export const _getHistoryPoints = memoizeOne((config: MiniMapConfig, history?: HistoryStates): any | undefined => {
   if (!history || !(config.hours_to_show ?? 0)) {
     return undefined;
   }
@@ -65,8 +68,6 @@ export const _getHistoryPoints = async (config: MiniMapConfig, history?: History
   if (locations.length < 2) {
     return undefined;
   }
-
-  // const apiKey = config.maptiler_api_key!;
 
   // Create source data for LineString and Point features
   const totalPoints = locations.length;
@@ -144,7 +145,7 @@ export const _getHistoryPoints = async (config: MiniMapConfig, history?: History
   paths['points'] = pointSource;
   console.log('paths', paths);
   return paths;
-};
+});
 
 export const getInitials = (name: string): string => {
   if (!name) return ''; // Handle empty or undefined names
@@ -153,4 +154,8 @@ export const getInitials = (name: string): string => {
     .split(' ')
     .map((word) => word.charAt(0).toUpperCase())
     .join('');
+};
+
+export const getFormatedDateTime = (dateObj: Date, locale: FrontendLocaleData): string => {
+  return `${formatDateNumeric(dateObj, locale)} ${formatTime(dateObj, locale)}`;
 };
