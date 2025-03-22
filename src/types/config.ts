@@ -70,7 +70,6 @@ export interface MapData {
   lat: number;
   lon: number;
   address: Partial<Address>;
-  popUpCard?: LovelaceCardConfig[];
 }
 
 export interface MiniMapConfig {
@@ -81,11 +80,14 @@ export interface MiniMapConfig {
   maptiler_api_key: string;
   us_format: boolean;
   hours_to_show: number;
-  theme_mode: 'auto' | 'dark' | 'light';
+  theme_mode: THEME_MODE;
   map_height: number;
   path_color?: string;
+  auto_fit?: boolean;
+  map_zoom?: number;
 }
 
+type THEME_MODE = 'auto' | 'dark' | 'light';
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */
 
 type SecondaryInfoConfig = {
@@ -180,8 +182,8 @@ export type TireEntity = {
 export interface ButtonCardConfig {
   button: ButtonConfig;
   button_action: ButtonActionConfig;
-  button_type: 'action' | 'default';
-  card_type: 'custom' | 'default' | 'tire';
+  button_type: BUTTON_TYPE;
+  card_type: CARD_TYPE;
   custom_card: LovelaceCardConfig[];
   default_card: Array<DefaultCardConfig>;
   hide_button: boolean;
@@ -198,8 +200,8 @@ export interface ButtonCardEntityItem {
     color: string;
     picture_template: string;
   };
-  button_type: 'action' | 'default';
-  card_type: 'custom' | 'default' | 'tire';
+  button_type: BUTTON_TYPE;
+  card_type: CARD_TYPE;
   custom_card: LovelaceCardConfig[];
   default_card: Array<{
     collapsed_items: boolean;
@@ -209,6 +211,8 @@ export interface ButtonCardEntityItem {
   hide_button: boolean;
   tire_card?: TireEntity;
 }
+type BUTTON_TYPE = 'action' | 'default';
+type CARD_TYPE = 'custom' | 'default' | 'tire';
 
 export type ButtonCardEntity = ButtonCardEntityItem[];
 
@@ -241,7 +245,7 @@ interface LayoutConfig {
     map_address: boolean;
   };
   theme_config: {
-    mode: 'auto' | 'dark' | 'light';
+    mode: THEME_MODE;
     theme: string;
   };
   section_order?: Array<string>;

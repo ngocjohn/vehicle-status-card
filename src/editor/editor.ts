@@ -556,6 +556,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       getBooleanPicker('enable_popup', 'Enable Popup', miniMap.enable_popup ?? false),
       getBooleanPicker('us_format', 'US Address Format', miniMap.us_format ?? false),
       getBooleanPicker('map_address', 'Hide Address', layoutConfig.map_address ?? false, 'layout_config', 'hide'),
+      getNumberPicker('map_zoom', 'Map Zoom', miniMap.map_zoom ?? 14),
       getNumberPicker('map_height', 'Minimap Height (px)', miniMap.map_height ?? 150, 500, 150, 10, 'slider'),
     ];
 
@@ -595,6 +596,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
           { label: 'Dark', value: 'dark' },
         ],
       },
+      getBooleanPicker('auto_fit', 'Auto Fit', miniMap.auto_fit ?? false),
       {
         configValue: 'path_color',
         label: 'Path Color',
@@ -762,6 +764,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       'map_height',
       'us_format',
       'path_color',
+      'map_zoom',
+      'auto_fit',
     ];
     // Ensure we handle the boolean value correctly
     let newValue: any = target.checked !== undefined ? target.checked : target.value;
