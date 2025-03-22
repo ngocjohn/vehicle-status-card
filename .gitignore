@@ -13,5 +13,5 @@ src/test/
 *.wiki
 .hass-config/
 build/
-scripts/
+!scripts/update-bug-template.js
 TESTREADME.md
