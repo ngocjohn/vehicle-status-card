@@ -34,9 +34,13 @@ body:
       label: Version 📦
       description: The version of the application where the bug was found
       options:
+        - v1.8.2-beta.2
+        - v1.8.2-beta.1
+        - v1.8.1
         - v1.8.0
         - v1.7.0
         - v1.6.0
+        - v1.6.0-beta.1
         - v1.5.0
         - v1.4.3
         - v1.4.2
