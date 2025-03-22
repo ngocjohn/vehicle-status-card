@@ -1,5 +1,6 @@
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import { LovelaceCardConfig } from 'custom-card-helpers';
+import memoizeOne from 'memoize-one';
 
 import { DEFAULT_CONFIG } from '../const/const';
 import {
@@ -268,10 +269,9 @@ export async function handleFirstUpdated(card: VehicleStatusCard): Promise<void>
   card._buttonReady = false;
   card._buttonCards = await getButtonCard(hass, config.button_card);
   card._buttonReady = true;
-  _getMapData(card);
 }
 
-export async function _getMapData(card: VehicleStatusCard): Promise<void> {
+export function _getMapData(card: VehicleStatusCard): MapData | void {
   const config = card._config as VehicleStatusCardConfig;
   if (
     config.layout_config?.hide?.mini_map === true ||
@@ -289,32 +289,37 @@ export async function _getMapData(card: VehicleStatusCard): Promise<void> {
   const { latitude, longitude } = deviceStateObj.attributes as { latitude: number; longitude: number };
   mapData.lat = latitude;
   mapData.lon = longitude;
-  card._mapData = mapData;
+  return mapData;
 }
 
-export async function _getMapAddress(card: VehicleStatusCard, lat: number, lon: number): Promise<Address | void> {
-  if (card._config.layout_config?.hide?.map_address) return;
-  const maptilerKey = card._config.mini_map?.maptiler_api_key;
-  const apiKey = card._config.mini_map?.google_api_key;
-  // console.log('Getting address from map data');
-  const address = maptilerKey
-    ? await getAddressFromMapTiler(lat, lon, maptilerKey)
-    : apiKey
-    ? await getAddressFromGoggle(lat, lon, apiKey)
-    : await getAddressFromOpenStreet(lat, lon);
-  if (!address) {
-    return;
-  }
-  let formattedAddress: string;
-  if (card._config.mini_map?.us_format) {
-    formattedAddress = `${address.streetNumber} ${address.streetName}`;
-  } else {
-    formattedAddress = `${address.streetName} ${address.streetNumber}`;
-  }
-  address.streetName = formattedAddress;
+export const _getMapAddress = memoizeOne(
+  async (card: VehicleStatusCard, lat: number, lon: number): Promise<Address | undefined> => {
+    if (card._config.layout_config?.hide?.map_address) return undefined;
 
-  return address;
-}
+    // console.log('Getting map address');
+
+    const maptilerKey = card._config.mini_map?.maptiler_api_key;
+    const apiKey = card._config.mini_map?.google_api_key;
+
+    const address = maptilerKey
+      ? await getAddressFromMapTiler(lat, lon, maptilerKey)
+      : apiKey
+      ? await getAddressFromGoggle(lat, lon, apiKey)
+      : await getAddressFromOpenStreet(lat, lon);
+
+    if (!address) return undefined;
+
+    let formattedAddress: string;
+    if (card._config.mini_map?.us_format) {
+      formattedAddress = `${address.streetNumber} ${address.streetName}`;
+    } else {
+      formattedAddress = `${address.streetName} ${address.streetNumber}`;
+    }
+    address.streetName = formattedAddress;
+
+    return address;
+  }
+);
 
 export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
   if (!card._currentPreview && !card.isEditorPreview) return;
