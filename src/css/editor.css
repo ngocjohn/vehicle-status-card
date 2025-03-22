@@ -310,7 +310,7 @@ input#hexInput:focus {
 }
 
 .sub-header .info-icon {
-	--mdc-icon-size: 1rem;
+	/* --mdc-icon-size: 1rem; */
 	float: inline-end;
 	cursor: pointer;
 }
