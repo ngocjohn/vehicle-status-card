@@ -159,7 +159,7 @@ header h1 {
 
 .info-box.range {
   flex-wrap: nowrap !important;
-  justify-content: space-around;
+  justify-content: center;
   text-wrap: nowrap;
   align-items: center;
 }
@@ -181,6 +181,11 @@ header h1 {
 }
 
 .combined-info-box>.info-box:nth-last-child(1):nth-child(odd) {
+  grid-column: span 2;
+  justify-content: center;
+}
+
+.combined-info-box>*:nth-last-child(1):nth-child(odd) {
   grid-column: span 2;
   justify-content: center;
 }
@@ -250,7 +255,7 @@ header h1 {
   display: inline-block;
   width: 40%;
   height: 5px;
-  background-color: #909090;
+  background-color: #90909080;
   border-radius: 5px;
   position: relative;
   overflow: hidden;
