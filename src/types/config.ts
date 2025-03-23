@@ -73,6 +73,7 @@ export interface MapData {
   address: Partial<Address>;
 }
 
+type HISTORY_PERIOD = 'today' | 'yesterday' | undefined;
 export interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
@@ -86,6 +87,7 @@ export interface MiniMapConfig {
   path_color?: string;
   auto_fit?: boolean;
   map_zoom?: number;
+  history_period?: HISTORY_PERIOD;
 }
 
 type THEME_MODE = 'auto' | 'dark' | 'light';

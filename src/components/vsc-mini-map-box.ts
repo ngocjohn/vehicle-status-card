@@ -8,7 +8,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
 import { DEFAULT_DIALOG_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
-import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistoryStatesTimeWindow } from '../types';
+import { Address, fetchDateWS, HistoryStates, isComponentLoaded, MapData, subscribeHistory } from '../types';
 import './shared/vsc-maptiler-popup';
 import { _getHistoryPoints } from '../utils';
 import { createCloseHeading } from '../utils/create';
@@ -72,7 +72,25 @@ export class MiniMapBox extends LitElement {
       return;
     }
 
-    this._subscribed = subscribeHistoryStatesTimeWindow(
+    const historyPeriod = _config.mini_map?.history_period;
+    const now = new Date();
+
+    // Set custom time range for history
+    // if history_period is set
+    let startTime = new Date(now);
+    let endTime = new Date(now);
+    if (historyPeriod === 'today') {
+      startTime.setHours(0, 0, 0, 0);
+    } else if (historyPeriod === 'yesterday') {
+      startTime.setDate(now.getDate() - 1);
+      startTime.setHours(0, 0, 0, 0);
+    } else {
+      startTime = new Date(now.getTime() - 60 * 60 * (_config.mini_map?.hours_to_show ?? DEFAULT_HOURS_TO_SHOW) * 1000);
+    }
+
+    // console.log('History period:', historyPeriod, 'start:', startTime.toISOString(), 'end', endTime.toISOString());
+
+    this._subscribed = subscribeHistory(
       hass!,
       (combinedHistory) => {
         if (!this._subscribed) {
@@ -82,11 +100,9 @@ export class MiniMapBox extends LitElement {
         this._stateHistory = combinedHistory;
         // console.log('History updated:', this._stateHistory);
       },
-      _config.mini_map!.hours_to_show ?? DEFAULT_HOURS_TO_SHOW,
-      [_config.mini_map!.device_tracker],
-      false,
-      false,
-      true
+      new Date(startTime),
+      new Date(endTime),
+      [_config.mini_map!.device_tracker]
     ).catch((err) => {
       this._subscribed = undefined;
       console.error('Error subscribing to history', err);
@@ -117,7 +133,7 @@ export class MiniMapBox extends LitElement {
       this._address = address;
       this.mapData.address = address;
       this._addressReady = true;
-    } else if (address === undefined) {
+    } else if (!this._address) {
       this._addressReady = true;
     }
   }
@@ -191,7 +207,8 @@ export class MiniMapBox extends LitElement {
     this.map.setView(this.latLon, this.zoom);
 
     // Add tile layer to map
-    this.tileLayer = this._createTileLayer(this.map);
+    // this.tileLayer = this._createTileLayer(this.map);
+    this._createTileLayer(this.map);
     // Add marker to map
     this.marker = this._createMarker(this.map);
 
@@ -251,21 +268,37 @@ export class MiniMapBox extends LitElement {
       ${maptilerKey ? this._renderMaptilerDialog() : this._renderMapDialog()}
     `;
   }
+
+  private async _getHistoryPeriod() {
+    // Set period 24 for yesterday from 00 to 24 hours
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 2);
+    const perdiod = {
+      start: yesterday.setHours(0, 0, 0, 0),
+      end: now.setHours(0, 0, 0, 0),
+    };
+
+    return await fetchDateWS(this.card._hass, new Date(perdiod.start), new Date(perdiod.end), [
+      this.card._config.mini_map!.device_tracker,
+    ]);
+  }
+
   private _renderAddress(): TemplateResult {
     if (this.card._config.layout_config.hide.map_address) return html``;
     if (!this._addressReady) return html` <div class="address-line loading"><span class="loader"></span></div> `;
 
     const address = this._address || {};
 
-    return html`
-      <div class="address-line">
-        <ha-icon icon="mdi:map-marker"></ha-icon>
-        <div class="address-info">
-          <span class="secondary">${address.streetName}</span>
-          <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
-        </div>
-      </div>
-    `;
+    return address !== null && address.streetName
+      ? html` <div class="address-line">
+          <ha-icon icon="mdi:map-marker"></ha-icon>
+          <div class="address-info">
+            <span class="secondary">${address.streetName}</span>
+            <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
+          </div>
+        </div>`
+      : html``;
   }
 
   private _renderMaptilerDialog(): TemplateResult | typeof nothing {

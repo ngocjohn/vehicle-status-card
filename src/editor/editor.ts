@@ -604,6 +604,16 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         value: miniMap.path_color,
         options: { selector: { ui_color: { include_none: false, include_state: false } } },
       },
+      {
+        configValue: 'history_period',
+        label: 'History Period',
+        pickerType: 'attribute',
+        value: miniMap.history_period || undefined,
+        items: [
+          { label: 'Today', value: 'today' },
+          { label: 'Yesterday', value: 'yesterday' },
+        ],
+      },
     ];
 
     const createPickers = (configs: any[]) =>
@@ -766,6 +776,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       'path_color',
       'map_zoom',
       'auto_fit',
+      'history_period',
     ];
     // Ensure we handle the boolean value correctly
     let newValue: any = target.checked !== undefined ? target.checked : target.value;
