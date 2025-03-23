@@ -281,7 +281,9 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
   private _renderMiniMap(): TemplateResult {
     if (this._isSectionHidden(SECTION.MINI_MAP)) return html``;
-    if (!this._config?.mini_map?.device_tracker) return this._showWarning('Device tracker not available');
+    const deviceTracker = this._config?.mini_map?.device_tracker;
+    const deviceState = this._hass.states[deviceTracker].state;
+    if (!deviceTracker || /(unknown)/.test(deviceState)) return this._showWarning('Device tracker not available');
     const mapData = _getMapData(this);
     return html`
       <div id=${SECTION.MINI_MAP} style=${`min-width: ${this._cardWidth}px`}>
