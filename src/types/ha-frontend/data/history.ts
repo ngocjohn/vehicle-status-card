@@ -1,5 +1,16 @@
+import { computeDomain } from 'custom-card-helpers';
+
 import { HomeAssistant } from '../home-assistant';
 
+const NEED_ATTRIBUTE_DOMAINS = [
+  'climate',
+  'humidifier',
+  'input_datetime',
+  'thermostat',
+  'water_heater',
+  'person',
+  'device_tracker',
+];
 export type HistoryStates = Record<string, EntityHistoryState[]>;
 
 export interface EntityHistoryState {
@@ -89,6 +100,22 @@ class HistoryStream {
   }
 }
 
+export const entityIdHistoryNeedsAttributes = (hass: HomeAssistant, entityId: string) =>
+  !hass.states[entityId] || NEED_ATTRIBUTE_DOMAINS.includes(computeDomain(entityId));
+
+export const fetchDateWS = (hass: HomeAssistant, startTime: Date, endTime: Date, entityIds: string[]) => {
+  const params = {
+    type: 'history/history_during_period',
+    start_time: startTime.toISOString(),
+    end_time: endTime.toISOString(),
+    minimal_response: true,
+    no_attributes: !entityIds.some((entityId) => entityIdHistoryNeedsAttributes(hass, entityId)),
+  };
+  if (entityIds.length !== 0) {
+    return hass.callWS<HistoryStates>({ ...params, entity_ids: entityIds });
+  }
+  return hass.callWS<HistoryStates>(params);
+};
 export const subscribeHistoryStatesTimeWindow = (
   hass: HomeAssistant,
   callbackFunction: (data: HistoryStates) => void,
@@ -107,6 +134,29 @@ export const subscribeHistoryStatesTimeWindow = (
     no_attributes: noAttributes,
   };
   const stream = new HistoryStream(hass, hoursToShow);
+  return hass.connection.subscribeMessage<HistoryStreamMessage>(
+    (message) => callbackFunction(stream.processMessage(message)),
+    params
+  );
+};
+
+export const subscribeHistory = (
+  hass: HomeAssistant,
+  callbackFunction: (data: HistoryStates) => void,
+  startTime: Date,
+  endTime: Date,
+  entityIds: string[]
+): Promise<() => Promise<void>> => {
+  const params = {
+    type: 'history/stream',
+    entity_ids: entityIds,
+    start_time: startTime.toISOString(),
+    end_time: endTime.toISOString(),
+    minimal_response: false,
+    no_attributes: false,
+    significant_changes_only: false,
+  };
+  const stream = new HistoryStream(hass);
   return hass.connection.subscribeMessage<HistoryStreamMessage>(
     (message) => callbackFunction(stream.processMessage(message)),
     params
