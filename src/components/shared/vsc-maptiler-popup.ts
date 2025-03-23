@@ -28,9 +28,9 @@ enum THEME_MODE {
 
 type THEME = 'dark' | 'light';
 const BOUNDS_OPTS = {
-  padding: 50,
+  padding: 25,
   animate: true,
-  maxZoom: 15,
+  maxZoom: 14,
   pitch: 0,
   bearing: 0,
 };
@@ -60,6 +60,10 @@ export class VscMaptilerPopup extends LitElement {
 
   private get mapConfig(): MiniMapConfig {
     return this.card._config.mini_map!;
+  }
+
+  private get pathHidden(): boolean {
+    return localStorage.getItem(MAP_STORAGE.PATH_HIDDEN) === 'true';
   }
 
   connectedCallback(): void {
@@ -162,7 +166,7 @@ export class VscMaptilerPopup extends LitElement {
         this.map!.setLanguage(language);
       }
 
-      if (!this._bounds!.isEmpty() && mapConfig.auto_fit) {
+      if (!this._bounds!.isEmpty() && mapConfig.auto_fit && !this.pathHidden) {
         this.map!.fitBounds(this._bounds!, { ...BOUNDS_OPTS, maxZoom: defaultZoom });
       }
     });
@@ -191,9 +195,15 @@ export class VscMaptilerPopup extends LitElement {
         const findCarBtn = event.currentTarget as HTMLElement;
         const haIcon = findCarBtn.querySelector('ha-icon') as HTMLElement;
         if (!this._markerFocus) {
-          this.map!.fitBounds(this._bounds!, { ...BOUNDS_OPTS, maxZoom: defaultZoom });
+          // Fit the map to the bounds if marker is not focused
+          if (this.pathHidden) {
+            this.map!.flyTo({ center: [lon, lat], zoom: defaultZoom, bearing: 0, pitch: 0 });
+          } else {
+            this.map!.fitBounds(this._bounds!, { ...BOUNDS_OPTS, maxZoom: defaultZoom });
+          }
           haIcon.setAttribute('icon', 'mdi:target');
         } else {
+          // Fly to the marker if focused
           this.map!.flyTo({ center: [lon, lat], ...MARKER_FLYTO_OPTS });
           haIcon.setAttribute('icon', 'mdi:image-filter-center-focus');
         }
