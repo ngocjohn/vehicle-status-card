@@ -41,25 +41,23 @@
 
 ## [HACS](https://hacs.xyz) (Home Assistant Community Store)
 
-1. Go to HACS page on your Home Assistant instance
-2. Add this repository via HACS Custom repositories [How to add Custom Repositories](https://hacs.xyz/docs/faq/custom_repositories/)
+Vehicle status card is available in HACS.
 
-```
-https://github.com/ngocjohn/vehicle-status-card
-```
-
-3. Select `Lovelace`
-1. Press add icon and search for `Vehicle status card`
-1. Select Vehicle status card repo and install
-1. Force refresh the Home Assistant page `Ctrl` + `F5` / `Shift` + `⌘` + `R`
-1. Add vehicle-status-card to your page
+Use this link to directly go to the repository in HACS
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ngocjohn&repository=vehicle-status-card&category=plugin)
 
-## Manual
+or
+1. If HACS is not installed yet, download it following the instructions on [https://hacs.xyz/docs/use/#getting-started-with-hacs](https://hacs.xyz/docs/use/#getting-started-with-hacs)
+2. Open HACS in Home Assistant
+3. Search for `Vehicle status card`
+4. Click the download button. ⬇️
+1. Force refresh the Home Assistant page `Ctrl` + `F5` / `Shift` + `⌘` + `R`
+1. Add vehicle-status-card to your dashboard
 
-<details>
-  <summary>Click to expand installation instructions</summary>
+
+
+## Manual
 
 1. Download the [vehicle-status-card.js](https://github.com/ngocjohn/vehicle-status-card/releases/latest).
 2. Place the downloaded file on your Home Assistant machine in the `config/www` folder (when there is no `www` folder in the folder where your `configuration.yaml` file is, create it and place the file there).
@@ -69,8 +67,6 @@ https://github.com/ngocjohn/vehicle-status-card
    - Resource type = `module`
 5. Force refresh the Home Assistant page `Ctrl` + `F5` / `Shift` + `⌘` + `R`.
 6. Add vehicle-status-card to your page.
-
-</details>
 
 # Configuration
 <!--README-CONTENT-START-->
