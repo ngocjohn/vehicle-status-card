@@ -108,7 +108,7 @@ export class VscMaptilerPopup extends LitElement {
       if (mapConfigMode === 'auto') {
         this._themeMode = this.card.isDark ? THEME_MODE.DARK : THEME_MODE.LIGHT;
       } else {
-        this._themeMode === THEME_MODE.DARK ? THEME_MODE.DARK : THEME_MODE.LIGHT;
+        this._themeMode = mapConfigMode === 'dark' ? THEME_MODE.DARK : THEME_MODE.LIGHT;
       }
     }
 
