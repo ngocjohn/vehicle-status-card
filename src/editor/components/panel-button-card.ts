@@ -1482,7 +1482,7 @@ export class PanelButtonCard extends LitElement {
       newValue = target.value;
     }
 
-    // console.log('Config type', configType, 'Config value', configValue, 'New value', newValue);
+    console.log('Config type', configType, 'Config value', configValue, 'New value', newValue);
     const updates: Partial<VehicleStatusCardConfig> = {};
 
     let buttonCardConfig = [...(this.config.button_card || [])];
@@ -1494,9 +1494,18 @@ export class PanelButtonCard extends LitElement {
       if (['entity', 'attribute', 'state_template'].includes(configValue)) {
         secondaryConfig[configValue] = newValue;
         button.secondary = secondaryConfig;
+        buttonConfig.button = button;
+        buttonCardConfig[index] = buttonConfig;
+        updates.button_card = buttonCardConfig;
       } else if (['picture_template', 'notify', 'color'].some((value) => configValue.includes(value))) {
         let templateValue = newValue.trim() === '' ? null : newValue;
         button[configValue] = templateValue;
+        buttonConfig.button = button;
+        buttonCardConfig[index] = buttonConfig;
+        updates.button_card = buttonCardConfig;
+        console.log('Button config', buttonConfig);
+      } else {
+        button[configValue] = newValue;
         buttonConfig.button = button;
         buttonCardConfig[index] = buttonConfig;
         updates.button_card = buttonCardConfig;
