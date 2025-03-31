@@ -8,7 +8,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
 import { DEFAULT_DIALOG_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
-import { Address, fetchDateWS, HistoryStates, isComponentLoaded, MapData, subscribeHistory } from '../types';
+import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistory } from '../types';
 import './shared/vsc-maptiler-popup';
 import { _getHistoryPoints } from '../utils';
 import { createCloseHeading } from '../utils/create';
@@ -23,18 +23,18 @@ export class MiniMapBox extends LitElement {
   @property({ attribute: false }) private mapData!: MapData;
   @property({ attribute: false }) private card!: VehicleStatusCard;
   @property({ type: Boolean }) private isDark: boolean = false;
+  @property({ type: Boolean }) open!: boolean;
 
   @state() private map: L.Map | null = null;
-  @state() private marker: L.Marker | null = null;
-  @state() private latLon: L.LatLng | null = null;
-  @state() private tileLayer: L.TileLayer | null = null;
+  private marker: L.Marker | null = null;
+  private latLon: L.LatLng | null = null;
+  private tileLayer: L.TileLayer | null = null;
 
-  @state() private mapCardPopup?: LovelaceCardConfig[];
+  private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
   @state() private _locateIconVisible = false;
-  @state() private _address: Partial<Address> | null = null;
+  private _address: Partial<Address> | null = null;
 
-  @state() private open!: boolean;
   private _subscribed?: Promise<(() => Promise<void>) | undefined>;
   private _stateHistory?: HistoryStates;
   private _historyPoints?: any | undefined;
@@ -138,72 +138,24 @@ export class MiniMapBox extends LitElement {
     }
   }
 
-  private calculateLatLngOffset(
-    map: L.Map,
-    lat: number,
-    lng: number,
-    xOffset: number,
-    yOffset: number
-  ): [number, number] {
-    // Convert the lat/lng to a point
-    const point = map.latLngToContainerPoint([lat, lng]);
-    // Apply the offset
-    const newPoint = L.point(point.x - xOffset, point.y - yOffset);
-    // Convert the point back to lat/lng
-    const newLatLng = map.containerPointToLatLng(newPoint);
-    return [newLatLng.lat, newLatLng.lng];
-  }
-
-  private _computeMapStyle() {
-    // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const map_height = this.card._config.mini_map?.map_height ?? 150;
-    const noHeader = this.card._config.layout_config?.hide.card_name || this.card._config.name?.trim() === '';
-    const section_order = this.card._config.layout_config?.section_order || [...SECTION_ORDER];
-    const firstItem = section_order[0] === SECTION.MINI_MAP && noHeader;
-    const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
-    const single = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
-
-    let maskImage = 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)';
-
-    if (lastItem && !firstItem) {
-      maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
-    } else if (firstItem && !lastItem) {
-      maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
-    } else if (single) {
-      maskImage = 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)';
-    } else {
-      maskImage;
-    }
-
-    const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
-    const markerFilter = this.isDark ? 'contrast(1.2) saturate(6) brightness(1.3)' : 'none';
-    const tileFilter = this.isDark
-      ? 'brightness(0.7) invert(1) contrast(2.8)  brightness(1.8) opacity(0.17) grayscale(1)'
-      : 'grayscale(1) contrast(1.1)';
-    return styleMap({
-      '--vic-map-marker-color': markerColor,
-      '--vic-marker-filter': markerFilter,
-      '--vic-map-tiles-filter': tileFilter,
-      '--vic-map-mask-image': maskImage,
-      height: `${map_height}px`,
-    });
-  }
-
   private initMap(): void {
-    // console.log('Initializing map...');
+    console.log('Initializing map...');
     const { lat, lon } = this.mapData;
-
+    const defaultZoom = this.zoom;
     const mapOptions = {
       dragging: true,
       zoomControl: false,
       scrollWheelZoom: true,
+      zoom: defaultZoom,
     };
+
     const mapContainer = this.shadowRoot?.getElementById('map') as HTMLElement;
     if (!mapContainer) return;
-    this.map = L.map(mapContainer, mapOptions).setView([lat, lon], this.zoom);
-    const offset: [number, number] = this.calculateLatLngOffset(this.map, lat, lon, this.map.getSize().x / 5, 3);
 
-    this.latLon = L.latLng(offset[0], offset[1]);
+    this.map = L.map(mapContainer, mapOptions).setView([lat, lon]);
+
+    this.latLon = this._getTargetLatLng(this.map);
+
     this.map.setView(this.latLon, this.zoom);
 
     // Add tile layer to map
@@ -221,6 +173,14 @@ export class MiniMapBox extends LitElement {
     });
   }
 
+  private _getTargetLatLng(map: L.Map): L.LatLng {
+    const { lat, lon } = this.mapData;
+    const mapSizeSplit = map.getSize().x;
+    const targetPoint = map.project([lat, lon], this.zoom).subtract([mapSizeSplit / 5, 3]);
+    const targetLatLng = map.unproject(targetPoint, this.zoom);
+    return targetLatLng;
+  }
+
   private _createTileLayer(map: L.Map): L.TileLayer {
     const tileOpts = {
       tileSize: 256,
@@ -234,6 +194,8 @@ export class MiniMapBox extends LitElement {
   private _createMarker(map: L.Map): L.Marker {
     const { lat, lon } = this.mapData;
     const customIcon = L.divIcon({
+      html: `<div class="marker">
+            </div>`,
       iconSize: [24, 24],
       className: 'marker',
     });
@@ -267,21 +229,6 @@ export class MiniMapBox extends LitElement {
       </div>
       ${maptilerKey ? this._renderMaptilerDialog() : this._renderMapDialog()}
     `;
-  }
-
-  private async _getHistoryPeriod() {
-    // Set period 24 for yesterday from 00 to 24 hours
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 2);
-    const perdiod = {
-      start: yesterday.setHours(0, 0, 0, 0),
-      end: now.setHours(0, 0, 0, 0),
-    };
-
-    return await fetchDateWS(this.card._hass, new Date(perdiod.start), new Date(perdiod.end), [
-      this.card._config.mini_map!.device_tracker,
-    ]);
   }
 
   private _renderAddress(): TemplateResult {
@@ -348,6 +295,41 @@ export class MiniMapBox extends LitElement {
       this.open = !this.open;
       return;
     }
+  }
+
+  private _computeMapStyle() {
+    // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const map_height = this.card._config.mini_map?.map_height ?? 150;
+    const noHeader = this.card._config.layout_config?.hide.card_name || this.card._config.name?.trim() === '';
+    const section_order = this.card._config.layout_config?.section_order || [...SECTION_ORDER];
+    const firstItem = section_order[0] === SECTION.MINI_MAP && noHeader;
+    const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
+    const single = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
+
+    let maskImage = 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)';
+
+    if (lastItem && !firstItem) {
+      maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
+    } else if (firstItem && !lastItem) {
+      maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
+    } else if (single) {
+      maskImage = 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)';
+    } else {
+      maskImage;
+    }
+
+    const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
+    const markerFilter = this.isDark ? 'contrast(1.2) saturate(6) brightness(1.3)' : 'none';
+    const tileFilter = this.isDark
+      ? 'brightness(0.7) invert(1) contrast(2.8)  brightness(1.8) opacity(0.17) grayscale(1)'
+      : 'grayscale(1) contrast(1.1)';
+    return styleMap({
+      '--vic-map-marker-color': markerColor,
+      '--vic-marker-filter': markerFilter,
+      '--vic-map-tiles-filter': tileFilter,
+      '--vic-map-mask-image': maskImage,
+      height: `${map_height}px`,
+    });
   }
 
   static get styles(): CSSResultGroup {
@@ -417,17 +399,19 @@ export class MiniMapBox extends LitElement {
         .marker::before {
           content: '';
           position: absolute;
-          width: 24px;
-          height: 24px;
+          width: calc(100% + 1rem);
+          height: calc(100% + 1rem);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
           background-image: radial-gradient(
             circle,
             transparent 0%,
-            rgb(from var(--vic-map-marker-color) r g b / 35%) 100%
+            rgb(from var(--vic-map-marker-color) r g b / 25%) 100%
           );
           border-radius: 50%;
           border: none !important;
           /* opacity: 0.6; */
-          transform: scale(2);
         }
 
         @keyframes pulse {
@@ -450,8 +434,8 @@ export class MiniMapBox extends LitElement {
         .marker::after {
           content: '';
           position: absolute;
-          width: calc(50% + 1px);
-          height: calc(50% + 1px);
+          width: 50%;
+          height: 50%;
           background-color: var(--vic-map-marker-color);
           border-radius: 50%;
           top: 50%;
