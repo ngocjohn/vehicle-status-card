@@ -1,3 +1,29 @@
+<a id="v1.8.2"></a>
+# [v1.8.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.8.2) - 2025-03-31
+
+## What's Changed
+
+🚀 **The card is now available in [HACS](https://hacs.xyz/)!**  
+If you find this card helpful, please consider giving the repository a ⭐ on GitHub or [Buy me a coffee](https://buymeacoffee.com/ngocjohn) ☕ 
+
+Thank you!
+
+### New Features 🎉
+- Added configuration options to customize the mini map display, and optimized overall rendering performance ([#81](https://github.com/ngocjohn/vehicle-status-card/pull/81))
+- Introduced support for color templates in the panel range info component, allowing more flexible styling ([#82](https://github.com/ngocjohn/vehicle-status-card/pull/82))
+- Enabled setting a custom history period for data shown in the map popups, enhancing data control ([#83](https://github.com/ngocjohn/vehicle-status-card/pull/83))
+
+### Fixes 🐛
+- Fixed an issue where the save button in the card editor didn't properly persist changes ([#85](https://github.com/ngocjohn/vehicle-status-card/pull/85))
+
+### Other Changes
+- Refactored how marker positions are calculated and updated on the map for better accuracy and maintainability ([#86](https://github.com/ngocjohn/vehicle-status-card/pull/86))
+
+**Full Changelog**: [v1.8.1...v1.8.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.1...v1.8.2)
+
+[Changes][v1.8.2]
+
+
 <a id="v1.8.1"></a>
 # [v1.8.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.8.1) - 2025-03-20
 
@@ -288,6 +314,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.8.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.1...v1.8.2
 [v1.8.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.0...v1.8.1
 [v1.8.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.7.0...v1.8.0
 [v1.7.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.6.0...v1.7.0
