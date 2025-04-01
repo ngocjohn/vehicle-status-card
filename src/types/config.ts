@@ -88,6 +88,7 @@ export interface MiniMapConfig {
   auto_fit?: boolean;
   map_zoom?: number;
   history_period?: HISTORY_PERIOD;
+  use_zone_name?: boolean;
 }
 
 type THEME_MODE = 'auto' | 'dark' | 'light';

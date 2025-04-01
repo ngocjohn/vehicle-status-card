@@ -2,7 +2,7 @@ import { LovelaceCardConfig } from 'custom-card-helpers';
 import 'leaflet-providers/leaflet-providers.js';
 import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
-import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -28,7 +28,6 @@ export class MiniMapBox extends LitElement {
   @state() private map: L.Map | null = null;
   private marker: L.Marker | null = null;
   private latLon: L.LatLng | null = null;
-  private tileLayer: L.TileLayer | null = null;
 
   private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
@@ -49,6 +48,18 @@ export class MiniMapBox extends LitElement {
 
   private get useMapTiler(): boolean {
     return !!this.card._config.mini_map.maptiler_api_key;
+  }
+
+  private get _deviceState(): string {
+    const stateObj = this.card._hass.states[this.card._config.mini_map?.device_tracker];
+    if (stateObj) {
+      return this.card._hass.formatEntityState(stateObj);
+    }
+    return '';
+  }
+
+  private get _deviceNotInZone(): boolean {
+    return this.card._hass.states[this.card._config.mini_map?.device_tracker].state === 'not_home';
   }
 
   public connectedCallback() {
@@ -117,12 +128,11 @@ export class MiniMapBox extends LitElement {
     }
   }
 
-  protected async firstUpdated(): Promise<void> {
-    if (this.mapData) {
+  protected async updated(changedProperties: PropertyValues): Promise<void> {
+    super.updated(changedProperties);
+    if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined && !this.map) {
       this.initMap();
-      if (!this._addressReady) {
-        await this._getAddress();
-      }
+      this._getAddress();
     }
   }
 
@@ -159,7 +169,6 @@ export class MiniMapBox extends LitElement {
     this.map.setView(this.latLon, this.zoom);
 
     // Add tile layer to map
-    // this.tileLayer = this._createTileLayer(this.map);
     this._createTileLayer(this.map);
     // Add marker to map
     this.marker = this._createMarker(this.map);
@@ -220,12 +229,13 @@ export class MiniMapBox extends LitElement {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     return html`
       <div class="map-wrapper" ?safari=${isSafari} style=${this._computeMapStyle()}>
-        <div id="map"></div>
-        <div id="overlay-container"></div>
-        <div class="reset-button" @click=${this.resetMap} .hidden=${this._locateIconVisible}>
-          <ha-icon icon="mdi:compass"></ha-icon>
+        <div id="overlay-container">
+          <div class="reset-button" @click=${this.resetMap} .hidden=${this._locateIconVisible}>
+            <ha-icon icon="mdi:compass"></ha-icon>
+          </div>
+          ${this._renderAddress()}
         </div>
-        ${this._renderAddress()}
+        <div id="map"></div>
       </div>
       ${maptilerKey ? this._renderMaptilerDialog() : this._renderMapDialog()}
     `;
@@ -233,17 +243,32 @@ export class MiniMapBox extends LitElement {
 
   private _renderAddress(): TemplateResult {
     if (this.card._config.layout_config.hide.map_address) return html``;
+    const useZoneName = this.card._config.mini_map?.use_zone_name || false;
+    const deviceState = this._deviceState;
+    const deviceNotInZone = this._deviceNotInZone;
     if (!this._addressReady) return html` <div class="address-line loading"><span class="loader"></span></div> `;
-
     const address = this._address || {};
+
+    let addressContent: TemplateResult | string = '';
+
+    if (!useZoneName && address) {
+      addressContent = html`
+        <span class="secondary">${address.streetName}</span>
+        <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
+      `;
+    } else if (useZoneName && !deviceNotInZone) {
+      addressContent = html`<span class="primary">${deviceState}</span>`;
+    } else if (useZoneName && deviceNotInZone) {
+      addressContent = html`
+        <span class="secondary">${address.streetName}</span>
+        <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
+      `;
+    }
 
     return address !== null && address.streetName
       ? html` <div class="address-line">
           <ha-icon icon="mdi:map-marker"></ha-icon>
-          <div class="address-info">
-            <span class="secondary">${address.streetName}</span>
-            <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
-          </div>
+          <div class="address-info">${addressContent}</div>
         </div>`
       : html``;
   }
