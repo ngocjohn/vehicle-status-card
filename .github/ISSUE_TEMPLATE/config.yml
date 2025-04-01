@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Support
+    url: https://community.home-assistant.io/t/vehicle-status-custom-card/
+    about: For questions, help, and discussions about card, please use dedicated Home Assistant community forum thread, feel free to tag me @ngocjohn.
+  - name: 📚 Documentation
+    url: https://github.com/ngocjohn/vehicle-status-card/wiki
+    about: Check the Wiki for detailed configuration options and examples.
