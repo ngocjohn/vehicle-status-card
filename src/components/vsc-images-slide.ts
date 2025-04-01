@@ -128,6 +128,7 @@ export class ImagesSlide extends LitElement {
         speed: config.speed || 500,
         pagination: {
           clickable: true,
+          dynamicBullets: true,
           el: paginationEl,
         },
         roundLengths: true,
@@ -193,7 +194,7 @@ export class ImagesSlide extends LitElement {
       unsafeCSS(swipercss),
       css`
         :host {
-          --swiper-pagination-bottom: 0px;
+          --swiper-pagination-bottom: -8px;
           --swiper-theme-color: var(--primary-text-color);
         }
         section {
