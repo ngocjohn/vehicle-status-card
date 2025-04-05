@@ -242,34 +242,32 @@ export class MiniMapBox extends LitElement {
   }
 
   private _renderAddress(): TemplateResult {
-    if (this.card._config.layout_config.hide.map_address) return html``;
-    const useZoneName = this.card._config.mini_map?.use_zone_name || false;
-    const deviceState = this._deviceState;
-    const deviceNotInZone = this._deviceNotInZone;
-    if (!this._addressReady) return html` <div class="address-line loading"><span class="loader"></span></div> `;
-    const address = this._address || {};
+    const { hide } = this.card._config.layout_config;
+    const useZoneName = this.card._config.mini_map?.use_zone_name ?? false;
 
-    let addressContent: TemplateResult | string = '';
-
-    if (!useZoneName && address) {
-      addressContent = html`
-        <span class="secondary">${address.streetName}</span>
-        <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
-      `;
-    } else if (useZoneName && !deviceNotInZone) {
-      addressContent = html`<span class="primary">${deviceState}</span>`;
-    } else if (useZoneName && deviceNotInZone) {
-      addressContent = html`
-        <span class="secondary">${address.streetName}</span>
-        <span class="primary">${!address.sublocality ? address.city : address.sublocality}</span>
-      `;
+    if (hide.map_address) return html``;
+    if (!this._addressReady) {
+      return html`<div class="address-line loading"><span class="loader"></span></div>`;
     }
 
-    return address !== null && address.streetName
-      ? html` <div class="address-line">
-          <ha-icon icon="mdi:map-marker"></ha-icon>
-          <div class="address-info">${addressContent}</div>
-        </div>`
+    const address = this._address || {};
+    const inZone = !this._deviceNotInZone;
+
+    const addressContent =
+      useZoneName && inZone
+        ? html`<span class="primary">${this._deviceState}</span>`
+        : html`
+            <span class="secondary">${address.streetName}</span>
+            <span class="primary">${address.sublocality || address.city}</span>
+          `;
+
+    return address?.streetName
+      ? html`
+          <div class="address-line">
+            <ha-icon icon="mdi:map-marker"></ha-icon>
+            <div class="address-info">${addressContent}</div>
+          </div>
+        `
       : html``;
   }
 
