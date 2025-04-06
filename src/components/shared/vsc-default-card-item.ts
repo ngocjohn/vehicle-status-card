@@ -171,8 +171,8 @@ export class VehicleDefaultCardItem extends LitElement {
 
     const item = this.defaultCardItem;
 
-    const name = item.name || this.hass.states[item.entity].attributes.friendly_name;
     const entity = item.entity;
+    const name = item.name || this.hass.states[item.entity].attributes.friendly_name;
     const icon = item.icon;
 
     // Fallback to default state if template state isn't available yet

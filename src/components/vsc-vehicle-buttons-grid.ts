@@ -134,6 +134,7 @@ export class VehicleButtonsGrid extends LitElement {
       slidesPerView: 'auto',
       spaceBetween: 12,
       speed: 500,
+      edgeSwipeDetection: true,
     });
     this.swiper?.on('slideChange', () => {
       this.activeSlideIndex = this.swiper?.activeIndex ?? 0;
