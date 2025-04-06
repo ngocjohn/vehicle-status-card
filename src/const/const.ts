@@ -40,7 +40,7 @@ export const DEFAULT_CONFIG = {
               entity: 'sun.sun',
             },
             {
-              entity: 'ensor.sun_next_dawn',
+              entity: 'sensor.sun_next_dawn',
             },
             {
               entity: 'sensor.sun_next_midnight',
@@ -58,7 +58,7 @@ export const DEFAULT_CONFIG = {
               entity: 'sun.sun',
             },
             {
-              entity: 'ensor.sun_next_dawn',
+              entity: 'sensor.sun_next_dawn',
             },
             {
               entity: 'sensor.sun_next_midnight',
@@ -112,7 +112,7 @@ export const DEFAULT_CONFIG = {
               entity: 'sun.sun',
             },
             {
-              entity: 'ensor.sun_next_dawn',
+              entity: 'sensor.sun_next_dawn',
             },
             {
               entity: 'sensor.sun_next_midnight',
@@ -165,7 +165,7 @@ export const DEFAULT_CONFIG = {
               entity: 'sun.sun',
             },
             {
-              entity: 'ensor.sun_next_dawn',
+              entity: 'sensor.sun_next_dawn',
             },
             {
               entity: 'sensor.sun_next_midnight',

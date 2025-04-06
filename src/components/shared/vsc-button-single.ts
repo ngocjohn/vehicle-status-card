@@ -52,17 +52,19 @@ export class VehicleButtonSingle extends LitElement {
   }
 
   private _setEventListeners(): void {
-    const buttonType = this._buttonConfig.button_type;
-    const actionConfig = this._buttonConfig.button.button_action;
-    const actionEl = this.shadowRoot?.getElementById('actionBtn');
-    if (actionEl && buttonType === 'action' && actionConfig) {
-      addActions(actionEl, actionConfig);
-    } else {
-      actionEl?.addEventListener('click', (event) => {
-        // Ensure clicks on child elements like "secondary" trigger this event
-        this._handleNavigate(event);
-      });
+    if (!this.isAction) {
+      return;
     }
+    const actionConfig = this._buttonConfig.button.button_action;
+    const actionEl = this.shadowRoot!.getElementById('actionBtn');
+    if (actionEl) {
+      addActions(actionEl, actionConfig);
+    }
+  }
+
+  private get isAction(): boolean {
+    const buttonType = this._buttonConfig.button_type;
+    return buttonType === 'action';
   }
 
   public isTemplate(key: TemplateKey) {
@@ -228,7 +230,7 @@ export class VehicleButtonSingle extends LitElement {
 
     const index = this._index;
     return html`
-      <div class="grid-item" id="actionBtn" style="animation-delay: ${index * 50}ms">
+      <div class="grid-item" id="actionBtn" @click=${this._handleNavigate} style="animation-delay: ${index * 50}ms">
         <ha-ripple></ha-ripple>
         <div class="click-container click-shrink">
           <div class="item-icon">
@@ -256,8 +258,9 @@ export class VehicleButtonSingle extends LitElement {
   }
 
   private _handleNavigate(event: Event): void {
-    forwardHaptic('light');
     event.stopPropagation();
+    if (this.isAction) return;
+    forwardHaptic('light');
     this._card._handleClick(this._index);
   }
 }
