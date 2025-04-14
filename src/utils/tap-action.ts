@@ -13,9 +13,10 @@ export function addActions(element: HTMLElement, config: ButtonActionConfig) {
 
 function sendActionEvent(element: HTMLElement, config: ButtonActionConfig, action: ActionType) {
   const tapAction = config?.tap_action || { action: 'more-info' };
-  const doubleTapAction = config?.double_tap_action || { action: 'toggle' };
-  const holdAction = config?.hold_action || { action: 'toggle' };
-  const entity = config?.entity || '';
+  const doubleTapAction = config?.double_tap_action || { action: 'none' };
+  const holdAction = config?.hold_action || { action: 'none' };
+  const entity = config?.entity || null;
+  if (entity === null) return;
   callAction(
     element,
     { double_tap_action: doubleTapAction, entity: entity, hold_action: holdAction, tap_action: tapAction },
