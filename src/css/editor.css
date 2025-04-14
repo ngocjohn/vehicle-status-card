@@ -345,7 +345,7 @@ span.info-alert {
 .sub-panel-config {
 	opacity: 1;
 	padding-top: var(--vic-card-padding);
-	max-height: 1000px;
+	/* max-height: 1000px; */
 	transition: all 400ms ease-in-out;
 	display: flex;
 	flex-direction: column;

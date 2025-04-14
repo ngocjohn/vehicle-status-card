@@ -100,20 +100,7 @@ export class PanelIndicator extends LitElement {
         header: 'Group settings',
       },
     };
-    const headerBg = html` <div class="sub-header">
-      <div class="icon-title" @click=${this._closeSubPanel}>
-        <ha-icon icon="mdi:arrow-left"></ha-icon>
-        <span>Back to list</span>
-      </div>
-      <div>${typeConfigMap[type].header}</div>
-      <ha-icon-button
-        class="header-yaml-icon"
-        .path=${ICON.CODE_JSON}
-        @click=${() => {
-          console.log('Yaml', type, this._activeGroupItem, this._activeSubPanel);
-        }}
-      ></ha-icon-button>
-    </div>`;
+
     return html`
       <div class="sub-panel">
         ${this._renderHeader(
@@ -434,9 +421,14 @@ export class PanelIndicator extends LitElement {
       <div class="sub-content">
         ${groupPicker.map((config) => this._createItemPicker({ ...config, ...configShared }))}
       </div>
-      <div class="sub-panel-config">
-        ${groupTemplate.map((config) => this._createItemPicker({ ...config, ...configShared }, 'template-content'))}
-      </div>
+      ${Create.ExpansionPanel({
+        content: html`
+          <div class="sub-panel-config">
+            ${groupTemplate.map((config) => this._createItemPicker({ ...config, ...configShared }, 'template-content'))}
+          </div>
+        `,
+        options: { header: 'Appearance settings', icon: 'mdi:palette' },
+      })}
     `;
 
     // Group items configuration
@@ -468,8 +460,11 @@ export class PanelIndicator extends LitElement {
             })}
       </div>
     `;
-
-    return html` <div class="sub-panel-config">${groupNameIcon} ${groupItemContent}</div>`;
+    const groupItemsExpansion = Create.ExpansionPanel({
+      content: groupItemContent,
+      options: { header: 'Group items', icon: 'mdi:format-list-bulleted' },
+    });
+    return html` <div class="sub-panel-config">${groupNameIcon} ${groupItemsExpansion}</div>`;
   }
 
   /* ----------------------------- TEMPLATE UI ----------------------------- */
