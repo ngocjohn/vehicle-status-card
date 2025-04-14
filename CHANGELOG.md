@@ -1,3 +1,40 @@
+<a id="v1.9.0"></a>
+# [v1.9.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.9.0) - 2025-04-14
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.9.0 -->
+
+## What's Changed
+
+### New Features 🎉
+
+- **Zone Name Display on Mini Map**  [#89](https://github.com/ngocjohn/vehicle-status-card/pull/89)  
+  You can now choose to display the Home Assistant Zone name on the mini map when your vehicle is parked within a defined zone. If the vehicle is outside any zone, the address will be shown instead. This feature is controlled via a new boolean configuration option.
+
+![map-zone](https://github.com/user-attachments/assets/d5fe1f88-085a-4ab4-8a05-78adac09e2ec)
+
+
+- **Enhanced Progress Bar Styling**  [#96](https://github.com/ngocjohn/vehicle-status-card/pull/96)  
+  Added new styling options for the progress bar, allowing customization of height, width, and border radius to better match your theme.
+
+![progress-bar](https://github.com/user-attachments/assets/996e4ac7-2023-44b3-94a9-7d527819b773)
+
+### Fixes 🐛
+
+- **Improved Button Actions & Swipe Detection**  [#93](https://github.com/ngocjohn/vehicle-status-card/pull/93)  
+  Refactored the handling of button actions and swipe gestures to improve responsiveness and reliability.
+
+### Other Changes
+
+- **Dynamic Pagination Bullets for Image Slider**  [#90](https://github.com/ngocjohn/vehicle-status-card/pull/90)  
+  Added support for dynamic bullets in the image slider's pagination and included an option to hide pagination bullets entirely.
+
+---
+
+**Full Changelog**: [v1.8.2...v1.9.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.2...v1.9.0)
+
+[Changes][v1.9.0]
+
+
 <a id="v1.8.2"></a>
 # [v1.8.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.8.2) - 2025-03-31
 
@@ -314,6 +351,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.9.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.2...v1.9.0
 [v1.8.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.1...v1.8.2
 [v1.8.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.0...v1.8.1
 [v1.8.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.7.0...v1.8.0
