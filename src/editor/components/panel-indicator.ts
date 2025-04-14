@@ -1,5 +1,6 @@
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, nothing, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
@@ -14,8 +15,8 @@ import {
   fireEvent,
 } from '../../types';
 import * as Create from '../../utils/create';
-import { ACTIONSELECTOR, CONFIG_VALUES } from '../editor-const';
 import './sub-panel-yaml';
+import { ACTIONSELECTOR, CONFIG_VALUES } from '../editor-const';
 
 @customElement('panel-indicator')
 export class PanelIndicator extends LitElement {
@@ -34,6 +35,7 @@ export class PanelIndicator extends LitElement {
   @state() _reindexItems: boolean = false;
   @state() _addFormVisible: boolean = false;
   @state() _yamlEditorVisible: boolean = false;
+  @state() _yamlSubPanelVisible: boolean = false;
 
   constructor() {
     super();
@@ -98,22 +100,130 @@ export class PanelIndicator extends LitElement {
         header: 'Group settings',
       },
     };
-
+    const headerBg = html` <div class="sub-header">
+      <div class="icon-title" @click=${this._closeSubPanel}>
+        <ha-icon icon="mdi:arrow-left"></ha-icon>
+        <span>Back to list</span>
+      </div>
+      <div>${typeConfigMap[type].header}</div>
+      <ha-icon-button
+        class="header-yaml-icon"
+        .path=${ICON.CODE_JSON}
+        @click=${() => {
+          console.log('Yaml', type, this._activeGroupItem, this._activeSubPanel);
+        }}
+      ></ha-icon-button>
+    </div>`;
     return html`
       <div class="sub-panel">
-        <div class="sub-header">
-          <div class="icon-title" @click=${this._closeSubPanel}>
-            <ha-icon icon="mdi:arrow-left"></ha-icon>
-            <span>Back to list</span>
-          </div>
-          <div>${typeConfigMap[type].header}</div>
-        </div>
-        ${type === 'single' ? this._renderSingleSubPanelConfig() : this._renderGroupSubPanelConfig()}
+        ${this._renderHeader(
+          typeConfigMap[type].header,
+          undefined,
+          this._yamlSubPanelVisible
+            ? [
+                {
+                  title: 'Close YAML',
+                  action: () => {
+                    this._yamlSubPanelVisible = false;
+                  },
+                  icon: ICON.CLOSE,
+                },
+              ]
+            : [{ title: 'Back', action: this._closeSubPanel, icon: ICON.CHEVRON_LEFT }],
+          [
+            {
+              action: () => {
+                this._yamlSubPanelVisible = !this._yamlSubPanelVisible;
+              },
+            },
+          ]
+        )}
+        ${this._yamlSubPanelVisible
+          ? this._renderYamlSubPanelConfig(this._activeSubPanel)
+          : type === 'single'
+          ? this._renderSingleSubPanelConfig()
+          : this._renderGroupSubPanelConfig()}
       </div>
     `;
   }
 
+  private _renderHeader(
+    title: string,
+    icon?: string,
+    actions?: Array<{ title?: string; action: (ev?: Event) => void; icon?: string }>,
+    addedAction?: Array<{ action: (ev?: Event) => void; icon?: string }>
+  ): TemplateResult {
+    return html` <div class="header-row">
+      ${actions?.map(
+        (action) =>
+          html` <div class="icon-title" @click=${(ev: Event) => action.action(ev)}>
+            ${ifDefined(action.icon) ? html`<ha-icon-button .path=${action.icon}></ha-icon-button>` : nothing}
+            <span>${action.title}</span>
+          </div>`
+      )}
+      <div class="header-title">${title} ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}</div>
+      ${addedAction?.map(
+        (action) =>
+          html` <ha-icon-button
+            class="header-yaml-icon"
+            @click=${(ev: Event) => action.action(ev)}
+            .path=${ICON.CODE_JSON}
+          >
+          </ha-icon-button>`
+      )}
+    </div>`;
+  }
+
   /* ------------------------ SUB INDICATORS RENDER ------------------------ */
+
+  private _renderYamlSubPanelConfig(configIndex: number): TemplateResult | typeof nothing {
+    if (!this._yamlSubPanelVisible) {
+      return nothing;
+    }
+    const type = this.type;
+    if (!type) {
+      return nothing;
+    }
+
+    const singleIndicators = this.config.indicators?.single || [];
+    const groupIndicators = this.config.indicators?.group || [];
+    const yamlConfig = {
+      single: singleIndicators[configIndex],
+      group: groupIndicators[configIndex],
+    };
+
+    return html` <div>
+      <vsc-sub-panel-yaml
+        .hass=${this.hass}
+        .config=${this.config}
+        .cardEditor=${this.editor}
+        .configDefault=${yamlConfig[type]}
+        .configIndex=${configIndex}
+        .configKey=${type}
+        @yaml-config-changed=${this._handleYamlSubChanged}
+      ></vsc-sub-panel-yaml>
+    </div>`;
+  }
+
+  private _handleYamlSubChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const detail = ev.detail;
+    const { isValid, value, key, index } = detail;
+    if (!isValid || !this.config) {
+      return;
+    }
+    if (key === 'single') {
+      const singleIndicators = this.config.indicators?.single || [];
+      singleIndicators[index] = value;
+      this.config = { ...this.config, indicators: { ...this.config.indicators, single: singleIndicators } };
+    } else if (key === 'group') {
+      const groupIndicators = this.config.indicators?.group || [];
+      groupIndicators[index] = value;
+      this.config = { ...this.config, indicators: { ...this.config.indicators, group: groupIndicators } };
+    }
+    fireEvent(this, 'config-changed', { config: this.config });
+    // console.log('YAML config changed:', key, value);
+  }
 
   private _renderSingleSubPanelConfig(): TemplateResult | typeof nothing {
     const type = this.type;
@@ -143,8 +253,8 @@ export class PanelIndicator extends LitElement {
 
     const singlePicker = [
       { value: indicator.entity, pickerType: 'entity', label: 'Entity single' },
-      { value: indicator.attribute, pickerType: 'attribute', items: attrOpts },
-      { value: indicator.icon, pickerType: 'icon' },
+      { value: indicator?.attribute || '', pickerType: 'attribute', items: attrOpts },
+      { value: indicator?.icon || '', pickerType: 'icon' },
     ];
 
     const singleTemplate = [
@@ -213,7 +323,7 @@ export class PanelIndicator extends LitElement {
     const entityPicker = Create.Picker({
       component: this,
       label: 'Entity to interact with',
-      value: actionConfig.entity || '',
+      value: actionConfig.entity,
       configType: 'single_action',
       configIndex,
       configValue: 'entity',
@@ -230,10 +340,10 @@ export class PanelIndicator extends LitElement {
             .selector=${{
               ui_action: { default_action: action.defaultAction },
             }}
-            .value=${actionConfig[action.name] || action.defaultAction}
+            .value=${actionConfig[action.name]}
             .configValue=${action.name}
             .configType=${'single_action'}
-            @value-changed=${(ev: CustomEvent) => this.handleActionTypeUpdate(ev, action?.name, configIndex)}
+            @value-changed=${(ev: CustomEvent) => this.handleActionTypeUpdate(ev, action.name, configIndex)}
           ></ha-selector>
         </div>
       `;
@@ -251,13 +361,15 @@ export class PanelIndicator extends LitElement {
     ev.stopPropagation();
     const actionValue = ev.detail.value;
     this._selectedAction = actionValue;
-
+    console.log('Action value:', actionValue, actionName, configIndex);
     // Clone the current indicators config
     let singleIndicators = [...(this.config.indicators?.single || [])];
     let singleItem = { ...singleIndicators[configIndex] };
+    let actionEntity = singleItem.action_config?.entity || singleItem.entity;
 
     // Update the action config
     let actionConfig = { ...singleItem.action_config };
+    actionConfig.entity = actionEntity;
     actionConfig[actionName] = actionValue;
     singleItem.action_config = actionConfig;
 
@@ -469,10 +581,8 @@ export class PanelIndicator extends LitElement {
       const indicators = this.config.indicators?.single || [];
       const newIndicator: IndicatorConfig = {
         entity,
-        icon: '',
-        attribute: '',
         action_config: {
-          entity: '',
+          entity: entity,
           tap_action: {
             action: 'more-info',
           },
@@ -499,9 +609,6 @@ export class PanelIndicator extends LitElement {
       const items = groupIndicators[this._activeSubPanel].items || [];
       const newItem: IndicatorGroupItemConfig = {
         entity: '',
-        name: '',
-        icon: '',
-        attribute: '',
         action_config: {
           entity: '',
           tap_action: {
@@ -714,10 +821,11 @@ export class PanelIndicator extends LitElement {
     };
 
     const actionConfig = item.action_config || {};
+
     const entityPicker = Create.Picker({
       component: this,
       label: 'Entity to interact with',
-      value: actionConfig.entity || '',
+      value: actionConfig.entity,
       configType: 'group_item_action',
       configIndex: index,
       configValue: 'entity',
@@ -734,7 +842,7 @@ export class PanelIndicator extends LitElement {
             .selector=${{
               ui_action: { default_action: action.defaultAction },
             }}
-            .value=${actionConfig[action.name] || action.defaultAction}
+            .value=${actionConfig[action.name]}
             .configValue=${action.name}
             .configType=${'group_item_action'}
             @value-changed=${(ev: CustomEvent) => this.handleGroupItemActionUpdate(ev, action?.name, index)}
@@ -775,8 +883,10 @@ export class PanelIndicator extends LitElement {
     let group = { ...groupIndicators[this._activeSubPanel] };
     let items = group.items || [];
     let groupItem = { ...items[configIndex] };
+    let actionEntity = groupItem.action_config?.entity || groupItem.entity;
 
     let actionConfig = { ...groupItem.action_config };
+    actionConfig.entity = actionEntity;
     actionConfig[actionName] = actionValue;
     groupItem.action_config = actionConfig;
 
@@ -887,6 +997,17 @@ export class PanelIndicator extends LitElement {
       } else if (singleItemIndex[configValue] === newValue) {
         console.log('Value not changed');
         return;
+      } else if (configValue === 'entity' && newValue) {
+        const updatedItem = { ...singleItemIndex, entity: newValue };
+        const actionConfig = { ...(updatedItem.action_config || {}) };
+        if (!actionConfig.entity) {
+          actionConfig.entity = newValue;
+        }
+        updatedItem.action_config = actionConfig;
+        singleIndicators[index] = updatedItem;
+        indicatorsConfig[configType] = singleIndicators;
+        updates.indicators = indicatorsConfig; // update indicators config
+        console.log('single entity changed:', configValue, ':', newValue);
       } else {
         const singleItemUpdated = { ...singleItemIndex, [configValue]: newValue };
         singleIndicators[index] = singleItemUpdated;
@@ -968,6 +1089,18 @@ export class PanelIndicator extends LitElement {
       } else if (!newValue && configValue === 'entity') {
         console.log('not new value');
         return;
+      } else if (configValue === 'entity' && newValue) {
+        const updatedItem = { ...item, entity: newValue };
+        const actionConfig = { ...(updatedItem.action_config || {}) };
+        if (!actionConfig.entity) {
+          actionConfig.entity = newValue;
+        }
+        updatedItem.action_config = actionConfig;
+        const updatedItems = [...items.slice(0, configIndex), updatedItem, ...items.slice(configIndex + 1)];
+        const updatedGroup = { ...group, items: updatedItems };
+        groupIndicators = [...groupIndicators.slice(0, index), updatedGroup, ...groupIndicators.slice(index + 1)];
+        updates.indicators = { ...this.config.indicators, group: groupIndicators };
+        console.log('group entity changed:', configValue, ':', newValue);
       } else {
         const updatedItem = { ...item, [configValue]: newValue };
         const updatedItems = [...items.slice(0, configIndex), updatedItem, ...items.slice(configIndex + 1)];

@@ -192,7 +192,13 @@ export class VscIndicators extends LitElement {
     return html`
       <div class=${activeClass}>
         ${items.map((item) => {
-          return html` <vsc-indicator-group-item .hass=${this.hass} .item=${item}></vsc-indicator-group-item> `;
+          return html`
+            <vsc-indicator-group-item
+              .hass=${this.hass}
+              .item=${item}
+              ?hidden=${item.entity === ''}
+            ></vsc-indicator-group-item>
+          `;
         })}
       </div>
     `;

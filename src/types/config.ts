@@ -9,7 +9,7 @@ import { LovelaceCardConfig } from './ha-frontend/lovelace/lovelace';
 export interface IndicatorConfig {
   attribute?: string;
   entity: string;
-  icon: string;
+  icon?: string;
   icon_template?: string;
   state_template?: string;
   visibility?: string;
@@ -30,9 +30,9 @@ export interface IndicatorGroupConfig {
 export interface IndicatorGroupItemConfig {
   attribute?: string;
   entity: string;
-  icon: string;
+  icon?: string;
   icon_template?: string;
-  name: string;
+  name?: string;
   state_template?: string;
   action_config: ButtonActionConfig;
 }
@@ -128,9 +128,9 @@ export interface CardItemConfig {
 
 export interface ButtonActionConfig {
   entity: string;
-  double_tap_action: ActionConfig;
-  hold_action: ActionConfig;
-  tap_action: ActionConfig;
+  double_tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  tap_action?: ActionConfig;
 }
 
 export interface TireEntityConfig {

@@ -169,7 +169,7 @@ const ACTIONSELECTOR = [
   {
     name: 'tap_action',
     label: 'Tap action',
-    defaultAction: 'none',
+    defaultAction: 'more-info',
   },
   {
     name: 'hold_action',
@@ -180,6 +180,36 @@ const ACTIONSELECTOR = [
     name: 'double_tap_action',
     label: 'Double tap action',
     defaultAction: 'none',
+  },
+];
+
+export const ACTIONSELECTOR_ACTIONS = [
+  {
+    name: 'tap_action',
+    label: 'Tap action',
+    selector: {
+      ui_action: {
+        default_action: 'more-info',
+      },
+    },
+  },
+  {
+    name: 'hold_action',
+    label: 'Hold action',
+    selector: {
+      ui_action: {
+        default_action: 'none',
+      },
+    },
+  },
+  {
+    name: 'double_tap_action',
+    label: 'Double tap action',
+    selector: {
+      ui_action: {
+        default_action: 'none',
+      },
+    },
   },
 ];
 
