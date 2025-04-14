@@ -451,6 +451,12 @@ export class PanelImagesEditor extends LitElement {
         label: 'Loop',
         pickerType: 'selectorBoolean' as 'selectorBoolean',
       },
+      {
+        value: image.hide_pagination || false,
+        configValue: 'hide_pagination',
+        label: 'Hide Pagination',
+        pickerType: 'selectorBoolean' as 'selectorBoolean',
+      },
     ];
 
     return html` <div class="sub-panel-config button-card">

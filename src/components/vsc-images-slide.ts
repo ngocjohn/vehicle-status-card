@@ -84,6 +84,7 @@ export class ImagesSlide extends LitElement {
     const images = this._images;
     const max_height = this.config.layout_config?.images_swipe?.max_height || 150;
     const max_width = this.config.layout_config?.images_swipe?.max_width || 450;
+    const hide_pagination = this.config.layout_config?.images_swipe?.hide_pagination || false;
 
     const styleImages = {
       '--vic-images-slide-height': `${max_height}px`,
@@ -102,7 +103,7 @@ export class ImagesSlide extends LitElement {
               `
             )}
           </div>
-          <div class="swiper-pagination"></div>
+          <div class="swiper-pagination" ?hidden=${hide_pagination}></div>
         </div>
       </section>
     `;
@@ -196,6 +197,9 @@ export class ImagesSlide extends LitElement {
         :host {
           --swiper-pagination-bottom: -8px;
           --swiper-theme-color: var(--primary-text-color);
+        }
+        * [hidden] {
+          display: none !important;
         }
         section {
           display: block;

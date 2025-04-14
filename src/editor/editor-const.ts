@@ -90,6 +90,7 @@ const DETAIL_CONFIG_VALUES = [
   'top',
   'value_size',
   'visibility',
+  'hide_pagination',
 ];
 
 const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview'];

@@ -240,6 +240,7 @@ interface LayoutConfig {
     delay: number;
     speed: number;
     effect: 'slide' | 'fade' | 'coverflow';
+    hide_pagination: boolean;
   };
   hide: {
     button_notify: boolean;
