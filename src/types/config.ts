@@ -42,16 +42,19 @@ export interface IndicatorGroupItemConfig {
 export interface RangeInfoConfig {
   energy_level: RangeItemConfig;
   progress_color: string;
-  range_level: RangeItemConfig;
+  range_level?: RangeItemConfig;
   charging_entity?: string;
   color_template?: string;
+  bar_height?: number;
+  bar_width?: number;
+  bar_radius?: number;
 }
 
-export interface RangeItemConfig {
-  attribute: string;
-  entity: string;
+export type RangeItemConfig = {
+  attribute?: string;
+  entity?: string;
   icon?: string;
-}
+};
 
 /* ------------------------- CONFIG IMAGES INTERFACE ------------------------ */
 
