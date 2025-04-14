@@ -131,7 +131,6 @@ header h1 {
   height: 100%;
   grid-template-columns: repeat(auto-fill, minmax(49%, 1fr));
   column-gap: 0.5rem;
-
 }
 
 .info-box {
@@ -162,6 +161,7 @@ header h1 {
   justify-content: center;
   text-wrap: nowrap;
   align-items: center;
+  height: 100%;
 }
 
 .info-box.range .item {
@@ -253,12 +253,13 @@ header h1 {
 
 .fuel-wrapper {
   display: inline-block;
-  width: 40%;
+  width: auto;
   height: 5px;
-  background-color: #90909080;
+  background-color: #90909040;
   border-radius: 5px;
   position: relative;
   overflow: hidden;
+  flex-basis: 60%;
 }
 
 .fuel-level-bar {
