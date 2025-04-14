@@ -1,6 +1,7 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import cardcss from '../../css/card.css';
 import { HomeAssistant, RangeInfoConfig, RenderTemplateResult, subscribeRenderTemplate } from '../../types';
@@ -19,7 +20,16 @@ export class VscRangeItem extends LitElement {
   @state() private _unsubRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
 
   static get styles(): CSSResultGroup {
-    return [cardcss];
+    return [
+      cardcss,
+      css`
+        .fuel-wrapper {
+          height: var(--vsc-bar-height);
+          border-radius: var(--vsc-bar-radius);
+          flex-basis: var(--vsc-bar-width);
+        }
+      `,
+    ];
   }
 
   connectedCallback(): void {
@@ -127,7 +137,8 @@ export class VscRangeItem extends LitElement {
   }
 
   private getValue(key: string) {
-    const { energy_level, range_level, charging_entity, progress_color } = this.rangeItem;
+    const { energy_level, range_level, charging_entity, progress_color, bar_height, bar_radius, bar_width } =
+      this.rangeItem;
     const energyEntity = energy_level?.entity;
     const energyAttr = energy_level?.attribute;
     const rangeEntity = range_level?.entity;
@@ -142,7 +153,7 @@ export class VscRangeItem extends LitElement {
 
     switch (key) {
       case 'icon':
-        return energy_level?.icon ?? this.hass.states[energyEntity]?.attributes.icon ?? 'mdi:gas-station';
+        return energy_level?.icon ?? '';
 
       case 'energyState':
         return getEntityState(energyEntity, energyAttr);
@@ -166,6 +177,12 @@ export class VscRangeItem extends LitElement {
 
       case 'rangeEntity':
         return rangeEntity;
+      case 'barHeight':
+        return bar_height || 5;
+      case 'barWidth':
+        return bar_width || 60;
+      case 'barRadius':
+        return bar_radius || 4;
     }
   }
 
@@ -178,13 +195,23 @@ export class VscRangeItem extends LitElement {
     const booleanChargingState = this.getValue('chargingState');
     const energyEntity = this.getValue('energyEntity');
     const rangeEntity = this.getValue('rangeEntity');
+    const barHeight = this.getValue('barHeight');
+    const barWidth = this.getValue('barWidth');
+    const barRadius = this.getValue('barRadius');
 
     const moreInfo = (entity: string) => {
       fireEvent(this, 'hass-more-info', { entityId: entity });
     };
+    const styles = {
+      '--vsc-bar-height': `${barHeight}px`,
+      '--vsc-bar-width': `${barWidth}%`,
+      '--vsc-bar-radius': `${barRadius}px`,
+      '--vsc-bar-level': `${level}%`,
+      '--vsc-bar-color': barColor,
+    };
 
-    return html` <div class="info-box range">
-      <div class="item" @click="${() => moreInfo(energyEntity)}">
+    return html` <div class="info-box range" style="${styleMap(styles)}">
+      <div class="item" @click="${() => moreInfo(energyEntity)}" ?hidden="${!energyState}">
         <ha-icon icon="${icon}"></ha-icon>
         <span>${energyState}</span>
         <ha-icon
@@ -197,9 +224,9 @@ export class VscRangeItem extends LitElement {
         </ha-icon>
       </div>
       <div class="fuel-wrapper">
-        <div class="fuel-level-bar" style="--vic-range-width: ${level}%; background-color:${barColor};"></div>
+        <div class="fuel-level-bar" style="width: ${level}%; background: ${barColor};"></div>
       </div>
-      <div class="item" @click="${() => moreInfo(rangeEntity)}">
+      <div class="item" @click="${() => moreInfo(rangeEntity)}" ?hidden="${!rangeState}">
         <span>${rangeState}</span>
       </div>
     </div>`;
