@@ -129,6 +129,7 @@ The latest release introduces advanced swiper configuration options, allowing fo
   - `slide`: A classic sliding effect.
   - `fade`: A smooth fade between images.
   - `coverflow`: A 3D coverflow effect that adds depth to the transition.
+- **Hide Pagination**: Whether hide the pagination bullets.
 
 ![Images slides](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-images.gif)
 
