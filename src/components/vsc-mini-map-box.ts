@@ -219,7 +219,7 @@ export class MiniMapBox extends LitElement {
     return marker;
   }
 
-  private resetMap(): void {
+  private resetMap() {
     if (!this.map || !this.latLon) return;
     this.map.flyTo(this.latLon, this.zoom);
   }
@@ -392,9 +392,9 @@ export class MiniMapBox extends LitElement {
           width: 100%;
           height: 100%;
           /* background-color: var(--ha-card-background, var(--card-background-color)); */
-          background-color: rgb(from var(--ha-card-background, var(--card-background-color)) r g b / 15%);
+          /* background-color: rgb(from var(--ha-card-background, var(--card-background-color)) r g b / 15%); */
           /* opacity: 0.6; */
-          pointer-events: none;
+          /* pointer-events: none; */
         }
 
         #map {
