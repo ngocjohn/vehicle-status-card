@@ -16,7 +16,6 @@
     "url": "https://github.com/ngocjohn/vehicle-status-card",
     "repo": "ngocjohn/vehicle-status-card"
   },
-  "module": "vehicle-status-card.js",
   "license": "MIT",
   "dependencies": {
     "@maptiler/sdk": "^3.0.1",

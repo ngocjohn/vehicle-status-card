@@ -1,14 +1,18 @@
+import typescript from 'rollup-plugin-typescript2';
 import terser from '@rollup/plugin-terser';
 import serve from 'rollup-plugin-serve';
 import filesize from 'rollup-plugin-filesize';
 import replace from '@rollup/plugin-replace';
-import { version } from './package.json';
 import { logCardInfo, defaultPlugins } from './rollup.config.helper.mjs';
 
-const dev = process.env.ROLLUP_WATCH;
+import { version } from './package.json';
+
+const dev = process.env.ROLLUP_WATCH ? true : false;
 const port = process.env.PORT || 8235;
 const currentVersion = dev ? 'DEVELOPMENT' : `v${version}`;
 const custombanner = logCardInfo(currentVersion);
+
+const fileOutput = dev ? './dist/vehicle-status-card.js' : './build/vehicle-status-card.js';
 
 const serveopts = {
   contentBase: ['./dist'],
@@ -31,22 +35,34 @@ const replaceOpts = {
   preventAssignment: true,
 };
 
-const plugins = [replace(replaceOpts), dev && serve(serveopts), !dev && terser(terserOpt), !dev && filesize()];
+const plugins = [
+  replace(replaceOpts),
+  dev && serve(serveopts),
+  !dev && terser(terserOpt),
+  !dev && filesize(),
+  typescript({
+    sourceMap: dev,
+    outputToFilesystem: true,
+  }),
+];
 
 export default [
   {
     input: 'src/vehicle-status-card.ts',
     output: [
       {
-        file: dev ? 'dist/vehicle-status-card.js' : 'build/vehicle-status-card.js',
+        file: fileOutput,
         format: 'es',
-        sourcemap: dev ? true : false,
+        sourcemap: dev,
         inlineDynamicImports: true,
         banner: custombanner,
       },
     ],
     watch: {
-      exclude: 'node_modules/**',
+      chokidar: {
+        // Workaround for WSL2-based Docker
+        usePolling: true,
+      },
     },
     plugins: [...defaultPlugins, ...plugins],
     moduleContext: (id) => {
