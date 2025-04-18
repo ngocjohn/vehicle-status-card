@@ -353,7 +353,7 @@ export class PanelButtonCard extends LitElement {
           `${button.icon}`,
 
           this._yamlEditorActive
-            ? [{ title: 'Close Editor', action: this.toggleAction('yaml-editor') }]
+            ? [{ title: 'Close Editor', action: this.toggleAction('yaml-editor'), icon: ICON.CLOSE }]
             : [{ title: 'Back to list', action: this.toggleAction('back-to-list'), icon: ICON.CHEVRON_LEFT }],
 
           [{ action: this.toggleAction('yaml-editor') }]

@@ -69,13 +69,8 @@ export class VehicleButtonSingle extends LitElement {
 
   public isTemplate(key: TemplateKey) {
     const button = this._buttonConfig.button;
-    const templateMap = {
-      state_template: button.secondary.state_template,
-      notify: button.notify,
-      color: button.color,
-      picture_template: button.picture_template,
-    };
-    const value = templateMap[key];
+
+    const value = key === 'state_template' ? button.secondary.state_template : button[key];
     return hasTemplate(value);
   }
 
@@ -119,12 +114,8 @@ export class VehicleButtonSingle extends LitElement {
       return;
     }
     const button = this._buttonConfig.button;
-    const buttonOptions = {
-      state_template: button.secondary.state_template,
-      notify: button.notify,
-      color: button.color,
-      picture_template: button.picture_template,
-    };
+
+    const template = key === 'state_template' ? button.secondary.state_template : button[key];
     try {
       const sub = subscribeRenderTemplate(
         this.hass.connection,
@@ -135,7 +126,7 @@ export class VehicleButtonSingle extends LitElement {
           };
         },
         {
-          template: buttonOptions[key] ?? '',
+          template: template ?? '',
           entity_ids: button.secondary.entity ? [button.secondary.entity] : undefined,
           variables: {
             config: button,
@@ -149,7 +140,7 @@ export class VehicleButtonSingle extends LitElement {
     } catch (e) {
       console.warn('Error while rendering template', e);
       const result = {
-        result: buttonOptions[key] ?? '',
+        result: template ?? '',
         listeners: {
           all: false,
           domains: [],
