@@ -1,6 +1,6 @@
 <a name="readme-top"></a>
 
-[![hacs][hacs-validate]][hacs-url] ![Github last commit][git-last-commit-badge] ![git-download-all][git-download-all-badge] ![git-download-latest][git-download-latest-badge] [![forum][forum-badge]][forum-url]
+[![hacs][hacs-default]][hacs-default-link] [![hacs][hacs-validate]][hacs-url] ![Github last commit][git-last-commit-badge] ![git-download-all][git-download-all-badge] ![git-download-latest][git-download-latest-badge] [![forum][forum-badge]][forum-url]
 
 # 🚘 Vehicle status card
 
@@ -284,8 +284,10 @@ This configuration gives you full flexibility to design the card’s layout and 
 
 
 <!--Badges-->
-[hacs-validate]: https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yaml/badge.svg
-[hacs-url]: https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yaml
+[hacs-default]: https://img.shields.io/badge/HACS-Default-blue?style=flat&logo=homeassistantcommunitystore&logoSize=auto
+[hacs-default-link]: https://my.home-assistant.io/redirect/hacs_repository/?owner=ngocjohn&repository=vehicle-info-card&category=plugin
+[hacs-validate]: https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yml/badge.svg
+[hacs-url]: https://github.com/ngocjohn/vehicle-status-card/actions/workflows/validate.yml
 [git-last-commit-badge]: https://img.shields.io/github/last-commit/ngocjohn/vehicle-status-card
 [git-download-all-badge]: https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto&label=Downloads&color=%2318BCF2
 [git-download-latest-badge]: https://img.shields.io/github/downloads/ngocjohn/vehicle-status-card/latest/total?style=flat&logo=homeassistantcommunitystore&logoSize=auto
