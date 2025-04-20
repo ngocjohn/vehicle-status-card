@@ -1,3 +1,5 @@
+const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
+
 import { LovelaceConfig } from 'custom-card-helpers';
 
 import { VehicleStatusCardConfig } from '../types';
@@ -142,3 +144,29 @@ export async function _saveConfig(cardId: string, config: VehicleStatusCardConfi
   lovelace.saveConfig({ views: newViews });
   console.log('Saving new config:', newViews[currentView].cards![cardIndex]);
 }
+
+export const loadMapCard = async (entities: string[]): Promise<void> => {
+  if (!customElements.get('ha-entity-marker')) {
+    console.log('Loading ha-entity-marker');
+    const mapConfig = { type: 'map', entities: entities, theme_mode: 'auto' };
+
+    let helpers;
+    if ((window as any).loadCardHelpers) {
+      helpers = await (window as any).loadCardHelpers();
+    } else if (HELPERS) {
+      helpers = HELPERS;
+    }
+
+    // Check if helpers were loaded and if createCardElement exists
+    if (!helpers || !helpers.createCardElement) {
+      console.error('Card helpers or createCardElement not available.');
+      return;
+    }
+
+    const card = await helpers.createCardElement(mapConfig);
+    if (!card) {
+      console.error('Failed to create card element.');
+      return;
+    }
+  }
+};

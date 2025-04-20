@@ -16,9 +16,10 @@ import {
   MAPTILER_THEME,
   STYLE_SCHEMA,
 } from '../../const/maptiler-const';
-import { MapData, MiniMapConfig } from '../../types';
-import { getAddressFromMapTiler } from '../../utils/ha-helper';
-import { getFormatedDateTime, getInitials } from '../../utils/helpers';
+import { HaEntityMarker, HomeAssistant, MapData, MiniMapConfig } from '../../types';
+import { loadMapCard } from '../../utils';
+import { computeStateName, getAddressFromMapTiler } from '../../utils/ha-helper';
+import { getFormatedDateTime } from '../../utils/helpers';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 
 enum THEME_MODE {
@@ -43,6 +44,7 @@ const MARKER_FLYTO_OPTS = {
 
 @customElement('vsc-maptiler-popup')
 export class VscMaptilerPopup extends LitElement {
+  @property({ attribute: false }) hass!: HomeAssistant;
   @property({ attribute: false }) mapData!: MapData;
   @property({ attribute: false }) card!: VehicleStatusCard;
   @property({ attribute: false }) _paths?: any;
@@ -77,6 +79,7 @@ export class VscMaptilerPopup extends LitElement {
   }
 
   protected async firstUpdated(): Promise<void> {
+    void (await loadMapCard([this.mapConfig.device_tracker!]));
     await new Promise((resolve) => setTimeout(resolve, 0));
     this._initMap();
   }
@@ -155,10 +158,7 @@ export class VscMaptilerPopup extends LitElement {
     this.map.setCenter([lon, lat]);
 
     this.map.on('load', async () => {
-      const markerEl = this.addMarker() as HTMLElement;
-      new maptilersdk.Marker({ element: markerEl }).setLngLat([lon, lat]).addTo(this.map!);
-      markerEl.style.display = 'block';
-
+      this._addMarker();
       const geolocationIp = await maptilersdk.geolocation.info();
       const { country_languages } = geolocationIp;
       if (country_languages && country_languages.length > 0) {
@@ -561,32 +561,41 @@ export class VscMaptilerPopup extends LitElement {
     this.map.easeTo({ padding, duration: 1000 });
   }
 
-  private addMarker(): HTMLElement {
-    const deviceTracker = this.mapConfig.device_tracker!;
-    const stateObj = this.card._hass.states[deviceTracker];
-    const pictureUrl = stateObj?.attributes.entity_picture;
+  private _addMarker(): void {
+    if (!this.map || !this.hass) return;
+    const { lat, lon } = this.mapData;
+    const mapConfig = this.mapConfig;
+    const stateObj = this.hass.states[this.mapConfig.device_tracker!];
+    if (!stateObj) return;
+    const { entity_picture: entityPicture } = stateObj.attributes;
 
-    const markerEl = document.createElement('div');
+    const title = computeStateName(stateObj);
+    const entityName =
+      mapConfig.label_mode === 'state'
+        ? this.hass.formatEntityState(stateObj)
+        : mapConfig.label_mode === 'attribute' && mapConfig.attribute !== undefined
+        ? this.hass.formatEntityAttributeValue(stateObj, mapConfig.attribute)
+        : title
+            .split(' ')
+            .map((part) => part[0])
+            .join('')
+            .substring(0, 3);
 
-    markerEl.className = 'marker-container';
-    const pulseEl = document.createElement('div');
-    pulseEl.className = 'pulse';
-    markerEl.appendChild(pulseEl);
-    const buttonEl = document.createElement('button');
-    buttonEl.id = 'marker';
-    buttonEl.style.backgroundImage = `url(${pictureUrl || 'none'})`;
-    if (!pictureUrl) {
-      const entityName = stateObj?.attributes.friendly_name;
-      const initials = getInitials(entityName!);
-      buttonEl.textContent = initials;
-    }
-    markerEl.appendChild(buttonEl);
+    const entityMarker = document.createElement('ha-entity-marker') as HaEntityMarker;
+
+    entityMarker.hass = this.hass;
+    entityMarker.showIcon = mapConfig.label_mode === 'icon';
+    entityMarker.entityId = this.mapConfig.device_tracker;
+    entityMarker.entityName = entityName;
+    entityMarker.entityPicture = entityPicture && !mapConfig.label_mode ? this.hass.hassUrl(entityPicture) : '';
+
+    entityMarker.entityColor = this.getPathColor();
 
     // Variables to manage the click and double-click events
     let clickTimeout: number | null = null; // Variable to track the click event
     let isDoubleClick = false; // Variable to track if a double-click event is detected
 
-    markerEl.addEventListener('dblclick', (ev: MouseEvent) => {
+    entityMarker.addEventListener('dblclick', (ev: MouseEvent) => {
       ev.stopPropagation();
 
       isDoubleClick = true;
@@ -597,25 +606,30 @@ export class VscMaptilerPopup extends LitElement {
       }
     });
 
-    markerEl.addEventListener('click', (ev: MouseEvent) => {
-      ev.stopPropagation();
-
-      // Set a small delay to differentiate between click and double-click
-      clickTimeout = setTimeout(() => {
-        // Handle single-click event
-        if (!isDoubleClick) {
-          if (this._popup?.isOpen()) {
-            this._popup.remove();
-            this._popup = null;
-          } else {
-            this._renderPopup();
+    entityMarker.addEventListener(
+      'click',
+      (ev: Event) => {
+        ev.stopImmediatePropagation();
+        ev.preventDefault();
+        console.log('Marker clicked');
+        // Set a small delay to differentiate between click and double-click
+        clickTimeout = setTimeout(() => {
+          // Handle single-click event
+          if (!isDoubleClick) {
+            if (this._popup?.isOpen()) {
+              this._popup.remove();
+              this._popup = null;
+            } else {
+              this._renderPopup();
+            }
           }
-        }
-        isDoubleClick = false;
-      }, 250); // 250ms delay to distinguish between click and dblclick
-    });
+          isDoubleClick = false;
+        }, 250); // 250ms delay to distinguish between click and dblclick
+      },
+      true
+    );
 
-    return markerEl;
+    new maptilersdk.Marker({ element: entityMarker }).setLngLat([lon, lat]).addTo(this.map);
   }
 
   private async _renderPopup() {
