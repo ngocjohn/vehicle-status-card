@@ -77,6 +77,7 @@ export interface MapData {
 }
 
 type HISTORY_PERIOD = 'today' | 'yesterday' | undefined;
+type LABEL_MODE = 'icon' | 'state' | 'attribute';
 export interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
@@ -92,6 +93,8 @@ export interface MiniMapConfig {
   map_zoom?: number;
   history_period?: HISTORY_PERIOD;
   use_zone_name?: boolean;
+  label_mode?: LABEL_MODE;
+  attribute?: string;
 }
 
 type THEME_MODE = 'auto' | 'dark' | 'light';

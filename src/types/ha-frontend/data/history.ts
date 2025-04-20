@@ -162,3 +162,12 @@ export const subscribeHistory = (
     params
   );
 };
+
+export interface HaEntityMarker extends HTMLElement {
+  hass?: HomeAssistant;
+  entityId?: string;
+  entityName?: string;
+  entityPicture?: string;
+  entityColor?: string;
+  showIcon?: boolean;
+}

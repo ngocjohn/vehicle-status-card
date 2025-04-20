@@ -279,6 +279,7 @@ export class MiniMapBox extends LitElement {
       <ha-dialog open @closed=${() => (this.open = false)} hideActions flexContent>
         ${MAPTILER_DIALOG_STYLES}
         <vsc-maptiler-popup
+          .hass=${this.card._hass}
           .mapData=${this.mapData}
           .card=${this.card}
           ._paths=${this._historyPoints}

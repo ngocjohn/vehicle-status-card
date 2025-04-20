@@ -615,6 +615,38 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
           { label: 'Yesterday', value: 'yesterday' },
         ],
       },
+      {
+        configValue: 'label_mode',
+        label: 'Label Mode',
+        pickerType: 'baseSelector',
+        value: miniMap.label_mode || undefined,
+        options: {
+          selector: {
+            select: {
+              sort: true,
+              mode: 'dropdown',
+              options: [
+                { label: 'Icon', value: 'icon' },
+                { label: 'State', value: 'state' },
+                { label: 'Attribute', value: 'attribute' },
+              ],
+            },
+          },
+        },
+      },
+      {
+        configValue: 'attribute',
+        label: 'Attribute',
+        pickerType: 'baseSelector',
+        value: miniMap.attribute || undefined,
+        options: {
+          selector: {
+            attribute: {
+              entity_id: miniMap.device_tracker,
+            },
+          },
+        },
+      },
     ];
 
     const createPickers = (configs: any[]) =>
@@ -779,6 +811,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       'auto_fit',
       'history_period',
       'use_zone_name',
+      'label_mode',
+      'attribute',
     ];
     // Ensure we handle the boolean value correctly
     let newValue: any = target.checked !== undefined ? target.checked : target.value;
