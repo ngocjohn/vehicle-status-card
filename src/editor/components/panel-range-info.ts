@@ -311,10 +311,10 @@ export class PanelRangeInfo extends LitElement {
                 const progressColor = rangeItem.progress_color;
                 return html`
                   <div class="item-config-row" data-index=${index}>
-                    <div class="handle">
+                    <div class="handle" style="margin: var(--vic-card-padding)">
                       <ha-icon icon=${icon ? icon : 'mdi:gas-station'} style=${`color: ${progressColor}`}></ha-icon>
                     </div>
-                    <div class="item-content">
+                    <div class="item-content click-shrink" @click=${this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}>
                       <div class="primary">Range Info #${index + 1}</div>
                       <div class="secondary">${entity}</div>
                     </div>
@@ -424,17 +424,7 @@ export class PanelRangeInfo extends LitElement {
     const energyEntity = energyEntry.entity || '';
     const energyIcon = energyEntry.icon || '';
 
-    // let energyIcon = energyEntry.icon;
-    // if (!energyIcon && energyEntity) {
-    //   energyIcon = this.hass.states[energyEntity].attributes.icon;
-    // } else if (!energyIcon && !energyEntity) {
-    //   energyIcon = 'mdi:gas-station';
-    // }
-
     const energyAttribute = energyEntry.attribute || '';
-    const entityAttrs = energyEntity ? Object.keys(this.hass.states[energyEntity].attributes) : [];
-
-    const attrOpts = [...entityAttrs.map((attr) => ({ value: attr, label: attr }))];
 
     return html`
       <div class="item-content">
@@ -450,8 +440,13 @@ export class PanelRangeInfo extends LitElement {
           ...configShared,
           value: energyAttribute,
           label: 'Attribute energy',
-          items: attrOpts,
-          pickerType: 'attribute',
+          pickerType: 'baseSelector',
+          configValue: 'attribute',
+          options: {
+            selector: {
+              attribute: { entity_id: energyEntity },
+            },
+          },
         })}
       </div>
       <div class="item-content">
@@ -473,9 +468,6 @@ export class PanelRangeInfo extends LitElement {
 
     const rangeEntry = this.config.range_info[index].range_level as RangeItemConfig;
     const rangeEntity = rangeEntry?.entity;
-    const entityAttrs = rangeEntity ? Object.keys(this.hass.states[rangeEntity].attributes) : [];
-
-    const attrOpts = [...entityAttrs.map((attr) => ({ value: attr, label: attr }))];
 
     return html`
       <div class="item-content">
@@ -491,8 +483,13 @@ export class PanelRangeInfo extends LitElement {
           ...configShared,
           value: rangeEntry?.attribute || '',
           label: 'Attribute range',
-          pickerType: 'attribute',
-          items: attrOpts,
+          configValue: 'attribute',
+          options: {
+            selector: {
+              attribute: { entity_id: rangeEntity },
+            },
+          },
+          pickerType: 'baseSelector',
         })}
       </div>
     `;

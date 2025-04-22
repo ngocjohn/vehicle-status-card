@@ -1,4 +1,4 @@
-import { applyThemesOnElement, fireEvent, hasConfigOrEntityChanged, forwardHaptic } from 'custom-card-helpers';
+import { applyThemesOnElement, fireEvent, forwardHaptic } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -18,7 +18,7 @@ import {
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
 import { HaHelp, isDarkColor, isEmpty } from './utils';
-import { _getMapData, getDefaultConfig } from './utils/ha-helper';
+import { getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement implements LovelaceCard {
@@ -55,11 +55,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @query('vsc-indicators') _indicators!: VscIndicators;
   @query('mini-map-box') _miniMap!: MiniMapBox;
 
-  constructor() {
-    super();
-    this._handleEditorEvent = this._handleEditorEvent.bind(this);
-  }
-
   set hass(hass: HomeAssistant) {
     this._hass = hass;
     if (this._buttonReady && this._buttonCards) {
@@ -89,7 +84,10 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
-    document.addEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    if (this.isEditorPreview) {
+      // console.log('Editor preview connected');
+      document.addEventListener('editor-event', this._handleEditorEvent.bind(this));
+    }
     this._connected = true;
 
     if (!this._resizeInitiated && !this._resizeObserver) {
@@ -98,7 +96,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   }
 
   disconnectedCallback(): void {
-    document.removeEventListener('editor-event', (ev) => this._handleEditorEvent(ev));
+    document.removeEventListener('editor-event', this._handleEditorEvent.bind(this));
     this.detachResizeObserver();
     this._connected = false;
     this._resizeInitiated = false;
@@ -149,6 +147,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   protected async updated(changedProps: PropertyValues): Promise<void> {
     super.updated(changedProps);
     if (!this._config || !this._hass) return;
+
     // Apply theme when the theme configuration changes
     if (changedProps.has('_config') && !this._prevTheme && this._config.layout_config?.theme_config?.theme) {
       this.applyTheme(this._config.layout_config.theme_config.theme);
@@ -164,11 +163,8 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     if (changedProps.has('_connected') && this._connected) {
       // console.log('set up button animation');
       this._setUpButtonAnimation();
+      this._setUpRangeObserver();
     }
-  }
-
-  protected shouldUpdate(changedProps: PropertyValues): boolean {
-    return hasConfigOrEntityChanged(this, changedProps, true);
   }
 
   private _isSectionHidden(section: SECTION): boolean {
@@ -185,7 +181,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
     const headerHidden = this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '';
     return html`
-      <ha-card class=${this._computeClasses()} ?no-header=${headerHidden}>
+      <ha-card class=${this._computeClasses()} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>
         <header id="name" ?hidden=${headerHidden}>
           <h1>${this._config.name}</h1>
         </header>
@@ -282,9 +278,11 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   private _renderMiniMap(): TemplateResult {
     if (this._isSectionHidden(SECTION.MINI_MAP)) return html``;
     const deviceTracker = this._config?.mini_map?.device_tracker;
-    const deviceState = this._hass.states[deviceTracker]?.state || '';
-    if (!deviceTracker || /(unknown)/.test(deviceState)) return this._showWarning('Device tracker not available');
-    const mapData = _getMapData(this);
+    const stateObj = this._hass.states[deviceTracker];
+    if (!deviceTracker || !stateObj || /(unknown)/.test(stateObj.state)) {
+      return this._showWarning('Device tracker not available');
+    }
+    const mapData = { lat: stateObj.attributes.latitude, lon: stateObj.attributes.longitude };
     return html`
       <div id=${SECTION.MINI_MAP} style=${`min-width: ${this._cardWidth}px`}>
         <mini-map-box .mapData=${mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
@@ -295,6 +293,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   private _renderRangeInfo(): TemplateResult {
     const { range_info } = this._config;
     if (!range_info) return html``;
+
     return html`<div id="range" ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}>
       <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>
     </div>`;
@@ -415,10 +414,12 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     const lastItem = section_order[section_order.length - 1];
     const firstItem = section_order[0];
     const mapSingle = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
+    const mapBottom = !section_order.includes(SECTION.BUTTONS) && lastItem === SECTION.MINI_MAP;
     return classMap({
       __map_last: lastItem === SECTION.MINI_MAP && firstItem !== SECTION.MINI_MAP,
       __map_first: firstItem === SECTION.MINI_MAP && lastItem !== SECTION.MINI_MAP,
       __map_single: mapSingle,
+      __map_bottom: mapBottom,
     });
   }
 
@@ -434,16 +435,13 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
           obj[key] = themeData[key];
           return obj;
         }, {} as Record<string, string>);
-      console.log('Applying theme:', theme, 'filteredThemeData:', filteredThemeData);
+
       // Get the current mode (light or dark)
       const mode = this.isDark ? 'dark' : 'light';
       const modeData = themeData.modes && typeof themeData.modes === 'object' ? themeData.modes[mode] : {};
 
-      console.log('Applying mode data:', mode, 'modeData:', modeData);
-
       // Merge the top-level and mode-specific variables
       const allThemeData = { ...filteredThemeData, ...modeData };
-      console.log('All theme data:', allThemeData);
       applyThemesOnElement(
         this,
         { default_theme: this._hass.themes.default_theme, themes: { [theme]: allThemeData } },
@@ -451,6 +449,21 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         false
       );
     }
+  }
+
+  _changeCustomTheme(theme: string, mode: boolean | undefined) {
+    const detail = {
+      theme,
+      dark: mode,
+    };
+
+    this.dispatchEvent(
+      new CustomEvent('settheme', {
+        detail,
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private toggleCard(action: 'next' | 'prev'): void {
@@ -534,6 +547,30 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
     // Set a timeout as a fallback in case the items are already rendered
     setTimeout(observeGridItems, 0);
+  };
+
+  private _setUpRangeObserver = (): void => {
+    if (this._isSectionHidden(SECTION.RANGE_INFO) || !this._rangeInfo) return;
+    const rangeEl = this.shadowRoot?.getElementById('range');
+    // Set up the range info
+    const changeRangeInfo = () => {
+      const rangeInfo = this.shadowRoot?.getElementById('range');
+      if (!rangeInfo) return;
+      const previousSibling = rangeInfo?.previousElementSibling;
+      if (previousSibling === null) {
+        rangeInfo.style.marginTop = 'unset';
+      } else {
+        return;
+      }
+      observer.disconnect();
+    };
+
+    const observer = new MutationObserver(changeRangeInfo);
+
+    observer.observe(rangeEl as Node, {
+      attributes: true,
+    });
+    setTimeout(changeRangeInfo, 0);
   };
 
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */

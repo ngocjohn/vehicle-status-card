@@ -354,9 +354,13 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
       default_zoom: miniMap.default_zoom || 14,
       hours_to_show: miniMap.hours_to_show || 0,
       theme_mode: miniMap.theme_mode || 'auto',
+      auto_fit: miniMap.auto_fit || false,
+      aspect_ratio: miniMap.aspect_ratio || '',
       entities: [
         {
           entity: miniMap.device_tracker,
+          label_mode: miniMap?.label_mode,
+          attribute: miniMap?.attribute,
         },
       ],
     },
@@ -442,7 +446,7 @@ export async function getAddressFromOpenStreet(lat: number, lon: number): Promis
   }
 }
 async function getAddressFromGoggle(lat: number, lon: number, apiKey: string): Promise<Address | null> {
-  console.log('Getting address from Google');
+  // console.log('Getting address from Google');
   const filterParams: Record<string, keyof Address> = {
     street_number: 'streetNumber',
     route: 'streetName',

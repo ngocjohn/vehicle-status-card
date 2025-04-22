@@ -1,5 +1,6 @@
-import { LovelaceCardConfig } from 'custom-card-helpers';
+import { mdiClose } from '@mdi/js';
 import 'leaflet-providers/leaflet-providers.js';
+import { LovelaceCardConfig } from 'custom-card-helpers';
 import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
@@ -7,12 +8,12 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
-import { DEFAULT_DIALOG_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
-import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistory } from '../types';
+import { DEFAULT_HA_MAP_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
 import './shared/vsc-maptiler-popup';
+import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistory } from '../types';
 import { _getHistoryPoints } from '../utils';
-import { createCloseHeading } from '../utils/create';
 import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
+import parseAspectRatio from '../utils/parse-aspect-ratio';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 export const DEFAULT_HOURS_TO_SHOW = 0;
@@ -25,7 +26,7 @@ export class MiniMapBox extends LitElement {
   @property({ type: Boolean }) private isDark: boolean = false;
   @property({ type: Boolean }) open!: boolean;
 
-  @state() private map: L.Map | null = null;
+  private map: L.Map | null = null;
   private marker: L.Marker | null = null;
   private latLon: L.LatLng | null = null;
 
@@ -37,6 +38,8 @@ export class MiniMapBox extends LitElement {
   private _subscribed?: Promise<(() => Promise<void>) | undefined>;
   private _stateHistory?: HistoryStates;
   private _historyPoints?: any | undefined;
+
+  private _mapInitialized = false;
 
   private get mapPopup(): boolean {
     return this.card._config.mini_map?.enable_popup || false;
@@ -128,16 +131,57 @@ export class MiniMapBox extends LitElement {
     }
   }
 
+  protected async firstUpdated(changedProperties: PropertyValues): Promise<void> {
+    super.updated(changedProperties);
+    if (this.mapPopup && !this.useMapTiler && this.mapCardPopup === undefined) {
+      this.mapCardPopup = await _setMapPopup(this.card);
+    }
+  }
+
   protected async updated(changedProperties: PropertyValues): Promise<void> {
     super.updated(changedProperties);
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined && !this.map) {
       this.initMap();
-      this._getAddress();
+      if (this.card._config.mini_map?.hide_map_address !== true) {
+        this._getAddress();
+      }
     }
+  }
+
+  private getResponsivePopupSize(aspectRatio: string): { width: string; height: string } {
+    const ratio = parseAspectRatio(aspectRatio);
+    const w = ratio?.w;
+    const h = ratio?.h;
+    if (!w || !h) return { width: '85vw', height: 'auto' };
+
+    const aspect = w / h;
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const maxWidthPx = vw * 0.85;
+    const maxHeightPx = vh * 0.95;
+
+    let width = maxWidthPx;
+    let height = width / aspect;
+
+    if (height > maxHeightPx) {
+      height = maxHeightPx;
+      width = height * aspect;
+    }
+
+    const finalWidthVW = (width / vw) * 100;
+    const finalHeightVW = (height / vw) * 100;
+
+    return {
+      width: `${finalWidthVW.toFixed(2)}vw`,
+      height: `${finalHeightVW.toFixed(2)}vw`,
+    };
   }
 
   private async _getAddress(): Promise<void> {
     const { lat, lon } = this.mapData;
+    // console.log('Getting adress...');
     const address = await _getMapAddress(this.card, lat, lon);
     if (address) {
       this._address = address;
@@ -149,7 +193,8 @@ export class MiniMapBox extends LitElement {
   }
 
   private initMap(): void {
-    console.log('Initializing map...');
+    if (this._mapInitialized || this.map) return;
+    // console.log('Initializing map...');
     const { lat, lon } = this.mapData;
     const defaultZoom = this.zoom;
     const mapOptions = {
@@ -166,8 +211,6 @@ export class MiniMapBox extends LitElement {
 
     this.latLon = this._getTargetLatLng(this.map);
 
-    this.map.setView(this.latLon, this.zoom);
-
     // Add tile layer to map
     this._createTileLayer(this.map);
     // Add marker to map
@@ -180,6 +223,9 @@ export class MiniMapBox extends LitElement {
       this._locateIconVisible = isMarkerVisible;
       // console.log('Marker visible:', isMarkerVisible);
     });
+    this._mapInitialized = true;
+    this.map.invalidateSize();
+    this.map.setView(this.latLon, this.zoom);
   }
 
   private _getTargetLatLng(map: L.Map): L.LatLng {
@@ -213,7 +259,7 @@ export class MiniMapBox extends LitElement {
     const marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
     // Add click event listener to marker
     marker.on('click', () => {
-      this._toggleMapDialog();
+      this._toggleDialog();
     });
 
     return marker;
@@ -242,10 +288,11 @@ export class MiniMapBox extends LitElement {
   }
 
   private _renderAddress(): TemplateResult {
-    const { hide } = this.card._config.layout_config;
+    const hide = this.card._config.mini_map?.hide_map_address ?? false;
+    if (hide) return html``;
+
     const useZoneName = this.card._config.mini_map?.use_zone_name ?? false;
 
-    if (hide.map_address) return html``;
     if (!this._addressReady) {
       return html`<div class="address-line loading"><span class="loader"></span></div>`;
     }
@@ -275,6 +322,7 @@ export class MiniMapBox extends LitElement {
     if (!this.open || !this.useMapTiler) return nothing;
     // const pathData = this._getHistoryPoints();
     this._historyPoints = _getHistoryPoints(this.card._config.mini_map!, this._stateHistory);
+
     return html`
       <ha-dialog open @closed=${() => (this.open = false)} hideActions flexContent>
         ${MAPTILER_DIALOG_STYLES}
@@ -283,6 +331,7 @@ export class MiniMapBox extends LitElement {
           .mapData=${this.mapData}
           .card=${this.card}
           ._paths=${this._historyPoints}
+          ._sizes=${this.getResponsivePopupSize(this.card._config.mini_map?.aspect_ratio || '1.3')}
           @close-dialog=${() => {
             this.open = false;
           }}
@@ -294,31 +343,37 @@ export class MiniMapBox extends LitElement {
   private _renderMapDialog(): TemplateResult | typeof nothing {
     if (!this.open) return nothing;
     return html`
-      <ha-dialog
-        open
-        .heading=${createCloseHeading(this.card._hass, 'Map')}
-        @closed=${() => (this.open = false)}
-        hideActions
-        flexContent
-      >
-        ${DEFAULT_DIALOG_STYLES} ${this.mapCardPopup}
+      <ha-dialog open @closed=${() => (this.open = false)} hideActions=${true} flexContent=${true}>
+        <style>
+          ${DEFAULT_HA_MAP_STYLES.toString()} .close-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            z-index: 99999;
+            cursor: pointer;
+            opacity: 0.8;
+            border-radius: 50%;
+            background-color: var(--ha-card-background, var(--card-background-color));
+            &:hover {
+              opacity: 1;
+            }
+          }
+        </style>
+        <div id="hamap-wrapper" style="overflow: hidden;">
+          <ha-icon-button
+            .label=${this.card.hass?.localize('ui.dialogs.generic.close') ?? 'Close'}
+            .path=${mdiClose}
+            class="close-button"
+            @click=${() => (this.open = false)}
+          ></ha-icon-button>
+          ${this.mapCardPopup}
+        </div>
       </ha-dialog>
     `;
   }
 
-  private _toggleMapDialog(): void {
-    if (!this.mapPopup) return;
-    if (!this.useMapTiler && !this.mapCardPopup && !this.open) {
-      _setMapPopup(this.card).then((popup) => {
-        this.mapCardPopup = popup;
-        setTimeout(() => {
-          this.open = true;
-        }, 50);
-      });
-    } else {
-      this.open = !this.open;
-      return;
-    }
+  private _toggleDialog(): void {
+    this.open = !this.open;
   }
 
   private _computeMapStyle() {

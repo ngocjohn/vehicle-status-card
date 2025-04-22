@@ -1,4 +1,4 @@
-import { html } from 'lit';
+import { css, html } from 'lit';
 
 export const STYLE_SCHEMA = [
   {
@@ -128,8 +128,8 @@ export type MAP_TYPES = 'points' | 'route' | 'circle-radius' | 'circle-outline';
 export const MAPTILER_DIALOG_STYLES = html`
   <style>
     ha-dialog {
-      --mdc-dialog-min-width: 85vw;
-      --mdc-dialog-max-width: 85vw;
+      --mdc-dialog-min-width: 500px;
+      --mdc-dialog-max-width: 100vw;
       --dialog-backdrop-filter: blur(2px);
       --dialog-content-padding: 0;
     }
@@ -152,8 +152,8 @@ export const MAPTILER_DIALOG_STYLES = html`
 
 export const DEFAULT_DIALOG_STYLES = html` <style>
   ha-dialog {
-    --mdc-dialog-min-width: 500px;
-    --mdc-dialog-max-width: 600px;
+    --mdc-dialog-min-width: 800px;
+    --mdc-dialog-max-width: 800px;
     --dialog-backdrop-filter: blur(2px);
   }
   @media all and (max-width: 600px), all and (max-height: 500px) {
@@ -167,3 +167,29 @@ export const DEFAULT_DIALOG_STYLES = html` <style>
     }
   }
 </style>`;
+
+export const DEFAULT_HA_MAP_STYLES = css`
+  ha-dialog {
+    --mdc-dialog-min-width: 800px;
+    --mdc-dialog-max-width: 85vw;
+    --dialog-backdrop-filter: blur(2px);
+    --dialog-content-padding: 0;
+  }
+  @media all and (max-width: 600px), all and (max-height: 500px) {
+    ha-dialog {
+      --mdc-dialog-min-width: 100vw;
+      --mdc-dialog-max-width: 100vw;
+      --ha-dialog-border-radius: 0;
+      --dialog-content-padding: 0;
+    }
+    :host([flexContent]) .mdc-dialog .mdc-dialog__content {
+      padding: 0;
+      justify-content: center;
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+  }
+`;
