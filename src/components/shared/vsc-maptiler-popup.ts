@@ -48,6 +48,7 @@ export class VscMaptilerPopup extends LitElement {
   @property({ attribute: false }) mapData!: MapData;
   @property({ attribute: false }) card!: VehicleStatusCard;
   @property({ attribute: false }) _paths?: any;
+  @property({ attribute: false }) _sizes?: { width: string; height: string };
 
   @state() private _themeMode?: THEME;
   @state() private _currentStyle?: string;
@@ -756,6 +757,7 @@ export class VscMaptilerPopup extends LitElement {
   };
 
   private _computeMapStyle() {
+    const { width, height } = this._sizes || { width: '85vw', height: '75vw' };
     const getStyle = (key: string) => this.getModeColor(key);
     const configPathColor = this.card._config.mini_map?.path_color;
 
@@ -785,6 +787,8 @@ export class VscMaptilerPopup extends LitElement {
       '--vic-map-button-color': buttonColor,
       '--vic-map-button-shadow': boxShadow,
       '--vic-map-button-border': buttonBorder,
+      '--vic-popup-width': width,
+      '--vic-popup-height': height,
     });
   }
 
@@ -802,8 +806,8 @@ export class VscMaptilerPopup extends LitElement {
 
         .tiler-map {
           position: relative;
-          width: 100%;
-          height: 75vh;
+          width: var(--vic-popup-width, 100%);
+          height: var(--vic-popup-height, 75vw);
           font-family: inherit;
           --mdc-radio-unchecked-color: var(--vic-map-button-color);
           --mdc-theme-text-primary-on-background: var(--vic-map-button-color);
@@ -811,6 +815,7 @@ export class VscMaptilerPopup extends LitElement {
         @media all and (max-width: 600px), all and (max-height: 500px) {
           .tiler-map {
             height: 100vh;
+            width: 100vw;
           }
         }
 

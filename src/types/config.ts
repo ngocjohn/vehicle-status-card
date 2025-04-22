@@ -76,8 +76,8 @@ export interface MapData {
   address: Partial<Address>;
 }
 
-type HISTORY_PERIOD = 'today' | 'yesterday' | undefined;
-type LABEL_MODE = 'icon' | 'state' | 'attribute';
+type HISTORY_PERIOD = 'today' | 'yesterday';
+type LABEL_MODE = 'name' | 'state' | 'attribute' | 'icon';
 export interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
@@ -86,11 +86,13 @@ export interface MiniMapConfig {
   maptiler_api_key: string;
   us_format: boolean;
   hours_to_show: number;
+  hide_map_address: boolean;
   theme_mode: THEME_MODE;
   map_height: number;
   path_color?: string;
   auto_fit?: boolean;
   map_zoom?: number;
+  aspect_ratio?: string;
   history_period?: HISTORY_PERIOD;
   use_zone_name?: boolean;
   label_mode?: LABEL_MODE;
@@ -253,7 +255,7 @@ interface LayoutConfig {
     mini_map: boolean;
     range_info: boolean;
     card_name: boolean;
-    map_address: boolean;
+    map_address?: boolean;
   };
   theme_config: {
     mode: THEME_MODE;

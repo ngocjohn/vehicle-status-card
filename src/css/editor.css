@@ -233,6 +233,19 @@
 	flex: 1;
 }
 
+.item-content.click-shrink {
+	transition: transform 0.1s;
+	cursor: pointer;
+}
+
+.item-content.click-shrink:active {
+	transform: scale(0.9);
+}
+
+.item-content.click-shrink:hover {
+	color: var(--primary-color);
+}
+
 .item-content.color-preview {
 	border-top-right-radius: 4px;
 	border-top-left-radius: 4px;

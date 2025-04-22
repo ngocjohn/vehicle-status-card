@@ -11,7 +11,14 @@ import { HomeAssistant, VehicleStatusCardConfig, LovelaceCardEditor, LovelaceCon
 // Import all components
 import './components/';
 import { loadHaComponents, stickyPreview, Create } from '../utils';
-import { PanelImagesEditor, PanelIndicator, PanelButtonCard, PanelEditorUI, PanelRangeInfo } from './components/';
+import {
+  PanelImagesEditor,
+  PanelIndicator,
+  PanelButtonCard,
+  PanelEditorUI,
+  PanelRangeInfo,
+  PanelMapEditor,
+} from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 
 @customElement('vehicle-status-card-editor')
@@ -31,6 +38,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @query('panel-range-info') _panelRangeInfo!: PanelRangeInfo;
   @query('panel-editor-ui') _panelEditorUI?: PanelEditorUI;
   @query('panel-button-card') _panelButtonCard?: PanelButtonCard;
+  @query('panel-map-editor') _panelMapEditor?: PanelMapEditor;
 
   @state() _selectedConfigType: null | string = null;
 
@@ -343,7 +351,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         label: 'Notify badge on buttons',
         value: hide.button_notify || false,
       },
-      { configValue: 'map_address', label: 'Address on map', value: hide.map_address || false },
     ];
 
     const themeConfig = layout.theme_config || {};
@@ -513,170 +520,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderMiniMap(): TemplateResult {
-    const docLink = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup';
-
-    const sharedConfig = { component: this, configIndex: 0, configType: 'mini_map' };
-
-    const miniMap = this._config?.mini_map || {};
-    const layoutConfig = this._config?.layout_config?.hide || {};
-
-    const getBooleanPicker = (
-      configValue: string,
-      label: string,
-      value: boolean,
-      configType?: string,
-      configIndex?: string | number
-    ) => ({
-      configValue,
-      label,
-      pickerType: 'selectorBoolean',
-      value,
-      options: { selector: { boolean: ['true', 'false'] } },
-      configType: configType || 'mini_map',
-      configIndex: configIndex || 0,
-    });
-
-    const getNumberPicker = (
-      configValue: string,
-      label: string,
-      value: number,
-      max = 500,
-      min = 0,
-      step = 1,
-      mode = 'box'
-    ) => ({
-      configValue,
-      label,
-      pickerType: 'number',
-      value,
-      options: { selector: { number: { max, min, step, mode } } },
-    });
-
-    const configFields = [
-      getBooleanPicker('enable_popup', 'Enable Popup', miniMap.enable_popup ?? false),
-      getBooleanPicker('us_format', 'US Address Format', miniMap.us_format ?? false),
-      getBooleanPicker('map_address', 'Hide Address', layoutConfig.map_address ?? false, 'layout_config', 'hide'),
-      getBooleanPicker('use_zone_name', 'Use Zone Name', miniMap.use_zone_name ?? false),
-      getNumberPicker('map_zoom', 'Map Zoom', miniMap.map_zoom ?? 14),
-      getNumberPicker('map_height', 'Minimap Height (px)', miniMap.map_height ?? 150, 500, 150, 10, 'slider'),
-    ];
-
-    const apiKeys = [
-      {
-        configValue: 'device_tracker',
-        label: 'Device Tracker',
-        pickerType: 'entity',
-        value: miniMap.device_tracker ?? '',
-        options: { includeDomains: ['device_tracker', 'person'] },
-      },
-      {
-        configValue: 'google_api_key',
-        label: 'Google API Key (Optional)',
-        pickerType: 'textfield',
-        value: miniMap.google_api_key ?? '',
-      },
-      {
-        configValue: 'maptiler_api_key',
-        label: 'Maptiler API Key (Optional)',
-        pickerType: 'textfield',
-        value: miniMap.maptiler_api_key ?? '',
-      },
-    ];
-
-    const popupConfig = [
-      getNumberPicker('default_zoom', 'Default Zoom', miniMap.default_zoom || 14),
-      getNumberPicker('hours_to_show', 'Hours to Show', miniMap.hours_to_show || 0),
-      {
-        configValue: 'theme_mode',
-        label: 'Theme Mode',
-        pickerType: 'attribute',
-        value: miniMap.theme_mode ?? 'auto',
-        items: [
-          { label: 'Auto', value: 'auto' },
-          { label: 'Light', value: 'light' },
-          { label: 'Dark', value: 'dark' },
-        ],
-      },
-      getBooleanPicker('auto_fit', 'Auto Fit', miniMap.auto_fit ?? false),
-      {
-        configValue: 'path_color',
-        label: 'Path Color',
-        pickerType: 'baseSelector',
-        value: miniMap.path_color,
-        options: { selector: { ui_color: { include_none: false, include_state: false } } },
-      },
-      {
-        configValue: 'history_period',
-        label: 'History Period',
-        pickerType: 'attribute',
-        value: miniMap.history_period || undefined,
-        items: [
-          { label: 'Today', value: 'today' },
-          { label: 'Yesterday', value: 'yesterday' },
-        ],
-      },
-      {
-        configValue: 'label_mode',
-        label: 'Label Mode',
-        pickerType: 'baseSelector',
-        value: miniMap.label_mode || undefined,
-        options: {
-          selector: {
-            select: {
-              sort: true,
-              mode: 'dropdown',
-              options: [
-                { label: 'Icon', value: 'icon' },
-                { label: 'State', value: 'state' },
-                { label: 'Attribute', value: 'attribute' },
-              ],
-            },
-          },
-        },
-      },
-      {
-        configValue: 'attribute',
-        label: 'Attribute',
-        pickerType: 'baseSelector',
-        value: miniMap.attribute || undefined,
-        options: {
-          selector: {
-            attribute: {
-              entity_id: miniMap.device_tracker,
-            },
-          },
-        },
-      },
-    ];
-
-    const createPickers = (configs: any[]) =>
-      configs.map((config) => html`<div class="item-content">${Create.Picker({ ...sharedConfig, ...config })}</div>`);
-
-    const expansionPanels = [
-      {
-        options: { header: 'Map Configuration' },
-        content: html`
-          <div class="sub-content">${createPickers(apiKeys)}</div>
-          <ha-alert alert-type="info">
-            How to get Maptiler API Key?
-            <mwc-button slot="action" @click="${() => window.open(docLink)}" label="More"></mwc-button>
-          </ha-alert>
-        `,
-      },
-      {
-        options: { header: 'Mini Map Layout' },
-        content: html`<div class="sub-content">${createPickers(configFields)}</div>`,
-      },
-      {
-        options: { header: 'Popup Configuration' },
-        content: html`
-          <div class="sub-content">${createPickers(popupConfig)}</div>
-          <ha-alert alert-type="info">This options is for Map popup.</ha-alert>
-        `,
-      },
-    ];
-
-    return html`${expansionPanels.map(Create.ExpansionPanel)}`;
+    return html`<panel-map-editor .hass=${this._hass} .editor=${this} ._config=${this._config}></panel-map-editor>`;
   }
 
   private _renderRangeInfo(): TemplateResult {
@@ -799,48 +643,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     const configType = target.configType;
     const configIndex = target.configIndex;
 
-    const SELECTOR_VALUES = [
-      'default_zoom',
-      'enable_popup',
-      'hours_to_show',
-      'theme_mode',
-      'map_height',
-      'us_format',
-      'path_color',
-      'map_zoom',
-      'auto_fit',
-      'history_period',
-      'use_zone_name',
-      'label_mode',
-      'attribute',
-    ];
     // Ensure we handle the boolean value correctly
     let newValue: any = target.checked !== undefined ? target.checked : target.value;
-    if (SELECTOR_VALUES.includes(configValue)) {
-      newValue = ev.detail.value;
-    }
+
     let hiddenChanged = false;
     // console.log('Config Value:', configValue, 'Config Type:', configType, 'New Value:', newValue);
     const updates: Partial<VehicleStatusCardConfig> = {};
-
-    if (configType === 'mini_map') {
-      const miniMap = { ...(this._config.mini_map || {}) };
-      if (['google_api_key', 'maptiler_api_key'].includes(configValue)) {
-        if (newValue.trim() === '' || newValue === '') {
-          miniMap[configValue] = undefined;
-          updates.mini_map = miniMap;
-          console.log('Api delete', configValue, newValue);
-        } else {
-          miniMap[configValue] = newValue;
-          updates.mini_map = miniMap;
-          console.log('Api changes', configValue, newValue);
-        }
-      } else {
-        miniMap[configValue] = newValue;
-        updates.mini_map = miniMap;
-        console.log('Mini Map Updates:', configValue, newValue);
-      }
-    } else if (configType === 'layout_config') {
+    if (configType === 'layout_config') {
       newValue = ev.detail.value;
       if (configIndex === 'button_grid') {
         const layoutConfig = { ...(this._config.layout_config || {}) };
