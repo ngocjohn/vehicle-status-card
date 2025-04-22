@@ -35,6 +35,7 @@ ha-card[no-header]:not('.__map_first') .header-info-box {
   margin-top: var(--vic-card-padding);
 }
 
+ha-card:not([no-header]).__map_single,
 ha-card.__map_last {
   padding-bottom: 0;
 }
@@ -109,7 +110,7 @@ header h1 {
 } */
 
 #range {
-  padding-top: var(--vic-gutter-gap);
+  margin-top: var(--vic-gutter-gap);
 }
 
 .header-info-box {

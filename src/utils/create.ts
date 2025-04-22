@@ -104,7 +104,7 @@ export const Picker = ({
         .itemIndex=${itemIndex}
         .cardIndex=${cardIndex}
         .label=${label ?? 'Entity'}
-        @change=${handleValueChange}
+        @value-changed=${handleValueChange}
         .allowCustomIcons=${true}
         .includeDomains=${options?.includeDomains}
       ></ha-entity-picker>
@@ -211,6 +211,7 @@ export const Picker = ({
         .selector=${options?.selector}
         @value-changed=${handleValueChange}
         .required=${options?.required || false}
+        .disabled=${options?.disabled || false}
       ></ha-selector>
     `,
   };
@@ -288,14 +289,20 @@ export const HaAlert = ({
   `;
 };
 
-export const createCloseHeading = (hass: HomeAssistant | undefined, title: string | TemplateResult) => html`
-  <div class="header_title">
-    <span>${title}</span>
-    <ha-icon-button
-      .label=${hass?.localize('ui.dialogs.generic.close') ?? 'Close'}
-      .path=${mdiClose}
-      dialogAction="close"
-      class="header_button"
-    ></ha-icon-button>
-  </div>
-`;
+export const createCloseHeading = (hass: HomeAssistant | undefined, title: string | TemplateResult) => {
+  const headerStyle = `
+		display: flex;
+		align-items: center;
+		direction: var(--direction);
+		`;
+  return html`
+    <div style=${headerStyle}>
+      <ha-icon-button
+        .label=${hass?.localize('ui.dialogs.generic.close') ?? 'Close'}
+        .path=${mdiClose}
+        dialogAction="close"
+      ></ha-icon-button>
+      <span slot="heading" style="flex: 1; float: right; text-align: center;"> ${title} </span>
+    </div>
+  `;
+};

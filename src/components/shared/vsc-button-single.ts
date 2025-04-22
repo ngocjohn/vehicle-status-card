@@ -219,9 +219,9 @@ export class VehicleButtonSingle extends LitElement {
       changedIcon = icon;
     }
 
-    const index = this._index;
+    // const index = this._index;
     return html`
-      <div class="grid-item" id="actionBtn" @click=${this._handleNavigate} style="animation-delay: ${index * 50}ms">
+      <div class="grid-item" id="actionBtn" @click=${this._handleNavigate}>
         <ha-ripple></ha-ripple>
         <div class="click-container click-shrink">
           <div class="item-icon">

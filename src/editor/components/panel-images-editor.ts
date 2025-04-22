@@ -112,7 +112,7 @@ export class PanelImagesEditor extends LitElement {
     this.updateComplete.then(() => {
       const imagesList = this.shadowRoot?.getElementById('images-list');
       if (imagesList) {
-        console.log(imagesList);
+        // console.log(imagesList);
         this._sortable = new Sortable(imagesList, {
           animation: 150,
           handle: '.handle',
