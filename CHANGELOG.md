@@ -1,3 +1,24 @@
+<a id="v1.10.0"></a>
+# [v1.10.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.10.0) - 2025-05-07
+
+## What's Changed
+
+### New Features 🎉
+* Introduced label mode and attribute configuration options for map markers.  
+  This allows more control over how marker data is displayed, making the map more informative and customizable. [#101](https://github.com/ngocjohn/vehicle-status-card/pull/101)
+
+* Added support for aspect ratio configuration.  
+  Users can now adjust the map popup's layout proportions to better fit different dashboard designs. [#102](https://github.com/ngocjohn/vehicle-status-card/pull/102)
+
+### Other Changes
+* Refactored components to implement `VicTab` and `VicTabBar`.  
+[#103](https://github.com/ngocjohn/vehicle-status-card/pull/103)
+
+**Full Changelog**: [v1.9.0...v1.10.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.9.0...v1.10.0)
+
+[Changes][v1.10.0]
+
+
 <a id="v1.9.0"></a>
 # [v1.9.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.9.0) - 2025-04-14
 
@@ -351,6 +372,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.10.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.9.0...v1.10.0
 [v1.9.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.2...v1.9.0
 [v1.8.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.1...v1.8.2
 [v1.8.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.0...v1.8.1
