@@ -4,3 +4,5 @@ export * from './panel-images-editor';
 export * from './panel-indicator';
 export * from './panel-range-info';
 export * from './panel-map-editor';
+export * from './vic-tab';
+export * from './vic-tab-bar';

@@ -277,7 +277,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ];
 
     return html`<div class="card-config">
-      ${Create.TabBar({
+      ${Create.VicTab({
         activeTabIndex: this._indicatorTabIndex || 0,
         onTabChange: (index: number) => (this._indicatorTabIndex = index),
         tabs: tabsConfig,
@@ -463,13 +463,22 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       { content: hideWrapper, key: 'hide', label: 'Appearance' },
     ];
 
-    return html`<div class="card-config">
-      ${Create.TabBar({
-        activeTabIndex: this.activeTabIndex || 0,
-        onTabChange: (index: number) => (this.activeTabIndex = index),
-        tabs: tabsConfig,
-      })}
-    </div>`;
+    // return html`<div class="card-config">
+    //   ${Create.TabBar({
+    //     activeTabIndex: this.activeTabIndex || 0,
+    //     onTabChange: (index: number) => (this.activeTabIndex = index),
+    //     tabs: tabsConfig,
+    //   })}
+    // </div>`;
+    return html`
+      <div class="card-config">
+        ${Create.VicTab({
+          activeTabIndex: this.activeTabIndex || 0,
+          onTabChange: (index: number) => (this.activeTabIndex = index),
+          tabs: tabsConfig,
+        })}
+      </div>
+    `;
   }
 
   private _renderSectionOrder(): TemplateResult {

@@ -38,6 +38,7 @@
 	background-color: var(--mdc-button-outline-color);
 	border-bottom: 1px solid var(--divider-color);
 	/* margin-bottom: var(--vic-card-padding); */
+	display: flex;
 }
 
 .vic-tabbar .mdc-tab--active {

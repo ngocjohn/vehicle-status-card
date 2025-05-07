@@ -2,6 +2,8 @@ import { mdiClose } from '@mdi/js';
 import { html, TemplateResult } from 'lit';
 
 import { HomeAssistant } from '../types';
+import '../editor/components/vic-tab';
+import '../editor/components/vic-tab-bar';
 
 type PICKER_TYPE =
   | 'action'
@@ -103,7 +105,6 @@ export const Picker = ({
         .index=${configIndex}
         .itemIndex=${itemIndex}
         .cardIndex=${cardIndex}
-        .label=${label ?? 'Entity'}
         @value-changed=${handleValueChange}
         .allowCustomIcons=${true}
         .includeDomains=${options?.includeDomains}
@@ -304,5 +305,29 @@ export const createCloseHeading = (hass: HomeAssistant | undefined, title: strin
       ></ha-icon-button>
       <span slot="heading" style="flex: 1; float: right; text-align: center;"> ${title} </span>
     </div>
+  `;
+};
+
+export const VicTab = ({
+  activeTabIndex,
+  onTabChange,
+  tabs,
+}: {
+  activeTabIndex: number;
+  onTabChange: (index: number) => void;
+  tabs: { content: TemplateResult; key: string; label: string; icon?: string }[];
+}): TemplateResult => {
+  return html`
+    <vic-tab-bar>
+      ${tabs.map(
+        (tab, index) => html`
+          <vic-tab .active=${index === activeTabIndex} .name=${tab.label} @click=${() => onTabChange(index)}>
+            ${tab.icon ? html`<ha-icon .icon=${tab.icon}></ha-icon>` : ''}
+          </vic-tab>
+        `
+      )}
+    </vic-tab-bar>
+
+    <div>${tabs[activeTabIndex]?.content || html`<div>No content available</div>`}</div>
   `;
 };

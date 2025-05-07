@@ -453,7 +453,7 @@ export class PanelIndicator extends LitElement {
       <div class="sub-panel-config">
         ${groupItems.length === 0
           ? html`<div>This group: '${group.name}' has no items, add them using the button above.</div>`
-          : Create.TabBar({
+          : Create.VicTab({
               tabs: itemsTabs,
               activeTabIndex: this._activeGroupItem || 0,
               onTabChange: (index: number) => this._toggleEditGroupItem(index),
@@ -668,7 +668,7 @@ export class PanelIndicator extends LitElement {
             value: single.entity,
             configType: 'single',
             configIndex: index,
-            label: 'Entity indicator',
+            label: '',
             pickerType: 'entity' as 'entity',
             items: undefined, // Ensure 'items' is defined, even if it's not needed for 'entity'
           };

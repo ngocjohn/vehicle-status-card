@@ -8,6 +8,8 @@ import editorcss from '../../css/editor.css';
 import { HomeAssistant, VehicleStatusCardConfig, LovelaceConfig, LovelaceCardConfig } from '../../types';
 import { fireEvent, HASSDomEvent } from '../../types/ha-frontend/fire-event';
 import { VehicleStatusCardEditor } from '../editor';
+import './vic-tab-bar';
+import './vic-tab';
 export interface GUIModeChangedEvent {
   guiMode: boolean;
   guiModeAvailable: boolean;
@@ -54,17 +56,6 @@ export class PanelEditorUI extends LitElement {
       css`
         .toolbar {
           display: flex;
-          --paper-tabs-selection-bar-color: var(--primary-color);
-          --paper-tab-ink: var(--primary-color);
-        }
-        paper-tabs {
-          display: flex;
-          font-size: 14px;
-          flex-grow: 1;
-        }
-        #add-card {
-          max-width: 32px;
-          padding: 0;
         }
 
         #card-options {
@@ -81,6 +72,12 @@ export class PanelEditorUI extends LitElement {
           #editor-container {
             margin: 0 -12px;
           }
+        }
+
+        #card-picker {
+          display: block;
+          max-height: 600px;
+          overflow-x: hidden;
         }
 
         .gui-mode-button {
@@ -106,18 +103,20 @@ export class PanelEditorUI extends LitElement {
 
     const toolBar = html`
       <div class="toolbar">
-        <paper-tabs .selected=${selected} scrollable @iron-activate=${this._handleSelectedCard}>
-          ${this.cards.map((_card, i) => html` <paper-tab> ${i + 1} </paper-tab> `)}
-        </paper-tabs>
-        <paper-tabs
-          id="add-card"
-          .selected=${selected === cardsLength ? '0' : undefined}
-          @iron-activate=${this._handleSelectedCard}
-        >
-          <paper-tab>
-            <ha-svg-icon .path="${ICON.PLUS}"></ha-svg-icon>
-          </paper-tab>
-        </paper-tabs>
+        <vic-tab-bar>
+          ${this.cards.map(
+            (_card, i) =>
+              html`<vic-tab
+                .active=${selected === i}
+                .name=${i + 1}
+                @click=${() => (this._selectedCard = i)}
+                style="flex: 0 !important;"
+              ></vic-tab>`
+          )}
+        </vic-tab-bar>
+        <vic-tab id="add-card" .active=${selected === cardsLength} @click=${this._handleAddCard} .narrow=${true}>
+          <ha-svg-icon .path="${ICON.PLUS}" slot="icon"></ha-svg-icon>
+        </vic-tab>
       </div>
     `;
 
@@ -175,13 +174,16 @@ export class PanelEditorUI extends LitElement {
                 ></hui-card-element-editor>
               `
             : html`
-                <hui-card-picker
-                  .hass=${this.hass}
-                  .lovelace=${this.cardEditor.lovelace}
-                  @config-changed=${this._handleCardPicked}
-                  ._clipboard=${this._clipboard}
-                >
-                </hui-card-picker>
+                <div id="card-picker">
+                  <hui-card-picker
+                    .hass=${this.hass}
+                    .lovelace=${this.cardEditor.lovelace}
+                    @config-changed=${this._handleCardPicked}
+                    ._height=${500}
+                    ._clipboard=${this._clipboard}
+                  >
+                  </hui-card-picker>
+                </div>
               `}
         </div>
       </div>
@@ -300,6 +302,16 @@ export class PanelEditorUI extends LitElement {
 
     this._selectedCard = Math.max(0, this._selectedCard - 1);
     fireEvent(this, 'config-changed', { config: this.config });
+  }
+
+  protected _handleAddCard(ev: Event): void {
+    ev.stopImmediatePropagation();
+    if (!this.config) {
+      return;
+    }
+
+    this._selectedCard = this.cards!.length;
+    return;
   }
 
   protected _handleSelectedCard(ev): void {
