@@ -361,7 +361,7 @@ export class PanelButtonCard extends LitElement {
 
         <div class="sub-panel">
           ${!this._yamlEditorActive
-            ? Create.TabBar({
+            ? Create.VicTab({
                 tabs: configTabs,
                 activeTabIndex: this._activeTabIndex,
                 onTabChange: (index: number) => (this._activeTabIndex = index),
@@ -790,7 +790,7 @@ export class PanelButtonCard extends LitElement {
 
     const tiresWrapper = html`
       <div class="sub-panel">
-        ${Create.TabBar({
+        ${Create.VicTab({
           tabs: tireEntitiesTabs,
           activeTabIndex: this._activeTireEntityIndex,
           onTabChange: (index: number) => (this._activeTireEntityIndex = index),
