@@ -27,6 +27,7 @@
     "lit": "^3.2.1",
     "maplibre-gl": "^2.4.0",
     "memoize-one": "^6.0.0",
+    "superstruct": "^2.0.2",
     "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
@@ -48,6 +49,7 @@
     "eslint": "^9.20.1",
     "eslint-plugin-perfectionist": "^4.9.0",
     "eslint-plugin-unused-imports": "^4.1.4",
+    "extra-map-card": "^1.0.6",
     "husky": "^8.0.0",
     "leaflet": "^1.9.4",
     "leaflet-providers": "^2.0.0",

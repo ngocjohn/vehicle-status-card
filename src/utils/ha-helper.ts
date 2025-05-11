@@ -1,5 +1,6 @@
-const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import { LovelaceCardConfig } from 'custom-card-helpers';
+
+const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import memoizeOne from 'memoize-one';
 
 import { DEFAULT_CONFIG } from '../const/const';
@@ -16,6 +17,7 @@ import {
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
+import type { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
 import type { HassEntity } from 'home-assistant-js-websocket';
 
 export async function createCardElement(
@@ -371,6 +373,59 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
   return cardElement;
 }
 
+export async function createSingleMapCard(card: VehicleStatusCard): Promise<LovelaceCardConfig[] | void> {
+  if (!card._config?.mini_map.maptiler_api_key && !card._config?.mini_map.device_tracker) {
+    return;
+  }
+  const hass = card._hass as HomeAssistant;
+  const mapConfig = card._config.mini_map;
+
+  let hours_to_show: number = 0;
+  if (mapConfig.history_period !== undefined) {
+    const now = new Date();
+    if (mapConfig.history_period === 'today') {
+      hours_to_show = now.getHours();
+    } else if (mapConfig.history_period === 'yesterday') {
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      hours_to_show = yesterday.getHours() + 24;
+    }
+  } else {
+    hours_to_show = mapConfig.hours_to_show || 0;
+  }
+
+  const extra_entities = mapConfig.extra_entities || [];
+
+  const extraMapConfig: ExtraMapCardConfig[] = [
+    {
+      type: 'custom:extra-map-card',
+      api_key: mapConfig.maptiler_api_key,
+      default_zoom: mapConfig.default_zoom || 14,
+      auto_fit: mapConfig.auto_fit || false,
+      fit_zones: mapConfig.fit_zones || false,
+      aspect_ratio: mapConfig.aspect_ratio || '',
+      hours_to_show: hours_to_show,
+      theme_mode: mapConfig.theme_mode || 'auto',
+      block_more_info: true,
+      entities: [
+        {
+          entity: mapConfig.device_tracker,
+          color: mapConfig.path_color || '',
+          label_mode: mapConfig.label_mode,
+          attribute: mapConfig.attribute || '',
+        },
+        ...(extra_entities as MapEntityConfig[]),
+      ],
+    },
+  ];
+  const mapElement = (await createCardElement(hass, extraMapConfig)) as LovelaceCardConfig[];
+  if (!mapElement) {
+    console.error('Failed to create map element');
+    return;
+  }
+  return mapElement;
+}
+
 export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
   // console.log('Getting address from MapTiler');
   const filterParams: Record<string, keyof Address> = {
@@ -525,3 +580,6 @@ export const computeStateNameFromEntityAttributes = (entityId: string, attribute
 
 export const computeStateName = (stateObj: HassEntity): string =>
   computeStateNameFromEntityAttributes(stateObj.entity_id, stateObj.attributes);
+
+export const hasLocation = (stateObj: HassEntity) =>
+  'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes;

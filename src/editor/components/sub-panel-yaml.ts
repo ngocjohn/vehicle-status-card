@@ -16,8 +16,11 @@ export class SubPanelYaml extends LitElement {
   @state() configIndex?: number;
   @state() configKey?: string;
 
-  static get styles(): CSSResultGroup {
-    return editorcss;
+  @property({ attribute: 'has-extra-actions', type: Boolean })
+  public extraAction = false;
+
+  public static get styles(): CSSResultGroup {
+    return [editorcss];
   }
 
   protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -40,8 +43,15 @@ export class SubPanelYaml extends LitElement {
           .defaultValue=${this.configDefault}
           .copyClipboard=${true}
           @value-changed=${this._onChange}
+          .hasExtraActions=${this.extraAction}
           .configValue=${'button_card'}
-        ></ha-yaml-editor>
+        >
+          ${this.extraAction
+            ? html`<ha-button style="float: inline-end;" slot="extra-actions" @click=${this._closeEditor}
+                >Close Editor</ha-button
+              >`
+            : nothing}
+        </ha-yaml-editor>
       </div>
     `;
   }
@@ -59,6 +69,11 @@ export class SubPanelYaml extends LitElement {
       bubbles: true,
     });
 
+    this.dispatchEvent(event);
+  }
+
+  private _closeEditor(): void {
+    const event = new CustomEvent('close-editor');
     this.dispatchEvent(event);
   }
 }

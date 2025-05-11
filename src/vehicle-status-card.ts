@@ -17,8 +17,8 @@ import {
   DefaultCardConfig,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
-import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement } from './utils';
-import { getDefaultConfig } from './utils/ha-helper';
+import { HaHelp, isDarkColor, isEmpty, loadExtraMapCard, applyThemesOnElement } from './utils';
+import { createSingleMapCard, getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement implements LovelaceCard {
@@ -33,6 +33,8 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
   @state() public _defaultCardPreview: DefaultCardConfig[] = [];
   @state() public _tireCardPreview: TireEntity | undefined = undefined;
+
+  @state() public _singleMapCard: LovelaceCardConfig[] = [];
 
   @state() public _buttonCards: ButtonCardEntity = [];
 
@@ -139,9 +141,22 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   }
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
+    // set new promise resolve to load extra map card
+    await new Promise((resolve) => {
+      loadExtraMapCard().then(() => {
+        resolve(true);
+      });
+    });
     HaHelp._setUpPreview(this);
     await HaHelp.handleFirstUpdated(this);
     this.measureCard();
+    this.createSingleMapCard();
+  }
+
+  private createSingleMapCard() {
+    setTimeout(async () => {
+      this._singleMapCard = (await createSingleMapCard(this)) as LovelaceCardConfig[];
+    }, 0);
   }
 
   protected async updated(changedProps: PropertyValues): Promise<void> {
@@ -179,6 +194,10 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       return this._renderCardPreview();
     }
 
+    if (this._config.mini_map.single_map_card && this._singleMapCard.length) {
+      const mapCard = this._singleMapCard[0];
+      return html`${mapCard}`;
+    }
     const headerHidden = this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '';
     return html`
       <ha-card class=${this._computeClasses()} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>

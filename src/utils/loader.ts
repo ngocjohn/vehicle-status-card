@@ -2,6 +2,7 @@ const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelper
 
 import { LovelaceConfig } from 'custom-card-helpers';
 
+import { EXTRA_MAP_CARD_URL } from '../const/const';
 import { VehicleStatusCardConfig } from '../types';
 
 interface HuiRootElement extends HTMLElement {
@@ -27,7 +28,6 @@ export const loadHaComponents = () => {
     // Load the component by invoking a related component's method
     (customElements.get('hui-entities-card') as any)?.getConfigElement();
   }
-
   if (!customElements.get('hui-entity-editor')) {
     // Load the component by invoking a related component's method
     (customElements.get('hui-glance-card') as any)?.getConfigElement();
@@ -173,5 +173,18 @@ export const loadMapCard = async (entities: string[]): Promise<void> => {
       console.error('Failed to create card element.');
       return;
     }
+  }
+};
+
+export const loadExtraMapCard = async (): Promise<void> => {
+  (window as any).customCards = (window as any).customCards || [];
+  if (!(window as any).customCards.find((card: any) => card.type === 'extra-map-card')) {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = EXTRA_MAP_CARD_URL;
+    script.onload = () => console.log('extra-map-card loaded');
+    script.onerror = () => console.error('Failed to load extra-map-card');
+    document.body.appendChild(script);
+    console.log('extra-map-card script added to the document');
   }
 };

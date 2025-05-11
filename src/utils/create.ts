@@ -254,7 +254,8 @@ export const ExpansionPanel = ({
       .expanded=${options?.expanded || false}
       .header=${options.header}
       .secondary=${options?.secondary || ''}
-      .leftChevron=${true}
+      .leftChevron=${false}
+      style="border-radius: 6px;  --ha-card-border-radius: 6px;"
     >
       ${options.icon ? html`<div slot="icons"><ha-icon icon=${options.icon}></ha-icon></div>` : ''}
       <div class="card-config">${content}</div>
