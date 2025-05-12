@@ -1,5 +1,5 @@
 // Cutom card helpers:
-import { ActionConfig } from 'custom-card-helpers';
+import { ActionConfig, EntityConfig } from 'custom-card-helpers';
 
 import { LovelaceCardConfig } from './ha-frontend/lovelace/lovelace';
 
@@ -271,7 +271,7 @@ interface LayoutConfig {
 export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   button_card: Array<ButtonCardConfig>;
   images: Array<ImageConfig>;
-  image_entities?: Array<string>;
+  image_entities?: (EntityConfig | string)[];
   indicators: {
     group: Array<IndicatorGroupConfig>;
     single: Array<IndicatorConfig>;

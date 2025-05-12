@@ -27,6 +27,11 @@ export const loadHaComponents = () => {
     // Load the component by invoking a related component's method
     (customElements.get('hui-entities-card') as any)?.getConfigElement();
   }
+
+  if (!customElements.get('hui-entity-editor')) {
+    // Load the component by invoking a related component's method
+    (customElements.get('hui-glance-card') as any)?.getConfigElement();
+  }
 };
 
 export const stickyPreview = () => {

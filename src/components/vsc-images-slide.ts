@@ -38,7 +38,8 @@ export class ImagesSlide extends LitElement {
     let hasChanged = false;
     if (oldHass) {
       imageEntities.forEach((entity) => {
-        if (oldHass.states[entity] !== this.hass.states[entity]) {
+        const entityId = typeof entity === 'string' ? entity : entity.entity;
+        if (oldHass.states[entityId] !== this.hass.states[entityId]) {
           hasChanged = true;
         }
       });
@@ -59,7 +60,7 @@ export class ImagesSlide extends LitElement {
     }
     if (imageEntities.length) {
       imageEntities.forEach((entity) => {
-        const entityObj = this.hass.states[entity];
+        const entityObj = this.hass.states[typeof entity === 'string' ? entity : entity.entity] as ImageEntity;
         if (entityObj) {
           const imageObj = entityObj as ImageEntity;
           const imageUrl = computeImageUrl(imageObj);
