@@ -1,13 +1,18 @@
+import { EntityConfig } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
 import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-import Sortable from 'sortablejs';
 
 import './sub-panel-yaml';
+
+import Sortable from 'sortablejs';
+
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { VehicleStatusCardConfig, ImageConfig, HomeAssistant, fireEvent } from '../../types';
+import { EntitiesEditorEvent } from '../../types/ha-frontend/data/image';
+import { processEditorEntities } from '../../utils';
 import { TabBar, Picker } from '../../utils/create';
 import { uploadImage } from '../../utils/ha-helper';
 import { IMAGE_CONFIG_ACTIONS, CONFIG_VALUES, IMAGE_ACTIONS } from '../editor-const';
@@ -26,6 +31,7 @@ export class PanelImagesEditor extends LitElement {
   @state() _reindexImages: boolean = false;
   @state() private _activeTabIndex: number = 0;
   @state() _newItemName: Map<string, string> = new Map();
+  @state() private _imageEntities?: EntityConfig[];
   private _helpDismissed = false;
   private _debouncedConfigChanged = debounce(this.configChanged.bind(this), 300);
 
@@ -96,6 +102,13 @@ export class PanelImagesEditor extends LitElement {
     super.firstUpdated(changedProps);
   }
 
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+    if (changedProps.has('config')) {
+      this._imageEntities = this.config.image_entities ? processEditorEntities(this.config.image_entities) : [];
+    }
+  }
+
   protected shouldUpdate(_changedProperties: PropertyValues): boolean {
     if (_changedProperties.has('config') && this.config.images && this.config.images.length > 0) {
       this._images = this.config.images;
@@ -148,108 +161,31 @@ export class PanelImagesEditor extends LitElement {
   }
 
   private _renderImageEntity(): TemplateResult {
-    const imageEntities = this.config?.image_entities || [];
-    const emptyEntityPicker = html`<div class="item-config-row">
-      <div class="item-content">
-        <ha-entity-picker
-          .hass=${this._hass}
-          .value=${this._newItemName.get('entity')}
-          .label=${'Image Entity'}
-          .configType=${'image_entities'}
-          @value-changed=${this._handleNewImageEntity}
-          .allowCustomEntity=${false}
-          .includeDomains=${'image'}
-        ></ha-entity-picker>
-      </div>
-    </div>`;
-    return html` <div class="sub-panel-config button-card">
-      <div class="sub-header">
-        <div>Image Entities Configuration</div>
-      </div>
-      <div class="default-card-list">
-        ${repeat(
-          imageEntities,
-          (entity) => entity,
-          (entity, idx) => html`
-            <div class="item-config-row">
-              <div class="item-content">
-                <ha-entity-picker
-                  .hass=${this._hass}
-                  .value=${entity}
-                  .label=${'Image Entity'}
-                  .configType=${'image_entities'}
-                  .configIndex=${idx}
-                  @value-changed=${this._handleImageEntityChange}
-                  .allowCustomEntity=${false}
-                  .includeDomains=${'image'}
-                ></ha-entity-picker>
-              </div>
-              <div class="item-actions">
-                <ha-icon-button
-                  class="action-icon"
-                  .path=${ICON.DELETE}
-                  @click=${this._deleteImageEntity(idx)}
-                ></ha-icon-button>
-              </div>
-            </div>
-          `
-        )}
-        ${emptyEntityPicker}
-      </div>
-    </div>`;
+    return html`
+      <hui-entity-editor
+        .hass=${this._hass}
+        .label=${'Image Entities'}
+        .entities=${this._imageEntities}
+        .entityFilter=${(entity) => {
+          return entity.entity_id.startsWith('image.');
+        }}
+        @entities-changed=${this._entitiesValueChanged}
+      ></hui-entity-editor>
+    `;
   }
 
-  private _handleNewImageEntity(ev: any): void {
-    ev.stopPropagation();
-    const value = ev.target.value;
-    const newEntity = new Map(this._newItemName);
-    newEntity.set('entity', value);
+  private _entitiesValueChanged(ev: EntitiesEditorEvent): void {
+    if (ev.detail && ev.detail.entities) {
+      console.log(ev.detail);
+      this.config = {
+        ...this.config!,
+        image_entities: ev.detail.entities,
+      };
 
-    this._newItemName = newEntity;
+      this._imageEntities = processEditorEntities(this.config.image_entities || []);
 
-    this.requestUpdate();
-    this._handleAddNewImageEntity();
-  }
-
-  private _handleAddNewImageEntity(): void {
-    const resetNewEntity = () => {
-      this._newItemName.clear();
-    };
-
-    this.updateComplete.then(() => {
-      const newEntity = this._newItemName.get('entity');
-      if (!newEntity) return;
-
-      const imageEntities = [...(this.config.image_entities || [])];
-      imageEntities.push(newEntity);
-      this.config = { ...this.config, image_entities: imageEntities };
-      this._debouncedConfigChanged();
-      resetNewEntity();
-    });
-  }
-
-  private _handleImageEntityChange(ev: any): void {
-    const entity = ev.target.value;
-    const idx = ev.target.configIndex;
-    if (idx === undefined) return;
-    if (!entity || entity === '') {
-      this._deleteImageEntity(idx)();
-      return;
+      fireEvent(this, 'config-changed', { config: this.config });
     }
-    const imageEntities = [...(this.config.image_entities || [])];
-    imageEntities[idx] = entity;
-    this.config = { ...this.config, image_entities: imageEntities };
-    this._debouncedConfigChanged();
-  }
-
-  private _deleteImageEntity(idx: number): () => void {
-    return () => {
-      if (idx === undefined) return;
-      const imageEntities = [...(this.config.image_entities || [])];
-      imageEntities.splice(idx, 1);
-      this.config = { ...this.config, image_entities: imageEntities };
-      this._debouncedConfigChanged();
-    };
   }
 
   private _renderImageList(): TemplateResult {
@@ -689,7 +625,7 @@ export class PanelImagesEditor extends LitElement {
   private _validateAndReindexImages(): void {
     setTimeout(() => {
       const imageListId = this.shadowRoot?.getElementById('images-list') as HTMLElement;
-      const imagesList = imageListId.querySelectorAll('.item-config-row').length || 0;
+      const imagesList = imageListId?.querySelectorAll('.item-config-row').length || 0;
 
       let configImagesCount: number = 0;
 
