@@ -80,6 +80,10 @@ export type THEME_MODE = 'auto' | 'dark' | 'light';
 export type HISTORY_PERIOD = 'today' | 'yesterday';
 export type LABEL_MODE = 'name' | 'state' | 'attribute' | 'icon';
 
+export interface SingleMapCustomStyles {
+  light: string;
+  dark: string;
+}
 export interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
@@ -102,6 +106,7 @@ export interface MiniMapConfig {
   fit_zones?: boolean;
   single_map_card?: boolean;
   extra_entities?: (MapEntityConfig | string)[];
+  map_styles?: SingleMapCustomStyles;
 }
 
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */

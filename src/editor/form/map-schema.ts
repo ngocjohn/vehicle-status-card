@@ -1,11 +1,13 @@
 import { mdiPalette } from '@mdi/js';
 import memoizeOne from 'memoize-one';
 
-import { DEFAULT_HOURS_TO_SHOW, DEFAULT_ZOOM } from '../../const/maptiler-const';
+import { DEFAULT_HOURS_TO_SHOW, DEFAULT_ZOOM, STYLE_OPTIONS } from '../../const/maptiler-const';
 
 import type { LocalizeFunc } from 'custom-card-helpers';
 
 const themeModes = ['auto', 'light', 'dark'] as const;
+const labelModes = ['name', 'state', 'icon', 'attribute'] as const;
+
 const sharedDefaultMapConfig = [
   { name: 'aspect_ratio', label: 'Aspect Ratio', selector: { text: {} } },
   {
@@ -61,6 +63,42 @@ const sharedDefaultMapConfig = [
     selector: { boolean: {} },
   },
 ];
+
+const mapStyles = {
+  name: 'map_styles',
+  type: 'expandable',
+  iconPath: mdiPalette,
+  title: 'Custom Styles',
+  schema: [
+    {
+      name: '',
+      type: 'grid',
+      schema: [
+        {
+          name: 'light',
+          label: 'Light Style',
+          selector: {
+            select: {
+              mode: 'dropdown',
+              options: STYLE_OPTIONS,
+            },
+          },
+        },
+        {
+          name: 'dark',
+          label: 'Dark Style',
+          selector: {
+            select: {
+              mode: 'dropdown',
+              options: STYLE_OPTIONS,
+            },
+          },
+        },
+      ],
+    },
+  ],
+};
+
 export const singleMapConfingSchema = memoizeOne(
   (localize: LocalizeFunc) =>
     [
@@ -75,6 +113,7 @@ export const singleMapConfingSchema = memoizeOne(
             type: 'grid',
             schema: [...sharedDefaultMapConfig],
           },
+          mapStyles,
         ],
       },
     ] as const
@@ -87,11 +126,11 @@ export const baseMapConfigSchema = memoizeOne(
         name: 'device_tracker',
         selector: { entity: { filter: { domain: ['device_tracker', 'person'] } } },
       },
-      {
-        name: 'google_api_key',
-        label: 'Google API Key (optional)',
-        selector: { text: { type: 'text' } },
-      },
+      // {
+      //   name: 'google_api_key',
+      //   label: 'Google API Key (optional)',
+      //   selector: { text: { type: 'text' } },
+      // },
       {
         name: 'maptiler_api_key',
         label: 'MapTiler API Key (optional)',
@@ -179,12 +218,10 @@ export const miniMapConfigSchema = memoizeOne(
                 selector: {
                   select: {
                     mode: 'dropdown',
-                    options: [
-                      { value: 'name', label: 'Name' },
-                      { value: 'state', label: 'State' },
-                      { value: 'icon', label: 'Icon' },
-                      { value: 'attribute', label: 'Attribute' },
-                    ],
+                    options: labelModes.map((labelMode) => ({
+                      value: labelMode,
+                      label: labelMode.charAt(0).toUpperCase() + labelMode.slice(1),
+                    })),
                   },
                 },
               },

@@ -395,6 +395,7 @@ export async function createSingleMapCard(card: VehicleStatusCard): Promise<Love
   }
 
   const extra_entities = mapConfig.extra_entities || [];
+  const custom_styles = mapConfig.map_styles || {};
 
   const extraMapConfig: ExtraMapCardConfig[] = [
     {
@@ -407,6 +408,7 @@ export async function createSingleMapCard(card: VehicleStatusCard): Promise<Love
       hours_to_show: hours_to_show,
       theme_mode: mapConfig.theme_mode || 'auto',
       block_more_info: true,
+      custom_styles,
       entities: [
         {
           entity: mapConfig.device_tracker,

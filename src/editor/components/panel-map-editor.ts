@@ -9,6 +9,7 @@ import { VehicleStatusCardConfig, HomeAssistant, fireEvent, MiniMapConfig } from
 import { Create } from '../../utils';
 import { hasLocation } from '../../utils/ha-helper';
 import { VehicleStatusCardEditor } from '../editor';
+import { ALERT_INFO } from '../editor-const';
 import { singleMapConfingSchema, baseMapConfigSchema, miniMapConfigSchema } from '../form';
 
 @customElement('panel-map-editor')
@@ -21,7 +22,7 @@ export class PanelMapEditor extends LitElement {
   @state() _yamlEditor: boolean = false;
   @state() _useSingleMapCard: boolean = false;
 
-  private get _mapConfig(): VehicleStatusCardConfig['mini_map'] {
+  private get _mapConfig(): MiniMapConfig {
     return this._config?.mini_map || {};
   }
 
@@ -68,8 +69,8 @@ export class PanelMapEditor extends LitElement {
         .schema=${[
           {
             name: 'single_map_card',
-            label: 'Use Single Map Card',
-            type: 'boolean',
+            label: 'Mini Map as Single Card (MapTiler API Key is required)',
+            selector: { boolean: {} },
             default: false,
             disabled: this._mapCardConfig?.maptiler_api_key ? false : true,
           },
@@ -84,14 +85,14 @@ export class PanelMapEditor extends LitElement {
       ? this._renderYamlEditor()
       : html` <div class="tip-content">
           ${baseMapSection} ${useSingleMap}
-          ${!this._useSingleMapCard ? this._renderNotSingleConfigSection() : this._renderExtraEntitiesSection()}
+          ${!this._useSingleMapCard ? this._renderDefaultMapConfig() : this._renderSingleMapConfig()}
           <ha-button slot="actions" @click=${() => (this._yamlEditor = true)}> Edit YAML </ha-button>
         </div>`;
 
     return content;
   }
 
-  private _renderNotSingleConfigSection() {
+  private _renderDefaultMapConfig() {
     return html`
       <ha-form
         .hass=${this.hass}
@@ -104,8 +105,19 @@ export class PanelMapEditor extends LitElement {
     `;
   }
 
-  private _renderExtraEntitiesSection() {
+  private _renderSingleMapConfig() {
     return html`
+      ${Create.HaAlert({
+        message: ALERT_INFO.MAP_SINGLE_CARD,
+        options: {
+          action: [
+            {
+              callback: () => window.open(ALERT_INFO.MAP_SINGLE_LINK),
+            },
+          ],
+        },
+      })}
+
       <ha-form
         .hass=${this.hass}
         .data=${this._mapConfig}
@@ -181,8 +193,6 @@ export class PanelMapEditor extends LitElement {
   }
 
   private _renderBaseMapSection(): TemplateResult {
-    const docLink = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup';
-
     const baseContent = html`
       <ha-form
         .hass=${this.hass}
@@ -193,10 +203,16 @@ export class PanelMapEditor extends LitElement {
       >
       </ha-form>
 
-      <ha-alert alert-type="info">
-        How to get Maptiler API Key?
-        <mwc-button slot="action" @click="${() => window.open(docLink)}" label="More"></mwc-button>
-      </ha-alert>
+      ${Create.HaAlert({
+        message: ALERT_INFO.MAPTILER_GET,
+        options: {
+          action: [
+            {
+              callback: () => window.open(ALERT_INFO.MAPTILER_DOC_LINK),
+            },
+          ],
+        },
+      })}
     `;
     return Create.ExpansionPanel({
       options: { header: 'Base Map Configuration' },

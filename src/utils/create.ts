@@ -272,7 +272,14 @@ export const HaAlert = ({
   message: string;
   type?: 'info' | 'success' | 'warning' | 'error';
   dismissable?: boolean;
-  options?: { title?: string; icon?: string };
+  options?: {
+    title?: string;
+    icon?: string;
+    action?: {
+      callback: () => void;
+      label?: string;
+    }[];
+  };
 }): TemplateResult => {
   const dismisHandler = (ev: CustomEvent) => {
     const alert = ev.target as HTMLElement;
@@ -287,6 +294,10 @@ export const HaAlert = ({
       title=${options?.title}
     >
       ${message}
+      ${options?.action?.map(
+        (action) =>
+          html` <mwc-button slot="action" @click=${action.callback} label=${action.label || 'More'}> </mwc-button>`
+      )}
     </ha-alert>
   `;
 };

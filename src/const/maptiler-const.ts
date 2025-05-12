@@ -77,6 +77,22 @@ export const STYLE_SCHEMA = [
 
 export const DARK_AVAILABLE_STYLES = ['STREETS', 'BASIC', 'BRIGHT', 'DATAVIZ', 'VOYAGER', 'BACKDROP'];
 
+const STYLE_SCHEME_OPTIONS = () => {
+  const _createLabelValue = (values: string[]) => {
+    return values.map((value) => ({
+      value,
+      label: value,
+    }));
+  };
+
+  return STYLE_SCHEMA.reduce((acc, style) => {
+    const options = style.selector.select.options;
+    return acc.concat(_createLabelValue(options));
+  }, [] as { value: string; label: string }[]);
+};
+
+export const STYLE_OPTIONS = STYLE_SCHEME_OPTIONS();
+
 export const DEFAULT_HOURS_TO_SHOW = 0;
 export const DEFAULT_ZOOM = 14;
 export const MARKER_CIRCLE_RADIUS = 0.05;
