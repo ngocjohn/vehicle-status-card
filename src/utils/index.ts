@@ -4,3 +4,4 @@ export * from './helpers';
 export * from './loader';
 export * from './tap-action';
 export * from './parse-aspect-ratio';
+export * from './apply-theme';

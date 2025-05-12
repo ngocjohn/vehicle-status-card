@@ -1,4 +1,4 @@
-import { applyThemesOnElement, fireEvent, forwardHaptic } from 'custom-card-helpers';
+import { fireEvent, forwardHaptic } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -17,7 +17,7 @@ import {
   DefaultCardConfig,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
-import { HaHelp, isDarkColor, isEmpty } from './utils';
+import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement } from './utils';
 import { getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
