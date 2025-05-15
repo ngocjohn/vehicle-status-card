@@ -4,6 +4,7 @@ import { LovelaceConfig } from 'custom-card-helpers';
 
 import { EXTRA_MAP_CARD_URL } from '../const/const';
 import { VehicleStatusCardConfig } from '../types';
+import { loadModule } from './load_resource';
 
 interface HuiRootElement extends HTMLElement {
   lovelace: {
@@ -52,7 +53,7 @@ export const stickyPreview = () => {
     position: 'sticky',
     top: '0',
     padding: '0',
-    justifyItems: 'center',
+    // justifyItems: 'center',
   });
 };
 
@@ -176,15 +177,22 @@ export const loadMapCard = async (entities: string[]): Promise<void> => {
   }
 };
 
-export const loadExtraMapCard = async (): Promise<void> => {
+// export const loadExtraMapCard = async (): Promise<void> => {
+//   (window as any).customCards = (window as any).customCards || [];
+//   if (!(window as any).customCards.find((card: any) => card.type === 'extra-map-card')) {
+//     const script = document.createElement('script');
+//     script.type = 'module';
+//     script.src = EXTRA_MAP_CARD_URL;
+//     script.onload = () => console.log('extra-map-card loaded');
+//     script.onerror = () => console.error('Failed to load extra-map-card');
+//     document.body.appendChild(script);
+//     console.log('extra-map-card script added to the document');
+//   }
+// };
+export const loadExtraMapCard = () => {
   (window as any).customCards = (window as any).customCards || [];
   if (!(window as any).customCards.find((card: any) => card.type === 'extra-map-card')) {
-    const script = document.createElement('script');
-    script.type = 'module';
-    script.src = EXTRA_MAP_CARD_URL;
-    script.onload = () => console.log('extra-map-card loaded');
-    script.onerror = () => console.error('Failed to load extra-map-card');
-    document.body.appendChild(script);
-    console.log('extra-map-card script added to the document');
+    loadModule(EXTRA_MAP_CARD_URL);
+    console.log('extra-map-card loaded');
   }
 };

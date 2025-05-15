@@ -51,7 +51,7 @@ const formatTimestamp = (ts: number): string => {
 };
 
 export const _getHistoryPoints = memoizeOne((config: MiniMapConfig, history?: HistoryStates): any | undefined => {
-  if (!history || !(config.hours_to_show ?? 0)) {
+  if (!history) {
     return undefined;
   }
   console.log('history', history);

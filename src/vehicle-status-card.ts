@@ -1,9 +1,12 @@
 import { fireEvent, forwardHaptic } from 'custom-card-helpers';
+import { LovelaceGridOptions } from 'extra-map-card';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import { classMap } from 'lit/directives/class-map.js';
 
 import './components';
+
+import { classMap } from 'lit/directives/class-map.js';
+
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
 import { ICON, SECTION, SECTION_ORDER } from './const/const';
 import cardcss from './css/card.css';
@@ -28,6 +31,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) public layout?: string;
 
   @state() public _currentPreview: PREVIEW_TYPE = null;
   @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
@@ -56,6 +60,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
   @query('vsc-indicators') _indicators!: VscIndicators;
   @query('mini-map-box') _miniMap!: MiniMapBox;
+  @query('extra-map-card') _extraMapCard?: any;
 
   set hass(hass: HomeAssistant) {
     this._hass = hass;
@@ -142,11 +147,12 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
     // set new promise resolve to load extra map card
-    await new Promise((resolve) => {
-      loadExtraMapCard().then(() => {
-        resolve(true);
-      });
-    });
+    // await new Promise((resolve) => {
+    //   loadExtraMapCard().then(() => {
+    //     resolve(true);
+    //   });
+    // });
+    loadExtraMapCard();
     HaHelp._setUpPreview(this);
     await HaHelp.handleFirstUpdated(this);
     this.measureCard();
@@ -156,6 +162,13 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   private createSingleMapCard() {
     setTimeout(async () => {
       this._singleMapCard = (await createSingleMapCard(this)) as LovelaceCardConfig[];
+      setTimeout(() => {
+        // check if the map card is loaded
+        if (this._extraMapCard && this.layout === 'panel' && !this.isEditorPreview) {
+          const root = this._extraMapCard!.shadowRoot.getElementById('root') as HTMLElement;
+          root.style.paddingBottom = 'unset';
+        }
+      }, 0);
     }, 0);
   }
 
@@ -627,6 +640,12 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     return 3;
   }
 
+  public getGridOptions(): LovelaceGridOptions {
+    return {
+      columns: 'full',
+      rows: 'auto',
+    };
+  }
   private _isDarkTheme(): boolean {
     const css = getComputedStyle(this);
     const primaryTextColor = css.getPropertyValue('--primary-text-color');

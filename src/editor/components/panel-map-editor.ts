@@ -1,13 +1,13 @@
 import { EntityConfig } from 'custom-card-helpers';
 import { processConfigEntities } from 'extra-map-card';
-import { MapEntityConfig } from 'extra-map-card/dist/types/config';
+import { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
-import { VehicleStatusCardConfig, HomeAssistant, fireEvent, MiniMapConfig } from '../../types';
+import { VehicleStatusCardConfig, HomeAssistant, fireEvent, MiniMapConfig, LovelaceConfig } from '../../types';
 import { Create } from '../../utils';
-import { hasLocation } from '../../utils/ha-helper';
+import { _convertToExtraMapConfig, hasLocation } from '../../utils/ha-helper';
 import { VehicleStatusCardEditor } from '../editor';
 import { ALERT_INFO } from '../editor-const';
 import { singleMapConfingSchema, baseMapConfigSchema, miniMapConfigSchema } from '../form';
@@ -15,7 +15,8 @@ import { singleMapConfingSchema, baseMapConfigSchema, miniMapConfigSchema } from
 @customElement('panel-map-editor')
 export class PanelMapEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
+  @property({ attribute: false }) public lovelace?: LovelaceConfig;
+  @property({ attribute: false }) editor!: VehicleStatusCardEditor;
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
   @state() _mapCardConfig?: MiniMapConfig;
   @state() _mapEntitiesConfig?: EntityConfig[];
@@ -28,6 +29,11 @@ export class PanelMapEditor extends LitElement {
 
   static get styles(): CSSResultGroup {
     return [editorcss];
+  }
+
+  private get _extraMapCardConfig(): ExtraMapCardConfig {
+    const mapConfig = _convertToExtraMapConfig(this._mapConfig, this._mapEntitiesConfig);
+    return mapConfig;
   }
 
   protected updated(_changedProperties: PropertyValues): void {
@@ -105,19 +111,57 @@ export class PanelMapEditor extends LitElement {
     `;
   }
 
-  private _renderSingleMapConfig() {
-    return html`
-      ${Create.HaAlert({
-        message: ALERT_INFO.MAP_SINGLE_CARD,
-        options: {
-          action: [
-            {
-              callback: () => window.open(ALERT_INFO.MAP_SINGLE_LINK),
-            },
-          ],
-        },
-      })}
+  private _renderMapCardConfig() {
+    // const mapConfig = this._convertToExtraMapConfig(this._mapCardConfig!, this._mapEntitiesConfig);
 
+    return html`
+      <hui-card-element-editor
+        .hass=${this.hass}
+        .value=${this._extraMapCardConfig}
+        .lovelace=${this.editor.lovelace}
+        @config-changed=${this._mapCardConfigChanged}
+      ></hui-card-element-editor>
+    `;
+  }
+
+  private _mapCardConfigChanged(ev: CustomEvent) {
+    ev.stopPropagation();
+    if (!this._config) return;
+    const config = ev.detail.config;
+    const mapConfig = this._convertToBaseMapConfig(config);
+    // console.log('Map Config:', mapConfig);
+    const miniMapConfig = { ...(this._config.mini_map || {}) };
+    this._config = {
+      ...this._config,
+      mini_map: {
+        ...miniMapConfig,
+        ...mapConfig,
+      },
+    };
+
+    fireEvent(this, 'config-changed', {
+      config: this._config,
+    });
+  }
+
+  private _convertToBaseMapConfig(config: ExtraMapCardConfig): Partial<MiniMapConfig> {
+    const map_styles = config.custom_styles;
+    const extra_entities = config.entities;
+    return {
+      map_styles,
+      extra_entities,
+      fit_zones: config.fit_zones,
+      default_zoom: config.default_zoom,
+      hours_to_show: config.hours_to_show,
+      theme_mode: config.theme_mode,
+      history_period: config.history_period,
+      auto_fit: config.auto_fit,
+      aspect_ratio: config.aspect_ratio,
+    };
+  }
+
+  private _renderSingleMapConfig() {
+    const haForms = html`
       <ha-form
         .hass=${this.hass}
         .data=${this._mapConfig}
@@ -133,6 +177,20 @@ export class PanelMapEditor extends LitElement {
         .entityFilter=${hasLocation}
         @entities-changed=${this._entitiesValueChanged}
       ></hui-entity-editor>
+    `;
+
+    return html`
+      ${Create.HaAlert({
+        message: ALERT_INFO.MAP_SINGLE_CARD,
+        options: {
+          action: [
+            {
+              callback: () => window.open(ALERT_INFO.MAP_SINGLE_LINK),
+            },
+          ],
+        },
+      })}
+      ${this._renderMapCardConfig()}
     `;
   }
 

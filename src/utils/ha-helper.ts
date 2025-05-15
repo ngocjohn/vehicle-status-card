@@ -14,6 +14,7 @@ import {
   VehicleStatusCardConfig,
   MapData,
   Address,
+  MiniMapConfig,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
@@ -380,53 +381,48 @@ export async function createSingleMapCard(card: VehicleStatusCard): Promise<Love
   const hass = card._hass as HomeAssistant;
   const mapConfig = card._config.mini_map;
 
-  let hours_to_show: number = 0;
-  if (mapConfig.history_period !== undefined) {
-    const now = new Date();
-    if (mapConfig.history_period === 'today') {
-      hours_to_show = now.getHours();
-    } else if (mapConfig.history_period === 'yesterday') {
-      const yesterday = new Date(now);
-      yesterday.setDate(now.getDate() - 1);
-      hours_to_show = yesterday.getHours() + 24;
-    }
-  } else {
-    hours_to_show = mapConfig.hours_to_show || 0;
+  const extra_entities = mapConfig.extra_entities || [];
+  const deviceTracker = {
+    entity: mapConfig.device_tracker,
+    color: mapConfig.path_color || '',
+    label_mode: mapConfig.label_mode,
+    attribute: mapConfig.attribute || '',
+  };
+
+  let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(mapConfig, [
+    ...(extra_entities as MapEntityConfig[]),
+    deviceTracker,
+  ]);
+
+  if (!extraMapConfig.entities?.length || extraMapConfig.entities.length === 0) {
+    extraMapConfig.entities = [deviceTracker];
   }
 
-  const extra_entities = mapConfig.extra_entities || [];
-  const custom_styles = mapConfig.map_styles || {};
-
-  const extraMapConfig: ExtraMapCardConfig[] = [
-    {
-      type: 'custom:extra-map-card',
-      api_key: mapConfig.maptiler_api_key,
-      default_zoom: mapConfig.default_zoom || 14,
-      auto_fit: mapConfig.auto_fit || false,
-      fit_zones: mapConfig.fit_zones || false,
-      aspect_ratio: mapConfig.aspect_ratio || '',
-      hours_to_show: hours_to_show,
-      theme_mode: mapConfig.theme_mode || 'auto',
-      block_more_info: true,
-      custom_styles,
-      entities: [
-        {
-          entity: mapConfig.device_tracker,
-          color: mapConfig.path_color || '',
-          label_mode: mapConfig.label_mode,
-          attribute: mapConfig.attribute || '',
-        },
-        ...(extra_entities as MapEntityConfig[]),
-      ],
-    },
-  ];
-  const mapElement = (await createCardElement(hass, extraMapConfig)) as LovelaceCardConfig[];
+  const mapElement = (await createCardElement(hass, [extraMapConfig])) as LovelaceCardConfig[];
   if (!mapElement) {
     console.error('Failed to create map element');
     return;
   }
   return mapElement;
 }
+export const _convertToExtraMapConfig = (
+  config: MiniMapConfig,
+  entities: (MapEntityConfig | string)[] = []
+): ExtraMapCardConfig => {
+  return {
+    type: 'custom:extra-map-card',
+    api_key: config.maptiler_api_key,
+    entities,
+    custom_styles: config.map_styles,
+    aspect_ratio: config.aspect_ratio,
+    auto_fit: config.auto_fit,
+    fit_zones: config.fit_zones,
+    default_zoom: config.default_zoom,
+    hours_to_show: config.hours_to_show,
+    theme_mode: config.theme_mode,
+    history_period: config.history_period,
+  };
+};
 
 export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
   // console.log('Getting address from MapTiler');

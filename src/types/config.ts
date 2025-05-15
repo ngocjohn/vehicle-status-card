@@ -81,8 +81,8 @@ export type HISTORY_PERIOD = 'today' | 'yesterday';
 export type LABEL_MODE = 'name' | 'state' | 'attribute' | 'icon';
 
 export interface SingleMapCustomStyles {
-  light: string;
-  dark: string;
+  light?: string;
+  dark?: string;
 }
 export interface MiniMapConfig {
   default_zoom: number;
