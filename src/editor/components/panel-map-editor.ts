@@ -147,16 +147,27 @@ export class PanelMapEditor extends LitElement {
   private _convertToBaseMapConfig(config: ExtraMapCardConfig): Partial<MiniMapConfig> {
     const map_styles = config.custom_styles;
     const extra_entities = config.entities;
+    const {
+      fit_zones,
+      default_zoom,
+      hours_to_show,
+      theme_mode,
+      history_period,
+      auto_fit,
+      aspect_ratio,
+      use_more_info,
+    } = config;
     return {
       map_styles,
       extra_entities,
-      fit_zones: config.fit_zones,
-      default_zoom: config.default_zoom,
-      hours_to_show: config.hours_to_show,
-      theme_mode: config.theme_mode,
-      history_period: config.history_period,
-      auto_fit: config.auto_fit,
-      aspect_ratio: config.aspect_ratio,
+      fit_zones,
+      default_zoom,
+      hours_to_show,
+      theme_mode,
+      history_period,
+      auto_fit,
+      aspect_ratio,
+      use_more_info,
     };
   }
 

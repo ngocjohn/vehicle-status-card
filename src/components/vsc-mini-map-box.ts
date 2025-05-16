@@ -10,13 +10,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { SECTION, SECTION_ORDER } from '../const/const';
 import { DEFAULT_HA_MAP_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
 import './shared/vsc-maptiler-popup';
-import {
-  Address,
-  HistoryStates,
-  isComponentLoaded,
-  MapData,
-  subscribeHistoryStatesTimeWindow,
-} from '../types';
+import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistoryStatesTimeWindow } from '../types';
 import { _getHistoryPoints } from '../utils';
 import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
 import parseAspectRatio from '../utils/parse-aspect-ratio';
@@ -113,7 +107,6 @@ export class MiniMapBox extends LitElement {
       hours_to_show = mapConfig.hours_to_show || 0;
     }
 
-    console.log('History period:', hours_to_show);
     this._subscribed = subscribeHistoryStatesTimeWindow(
       hass!,
       (combinedHistory) => {

@@ -105,6 +105,7 @@ export interface MiniMapConfig {
   attribute?: string;
   fit_zones?: boolean;
   single_map_card?: boolean;
+  use_more_info?: boolean;
   extra_entities?: (MapEntityConfig | string)[];
   map_styles?: SingleMapCustomStyles;
 }
