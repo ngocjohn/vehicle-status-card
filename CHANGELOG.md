@@ -1,3 +1,25 @@
+<a id="v1.11.0"></a>
+# [v1.11.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.11.0) - 2025-05-16
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.11.0 -->
+
+## What's Changed
+### New Features 🎉
+* **Standalone Mini Map Card with MapTiler Theme**
+Added support for displaying the mini map as a full, standalone card on the dashboard. This new feature replicates the functionality of the native Home Assistant map card while incorporating the custom MapTiler-based styling for a consistent visual theme. Users can now integrate the map view more flexibly within their dashboard layouts.  [#109](https://github.com/ngocjohn/vehicle-status-card/pull/109)
+
+![feat-single-maps](https://github.com/user-attachments/assets/e0b87bc4-106b-4f79-bcda-1bfc8adbb252)
+
+
+### Fixes 🐛
+* Fixed image entity handling in both the editor and slide components  [#106](https://github.com/ngocjohn/vehicle-status-card/pull/106)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.10.0...v1.11.0
+
+[Changes][v1.11.0]
+
+
 <a id="v1.10.0"></a>
 # [v1.10.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.10.0) - 2025-05-07
 
@@ -372,6 +394,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.11.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.10.0...v1.11.0
 [v1.10.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.9.0...v1.10.0
 [v1.9.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.2...v1.9.0
 [v1.8.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.1...v1.8.2
