@@ -254,7 +254,8 @@ export const ExpansionPanel = ({
       .expanded=${options?.expanded || false}
       .header=${options.header}
       .secondary=${options?.secondary || ''}
-      .leftChevron=${true}
+      .leftChevron=${false}
+      style="border-radius: 6px;  --ha-card-border-radius: 6px;"
     >
       ${options.icon ? html`<div slot="icons"><ha-icon icon=${options.icon}></ha-icon></div>` : ''}
       <div class="card-config">${content}</div>
@@ -271,7 +272,14 @@ export const HaAlert = ({
   message: string;
   type?: 'info' | 'success' | 'warning' | 'error';
   dismissable?: boolean;
-  options?: { title?: string; icon?: string };
+  options?: {
+    title?: string;
+    icon?: string;
+    action?: {
+      callback: () => void;
+      label?: string;
+    }[];
+  };
 }): TemplateResult => {
   const dismisHandler = (ev: CustomEvent) => {
     const alert = ev.target as HTMLElement;
@@ -286,6 +294,10 @@ export const HaAlert = ({
       title=${options?.title}
     >
       ${message}
+      ${options?.action?.map(
+        (action) =>
+          html` <mwc-button slot="action" @click=${action.callback} label=${action.label || 'More'}> </mwc-button>`
+      )}
     </ha-alert>
   `;
 };

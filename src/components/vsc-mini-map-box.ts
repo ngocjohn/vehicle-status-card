@@ -10,7 +10,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { SECTION, SECTION_ORDER } from '../const/const';
 import { DEFAULT_HA_MAP_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
 import './shared/vsc-maptiler-popup';
-import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistory } from '../types';
+import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistoryStatesTimeWindow } from '../types';
 import { _getHistoryPoints } from '../utils';
 import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
 import parseAspectRatio from '../utils/parse-aspect-ratio';
@@ -81,30 +81,33 @@ export class MiniMapBox extends LitElement {
     if (
       !isComponentLoaded(hass!, 'history') ||
       this._subscribed ||
-      !(_config.mini_map?.hours_to_show ?? DEFAULT_HOURS_TO_SHOW)
+      (!_config.mini_map?.history_period && !_config.mini_map?.hours_to_show)
     ) {
+      // console.log(
+      //   'History not loaded or already subscribed',
+      //   this._subscribed,
+      //   !_config.mini_map?.history_period && !_config.mini_map?.hours_to_show
+      // );
       return;
     }
+    console.log('Subscribing to history...');
 
-    const historyPeriod = _config.mini_map?.history_period;
-    const now = new Date();
-
-    // Set custom time range for history
-    // if history_period is set
-    let startTime = new Date(now);
-    let endTime = new Date(now);
-    if (historyPeriod === 'today') {
-      startTime.setHours(0, 0, 0, 0);
-    } else if (historyPeriod === 'yesterday') {
-      startTime.setDate(now.getDate() - 1);
-      startTime.setHours(0, 0, 0, 0);
+    const mapConfig = _config.mini_map!;
+    let hours_to_show: number = 0;
+    if (mapConfig.history_period !== undefined) {
+      const now = new Date();
+      if (mapConfig.history_period === 'today') {
+        hours_to_show = now.getHours();
+      } else if (mapConfig.history_period === 'yesterday') {
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        hours_to_show = yesterday.getHours() + 24;
+      }
     } else {
-      startTime = new Date(now.getTime() - 60 * 60 * (_config.mini_map?.hours_to_show ?? DEFAULT_HOURS_TO_SHOW) * 1000);
+      hours_to_show = mapConfig.hours_to_show || 0;
     }
 
-    // console.log('History period:', historyPeriod, 'start:', startTime.toISOString(), 'end', endTime.toISOString());
-
-    this._subscribed = subscribeHistory(
+    this._subscribed = subscribeHistoryStatesTimeWindow(
       hass!,
       (combinedHistory) => {
         if (!this._subscribed) {
@@ -112,18 +115,18 @@ export class MiniMapBox extends LitElement {
           return;
         }
         this._stateHistory = combinedHistory;
-        // console.log('History updated:', this._stateHistory);
       },
-      new Date(startTime),
-      new Date(endTime),
-      [_config.mini_map!.device_tracker]
+      hours_to_show,
+      [_config.mini_map!.device_tracker],
+      false,
+      false,
+      false
     ).catch((err) => {
       this._subscribed = undefined;
       console.error('Error subscribing to history', err);
       return undefined;
     });
   }
-
   private _unsubscribeHistory() {
     if (this._subscribed) {
       this._subscribed.then((unsub) => unsub?.());

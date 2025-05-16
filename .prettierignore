@@ -6,3 +6,4 @@ package-lock.json
 *.yaml
 *.yml
 *.txt
+/node_modules/

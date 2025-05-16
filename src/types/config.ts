@@ -1,5 +1,6 @@
 // Cutom card helpers:
 import { ActionConfig, EntityConfig } from 'custom-card-helpers';
+import { MapEntityConfig } from 'extra-map-card/dist/types/config';
 
 import { LovelaceCardConfig } from './ha-frontend/lovelace/lovelace';
 
@@ -75,9 +76,14 @@ export interface MapData {
   lon: number;
   address: Partial<Address>;
 }
+export type THEME_MODE = 'auto' | 'dark' | 'light';
+export type HISTORY_PERIOD = 'today' | 'yesterday';
+export type LABEL_MODE = 'name' | 'state' | 'attribute' | 'icon';
 
-type HISTORY_PERIOD = 'today' | 'yesterday';
-type LABEL_MODE = 'name' | 'state' | 'attribute' | 'icon';
+export interface SingleMapCustomStyles {
+  light?: string;
+  dark?: string;
+}
 export interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
@@ -97,9 +103,13 @@ export interface MiniMapConfig {
   use_zone_name?: boolean;
   label_mode?: LABEL_MODE;
   attribute?: string;
+  fit_zones?: boolean;
+  single_map_card?: boolean;
+  use_more_info?: boolean;
+  extra_entities?: (MapEntityConfig | string)[];
+  map_styles?: SingleMapCustomStyles;
 }
 
-type THEME_MODE = 'auto' | 'dark' | 'light';
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */
 
 type SecondaryInfoConfig = {

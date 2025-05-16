@@ -1,279 +1,301 @@
-import { isString } from 'es-toolkit';
-import { LitElement, html, TemplateResult, CSSResultGroup } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { EntityConfig } from 'custom-card-helpers';
+import { processConfigEntities } from 'extra-map-card';
+import { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
+import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
-import { VehicleStatusCardConfig, HomeAssistant, fireEvent } from '../../types';
+import { VehicleStatusCardConfig, HomeAssistant, fireEvent, MiniMapConfig, LovelaceConfig } from '../../types';
 import { Create } from '../../utils';
+import { _convertToExtraMapConfig, hasLocation } from '../../utils/ha-helper';
 import { VehicleStatusCardEditor } from '../editor';
+import { ALERT_INFO } from '../editor-const';
+import { singleMapConfingSchema, baseMapConfigSchema, miniMapConfigSchema } from '../form';
 
 @customElement('panel-map-editor')
 export class PanelMapEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
+  @property({ attribute: false }) public lovelace?: LovelaceConfig;
+  @property({ attribute: false }) editor!: VehicleStatusCardEditor;
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
+  @state() _mapCardConfig?: MiniMapConfig;
+  @state() _mapEntitiesConfig?: EntityConfig[];
+  @state() _yamlEditor: boolean = false;
+  @state() _useSingleMapCard: boolean = false;
+
+  private get _mapConfig(): MiniMapConfig {
+    return this._config?.mini_map || {};
+  }
 
   static get styles(): CSSResultGroup {
     return [editorcss];
   }
 
-  protected render(): TemplateResult {
-    const baseMapSection = this._renderBaseMapSection();
-    const mapConfigSection = this._renderMapConfigSection();
-    const popupSection = this._renderPopupSection();
-
-    const sections = [
-      {
-        options: { header: 'Map Configuration' },
-        content: baseMapSection,
-      },
-      {
-        options: { header: 'Mini Map Layout' },
-        content: mapConfigSection,
-      },
-      {
-        options: { header: 'Popup Configuration' },
-        content: popupSection,
-      },
-    ];
-
-    return html`<div class="tip-content">${sections.map(Create.ExpansionPanel)}</div>`;
+  private get _extraMapCardConfig(): ExtraMapCardConfig {
+    const mapConfig = _convertToExtraMapConfig(this._mapConfig, this._mapEntitiesConfig);
+    return mapConfig;
   }
 
-  private _renderBaseMapSection(): TemplateResult {
-    const docLink = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup';
-    const miniMap = this._config?.mini_map || {};
+  protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
+    if (_changedProperties.has('_config') && this._config.mini_map) {
+      this._mapCardConfig = {
+        ...(this._config.mini_map || {}),
+      };
+      this._mapEntitiesConfig = this._mapCardConfig.extra_entities
+        ? processConfigEntities<MapEntityConfig>(this._mapCardConfig.extra_entities)
+        : [];
+      this._useSingleMapCard = this._mapCardConfig.single_map_card ?? false;
+      if (!this._mapCardConfig.maptiler_api_key && this._mapCardConfig.single_map_card) {
+        this._useSingleMapCard = false;
+        fireEvent(this, 'config-changed', {
+          config: {
+            ...this._config,
+            mini_map: {
+              ...this._mapCardConfig,
+              single_map_card: false,
+            },
+          },
+        });
+      }
+    }
+  }
 
-    const apiKeys = [
-      {
-        configValue: 'device_tracker',
-        label: 'Device Tracker',
-        pickerType: 'entity',
-        value: miniMap.device_tracker ?? '',
-        options: { includeDomains: ['device_tracker', 'person'] },
-      },
-      {
-        configValue: 'google_api_key',
-        label: 'Google API Key (Optional)',
-        pickerType: 'baseSelector',
-        value: miniMap.google_api_key ?? '',
-        options: {
-          selector: { text: { type: 'text' } },
-        },
-      },
-      {
-        configValue: 'maptiler_api_key',
-        label: 'Maptiler API Key (Optional)',
-        pickerType: 'baseSelector',
-        value: miniMap.maptiler_api_key ?? '',
-        options: {
-          selector: { text: { type: 'text' } },
-        },
-      },
-    ];
+  protected render(): TemplateResult {
+    if (!this.hass || !this._config) {
+      return html``;
+    }
+
+    const baseMapSection = this._renderBaseMapSection();
+
+    const useSingleMap = html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._mapConfig}
+        .schema=${[
+          {
+            name: 'single_map_card',
+            label: 'Mini Map as Single Card (MapTiler API Key is required)',
+            selector: { boolean: {} },
+            default: false,
+            disabled: this._mapCardConfig?.maptiler_api_key ? false : true,
+          },
+        ]}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${this._valueChanged}
+      >
+      </ha-form>
+    `;
+
+    const content = this._yamlEditor
+      ? this._renderYamlEditor()
+      : html` <div class="tip-content">
+          ${baseMapSection} ${useSingleMap}
+          ${!this._useSingleMapCard ? this._renderDefaultMapConfig() : this._renderSingleMapConfig()}
+          <ha-button slot="actions" @click=${() => (this._yamlEditor = true)}> Edit YAML </ha-button>
+        </div>`;
+
+    return content;
+  }
+
+  private _renderDefaultMapConfig() {
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._mapConfig}
+        .schema=${miniMapConfigSchema(this._mapConfig.device_tracker, this._mapConfig.label_mode !== 'attribute')}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${this._valueChanged}
+      >
+      </ha-form>
+    `;
+  }
+
+  private _renderMapCardConfig() {
+    // const mapConfig = this._convertToExtraMapConfig(this._mapCardConfig!, this._mapEntitiesConfig);
 
     return html`
-      <div class="sub-content">
-        ${this.createPickers(apiKeys)}
-        <ha-alert alert-type="info">
-          How to get Maptiler API Key?
-          <mwc-button slot="action" @click="${() => window.open(docLink)}" label="More"></mwc-button>
-        </ha-alert>
+      <hui-card-element-editor
+        .hass=${this.hass}
+        .value=${this._extraMapCardConfig}
+        .lovelace=${this.editor.lovelace}
+        @config-changed=${this._mapCardConfigChanged}
+      ></hui-card-element-editor>
+    `;
+  }
+
+  private _mapCardConfigChanged(ev: CustomEvent) {
+    ev.stopPropagation();
+    if (!this._config) return;
+    const config = ev.detail.config;
+    const mapConfig = this._convertToBaseMapConfig(config);
+    // console.log('Map Config:', mapConfig);
+    const miniMapConfig = { ...(this._config.mini_map || {}) };
+    this._config = {
+      ...this._config,
+      mini_map: {
+        ...miniMapConfig,
+        ...mapConfig,
+      },
+    };
+
+    fireEvent(this, 'config-changed', {
+      config: this._config,
+    });
+  }
+
+  private _convertToBaseMapConfig(config: ExtraMapCardConfig): Partial<MiniMapConfig> {
+    const map_styles = config.custom_styles;
+    const extra_entities = config.entities;
+    const {
+      fit_zones,
+      default_zoom,
+      hours_to_show,
+      theme_mode,
+      history_period,
+      auto_fit,
+      aspect_ratio,
+      use_more_info,
+    } = config;
+    return {
+      map_styles,
+      extra_entities,
+      fit_zones,
+      default_zoom,
+      hours_to_show,
+      theme_mode,
+      history_period,
+      auto_fit,
+      aspect_ratio,
+      use_more_info,
+    };
+  }
+
+  private _renderSingleMapConfig() {
+    const haForms = html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._mapConfig}
+        .schema=${singleMapConfingSchema(this.hass.localize)}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${this._valueChanged}
+      >
+      </ha-form>
+      <hui-entity-editor
+        .hass=${this.hass}
+        .label=${'Extra Entities to show on map'}
+        .entities=${this._mapEntitiesConfig}
+        .entityFilter=${hasLocation}
+        @entities-changed=${this._entitiesValueChanged}
+      ></hui-entity-editor>
+    `;
+
+    return html`
+      ${Create.HaAlert({
+        message: ALERT_INFO.MAP_SINGLE_CARD,
+        options: {
+          action: [
+            {
+              callback: () => window.open(ALERT_INFO.MAP_SINGLE_LINK),
+            },
+          ],
+        },
+      })}
+      ${this._renderMapCardConfig()}
+    `;
+  }
+
+  private _valueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const config = ev.detail.value;
+    fireEvent(this, 'config-changed', {
+      config: {
+        ...this._config,
+        mini_map: {
+          ...config,
+        },
+      },
+    });
+  }
+
+  private _entitiesValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    if (ev.detail && ev.detail.entities) {
+      this._config = {
+        ...this._config,
+        mini_map: {
+          ...this._config.mini_map,
+          extra_entities: ev.detail.entities,
+        },
+      };
+    }
+    this._mapEntitiesConfig = processConfigEntities<MapEntityConfig>(ev.detail.entities);
+
+    fireEvent(this, 'config-changed', {
+      config: this._config,
+    });
+    console.log('Entities Config:', this._mapEntitiesConfig);
+  }
+
+  private _renderYamlEditor(): TemplateResult {
+    return html`
+      <div id="yaml-editor">
+        <vsc-sub-panel-yaml
+          .hass=${this.hass}
+          .config=${this._config}
+          .configDefault=${this._config.mini_map}
+          .extraAction=${true}
+          @yaml-config-changed=${this._yamlChanged}
+          @close-editor=${() => (this._yamlEditor = false)}
+        >
+        </vsc-sub-panel-yaml>
       </div>
     `;
   }
 
-  private _renderMapConfigSection(): TemplateResult {
-    const { getBooleanPicker, getNumberPicker } = this;
-
-    const miniMap = this._config?.mini_map || {};
-
-    const configFields = [
-      getBooleanPicker('enable_popup', 'Enable Popup', miniMap.enable_popup ?? false),
-      getBooleanPicker('us_format', 'US Address Format', miniMap.us_format ?? false),
-      getBooleanPicker('hide_map_address', 'Hide Address', miniMap.hide_map_address ?? false),
-      getBooleanPicker('use_zone_name', 'Use Zone Name', miniMap.use_zone_name ?? false),
-      getNumberPicker('map_zoom', 'Map Zoom', miniMap.map_zoom ?? 14),
-      getNumberPicker('map_height', 'Minimap Height (px)', miniMap.map_height ?? 150, 500, 150, 10, 'slider'),
-    ];
-
-    return html` <div class="sub-content">${this.createPickers(configFields)}</div> `;
-  }
-
-  private _renderPopupSection(): TemplateResult {
-    const { getBooleanPicker, getNumberPicker } = this;
-
-    const miniMap = this._config?.mini_map || {};
-
-    const popupConfig = [
-      getNumberPicker('default_zoom', 'Default Zoom', miniMap.default_zoom || 14),
-      getNumberPicker('hours_to_show', 'Hours to Show', miniMap.hours_to_show || 0),
-      {
-        configValue: 'theme_mode',
-        label: 'Theme Mode',
-        pickerType: 'attribute',
-        value: miniMap.theme_mode ?? 'auto',
-        items: [
-          { label: 'Auto', value: 'auto' },
-          { label: 'Light', value: 'light' },
-          { label: 'Dark', value: 'dark' },
-        ],
-      },
-      {
-        configValue: 'aspect_ratio',
-        label: 'Aspect Ratio',
-        pickerType: 'baseSelector',
-        value: miniMap.aspect_ratio ?? '',
-        options: {
-          selector: { text: { type: 'text' } },
-        },
-      },
-      getBooleanPicker('auto_fit', 'Auto Fit', miniMap.auto_fit ?? false),
-      {
-        configValue: 'path_color',
-        label: 'Path Color',
-        pickerType: 'baseSelector',
-        value: miniMap.path_color || undefined,
-        options: { selector: { ui_color: { include_none: false, include_state: false, default_color: '' } } },
-      },
-      {
-        configValue: 'history_period',
-        label: 'History Period',
-        pickerType: 'baseSelector',
-        value: miniMap.history_period || undefined,
-        options: {
-          selector: {
-            select: {
-              sort: true,
-              mode: 'dropdown',
-              options: [
-                { label: 'Today', value: 'today' },
-                { label: 'Yesterday', value: 'yesterday' },
-              ],
-            },
-          },
-        },
-      },
-      {
-        configValue: 'label_mode',
-        label: 'Label Mode',
-        pickerType: 'baseSelector',
-        value: miniMap.label_mode || undefined,
-        options: {
-          selector: {
-            select: {
-              sort: true,
-              mode: 'dropdown',
-              options: [
-                { label: 'Name', value: 'name' },
-                { label: 'State', value: 'state' },
-                { label: 'Icon', value: 'icon' },
-                { label: 'Attribute', value: 'attribute' },
-              ],
-            },
-          },
-        },
-      },
-      {
-        configValue: 'attribute',
-        label: 'Attribute',
-        pickerType: 'baseSelector',
-        value: miniMap.attribute || undefined,
-        options: {
-          selector: {
-            attribute: {
-              entity_id: miniMap.device_tracker,
-            },
-          },
-          disabled: miniMap.label_mode !== 'attribute',
-        },
-      },
-    ];
-
-    return html` <div class="sub-content">${this.createPickers(popupConfig)}</div>
-      <ha-alert alert-type="info">This options is for Map popup.</ha-alert>`;
-  }
-
-  private getBooleanPicker = (
-    configValue: string,
-    label: string,
-    value: boolean,
-    configType?: string,
-    configIndex?: string | number
-  ) => ({
-    configValue,
-    label,
-    pickerType: 'selectorBoolean',
-    value,
-    options: { selector: { boolean: ['true', 'false'] } },
-    configType: configType || 'mini_map',
-    configIndex: configIndex || 0,
-  });
-
-  private getNumberPicker = (
-    configValue: string,
-    label: string,
-    value: number,
-    max = 500,
-    min = 0,
-    step = 1,
-    mode = 'box'
-  ) => ({
-    configValue,
-    label,
-    pickerType: 'number',
-    value,
-    options: { selector: { number: { max, min, step, mode } } },
-  });
-
-  private createPickers = (configs: any[]): TemplateResult<1>[] => {
-    const sharedConfig = {
-      component: this,
-      configIdex: 0,
-      configType: 'mini_map',
-    };
-
-    return configs.map(
-      (config) => html`<div class="item-content">${Create.Picker({ ...sharedConfig, ...config })}</div>`
-    );
-  };
-
-  public _valueChanged(ev: any): void {
+  private _yamlChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    if (!this._config) return;
-
-    const target = ev.target;
-    const configValue = target.configValue;
-    const configType = target.configType;
-    const newValue = ev.detail.value;
-
-    const updates: Partial<VehicleStatusCardConfig> = {};
-
-    if (configType === 'mini_map') {
-      const miniMap = { ...(this._config.mini_map || {}) };
-      if (miniMap![configValue] === newValue) return;
-      if (['google_api_key', 'maptiler_api_key', 'path_color'].includes(configValue)) {
-        if (newValue === '' || (isString(newValue) && newValue.trim() === '')) {
-          miniMap[configValue] = undefined;
-          updates.mini_map = miniMap;
-          console.log('Config delete:', configValue, newValue);
-        } else {
-          miniMap[configValue] = newValue;
-          updates.mini_map = miniMap;
-          console.log('Config changes:', configValue, newValue);
-        }
-      } else {
-        miniMap[configValue] = newValue;
-        updates.mini_map = miniMap;
-        console.log('Mini Map Updates:', configValue, newValue);
-      }
-    }
-
-    if (Object.keys(updates).length > 0) {
-      this._config = { ...this._config, ...updates };
-      fireEvent(this, 'config-changed', { config: this._config });
-    }
+    const { isValid, value } = ev.detail;
+    if (!isValid || !this._config) return;
+    this._config = { ...this._config, mini_map: value };
+    fireEvent(this, 'config-changed', { config: this._config });
   }
+
+  private _renderBaseMapSection(): TemplateResult {
+    const baseContent = html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._mapConfig}
+        .schema=${baseMapConfigSchema()}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${this._valueChanged}
+      >
+      </ha-form>
+
+      ${Create.HaAlert({
+        message: ALERT_INFO.MAPTILER_GET,
+        options: {
+          action: [
+            {
+              callback: () => window.open(ALERT_INFO.MAPTILER_DOC_LINK),
+            },
+          ],
+        },
+      })}
+    `;
+    return Create.ExpansionPanel({
+      options: { header: 'Base Map Configuration' },
+      content: baseContent,
+    });
+  }
+
+  private _computeLabel = (schema: any) => {
+    let label = this.hass?.localize(`ui.panel.lovelace.editor.card.generic.${schema.name}`);
+    if (label) return label;
+    label = this.hass?.localize(`ui.panel.lovelace.editor.card.${schema.label}`);
+    if (label) return label;
+    return schema.label;
+  };
 }
 
 declare global {

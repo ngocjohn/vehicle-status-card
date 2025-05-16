@@ -234,6 +234,13 @@ const NEW_BUTTON_CONFIG = {
   },
 };
 
+enum ALERT_INFO {
+  MAPTILER_GET = 'How to get Maptiler API Key?',
+  MAPTILER_DOC_LINK = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup',
+  MAP_SINGLE_CARD = 'Configuration is same as for HA Default Map Card',
+  MAP_SINGLE_LINK = 'https://www.home-assistant.io/dashboards/map/',
+}
+
 export {
   BUTTON_TYPE,
   CARD_TYPES,
@@ -243,4 +250,5 @@ export {
   PREVIEW_CONFIG_TYPES,
   NEW_BUTTON_CONFIG,
   IMAGE_CONFIG_ACTIONS,
+  ALERT_INFO,
 };

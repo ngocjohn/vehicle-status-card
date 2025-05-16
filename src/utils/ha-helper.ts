@@ -1,5 +1,6 @@
-const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import { LovelaceCardConfig } from 'custom-card-helpers';
+
+const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import memoizeOne from 'memoize-one';
 
 import { DEFAULT_CONFIG } from '../const/const';
@@ -13,9 +14,11 @@ import {
   VehicleStatusCardConfig,
   MapData,
   Address,
+  MiniMapConfig,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
+import type { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
 import type { HassEntity } from 'home-assistant-js-websocket';
 
 export async function createCardElement(
@@ -371,6 +374,56 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
   return cardElement;
 }
 
+export async function createSingleMapCard(card: VehicleStatusCard): Promise<LovelaceCardConfig[] | void> {
+  if (!card._config?.mini_map.maptiler_api_key && !card._config?.mini_map.device_tracker) {
+    return;
+  }
+  const hass = card._hass as HomeAssistant;
+  const mapConfig = card._config.mini_map;
+
+  const extra_entities = mapConfig.extra_entities || [];
+  const deviceTracker = {
+    entity: mapConfig.device_tracker,
+    color: mapConfig.path_color || '',
+    label_mode: mapConfig.label_mode,
+    attribute: mapConfig.attribute || '',
+  };
+
+  let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(mapConfig, [
+    ...(extra_entities as MapEntityConfig[]),
+    deviceTracker,
+  ]);
+
+  if (!extraMapConfig.entities?.length || extraMapConfig.entities.length === 0) {
+    extraMapConfig.entities = [deviceTracker];
+  }
+
+  const mapElement = (await createCardElement(hass, [extraMapConfig])) as LovelaceCardConfig[];
+  if (!mapElement) {
+    console.error('Failed to create map element');
+    return;
+  }
+  return mapElement;
+}
+export const _convertToExtraMapConfig = (
+  config: MiniMapConfig,
+  entities: (MapEntityConfig | string)[] = []
+): ExtraMapCardConfig => {
+  return {
+    type: 'custom:extra-map-card',
+    api_key: config.maptiler_api_key,
+    entities,
+    custom_styles: config.map_styles,
+    aspect_ratio: config.aspect_ratio,
+    auto_fit: config.auto_fit,
+    fit_zones: config.fit_zones,
+    default_zoom: config.default_zoom,
+    hours_to_show: config.hours_to_show,
+    theme_mode: config.theme_mode,
+    history_period: config.history_period,
+  };
+};
+
 export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
   // console.log('Getting address from MapTiler');
   const filterParams: Record<string, keyof Address> = {
@@ -525,3 +578,6 @@ export const computeStateNameFromEntityAttributes = (entityId: string, attribute
 
 export const computeStateName = (stateObj: HassEntity): string =>
   computeStateNameFromEntityAttributes(stateObj.entity_id, stateObj.attributes);
+
+export const hasLocation = (stateObj: HassEntity) =>
+  'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes;
