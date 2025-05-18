@@ -146,12 +146,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   }
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    // set new promise resolve to load extra map card
-    // await new Promise((resolve) => {
-    //   loadExtraMapCard().then(() => {
-    //     resolve(true);
-    //   });
-    // });
     loadExtraMapCard();
     HaHelp._setUpPreview(this);
     await HaHelp.handleFirstUpdated(this);

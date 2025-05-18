@@ -189,10 +189,11 @@ export const loadMapCard = async (entities: string[]): Promise<void> => {
 //     console.log('extra-map-card script added to the document');
 //   }
 // };
-export const loadExtraMapCard = () => {
+export const loadExtraMapCard = async () => {
   (window as any).customCards = (window as any).customCards || [];
+
   if (!(window as any).customCards.find((card: any) => card.type === 'extra-map-card')) {
-    loadModule(EXTRA_MAP_CARD_URL);
+    await loadModule(EXTRA_MAP_CARD_URL);
     console.log('extra-map-card loaded');
   }
 };
