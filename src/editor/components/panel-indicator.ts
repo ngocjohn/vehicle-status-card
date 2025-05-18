@@ -49,6 +49,9 @@ export class PanelIndicator extends LitElement {
   static get styles(): CSSResultGroup {
     return [
       css`
+        *[hidden] {
+          display: none !important;
+        }
         ha-expansion-panel:not(:last-child) {
           margin-bottom: var(--vic-gutter-gap);
         }
@@ -527,11 +530,10 @@ export class PanelIndicator extends LitElement {
         <ha-entity-picker
           .hass=${this.hass}
           .configValue=${'entity'}
-          .label=${'Add new indicator'}
-          .value=${this._newIndicator.get('entity')}
+          .value=${this._newIndicator.get('entity') || ''}
           .configType=${'single'}
           .allowCustomEntity=${true}
-          @change=${this._handleNewIndicator}
+          @value-changed=${this._handleNewIndicator}
         ></ha-entity-picker>
       `,
       group: html` <ha-textfield
@@ -558,6 +560,7 @@ export class PanelIndicator extends LitElement {
     const reset = () => {
       this._newIndicator.clear(); // Clear all keys
       this._resetItems();
+      this._addFormVisible = false;
     };
 
     const updateConfig = (newIndicators: Partial<VehicleStatusCardConfig['indicators']>) => {
@@ -758,7 +761,9 @@ export class PanelIndicator extends LitElement {
         <ha-button @click=${() => (this._addFormVisible = !this._addFormVisible)}
           >${this._addFormVisible ? 'Cancel' : `Add new ${this.type}`}</ha-button
         >
-        <ha-button @click=${() => (this._yamlEditorVisible = !this._yamlEditorVisible)}>Edit YAML</ha-button>
+        <ha-button .hidden=${this._addFormVisible} @click=${() => (this._yamlEditorVisible = !this._yamlEditorVisible)}
+          >Edit YAML</ha-button
+        >
 
         ${this._renderAddTemplate(this.type)}
       </div>
@@ -940,12 +945,17 @@ export class PanelIndicator extends LitElement {
     ev.stopPropagation();
     const target = ev.target as any;
     const configValue = target.configValue;
-    const value = target.value;
+    let value: any;
+    if (configValue === 'entity') {
+      value = ev.detail.value;
+    } else {
+      value = target.value;
+    }
+    // console.log('New indicator value:', configValue, value);
 
     const newIndicator = new Map(this._newIndicator);
     newIndicator.set(configValue, value);
     this._newIndicator = newIndicator;
-
     this.requestUpdate();
   }
 
