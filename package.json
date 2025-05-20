@@ -49,7 +49,7 @@
     "eslint": "^9.26.0",
     "eslint-plugin-perfectionist": "^4.13.0",
     "eslint-plugin-unused-imports": "^4.1.4",
-    "extra-map-card": "^1.2.2",
+    "extra-map-card": "^1.2.6",
     "husky": "^9.1.7",
     "leaflet": "^1.9.4",
     "leaflet-providers": "^2.0.0",
