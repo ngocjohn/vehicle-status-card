@@ -1,7 +1,6 @@
 import typescript from 'rollup-plugin-typescript2';
 import terser from '@rollup/plugin-terser';
 import serve from 'rollup-plugin-serve';
-import filesize from 'rollup-plugin-filesize';
 import replace from '@rollup/plugin-replace';
 import { logCardInfo, defaultPlugins } from './rollup.config.helper.mjs';
 
@@ -39,7 +38,6 @@ const plugins = [
   replace(replaceOpts),
   dev && serve(serveopts),
   !dev && terser(terserOpt),
-  !dev && filesize(),
   typescript({
     sourceMap: dev,
     outputToFilesystem: true,
