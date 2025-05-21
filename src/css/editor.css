@@ -50,14 +50,13 @@
 .button-list,
 .default-card-list,
 .images-list {
-	border-block: solid 1px var(--divider-color);
+	border-top: solid 1px var(--divider-color);
 	padding-block: var(--vic-card-padding);
 	margin-bottom: var(--vic-gutter-gap);
 }
 
 .divider {
 	color: var(--secondary-text-color);
-
 }
 
 .sub-card-header .label {
@@ -457,6 +456,7 @@ ha-selector#vic-boolean-selector {
 	justify-content: space-between;
 	align-items: center;
 	width: 100%;
+	padding-block: 0.5em;
 }
 
 .icon-title {
@@ -466,8 +466,9 @@ ha-selector#vic-boolean-selector {
 	cursor: pointer;
 	opacity: 0.8;
 	transition: opacity 0.3s ease-in-out;
-	flex: 1;
+	flex: 0;
 	width: fit-content;
+	white-space: nowrap;
 }
 
 .icon-title:hover {

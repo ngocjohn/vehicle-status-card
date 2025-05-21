@@ -108,7 +108,7 @@ export class PanelEditorUI extends LitElement {
             (_card, i) =>
               html`<vic-tab
                 .active=${selected === i}
-                .name=${i + 1}
+                .name=${(i + 1).toString()}
                 @click=${() => (this._selectedCard = i)}
                 style="flex: 0 !important;"
               ></vic-tab>`

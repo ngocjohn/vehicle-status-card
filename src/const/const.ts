@@ -18,6 +18,7 @@ import {
 import { version } from '../../package.json';
 
 export const CARD_VERSION = `v${version}`;
+export const NAMESPACE_TITLE = 'Vehicle Status Card';
 export const EXTRA_MAP_CARD_URL = 'https://cdn.jsdelivr.net/npm/extra-map-card/dist/extra-map-card-bundle.min.js';
 
 export const DEFAULT_CONFIG = {

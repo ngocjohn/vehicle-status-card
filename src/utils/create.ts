@@ -108,6 +108,7 @@ export const Picker = ({
         @value-changed=${handleValueChange}
         .allowCustomIcons=${true}
         .includeDomains=${options?.includeDomains}
+        .hideClearIcon=${options?.hideClearIcon}
       ></ha-entity-picker>
     `,
     icon: html`
