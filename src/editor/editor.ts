@@ -220,9 +220,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
   }
 
-  private _handleSelectedConfigType(ev: any): void {
+  private _handleSelectedConfigType(ev: CustomEvent): void {
+    ev.stopPropagation();
     this._selectedConfigType = ev.detail.value;
-    this.requestUpdate();
+    this.updateComplete.then(() => {
+      this._toggleMenu();
+    });
   }
 
   private _handleTabChange(index: number): void {
@@ -251,7 +254,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       .item-label-path=${'label'}
       .placeholder=${'Select Config Type'}
       .configValue=${'type'}
-      .value=${this._selectedConfigType}
+      .value=${this._selectedConfigType ?? ''}
       .items=${ITEMS}
       @value-changed=${this._handleSelectedConfigType}
     ></ha-combo-box>`;

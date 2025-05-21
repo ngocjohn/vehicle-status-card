@@ -421,6 +421,7 @@ export const _convertToExtraMapConfig = (
     hours_to_show: config.hours_to_show,
     theme_mode: config.theme_mode,
     history_period: config.history_period,
+    use_more_info: config.use_more_info,
   };
 };
 
