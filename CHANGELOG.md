@@ -1,3 +1,21 @@
+<a id="v1.11.2"></a>
+# [v1.11.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.11.2) - 2025-05-21
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.11.2 -->
+
+## What's Changed
+### Fixes 🐛
+* Fix the indicator entity picker to ensure proper functionality. [#110 ](https://github.com/ngocjohn/vehicle-status-card/pull/110)
+### Other Changes
+* Update map editor functionality. [#114](https://github.com/ngocjohn/vehicle-status-card/pull/114)
+* Update action configuration and indicator schemas. [#115](https://github.com/ngocjohn/vehicle-status-card/pull/115)
+
+
+**Full Changelog**: [v1.11.0...v1.11.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.0...v1.11.2)
+
+[Changes][v1.11.2]
+
+
 <a id="v1.11.0"></a>
 # [v1.11.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.11.0) - 2025-05-16
 
@@ -15,7 +33,7 @@ Added support for displaying the mini map as a full, standalone card on the dash
 * Fixed image entity handling in both the editor and slide components  [#106](https://github.com/ngocjohn/vehicle-status-card/pull/106)
 
 
-**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.10.0...v1.11.0
+**Full Changelog**: [v1.10.0...v1.11.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.10.0...v1.11.0)
 
 [Changes][v1.11.0]
 
@@ -394,6 +412,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.11.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.0...v1.11.2
 [v1.11.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.10.0...v1.11.0
 [v1.10.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.9.0...v1.10.0
 [v1.9.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.8.2...v1.9.0
