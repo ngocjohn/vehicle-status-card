@@ -134,11 +134,11 @@ export interface DefaultCardConfig {
 }
 
 export interface CardItemConfig {
-  attribute: string;
+  attribute?: string;
   entity: string;
   icon?: string;
-  name: string;
-  state_template: string;
+  name?: string;
+  state_template?: string;
 }
 
 export interface ButtonActionConfig {

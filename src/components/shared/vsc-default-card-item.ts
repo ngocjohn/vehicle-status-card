@@ -84,7 +84,7 @@ export class VehicleDefaultCardItem extends LitElement {
   }
 
   private isTemplate(key: TemplateKey): boolean {
-    const value = this.defaultCardItem[key];
+    const value = this.defaultCardItem[key] || '';
     return value?.includes('{');
   }
 

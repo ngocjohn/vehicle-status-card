@@ -8,9 +8,11 @@ import '../../editor/components/panel-editor-ui';
 import '../../editor/components/sub-panel-yaml';
 import '../../editor/components/panel-tire-config';
 import '../../editor/components/panel-base-button';
+import '../../editor/components/panel-default-card-category';
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { PanelBaseButton } from '../../editor/components/panel-base-button';
+import { PanelDefaultCard } from '../../editor/components/panel-default-card-category';
 import { PanelTireConfig } from '../../editor/components/panel-tire-config';
 import {
   HomeAssistant,
@@ -23,7 +25,7 @@ import {
 } from '../../types';
 import { Create } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
-import { BUTTON_CARD_ACTIONS, CONFIG_VALUES, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS } from '../editor-const';
+import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS } from '../editor-const';
 import { DEFAULT_TIRE_CONFIG } from '../form';
 
 @customElement('panel-button-card')
@@ -35,13 +37,8 @@ export class PanelButtonCard extends LitElement {
   @state() _activePreview: string | null = null;
 
   @state() _activeTabIndex: number = 0;
-  @state() _activeTireEntityIndex: number = 0;
   @state() _buttonIndex: number | null = null;
   @state() _cardIndex: number | null = null;
-  @state() _itemIndex: number | null = null;
-
-  @state() _newItemName: Map<string, string> = new Map();
-  @state() _selectedAction: string = 'tap_action';
 
   @state() _reindexing: boolean = false;
   @state() _reindexButton: boolean = false;
@@ -51,8 +48,9 @@ export class PanelButtonCard extends LitElement {
   private _sortable: Sortable | null = null;
   private _btnSortable: Sortable | null = null;
 
-  @query('vsc-panel-tire-config') _panelTireConfig!: PanelTireConfig;
-  @query('vsc-panel-base-button') _panelBaseButton!: PanelBaseButton;
+  @query('vsc-panel-tire-config') _panelTireConfig?: PanelTireConfig;
+  @query('vsc-panel-base-button') _panelBaseButton?: PanelBaseButton;
+  @query('vsc-panel-default-card') _panelDefaultCard?: PanelDefaultCard;
 
   static get styles(): CSSResultGroup {
     return [
@@ -165,11 +163,7 @@ export class PanelButtonCard extends LitElement {
 
     if (changedProps.has('_activeTabIndex') && this._activePreview !== null) {
       this.resetEditorPreview();
-      // this.editor._cleanConfig();
-    }
-
-    if (changedProps.has('_buttonIndex') || changedProps.has('_cardIndex') || changedProps.has('_activeTabIndex')) {
-      this.hideClearButton();
+      this.cardEditor._cleanConfig();
     }
 
     if (changedProps.has('_activeTabIndex') && this._activeTabIndex === 1) {
@@ -260,15 +254,17 @@ export class PanelButtonCard extends LitElement {
           <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
         </div>
         <div class="sub-content">
-          ${Create.Picker({
-            component: this,
-            label: `Button #${index + 1}`,
-            value: button.button.primary,
-            configType: 'button',
-            configIndex: index,
-            configValue: 'primary',
-            pickerType: 'textfield' as 'textfield',
-          })}
+          <ha-selector
+            .hass=${this.hass}
+            .value=${button.button.primary}
+            .configValue=${'primary'}
+            .configType=${'button'}
+            .configIndex=${index}
+            .label=${`Button #${index + 1}`}
+            .selector=${{ text: {} }}
+            .required=${false}
+            @value-changed=${this._handleTitlePrimaryChanged}
+          ></ha-selector>
         </div>
         <div class="item-actions">
           <ha-icon-button
@@ -327,9 +323,7 @@ export class PanelButtonCard extends LitElement {
         content:
           this._cardIndex === null
             ? this._renderDefaultCardList(defaultCard, buttonIndex)
-            : this._itemIndex === null
-            ? this._renderCardItemList(this._cardIndex, buttonIndex)
-            : this._renderItemConfig(this._itemIndex, this._cardIndex, buttonIndex),
+            : this._renderCardItemList(this._cardIndex, buttonIndex),
       },
       {
         key: `custom-card-${buttonIndex}`,
@@ -490,16 +484,18 @@ export class PanelButtonCard extends LitElement {
                   <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
                 </div>
                 <div class="item-content">
-                  ${Create.Picker({
-                    component: this,
-                    label: `Category #${cardIndex + 1}`,
-                    value: card.title,
-                    configType: 'default_card',
-                    configIndex: buttonIndex,
-                    cardIndex: cardIndex,
-                    configValue: 'title',
-                    pickerType: 'textfield' as 'textfield',
-                  })}
+                  <ha-selector
+                    .hass=${this.hass}
+                    .value=${card.title}
+                    .configValue=${'title'}
+                    .configType=${'default_card'}
+                    .configIndex=${buttonIndex}
+                    .cardIndex=${cardIndex}
+                    .label=${`Category #${cardIndex + 1}`}
+                    .selector=${{ text: {} }}
+                    .required=${false}
+                    @value-changed=${this._handleTitlePrimaryChanged}
+                  ></ha-selector>
                 </div>
                 <div class="item-actions">
                   <ha-icon-button
@@ -561,8 +557,7 @@ export class PanelButtonCard extends LitElement {
 
   private _renderCardItemList(cardIndex: number, buttonIndex: number): TemplateResult {
     if (this._cardIndex === null) return html``;
-    const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex];
-    const card = this.config.button_card[buttonIndex].default_card[cardIndex]?.items || [];
+    const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex] as DefaultCardConfig;
 
     return html`
       <div class="sub-header">
@@ -574,125 +569,12 @@ export class PanelButtonCard extends LitElement {
           >${this._activePreview !== null ? 'Close Preview' : 'Preview'}</ha-button
         >
       </div>
-      <div class="default-card-list">
-        ${repeat(
-          card,
-          (item, itemIndex) => html`
-            <div class="item-config-row" data-index="${itemIndex}">
-              <div class="item-content">
-                ${Create.Picker({
-                  component: this,
-                  label: `Item #${itemIndex + 1}`,
-                  value: item.entity,
-                  configType: 'card_item',
-                  configIndex: buttonIndex,
-                  cardIndex: cardIndex,
-                  itemIndex: itemIndex,
-                  configValue: 'entity',
-                  pickerType: 'entity' as 'entity',
-                })}
-              </div>
-              <div class="item-actions">
-                <div class="action-icon" @click="${this.toggleAction('edit-item', buttonIndex, cardIndex, itemIndex)}">
-                  <ha-icon icon="mdi:pencil"></ha-icon>
-                </div>
-                <div
-                  class="action-icon"
-                  @click="${this.toggleAction('delete-item', buttonIndex, cardIndex, itemIndex)}"
-                >
-                  <ha-icon icon="mdi:close"></ha-icon>
-                </div>
-              </div>
-            </div>
-          `
-        )}
-        <div class="item-config-row">
-          <div class="item-content">
-            <ha-entity-picker
-              id="entity-picker-form"
-              .hass=${this.hass}
-              .value=${this._newItemName.get('entity')}
-              .configValue=${'entity'}
-              .configType=${'card_item_add'}
-              .configIndex=${buttonIndex}
-              .cardIndex=${cardIndex}
-              .label=${'Add New Item'}
-              @change=${this._handleNewItemChange}
-              .allowCustomIcons=${true}
-            ></ha-entity-picker>
-          </div>
-          <div style="display: inline-flex;">
-            ${Create.Picker({
-              component: this,
-              label: 'Collapsed items',
-              value: baseCard.collapsed_items,
-              configType: 'default_card',
-              configIndex: buttonIndex,
-              cardIndex: cardIndex,
-              configValue: 'collapsed_items',
-              pickerType: 'selectorBoolean' as 'selectorBoolean',
-            })}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderItemConfig(itemIndex: number, cardIndex: number, buttonIndex: number): TemplateResult {
-    if (this._itemIndex === null) return html``;
-    const item = this.config.button_card[buttonIndex].default_card[cardIndex].items[itemIndex];
-    const entity = item.entity || '';
-    const name = item?.name || '';
-    const icon = item.icon;
-    const attribute = item.attribute;
-    const state_template = item.state_template;
-
-    const attributes = entity ? Object.keys(this.hass.states[entity].attributes) : [];
-    const attrOpts = [...attributes.map((attr) => ({ value: attr, label: attr }))];
-    const sharedConfig = {
-      configType: 'sub_card_item',
-      configIndex: buttonIndex,
-      cardIndex: cardIndex,
-      itemIndex: itemIndex,
-    };
-
-    const pickerEntity = [
-      { value: entity, label: 'Entity', configValue: 'entity', pickerType: 'entity' as 'entity' },
-      { value: name, label: 'Name', configValue: 'name', pickerType: 'textfield' as 'textfield' },
-      { value: icon, label: 'Icon', configValue: 'icon', pickerType: 'icon' as 'icon' },
-      {
-        value: attribute,
-        label: 'Attribute',
-        configValue: 'attribute',
-        pickerType: 'attribute' as 'attribute',
-        items: attrOpts,
-      },
-    ];
-
-    const pickerState = [
-      {
-        value: state_template,
-        label: 'State Template',
-        configValue: 'state_template',
-        pickerType: 'template' as 'template',
-        options: { helperText: 'Template to display the state of the entity', label: 'State Template' },
-      },
-    ];
-
-    return html`
-      ${this._renderSubHeader(
-        'Item Configuration',
-        [{ action: this.toggleAction('item-back'), icon: 'mdi:chevron-left' }],
-        false,
-        html` <ha-button @click=${() => this._togglePreview('default', buttonIndex)}
-          >${this._activePreview === 'default' ? 'Close Preview' : 'Preview'}</ha-button
-        >`
-      )}
-
-      <div class="sub-content">
-        ${pickerEntity.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
-      </div>
-      ${pickerState.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
+      <vsc-panel-default-card
+        .hass=${this.hass}
+        .cardEditor=${this.cardEditor}
+        .defaultCardConfig=${baseCard}
+        @card-item-changed=${this._handleCardItemChange}
+      ></vsc-panel-default-card>
     `;
   }
 
@@ -763,32 +645,13 @@ export class PanelButtonCard extends LitElement {
     return use_icon ? withIcon : addedElement ? addedWithIcon : noIcon;
   }
 
-  private toggleAction(
-    action: BUTTON_CARD_ACTIONS,
-    buttonIndex?: number,
-    cardIndex?: number,
-    itemIndex?: number
-  ): () => void {
+  private toggleAction(action: BUTTON_CARD_ACTIONS, buttonIndex?: number, cardIndex?: number): () => void {
     return () => {
       const updateChange = (updated: any) => {
         this.config = { ...this.config, button_card: updated };
         fireEvent(this, 'config-changed', { config: this.config });
         this._reindexing = this._activePreview === 'default' && this._buttonIndex === buttonIndex;
         this._reindexing ? this.resetItems() : this.resetEditorPreview();
-      };
-
-      const hideAllDeleteButtons = () => {
-        this.shadowRoot?.querySelectorAll('.delete-icon')?.forEach((button) => button.classList.add('hidden'));
-      };
-
-      const toggleDeleteIcons = () => {
-        const deleteIcons = this.shadowRoot?.querySelectorAll('.delete-icon');
-        const isHidden = deleteIcons?.[0]?.classList.contains('hidden');
-        const deleteBtn = this.shadowRoot?.querySelector('.showdelete');
-        if (deleteBtn) {
-          deleteBtn.innerHTML = isHidden ? 'Cancel' : 'Delete';
-          deleteIcons?.forEach((item) => item.classList.toggle('hidden'));
-        }
       };
 
       const handleButtonAction = () => {
@@ -806,11 +669,7 @@ export class PanelButtonCard extends LitElement {
             this.resetItems();
             break;
           case 'add-new-button':
-            hideAllDeleteButtons();
             updateChange([...(this.config.button_card || []), NEW_BUTTON_CONFIG]);
-            break;
-          case 'show-delete':
-            toggleDeleteIcons();
             break;
           case 'delete-button':
             if (buttonIndex !== undefined) {
@@ -855,28 +714,10 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'category-add':
             if (buttonIndex !== undefined) {
-              hideAllDeleteButtons();
               const buttonCardConfig = [...(this.config.button_card || [])];
               const defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
               const newCard = { title: 'New Category', collapsed_items: false, items: [] };
               buttonCardConfig[buttonIndex].default_card = [...defaultCard, newCard];
-              updateChange(buttonCardConfig);
-            }
-            break;
-          case 'edit-item':
-            this._itemIndex = itemIndex!;
-            break;
-
-          case 'item-back':
-            this._itemIndex = null;
-            this.hideClearButton();
-            break;
-
-          case 'delete-item':
-            if (buttonIndex !== undefined && cardIndex !== undefined && itemIndex !== undefined) {
-              const buttonCardConfig = [...(this.config.button_card || [])];
-              const defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
-              defaultCard[cardIndex].items.splice(itemIndex, 1);
               updateChange(buttonCardConfig);
             }
             break;
@@ -921,17 +762,6 @@ export class PanelButtonCard extends LitElement {
     };
   }
 
-  private generateItemPicker(config: any, wrapperClass = 'item-content'): TemplateResult {
-    return html`
-      <div class=${wrapperClass}>
-        ${Create.Picker({
-          ...config,
-          component: this,
-        })}
-      </div>
-    `;
-  }
-
   private validateListAndReset(buttonIndex: number): void {
     setTimeout(() => {
       const cardList = this.shadowRoot?.querySelectorAll('.default-card-list .item-config-row').length || 0;
@@ -961,7 +791,6 @@ export class PanelButtonCard extends LitElement {
       this.requestUpdate();
       this.updateComplete.then(() => {
         this.cardEditor._dispatchEvent('toggle-preview', { cardType: null });
-        this.hideClearButton();
       });
     }
   }
@@ -987,24 +816,6 @@ export class PanelButtonCard extends LitElement {
         this._togglePreview('default', this._buttonIndex);
       });
     }
-  }
-
-  private hideClearButton(): void {
-    setTimeout(() => {
-      const entityPickers = this.shadowRoot?.querySelectorAll('#entity-picker-form');
-      if (entityPickers) {
-        entityPickers.forEach((entityPicker) => {
-          const comboBox = entityPicker.shadowRoot
-            ?.querySelector('ha-combo-box')
-            ?.shadowRoot?.querySelector('vaadin-combo-box-light > ha-svg-icon.clear-button') as HTMLElement;
-          if (comboBox) {
-            comboBox.style.display = 'none';
-          } else {
-            return;
-          }
-        });
-      }
-    }, 100);
   }
 
   /* ----------------------------- PREVIEW METHODS ---------------------------- */
@@ -1045,169 +856,6 @@ export class PanelButtonCard extends LitElement {
 
   /* -------------------- HANDLER METHODS FOR CONFIGURATION ------------------- */
 
-  public _valueChanged(ev: any): void {
-    ev.stopPropagation();
-    if (!this.config) {
-      return;
-    }
-
-    const target = ev.target;
-    const configType = target.configType;
-    const configValue = target.configValue;
-    let itemIndex = target.itemIndex;
-    let configIndex = target.configIndex;
-    let index = target.index;
-    let cardIndex = target.cardIndex;
-
-    // Get the new value from the event or the target
-    let newValue: any = target.value;
-
-    if (CONFIG_VALUES.includes(configValue)) {
-      newValue = ev.detail.value;
-    } else {
-      newValue = target.value;
-    }
-
-    console.log('Config type', configType, 'Config value', configValue, 'New value', newValue);
-    const updates: Partial<VehicleStatusCardConfig> = {};
-
-    let buttonCardConfig = [...(this.config.button_card || [])];
-
-    if (configType === 'button') {
-      let buttonConfig = { ...(buttonCardConfig[index] || {}) };
-      let button = { ...(buttonConfig.button || {}) };
-      let secondaryConfig = { ...(button.secondary || {}) };
-      if (['entity', 'attribute', 'state_template'].includes(configValue)) {
-        secondaryConfig[configValue] = newValue;
-        button.secondary = secondaryConfig;
-        buttonConfig.button = button;
-        buttonCardConfig[index] = buttonConfig;
-        updates.button_card = buttonCardConfig;
-      } else if (['picture_template', 'notify', 'color'].some((value) => configValue.includes(value))) {
-        let templateValue = newValue.trim() === '' ? null : newValue;
-        button[configValue] = templateValue;
-        buttonConfig.button = button;
-        buttonCardConfig[index] = buttonConfig;
-        updates.button_card = buttonCardConfig;
-        console.log('Button config', buttonConfig);
-      } else {
-        button[configValue] = newValue;
-        buttonConfig.button = button;
-        buttonCardConfig[index] = buttonConfig;
-        updates.button_card = buttonCardConfig;
-        console.log('Button config', buttonConfig);
-      }
-    } else if (['base', 'default_card', 'card_item'].includes(configType)) {
-      console.log('Config type', configType, 'Config value', configValue, 'New value', newValue);
-      const updateButtonConfig = (buttonConfig: any) => {
-        if (configType === 'base') {
-          buttonConfig[configValue] = newValue;
-          console.log('Button config', buttonConfig);
-        } else if (configType === 'default_card') {
-          let defaultCard = [...buttonConfig.default_card];
-          let card = { ...defaultCard[cardIndex] };
-          card[configValue] = newValue;
-          defaultCard[cardIndex] = card;
-          buttonConfig.default_card = defaultCard;
-          this._copyToPreview(defaultCard);
-        } else if (configType === 'card_item') {
-          let defaultCard = [...buttonConfig.default_card];
-          let card = { ...defaultCard[cardIndex] };
-          let items = [...card.items];
-          let item = { ...items[itemIndex] };
-
-          // Only set entity if newValue is valid
-          if (configValue === 'entity' && newValue) {
-            item.entity = newValue;
-          }
-
-          // Only update other properties if newValue is valid
-          if (newValue) {
-            item[configValue] = newValue;
-          }
-
-          items[itemIndex] = item;
-          card.items = items;
-          defaultCard[cardIndex] = card;
-          buttonConfig.default_card = defaultCard;
-          this._copyToPreview(defaultCard);
-        }
-        return buttonConfig;
-      };
-
-      let buttonConfig = { ...buttonCardConfig[configType === 'base' ? index : configIndex] };
-      buttonCardConfig[configType === 'base' ? index : configIndex] = updateButtonConfig(buttonConfig);
-      updates.button_card = buttonCardConfig;
-    } else if (configType === 'sub_card_item') {
-      configIndex = this._buttonIndex;
-      cardIndex = this._cardIndex;
-      itemIndex = this._itemIndex;
-      let buttonCardConfig = [...(this.config.button_card || [])];
-      let buttonConfig = { ...buttonCardConfig[configIndex] };
-      let defaultCard = [...buttonConfig.default_card];
-      let card = { ...defaultCard[cardIndex] };
-      let items = [...card.items];
-      let item = { ...items[itemIndex] };
-
-      console.log('Item', item);
-      // Only set entity if newValue is valid
-      if (item[configValue] === newValue) {
-        console.log('No change');
-        return;
-      } else if (configValue === 'entity' && !newValue) {
-        // Remove the item if the entity is empty
-        items.splice(itemIndex, 1);
-        card.items = items;
-        defaultCard[cardIndex] = card;
-        buttonConfig.default_card = defaultCard;
-        buttonCardConfig[configIndex] = buttonConfig;
-        updates.button_card = buttonCardConfig;
-        this._copyToPreview(defaultCard);
-        console.log('Item removed', item);
-      } else {
-        item[configValue] = newValue;
-        items[itemIndex] = item;
-        card.items = items;
-        defaultCard[cardIndex] = card;
-        buttonConfig.default_card = defaultCard;
-        buttonCardConfig[configIndex] = buttonConfig;
-        updates.button_card = buttonCardConfig;
-        this._copyToPreview(defaultCard);
-
-        console.log('Item updated', item);
-      }
-    } else if (configType === 'base_button') {
-      let buttonConfig = { ...buttonCardConfig[configIndex] };
-      buttonConfig[configValue] = newValue;
-      if (newValue === 'action') {
-        buttonConfig.button_action = {
-          entity: '',
-          tap_action: { action: 'more-info' },
-          hold_action: { action: 'none' },
-          double_tap_action: { action: 'none' },
-        };
-      }
-      buttonCardConfig[configIndex] = buttonConfig;
-      updates.button_card = buttonCardConfig;
-
-      console.log('Button config', buttonConfig);
-    } else if (configType === 'button_action') {
-      let buttonConfig = { ...buttonCardConfig[configIndex] };
-      let buttonAction = { ...buttonConfig.button_action };
-      buttonAction[configValue] = newValue;
-      buttonConfig.button_action = buttonAction;
-      buttonCardConfig[configIndex] = buttonConfig;
-      updates.button_card = buttonCardConfig;
-      console.log('Button action', buttonAction);
-    }
-
-    // If there are updates, update the config and fire the event
-    if (Object.keys(updates).length > 0) {
-      this.config = { ...this.config, ...updates };
-      fireEvent(this, 'config-changed', { config: this.config });
-    }
-  }
-
   private _copyToPreview(defaultCard: DefaultCardConfig[]): void {
     if (this._activePreview === 'default' && this.config?.default_card_preview) {
       this.config = { ...this.config, default_card_preview: defaultCard };
@@ -1218,51 +866,62 @@ export class PanelButtonCard extends LitElement {
     }
   }
 
-  private _handleNewItemChange(ev: any): void {
+  private _handleTitlePrimaryChanged(ev: any): void {
     ev.stopPropagation();
-    const { value, cardIndex, configIndex } = ev.target;
+    if (!this.config) {
+      return;
+    }
+    const cardIndex = ev.target.cardIndex;
+    const buttonIndex = ev.target.configIndex;
+    const configValue = ev.target.configValue;
+    const configType = ev.target.configType;
+    const newValue = ev.detail.value;
 
-    const newItem = new Map(this._newItemName);
-    newItem.set('entity', value);
-    newItem.set('cardIndex', cardIndex);
-    newItem.set('configIndex', configIndex);
+    const updates: Partial<VehicleStatusCardConfig> = {};
 
-    this._newItemName = newItem;
+    let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+    if (configType === 'default_card') {
+      let buttonCard = { ...buttonCardConfig[buttonIndex] };
+      let defaultCard = [...buttonCard.default_card];
+      let card = { ...defaultCard[cardIndex] };
+      card[configValue] = newValue;
+      defaultCard[cardIndex] = card;
+      buttonCard.default_card = defaultCard;
+      buttonCardConfig[buttonIndex] = buttonCard;
+      updates.button_card = buttonCardConfig;
+      this._copyToPreview(defaultCard);
+    } else if (configType === 'button') {
+      let buttonCard = { ...buttonCardConfig[buttonIndex] };
+      let button = { ...buttonCard.button };
+      button[configValue] = newValue;
+      buttonCard.button = button;
+      buttonCardConfig[buttonIndex] = buttonCard;
+      updates.button_card = buttonCardConfig;
+    }
 
-    this.requestUpdate();
-
-    this._handleNewItem();
+    if (Object.keys(updates).length > 0) {
+      this.config = { ...this.config, ...updates };
+      fireEvent(this, 'config-changed', { config: this.config });
+    }
   }
 
-  private _handleNewItem = () => {
-    const reset = () => {
-      this._newItemName.clear();
-      if (this._activePreview && this._activePreview === 'default' && this._buttonIndex !== null) {
-        this._togglePreview('default', this._buttonIndex);
-      } else {
-        this.resetEditorPreview();
-      }
-    };
-
-    this.updateComplete.then(() => {
-      const entity = this._newItemName.get('entity');
-      const cardIndex = this._newItemName.get('cardIndex');
-      const configIndex = this._newItemName.get('configIndex');
-      if (entity && cardIndex !== undefined && configIndex !== undefined) {
-        let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
-        let defaultCard = buttonCardConfig[configIndex]?.default_card || [];
-        let card = defaultCard[cardIndex];
-        let items = card.items || [];
-        items.push({ entity });
-        card.items = items;
-        defaultCard[cardIndex] = card;
-        buttonCardConfig[configIndex].default_card = defaultCard;
-        this.config = { ...this.config, button_card: buttonCardConfig };
-        fireEvent(this, 'config-changed', { config: this.config });
-        reset();
-      }
-    });
-  };
+  private _handleCardItemChange(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const cardItemConfig = ev.detail.config;
+    const buttonIndex = this._buttonIndex!;
+    const cardIndex = this._cardIndex!;
+    let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+    let buttonCard = { ...buttonCardConfig[buttonIndex] };
+    let defaultCard = [...buttonCard.default_card];
+    let card = { ...defaultCard[cardIndex] };
+    card = cardItemConfig;
+    defaultCard[cardIndex] = card;
+    buttonCard.default_card = defaultCard;
+    buttonCardConfig[buttonIndex] = buttonCard;
+    this.config = { ...this.config, button_card: buttonCardConfig };
+    this._copyToPreview(defaultCard);
+    fireEvent(this, 'config-changed', { config: this.config });
+  }
 
   private _handleButtonConfigChange(ev: CustomEvent): void {
     ev.stopPropagation();

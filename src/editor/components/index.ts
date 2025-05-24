@@ -6,5 +6,6 @@ export * from './panel-range-info';
 export * from './panel-map-editor';
 export * from './panel-tire-config';
 export * from './panel-base-button';
+export * from './panel-default-card-category';
 export * from './vic-tab';
 export * from './vic-tab-bar';
