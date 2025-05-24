@@ -214,6 +214,8 @@ export interface ButtonCardConfig {
   tire_card?: TireTemplateConfig;
 }
 
+export type BaseButtonConfig = Omit<ButtonCardConfig, 'custom_card' | 'default_card' | 'tire_card'>;
+
 export interface ButtonCardEntityItem {
   button: {
     button_action: ButtonActionConfig;

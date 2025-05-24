@@ -7,30 +7,23 @@ import Sortable from 'sortablejs';
 import '../../editor/components/panel-editor-ui';
 import '../../editor/components/sub-panel-yaml';
 import '../../editor/components/panel-tire-config';
+import '../../editor/components/panel-base-button';
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
+import { PanelBaseButton } from '../../editor/components/panel-base-button';
 import { PanelTireConfig } from '../../editor/components/panel-tire-config';
 import {
   HomeAssistant,
   VehicleStatusCardConfig,
-  ButtonConfig,
   DefaultCardConfig,
   ButtonCardConfig,
   TireTemplateConfig,
   fireEvent,
+  BaseButtonConfig,
 } from '../../types';
 import { Create } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
-import {
-  BUTTON_CARD_ACTIONS,
-  ACTIONSELECTOR,
-  CARD_TYPES,
-  BUTTON_TYPE,
-  CONFIG_VALUES,
-  CONFIG_TYPES,
-  NEW_BUTTON_CONFIG,
-  ACTIONS,
-} from '../editor-const';
+import { BUTTON_CARD_ACTIONS, CONFIG_VALUES, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS } from '../editor-const';
 import { DEFAULT_TIRE_CONFIG } from '../form';
 
 @customElement('panel-button-card')
@@ -59,6 +52,7 @@ export class PanelButtonCard extends LitElement {
   private _btnSortable: Sortable | null = null;
 
   @query('vsc-panel-tire-config') _panelTireConfig!: PanelTireConfig;
+  @query('vsc-panel-base-button') _panelBaseButton!: PanelBaseButton;
 
   static get styles(): CSSResultGroup {
     return [
@@ -283,7 +277,7 @@ export class PanelButtonCard extends LitElement {
             .path=${ICON.PENCIL}
           ></ha-icon-button>
           <ha-button-menu
-            .corner=${'BOTTOM_START'}
+            .corner=${'TOP_START'}
             .fixed=${true}
             .menuCorner=${'START'}
             .activatable=${true}
@@ -296,7 +290,7 @@ export class PanelButtonCard extends LitElement {
                 html`<mwc-list-item
                   @click=${this.toggleAction(action.action, index)}
                   .graphic=${'icon'}
-                  style="${action.color ? `color: ${action.color}` : ''}"
+                  style="z-index: 6; ${action.color ? `color: ${action.color}` : ''}"
                 >
                   <ha-icon
                     icon=${action.icon}
@@ -429,212 +423,35 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderButtonConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
-    const infoText = CONFIG_TYPES.options.button_card.subpanels.button.description;
-
     const headerActions = !buttonCard.hide_button
       ? [{ title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) }]
       : [];
 
-    const btnTypeCardType = html` ${this._renderSubHeader('Button configuration', headerActions)}
-      ${Create.HaAlert({
-        message: infoText,
-      })}
-      <div class="sub-content">
-        ${Create.Picker({
-          component: this,
-          label: 'Button type',
-          value: buttonCard.button_type || 'default',
-          configType: 'base_button',
-          configIndex: buttonIndex,
-          configValue: 'button_type',
-          pickerType: 'attribute' as 'attribute',
-          items: BUTTON_TYPE,
+    const btnHeader = this._renderSubHeader('Button configuration', headerActions);
+    const infoText = CONFIG_TYPES.options.button_card.subpanels.button.description;
+
+    const baseBtnConfig = {
+      button: buttonCard.button,
+      button_action: buttonCard.button_action,
+      button_type: buttonCard.button_type || 'default',
+      card_type: buttonCard.card_type,
+      hide_button: buttonCard.hide_button,
+    } as BaseButtonConfig;
+
+    return html`
+      <div class="indicator-config">
+        ${btnHeader}
+        ${Create.HaAlert({
+          message: infoText,
         })}
-        ${Create.Picker({
-          component: this,
-          label: 'Card type',
-          value: buttonCard.card_type || 'default',
-          configType: 'base_button',
-          configIndex: buttonIndex,
-          configValue: 'card_type',
-          pickerType: 'attribute' as 'attribute',
-          items: CARD_TYPES,
-          options: { disabled: buttonCard.button_type === 'action' },
-        })}
-      </div>`;
-
-    const baseBtnConfig = this._renderButtonApperanceConfig(buttonCard, buttonIndex);
-
-    const buttonAction = this._renderButtonActionConfig(buttonCard, buttonIndex);
-
-    return html`<div class="indicator-config">${btnTypeCardType} ${baseBtnConfig} ${buttonAction}</div>`;
-  }
-
-  private _renderButtonApperanceConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
-    const button = buttonCard.button || ({} as ButtonConfig);
-    const sharedConfig = {
-      configType: 'button',
-      configIndex: buttonIndex,
-    };
-
-    const secondary = button.secondary || {};
-    const entity = secondary.entity || '';
-    const attribute = secondary.attribute || '';
-    const state_template = secondary.state_template;
-    const color = button.color || '';
-    const notify = button.notify || '';
-    const picture = button.picture_template || '';
-
-    const attributes = entity ? Object.keys(this.hass.states[entity].attributes) : [];
-    const attrOpts = [...attributes.map((attr) => ({ value: attr, label: attr }))];
-
-    const pickerPrimaryIcon = [
-      { value: button.primary, label: 'Primary title', configValue: 'primary', pickerType: 'textfield' as 'textfield' },
-      { value: button.icon, label: 'Icon', configValue: 'icon', pickerType: 'icon' as 'icon' },
-    ];
-
-    const pickerSecondary = [
-      { value: secondary.entity, label: 'Entity', configValue: 'entity', pickerType: 'entity' as 'entity' },
-      {
-        value: attribute,
-        label: 'Attribute',
-        configValue: 'attribute',
-        pickerType: 'attribute' as 'attribute',
-        items: attrOpts,
-      },
-    ];
-    const pickerSecondaryState = [
-      {
-        value: state_template,
-        label: 'State Template',
-        configValue: 'state_template',
-        pickerType: 'template' as 'template',
-        options: { helperText: 'Template to display the state of the entity', label: 'State Template' },
-      },
-    ];
-
-    const colorTemplate = [
-      {
-        value: color,
-        pickerType: 'template',
-        configValue: 'color',
-        options: {
-          label: 'Color template',
-          helperText: 'Template for the icon color',
-        },
-      },
-    ];
-    const notifyTemplate = [
-      {
-        value: notify,
-        pickerType: 'template',
-        configValue: 'notify',
-        options: {
-          label: 'Notify template',
-          helperText: 'Use Jinja2 template with result `true` to display notification badge',
-        },
-      },
-    ];
-
-    const pictureTemplate = [
-      {
-        value: picture,
-        pickerType: 'template',
-        configValue: 'picture_template',
-        options: {
-          label: 'Picture & Icon template',
-          helperText:
-            'Result starts with `http` or "/" will be treated as image URL, otherwise as icon. (this change picked icon)',
-        },
-      },
-    ];
-
-    const content = html`
-      <div>
-        ${this._renderSubHeader('Primary and icon', [], false)}
-        <div class="sub-content">
-          ${pickerPrimaryIcon.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
-        </div>
-        ${pictureTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
-        ${notifyTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
-        ${colorTemplate.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content'))}
-        <div class="sub-header">
-          <div>Secondary state display</div>
-        </div>
-        <div class="sub-content">
-          ${pickerSecondary.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}
-        </div>
-        ${pickerSecondaryState.map((config) =>
-          this.generateItemPicker({ ...config, ...sharedConfig }, 'template-content')
-        )}
+        <vsc-panel-base-button
+          .hass=${this.hass}
+          .cardEditor=${this.cardEditor}
+          .buttonConfig=${baseBtnConfig}
+          @button-config-changed=${this._handleButtonConfigChange}
+        ></vsc-panel-base-button>
       </div>
     `;
-
-    return html`${Create.ExpansionPanel({
-      content: content,
-      options: { header: 'Button Appearance', icon: 'mdi:palette' },
-    })}`;
-  }
-
-  private _renderButtonActionConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
-    const infoAlert = `You are using 'DEFAULT' button type, select 'ACTION' to use Tap Action features`;
-
-    const infoIconAction = `Action is triggered with ICON and Content`;
-    const buttonAction = buttonCard.button_action || {};
-
-    // Entity Picker
-    const entityPicker = Create.Picker({
-      component: this,
-      label: 'Entity to interact with',
-      value: buttonAction.entity || '',
-      configType: 'button_action',
-      configIndex: buttonIndex,
-      configValue: 'entity',
-      pickerType: 'entity' as 'entity',
-    });
-
-    // Action selectors mapped from ACTIONSELECTOR
-    const actionSelectors = ACTIONSELECTOR.map((action) => {
-      return html`
-        <div>
-          <ha-selector
-            .hass=${this.hass}
-            .label=${action.label}
-            .selector=${{
-              ui_action: { default_action: action.defaultAction },
-            }}
-            .value=${buttonAction[action.name] || action.defaultAction}
-            .configValue=${action.name}
-            .configType=${'button_action'}
-            @value-changed=${(ev: CustomEvent) => this.handleActionTypeUpdate(ev, action?.name, buttonIndex)}
-          ></ha-selector>
-        </div>
-      `;
-    });
-
-    // The complete content
-    const content = html`
-      ${this._renderSubHeader('Configure Icon tap behavior', [], false)}
-      ${buttonCard.button_type === undefined || buttonCard.button_type === 'default'
-        ? html` <div class="sub-content">
-            <ha-alert
-              alert-type="warning"
-              dismissable
-              @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
-              >${infoAlert}</ha-alert
-            >
-          </div>`
-        : nothing}
-      <div class="sub-content">
-        <ha-alert alert-type="info">${infoIconAction}</ha-alert>
-      </div>
-      <div class="indicator-config">${entityPicker} ${actionSelectors}</div>
-    `;
-
-    return Create.ExpansionPanel({
-      content: content,
-      options: { header: 'Tap interactions', icon: 'mdi:gesture-tap' },
-    });
   }
 
   private _renderTireCardConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
@@ -1228,30 +1045,6 @@ export class PanelButtonCard extends LitElement {
 
   /* -------------------- HANDLER METHODS FOR CONFIGURATION ------------------- */
 
-  private handleActionTypeUpdate(ev: CustomEvent, action: string, buttonIndex: number): void {
-    ev.stopPropagation();
-    const actionValue = ev.detail.value;
-    this._selectedAction = actionValue;
-
-    // Clone the button card configuration
-    let buttonCardConfig = [...(this.config.button_card || [])];
-    let buttonConfig = { ...buttonCardConfig[buttonIndex] };
-
-    // Clone the button action configuration
-    let buttonAction = { ...buttonConfig.button_action };
-
-    // Update the action value
-    buttonAction[action] = actionValue;
-
-    // Update the button action configuration
-    buttonConfig.button_action = buttonAction;
-
-    buttonCardConfig[buttonIndex] = buttonConfig;
-    this.config = { ...this.config, button_card: buttonCardConfig };
-
-    fireEvent(this, 'config-changed', { config: this.config });
-  }
-
   public _valueChanged(ev: any): void {
     ev.stopPropagation();
     if (!this.config) {
@@ -1471,6 +1264,21 @@ export class PanelButtonCard extends LitElement {
     });
   };
 
+  private _handleButtonConfigChange(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const buttonConfig = ev.detail.config;
+    const buttonIndex = this._buttonIndex!;
+    let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+    let buttonCard = { ...buttonCardConfig[buttonIndex] };
+    buttonCard = {
+      ...buttonCard,
+      ...buttonConfig,
+    };
+    buttonCardConfig[buttonIndex] = buttonCard;
+    this.config = { ...this.config, button_card: buttonCardConfig };
+    fireEvent(this, 'config-changed', { config: this.config });
+  }
+
   private _handleTireConfigChange(ev: CustomEvent): void {
     ev.stopPropagation();
     const tireConfig = ev.detail.config;
@@ -1489,14 +1297,5 @@ export class PanelButtonCard extends LitElement {
       return;
     }
     fireEvent(this, 'config-changed', { config: this.config });
-  }
-
-  private configChanged(): void {
-    fireEvent(this, 'config-changed', { config: this.config });
-  }
-
-  private _handlerAlert(ev: CustomEvent): void {
-    const alert = ev.target as HTMLElement;
-    alert.style.display = 'none';
   }
 }
