@@ -32,7 +32,7 @@ export class SubPanelYaml extends LitElement {
   }
 
   protected render() {
-    if (!this.hass || !this.config) {
+    if (!this.hass) {
       return nothing;
     }
 

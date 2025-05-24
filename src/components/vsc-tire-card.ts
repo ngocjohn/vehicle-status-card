@@ -266,6 +266,7 @@ export class VehicleTireCard extends LitElement {
     const tireTop = tireConfig.top || 50;
     const tireLeft = tireConfig.left || 50;
     const tires = tireConfig.tires;
+    const hideRotationButton = tireConfig.hide_rotation_button || false;
 
     const sizeStyle = {
       '--vic-tire-top': `${tireTop}%`,
@@ -278,7 +279,7 @@ export class VehicleTireCard extends LitElement {
       <div class="default-card">
         <div class="data-header">${tireCardTitle}</div>
         <div class="tyre-toggle-btn click-shrink" @click=${(ev: Event) => this.toggleTireDirection(ev)}>
-          <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
+          <ha-icon .hidden=${hideRotationButton} icon="mdi:rotate-right-variant"></ha-icon>
         </div>
 
         <div class="data-box tyre-wrapper" rotated=${isHorizontal} style=${styleMap(sizeStyle)}>

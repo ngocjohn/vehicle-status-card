@@ -126,6 +126,7 @@ export async function getTireCard(
       rear_right: { state: rearRightState, name: rearRightName, color: rearRightColor },
     },
     horizontal: tireCard.horizontal || false,
+    hide_rotation_button: tireCard.hide_rotation_button || false,
   };
 
   return tireCardItem;

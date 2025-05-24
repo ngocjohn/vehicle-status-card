@@ -150,19 +150,20 @@ export interface ButtonActionConfig {
 
 export interface TireEntityConfig {
   entity: string;
-  attribute: string;
-  name: string;
+  attribute?: string;
+  name?: string;
   color?: string;
 }
 
 export interface TireTemplateConfig {
-  title: string;
+  title?: string;
   background: string;
   horizontal: boolean;
   image_size: number;
   value_size: number;
   top: number;
   left: number;
+  hide_rotation_button?: boolean;
   front_left: TireEntityConfig;
   front_right: TireEntityConfig;
   rear_left: TireEntityConfig;
@@ -199,6 +200,7 @@ export type TireEntity = {
     };
   };
   horizontal: boolean;
+  hide_rotation_button?: boolean;
 };
 
 export interface ButtonCardConfig {
