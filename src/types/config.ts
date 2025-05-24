@@ -134,11 +134,11 @@ export interface DefaultCardConfig {
 }
 
 export interface CardItemConfig {
-  attribute: string;
+  attribute?: string;
   entity: string;
   icon?: string;
-  name: string;
-  state_template: string;
+  name?: string;
+  state_template?: string;
 }
 
 export interface ButtonActionConfig {
@@ -213,6 +213,8 @@ export interface ButtonCardConfig {
   hide_button: boolean;
   tire_card?: TireTemplateConfig;
 }
+
+export type BaseButtonConfig = Omit<ButtonCardConfig, 'custom_card' | 'default_card' | 'tire_card'>;
 
 export interface ButtonCardEntityItem {
   button: {
