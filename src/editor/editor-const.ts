@@ -115,8 +115,8 @@ type BUTTON_CARD_ACTIONS =
   | 'category-duplicate'
   | 'yaml-editor'
   | 'hide-button'
-  | 'unhide-button';
-
+  | 'unhide-button'
+  | 'yaml-default-card';
 export enum ACTIONS {
   ADD_ITEM = 'add-item',
   ADD_NEW_BUTTON = 'add-new-button',
@@ -228,9 +228,9 @@ const NEW_BUTTON_CONFIG = {
   custom_card: [],
   button_action: {
     entity: '',
-    tap_action: { action: 'more-info' },
-    hold_action: { action: 'none' },
-    double_tap_action: { action: 'none' },
+    // tap_action: { action: 'none' },
+    // hold_action: { action: 'none' },
+    // double_tap_action: { action: 'none' },
   },
 };
 
