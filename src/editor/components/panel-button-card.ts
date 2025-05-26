@@ -183,7 +183,7 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderButtonList(): TemplateResult {
-    const buttons = this.config.button_card;
+    const buttons = this.config.button_card ?? [];
 
     if (this._reindexButton) {
       return html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`;
