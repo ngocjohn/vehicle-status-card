@@ -12,6 +12,7 @@ import { HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfi
 import * as Create from '../../utils/create';
 import './sub-panel-yaml';
 import { RANGE_ACTIONS } from '../editor-const';
+import { PROGRESS_BAR_SCHEMA, RANGE_ITEM_SCHEMA } from '../form';
 
 @customElement('panel-range-info')
 export class PanelRangeInfo extends LitElement {
@@ -130,60 +131,55 @@ export class PanelRangeInfo extends LitElement {
     `;
   }
 
-  private _toggleAction(
+  private _toggleAction = (
     action: 'add' | 'delete-item' | 'edit-item' | 'edit-yaml' | 'back-to-list',
     index?: number
-  ): () => void {
-    return () => {
-      const updateChanged = (update: any) => {
-        fireEvent(this, 'config-changed', { config: { ...this.config, range_info: update } });
-      };
-      console.log('Action', action, 'Index', index);
-      const handleAction = () => {
-        switch (action) {
-          case 'add':
-            const randomHex = tinycolor.random().toHexString();
-            console.log('Random hex color', randomHex);
-            const rangeInfo = [...(this.config.range_info || [])];
-            const newRangeInfo = {
-              energy_level: {
-                entity: '',
-                icon: 'mdi:gas-station',
-              },
-              progress_color: randomHex,
-            };
-            rangeInfo.push(newRangeInfo);
-            updateChanged(rangeInfo);
-            break;
-          case 'delete-item':
-            if (index !== undefined) {
-              const rangeInfo = [...(this.config.range_info || [])];
-              rangeInfo.splice(index, 1);
-              updateChanged(rangeInfo);
-            }
-            break;
-
-          case 'edit-item':
-            if (index !== undefined) {
-              console.log('Edit item', index);
-              this._activeIndexItem = index;
-              this.requestUpdate();
-            }
-            break;
-          case 'edit-yaml':
-            this._yamlItemEditorActive = !this._yamlItemEditorActive;
-            break;
-          case 'back-to-list':
-            this._yamlItemEditorActive = false;
-            this._activeIndexItem = null;
-            break;
-          default:
-            break;
-        }
-      };
-      handleAction();
+  ) => {
+    const updateChanged = (update: any) => {
+      this.config = { ...this.config, range_info: update };
+      fireEvent(this, 'config-changed', { config: this.config });
     };
-  }
+    switch (action) {
+      case 'add':
+        const randomHex = tinycolor.random().toHexString();
+        console.log('Random hex color', randomHex);
+        let rangeInfo = [...(this.config.range_info || [])];
+        const newRangeInfo = {
+          energy_level: {
+            entity: '',
+            icon: 'mdi:gas-station',
+          },
+          progress_color: randomHex,
+        };
+        rangeInfo = [...rangeInfo, newRangeInfo];
+        updateChanged(rangeInfo);
+        break;
+      case 'delete-item':
+        if (index !== undefined) {
+          const rangeInfo = [...(this.config.range_info || [])];
+          rangeInfo.splice(index, 1);
+          updateChanged(rangeInfo);
+        }
+        break;
+
+      case 'edit-item':
+        if (index !== undefined) {
+          console.log('Edit item', index);
+          this._activeIndexItem = index;
+          this.requestUpdate();
+        }
+        break;
+      case 'edit-yaml':
+        this._yamlItemEditorActive = !this._yamlItemEditorActive;
+        break;
+      case 'back-to-list':
+        this._yamlItemEditorActive = false;
+        this._activeIndexItem = null;
+        break;
+      default:
+        break;
+    }
+  };
 
   private _renderRangeConfigContent(): TemplateResult | typeof nothing {
     if (this._activeIndexItem === null) {
@@ -229,7 +225,7 @@ export class PanelRangeInfo extends LitElement {
         config: colorPicker,
       },
       color_template: {
-        title: 'Color Template',
+        title: '',
         config: colorTemplate,
       },
     };
@@ -250,7 +246,7 @@ export class PanelRangeInfo extends LitElement {
               : nothing}
             ${section[key].helper}
           </div>
-          <div class="sub-content">${section[key].config(index)}</div>
+          ${section[key].config(index)}
         </div>`
       );
 
@@ -259,10 +255,10 @@ export class PanelRangeInfo extends LitElement {
         `Range Info #${index + 1}`,
         undefined,
         this._yamlItemEditorActive
-          ? [{ title: 'Close Editor', action: this._toggleAction('edit-yaml') }]
-          : [{ title: 'Back to list', action: this._toggleAction('back-to-list'), icon: ICON.CHEVRON_LEFT }],
+          ? [{ title: 'Close Editor', action: () => (this._yamlItemEditorActive = false), icon: ICON.CLOSE }]
+          : [{ title: 'Back to list', action: () => (this._activeIndexItem = null), icon: ICON.CHEVRON_LEFT }],
 
-        [{ action: this._toggleAction('edit-yaml') }]
+        [{ action: () => (this._yamlItemEditorActive = !this._yamlItemEditorActive) }]
       )}
       ${this._yamlItemEditorActive
         ? html`
@@ -293,11 +289,15 @@ export class PanelRangeInfo extends LitElement {
 
   private _renderRangeConfigList(): TemplateResult {
     const actionMap = [
-      { title: 'Edit', icon: 'mdi:pencil', action: RANGE_ACTIONS.EDIT_ITEM },
+      {
+        title: 'Edit',
+        icon: 'mdi:pencil',
+        action: (index: number) => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index),
+      },
       {
         title: 'Remove',
         icon: 'mdi:delete',
-        action: RANGE_ACTIONS.DELETE_ITEM,
+        action: (index: number) => this._toggleAction(RANGE_ACTIONS.DELETE_ITEM, index),
         color: 'var(--error-color)',
       },
     ];
@@ -306,15 +306,18 @@ export class PanelRangeInfo extends LitElement {
         ? html`
             <div class="range-info-list">
               ${repeat(this.config.range_info, (rangeItem: RangeInfoConfig, index: number) => {
-                const entity = rangeItem.energy_level.entity;
-                const icon = rangeItem.energy_level.icon;
-                const progressColor = rangeItem.progress_color;
+                const entity = rangeItem.energy_level.entity || '';
+                const icon = rangeItem.energy_level.icon || '';
+                const progressColor = rangeItem.progress_color || 'var(--primary-color)';
                 return html`
                   <div class="item-config-row" data-index=${index}>
                     <div class="handle" style="margin: var(--vic-card-padding)">
                       <ha-icon icon=${icon ? icon : 'mdi:gas-station'} style=${`color: ${progressColor}`}></ha-icon>
                     </div>
-                    <div class="item-content click-shrink" @click=${this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}>
+                    <div
+                      class="item-content click-shrink"
+                      @click=${() => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}
+                    >
                       <div class="primary">Range Info #${index + 1}</div>
                       <div class="secondary">${entity}</div>
                     </div>
@@ -331,7 +334,7 @@ export class PanelRangeInfo extends LitElement {
                         ${actionMap.map(
                           (action) => html`
                             <mwc-list-item
-                              @click=${this._toggleAction(action.action, index)}
+                              @click=${() => action.action(index)}
                               .graphic=${'icon'}
                               style="${action.color ? `color: ${action.color}` : ''}"
                             >
@@ -354,7 +357,7 @@ export class PanelRangeInfo extends LitElement {
         : this._renderYamlEditor()
     }
         <div class="action-footer">
-          <ha-button @click=${this._toggleAction('add')}>
+          <ha-button @click=${() => this._toggleAction('add')}>
             <span>Add new info bar</span>
           </ha-button>
           <ha-button @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}>
@@ -414,167 +417,73 @@ export class PanelRangeInfo extends LitElement {
   }
 
   private _renderEnergyLevelConfig(index: number): TemplateResult {
-    const configShared = {
-      component: this,
-      configType: 'energy_level',
-      configIndex: index,
-    };
+    const DATA = {
+      ...this.config.range_info[index].energy_level,
+    } as RangeItemConfig;
+    if (!DATA.entity) {
+      DATA.entity = this.config.range_info[index].energy_level.entity || '';
+    }
 
-    const energyEntry = this.config.range_info[index].energy_level as RangeItemConfig;
-    const energyEntity = energyEntry.entity || '';
-    const energyIcon = energyEntry.icon || '';
+    const energySchema = RANGE_ITEM_SCHEMA(DATA.entity, true);
 
-    const energyAttribute = energyEntry.attribute || '';
-
-    return html`
-      <div class="item-content">
-        ${Create.Picker({
-          ...configShared,
-          value: energyEntity,
-          label: 'Entity energy',
-          pickerType: 'entity',
-        })}
-      </div>
-      <div class="item-content">
-        ${Create.Picker({
-          ...configShared,
-          value: energyAttribute,
-          label: 'Attribute energy',
-          pickerType: 'baseSelector',
-          configValue: 'attribute',
-          options: {
-            selector: {
-              attribute: { entity_id: energyEntity },
-            },
-          },
-        })}
-      </div>
-      <div class="item-content">
-        ${Create.Picker({
-          ...configShared,
-          value: energyIcon ?? '',
-          pickerType: 'icon',
-        })}
-      </div>
-    `;
+    return this._createHaForm(DATA, energySchema, 'energy_level');
   }
-
   private _renderRangeLevelConfig(index: number): TemplateResult {
-    const configShared = {
-      component: this,
-      configType: 'range_level',
-      configIndex: index,
-    };
-
-    const rangeEntry = this.config.range_info[index].range_level as RangeItemConfig;
-    const rangeEntity = rangeEntry?.entity;
-
-    return html`
-      <div class="item-content">
-        ${Create.Picker({
-          ...configShared,
-          value: rangeEntity || '',
-          label: 'Entity range',
-          pickerType: 'entity',
-        })}
-      </div>
-      <div class="item-content">
-        ${Create.Picker({
-          ...configShared,
-          value: rangeEntry?.attribute || '',
-          label: 'Attribute range',
-          configValue: 'attribute',
-          options: {
-            selector: {
-              attribute: { entity_id: rangeEntity },
-            },
-          },
-          pickerType: 'baseSelector',
-        })}
-      </div>
-    `;
+    const DATA = {
+      ...this.config.range_info[index].range_level,
+    } as RangeItemConfig;
+    if (!DATA.entity) {
+      DATA.entity = this.config.range_info[index].energy_level.entity || '';
+    }
+    const rangeSchema = RANGE_ITEM_SCHEMA(DATA.entity, false);
+    return this._createHaForm(DATA, rangeSchema, 'range_level');
   }
 
   private _renderChargingEntityConfig(index: number): TemplateResult {
-    const configShared = {
-      component: this,
-      configType: 'charging_entity',
-      configIndex: index,
+    const DATA = {
+      charging_entity: this.config.range_info[index].charging_entity || '',
     };
-
-    const chargingEntity = this.config.range_info[index].charging_entity || '';
-    return html`
-      <div class="item-content">
-        ${Create.Picker({
-          ...configShared,
-          value: chargingEntity,
-          label: 'Charging Entity',
-          pickerType: 'entity',
-        })}
-      </div>
-    `;
+    const chargingEntitySchema = [
+      {
+        name: 'charging_entity',
+        selector: { entity: {} },
+        required: false,
+      },
+    ];
+    return this._createHaForm(DATA, chargingEntitySchema);
   }
 
   private _renderColorTemplate(index: number): TemplateResult {
-    const configShared = {
-      component: this,
-      configType: 'color_template',
-      configIndex: index,
+    const DATA = {
+      color_template: this.config.range_info[index].color_template || '',
     };
-
-    const colorTemplate = this.config.range_info[index].color_template || '';
-    return html`
-      <div class="item-content">
-        ${Create.Picker({
-          ...configShared,
-          value: colorTemplate,
-          pickerType: 'template' as 'template',
-          options: {
-            helperText: 'Template to set the color of the progress bar, this will replace the progress_color',
-            label: '',
-          },
-        })}
-      </div>
-    `;
+    const colorTemplateSchema = [
+      {
+        name: 'color_template',
+        label: 'Color Template',
+        helper: 'Template to set the color of the progress bar, this will replace the progress_color',
+        selector: { template: {} },
+      },
+    ] as const;
+    return this._createHaForm(DATA, colorTemplateSchema);
   }
 
   private _renderBarDimensions(index: number): TemplateResult {
     const barConfig = this.config.range_info[index];
-
-    const configShared = {
-      component: this,
-      configIndex: index,
-      configType: 'bar_dimensions',
+    const DATA = {
+      bar_height: barConfig.bar_height || 5,
+      bar_width: barConfig.bar_width || 60,
+      bar_radius: barConfig.bar_radius || 5,
     };
 
-    const numberPicker = (configValue: string, label: string, value: number, max?: number) => {
-      return html`
-        <div class="item-content">
-          ${Create.Picker({
-            ...configShared,
-            value: value,
-            label: label,
-            pickerType: 'number',
-            options: { selector: { number: { max, min: 1, mode: 'box', step: 1 } } },
-            configValue: configValue,
-          })}
-        </div>
-      `;
-    };
-
-    const barConfigElements = [
-      numberPicker('bar_height', 'Bar Height (px)', barConfig.bar_height || 5),
-      numberPicker('bar_width', 'Bar Width (%)', barConfig.bar_width || 60, 100),
-      numberPicker('bar_radius', 'Bar Radius (%)', barConfig.bar_radius || 5),
-    ];
-
-    return html` ${barConfigElements.map((element) => element)} `;
+    return this._createHaForm(DATA, PROGRESS_BAR_SCHEMA);
   }
 
   private _colorPicker(index: number): TemplateResult {
     const rangeItem = this.config.range_info[index];
     const progressColor = rangeItem.progress_color;
     const defaultContent = html` <div class="item-content">
+      <div class="sub-content">
         <ha-textfield
           .label=${'Progress Color'}
           .value=${progressColor}
@@ -589,7 +498,8 @@ export class PanelRangeInfo extends LitElement {
         @click=${() => this._toggleColorPicker(index, progressColor)}
       >
         <h3>CHOOSE COLOR</h3>
-      </div>`;
+      </div>
+    </div>`;
 
     const colorPicker = html`
     <div class="item-content color-picker">
@@ -681,40 +591,6 @@ export class PanelRangeInfo extends LitElement {
 
       updates.range_info = rangeInfo; // Apply the updates
       console.log(`Range info [${index}] progress_color changed to`, newValue);
-    } else if (configType === 'charging_entity') {
-      // Update the entity value
-      rangeInfoItem.charging_entity = newValue;
-      rangeInfo[index] = rangeInfoItem;
-      updates.range_info = rangeInfo;
-      console.log(`Range info [${index}] charging_entity changed to`, newValue);
-    } else if (configType === 'color_template') {
-      // Update the entity value
-      newValue = ev.detail.value;
-      rangeInfoItem.color_template = newValue;
-      rangeInfo[index] = rangeInfoItem;
-      updates.range_info = rangeInfo;
-      console.log(`Range info [${index}] color_template changed to`, newValue);
-    } else if (configType === 'energy_level') {
-      // Update the entity or attribute value
-      const energyLevel = { ...rangeInfoItem.energy_level };
-      energyLevel[configValue] = newValue;
-      rangeInfoItem.energy_level = energyLevel;
-      rangeInfo[index] = rangeInfoItem;
-      updates.range_info = rangeInfo;
-    } else if (configType === 'range_level') {
-      // Update the entity or attribute value
-      const rangeLevel = { ...(rangeInfoItem.range_level || {}) };
-      rangeLevel[configValue] = newValue;
-      rangeInfoItem.range_level = rangeLevel;
-      rangeInfo[index] = rangeInfoItem;
-      updates.range_info = rangeInfo;
-    } else if (configType === 'bar_dimensions') {
-      // Update the bar dimensions
-      newValue = ev.detail.value;
-      rangeInfoItem[configValue] = newValue;
-      rangeInfo[index] = rangeInfoItem;
-      updates.range_info = rangeInfo;
-      console.log(`Range info [${index}] ${configValue} changed to`, newValue);
     }
 
     if (Object.keys(updates).length > 0) {
@@ -724,5 +600,50 @@ export class PanelRangeInfo extends LitElement {
     }
 
     // Send the updated config to the main card
+  }
+  private _createHaForm = (data: any, schema: any, configyTpe?: string) => {
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .configType=${configyTpe}
+        .data=${data}
+        .schema=${schema}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._rangeItemValueChanged}
+      ></ha-form>
+    `;
+  };
+  private _computeLabel(schema: any) {
+    if (schema.name === 'entity' || schema.name === 'charging_entity') {
+      return '';
+    }
+    return schema.label || schema.name;
+  }
+  private _computeHelper(schema: any) {
+    return schema.helper || '';
+  }
+
+  private _rangeItemValueChanged(ev: any): void {
+    ev.stopPropagation();
+    if (!this.config) {
+      return;
+    }
+    const configType = ev.target.configType; // E.g., 'energy_level', 'range_level', 'progress_color'
+    const value = ev.detail.value;
+    const index = this._activeIndexItem!; // Get the current active index
+    let rangeConfig = [...(this.config.range_info || [])];
+    let rangeItem = { ...rangeConfig[index] }; // Clone the item at the specific index
+
+    if (configType !== undefined) {
+      rangeItem = { ...rangeItem, [configType]: value }; // Update the specific config type
+      rangeConfig[index] = rangeItem; // Replace the modified item in the range_info array
+    } else {
+      rangeItem = { ...rangeItem, ...value }; // Spread the new values into the rangeItem
+      rangeConfig[index] = rangeItem; // Replace the modified item in the range_info array
+    }
+
+    this.config = { ...this.config, range_info: rangeConfig };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 }

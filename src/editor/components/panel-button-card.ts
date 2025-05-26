@@ -23,7 +23,7 @@ import {
   fireEvent,
   BaseButtonConfig,
 } from '../../types';
-import { Create } from '../../utils';
+import { Create, showConfirmDialog } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
 import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS } from '../editor-const';
 import { DEFAULT_TIRE_CONFIG } from '../form';
@@ -44,6 +44,7 @@ export class PanelButtonCard extends LitElement {
   @state() _reindexButton: boolean = false;
 
   @state() _yamlEditorActive: boolean = false;
+  @state() _yamlDefaultCardActive: boolean = false;
 
   private _sortable: Sortable | null = null;
   private _btnSortable: Sortable | null = null;
@@ -168,6 +169,9 @@ export class PanelButtonCard extends LitElement {
 
     if (changedProps.has('_activeTabIndex') && this._activeTabIndex === 1) {
       this.initSortable();
+    }
+    if (changedProps.has('_activeTabIndex') && this._yamlDefaultCardActive) {
+      this._yamlDefaultCardActive = false;
     }
   }
 
@@ -534,8 +538,18 @@ export class PanelButtonCard extends LitElement {
           )}
         </div>`;
 
+    const yamlDefaultEditor = html` <vsc-sub-panel-yaml
+      .hass=${this.hass}
+      .configDefault=${defaultCard}
+      .extraAction=${true}
+      .configIndex=${buttonIndex}
+      @close-editor=${() => (this._yamlDefaultCardActive = false)}
+      @yaml-config-changed=${this._handleYamlDefaultCardChange}
+    ></vsc-sub-panel-yaml>`;
+
     const footerActions = html` <div class="action-footer">
       <ha-button @click=${this.toggleAction('category-add', buttonIndex)}>Add category</ha-button>
+      <ha-button @click=${this.toggleAction('yaml-default-card', buttonIndex)} .label=${'Edit YAML'}></ha-button>
     </div>`;
 
     const cardInfo = CONFIG_TYPES.options.button_card.subpanels.default_cards.description;
@@ -544,14 +558,16 @@ export class PanelButtonCard extends LitElement {
         'Card Content',
         [],
         false,
-        html`<ha-button @click=${() => this._togglePreview('default', buttonIndex)}
-          >${this._activePreview !== null ? 'Close Preview' : 'Preview'}</ha-button
-        >`
+        html`<ha-button
+          .outlined=${true}
+          .label=${this._activePreview !== null ? 'Close Preview' : 'Preview'}
+          @click=${() => this._togglePreview('default', buttonIndex)}
+        ></ha-button>`
       )}
       ${Create.HaAlert({
         message: cardInfo,
       })}
-      ${defaultCardlist} ${footerActions}
+      ${this._yamlDefaultCardActive ? yamlDefaultEditor : html` ${defaultCardlist} ${footerActions} `}
     `;
   }
 
@@ -565,13 +581,12 @@ export class PanelButtonCard extends LitElement {
           <ha-icon-button-prev @click=${this.toggleAction('category-back')}></ha-icon-button-prev>
         </div>
         <div>${baseCard.title}</div>
-        <ha-button @click=${() => this._togglePreview('default', buttonIndex)}
+        <ha-button .outlined=${true} @click=${() => this._togglePreview('default', buttonIndex)}
           >${this._activePreview !== null ? 'Close Preview' : 'Preview'}</ha-button
         >
       </div>
       <vsc-panel-default-card
         .hass=${this.hass}
-        .cardEditor=${this.cardEditor}
         .defaultCardConfig=${baseCard}
         @card-item-changed=${this._handleCardItemChange}
       ></vsc-panel-default-card>
@@ -654,7 +669,7 @@ export class PanelButtonCard extends LitElement {
         this._reindexing ? this.resetItems() : this.resetEditorPreview();
       };
 
-      const handleButtonAction = () => {
+      const handleButtonAction = async () => {
         switch (action) {
           case 'edit-button':
             this._buttonIndex = buttonIndex!;
@@ -673,6 +688,10 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'delete-button':
             if (buttonIndex !== undefined) {
+              let confirm = await showConfirmDialog(this, 'Are you sure you want to delete this button?', 'Delete');
+              if (!confirm) {
+                return;
+              }
               const buttonCardConfig = [...(this.config.button_card || [])];
               buttonCardConfig.splice(buttonIndex, 1);
               updateChange(buttonCardConfig);
@@ -686,6 +705,10 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'category-delete':
             if (buttonIndex !== undefined && cardIndex !== undefined) {
+              let confirm = await showConfirmDialog(this, 'Are you sure you want to delete this category?', 'Delete');
+              if (!confirm) {
+                return;
+              }
               const buttonCardConfig = [...(this.config.button_card || [])];
               const defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
               defaultCard.splice(cardIndex, 1);
@@ -754,6 +777,9 @@ export class PanelButtonCard extends LitElement {
 
           case 'yaml-editor':
             this._yamlEditorActive = !this._yamlEditorActive;
+            break;
+          case 'yaml-default-card':
+            this._yamlDefaultCardActive = !this._yamlDefaultCardActive;
             break;
         }
       };
@@ -903,6 +929,22 @@ export class PanelButtonCard extends LitElement {
       this.config = { ...this.config, ...updates };
       fireEvent(this, 'config-changed', { config: this.config });
     }
+  }
+
+  private _handleYamlDefaultCardChange(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { isValid, value, index } = ev.detail;
+    if (!isValid || !this.config) {
+      return;
+    }
+    const newConfig = value;
+    let buttonCardConfig = [...(this.config.button_card || [])];
+    let buttonConfig = { ...buttonCardConfig[index] };
+    buttonConfig.default_card = newConfig;
+    buttonCardConfig[index] = buttonConfig;
+    this._copyToPreview(newConfig);
+    this.config = { ...this.config, button_card: buttonCardConfig };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _handleCardItemChange(ev: CustomEvent): void {

@@ -52,7 +52,7 @@
 .images-list {
 	border-top: solid 1px var(--divider-color);
 	padding-block: var(--vic-card-padding);
-	margin-bottom: var(--vic-gutter-gap);
+	/* margin-bottom: var(--vic-gutter-gap); */
 }
 
 .divider {
@@ -497,6 +497,7 @@ ha-selector#vic-boolean-selector {
 	display: flex;
 	font-size: 1.3rem;
 	align-items: center;
+	margin-inline-end: 0.5rem;
 	/* margin-bottom: var(--vic-card-padding); */
 }
 
@@ -505,6 +506,7 @@ ha-selector#vic-boolean-selector {
 	width: 100%;
 	height: 100%;
 	position: relative;
+
 }
 
 .config-menu-wrapper .menu-info-icon-wrapper {

@@ -14,11 +14,9 @@ import {
   IndicatorGroupItemConfig,
   fireEvent,
 } from '../../types';
-import { showPromptDialog } from '../../utils';
 import './sub-panel-yaml';
-import * as Create from '../../utils/create';
+import { showPromptDialog } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
-import { CONFIG_VALUES } from '../editor-const';
 import { singleIndicatorSchema, singleApparenceSchema, singleActionSchema } from '../form';
 import { mainGroupSchema, groupApparenceSchema, subGroupItemSchema } from '../form/indicators-schema';
 
@@ -105,23 +103,22 @@ export class PanelIndicator extends LitElement {
   }
 
   protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-    if (_changedProperties.has('_activeSubPanel') && this._activeSubPanel === null) {
-      this._resetItems();
-    }
-    if (_changedProperties.has('_activeGroupItem') && this._activeGroupItem === null) {
+    const shouldReset =
+      (_changedProperties.has('_activeSubPanel') && this._activeSubPanel === null) ||
+      (_changedProperties.has('_activeGroupItem') && this._activeGroupItem === null) ||
+      ((_changedProperties.has('_yamlEditorVisible') || _changedProperties.has('_yamlSubPanelVisible')) &&
+        (_changedProperties.get('_yamlEditorVisible') === true ||
+          _changedProperties.get('_yamlSubPanelVisible') === true));
+
+    if (shouldReset) {
+      if (this._sortable) {
+        this._sortable?.destroy();
+        this._sortable = null;
+      }
       this._resetItems();
     }
 
     return true;
-  }
-
-  protected updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-    if (changedProperties.has('_activeSubPanel') && this._activeSubPanel !== null) {
-      if (!this._sortable) {
-        this.initSortable();
-      }
-    }
   }
 
   protected render(): TemplateResult {
@@ -462,18 +459,13 @@ export class PanelIndicator extends LitElement {
   }
 
   private _addNewType(type: string, value?: string): void {
-    const reset = () => {
-      this._resetItems();
-      this.requestUpdate();
-    };
-
     const updateConfig = (newIndicators: Partial<VehicleStatusCardConfig['indicators']>) => {
       this.config = {
         ...this.config,
         indicators: { ...this.config.indicators, ...newIndicators },
       };
       fireEvent(this, 'config-changed', { config: this.config });
-      reset();
+      this._validateAndReindexItems();
     };
 
     // const entity = this._newIndicator.get('entity');
@@ -481,7 +473,8 @@ export class PanelIndicator extends LitElement {
 
     if (type === 'single' && value) {
       const entity = value;
-      const indicators = this.config.indicators?.single || [];
+      let indicators = { ...(this.config.indicators || {}) };
+      let singleIndicators = [...(indicators.single || [])];
       const newIndicator: IndicatorConfig = {
         entity,
         action_config: {
@@ -497,17 +490,23 @@ export class PanelIndicator extends LitElement {
           },
         },
       };
-      updateConfig({ single: [...indicators, newIndicator] });
+      singleIndicators.push(newIndicator);
+      indicators.single = singleIndicators;
+      updateConfig(indicators);
     } else if (type === 'group' && value) {
       const name = value;
-      const groupIndicators = this.config.indicators?.group || [];
+      let indicators = { ...(this.config.indicators || {}) };
+      let groupIndicators = [...(indicators.group || [])];
+
       const newGroup: IndicatorGroupConfig = {
         name,
         icon: 'mdi:car',
         visibility: '',
         items: [],
       };
-      updateConfig({ group: [...groupIndicators, newGroup] });
+      groupIndicators.push(newGroup);
+      indicators.group = groupIndicators;
+      updateConfig(indicators);
     } else if (type === 'item' && this._activeSubPanel !== null) {
       const groupIndicators = this.config.indicators?.group || [];
       const items = groupIndicators[this._activeSubPanel].items || [];
@@ -572,17 +571,17 @@ export class PanelIndicator extends LitElement {
       singleIndicators,
       (single: IndicatorConfig) => single.entity,
       (single: IndicatorConfig, index: number) => {
-        const entityPickerConfig = {
-          component: this,
-          value: single.entity,
-          configType: 'single',
-          configIndex: index,
-          label: '',
-          pickerType: 'entity' as 'entity',
-          items: undefined, // Ensure 'items' is defined, even if it's not needed for 'entity'
-          options: { hideClearIcon: true },
-        };
-        return Create.Picker(entityPickerConfig);
+        return html`
+          <ha-selector
+            .hass=${this.hass}
+            .value=${single.entity}
+            .index=${index}
+            .selector=${{ entity: {} }}
+            .configValue=${'entity'}
+            .configType=${'single'}
+            @value-changed=${this._valueChanged}
+          ></ha-selector>
+        `;
       },
       html`<ha-entity-picker
         .hass=${this.hass}
@@ -602,17 +601,9 @@ export class PanelIndicator extends LitElement {
     return this._renderIndicatorContent(
       groupIndicators,
       (group: IndicatorGroupConfig) => group.name,
-      (group: IndicatorGroupConfig, index) => {
-        const textFieldConfig = {
-          component: this,
-          label: 'Group name',
-          configValue: 'name',
-          value: group.name,
-          configType: 'group',
-          configIndex: index,
-          pickerType: 'textfield' as 'textfield',
-        };
-        return Create.Picker(textFieldConfig);
+      (group: IndicatorGroupConfig, index: number) => {
+        return html` <div class="secondary">Group #${index + 1}</div>
+          <div class="primary">${group.name}</div>`;
       }
     );
   }
@@ -734,6 +725,7 @@ export class PanelIndicator extends LitElement {
     if (!singleItem.action_config.entity && singleItem.entity) {
       singleItem.action_config.entity = singleItem.entity;
     }
+
     singleIndicators[singleIndex] = singleItem;
 
     // Update the single item
@@ -811,13 +803,13 @@ export class PanelIndicator extends LitElement {
     const configValue = target.configValue; // E.g., entity, icon, attribute, etc
 
     let configIndex = target.configIndex;
-    let newValue: any;
+    let newValue = ev.detail.value; // New value from the selector or input
 
-    if (CONFIG_VALUES.includes(configValue)) {
-      newValue = ev.detail.value;
-    } else {
-      newValue = target.value;
-    }
+    // if (CONFIG_VALUES.includes(configValue)) {
+    //   newValue = ev.detail.value;
+    // } else {
+    //   newValue = target.value;
+    // }
     console.log('Value changed:', configValue, ':', newValue);
     const updates: Partial<VehicleStatusCardConfig> = {};
 
@@ -864,12 +856,14 @@ export class PanelIndicator extends LitElement {
     if (configType === 'group') {
       let groupIndicators = [...indicatorsConfig.group];
       // console.log('group indicators:', groupIndicators);
-
       let group = { ...groupIndicators[index] };
       // console.log('group item', [index], group);
-      if (group[configValue] === newValue) {
-        console.log(group[configValue] === newValue, 'Value not changed');
-        return;
+      if (newValue && configValue === 'name') {
+        group.name = newValue;
+        groupIndicators[index] = group;
+        indicatorsConfig[configType] = groupIndicators;
+        updates.indicators = indicatorsConfig;
+        console.log('group name changed:', configValue, ':', newValue);
       } else {
         group[configValue] = newValue;
         groupIndicators[index] = group;
@@ -950,28 +944,50 @@ export class PanelIndicator extends LitElement {
   }
 
   private _validateAndReindexItems(): void {
-    setTimeout(() => {
-      const itemListCount = this.shadowRoot?.querySelectorAll('.indicator-list .item-config-row').length || 0;
+    console.log('Validating and reindexing items');
+    this.updateComplete.then(() => {
+      const itemListCount = this.shadowRoot?.querySelectorAll('.indicator-list .item-config-row');
+      const itemsDataIndex = Array.from(itemListCount || []).map((item) => item.getAttribute('data-index'));
 
       let configIndicatorsCount: number = 0;
+      let typeObjectKeys: string[] = [];
 
       if (this.type === 'single') {
         configIndicatorsCount = this.config.indicators?.single?.length;
+        typeObjectKeys = Object.keys(this.config.indicators?.single || []);
       } else if (this.type === 'group') {
         configIndicatorsCount = this.config.indicators?.group?.length;
+        typeObjectKeys = Object.keys(this.config.indicators?.group || []);
       }
 
-      if (itemListCount !== configIndicatorsCount) {
-        console.log('Reindexing items');
-        this._sortable?.destroy();
-        this._reindexItems = true;
-        this.requestUpdate();
-        this._resetItems();
+      const hasDiffs =
+        itemListCount?.length !== configIndicatorsCount ||
+        JSON.stringify(itemsDataIndex) !== JSON.stringify(typeObjectKeys);
+
+      if (hasDiffs) {
+        console.log('Detected differences in item count or indices', {
+          itemListCount: itemListCount?.length,
+          configIndicatorsCount,
+          typeObjectKeys,
+          itemsDataIndex,
+        });
+        setTimeout(() => {
+          console.log('Reindexing items');
+          // Destroy the sortable instance and reset items
+          if (this._sortable) {
+            this._sortable?.destroy();
+            this._sortable = null;
+          }
+          this._reindexItems = true;
+          this.requestUpdate();
+          this._resetItems();
+        }, 200);
       }
-    }, 200);
+    });
   }
 
   private _resetItems(): void {
+    console.log('Resetting items');
     setTimeout(() => {
       this._reindexItems = false;
       this.updateComplete.then(() => {
@@ -997,7 +1013,7 @@ export class PanelIndicator extends LitElement {
     evt.stopPropagation();
     const oldIndex = evt.oldIndex;
     const newIndex = evt.newIndex;
-
+    console.log('Sort end:', { oldIndex, newIndex });
     if (oldIndex === newIndex) {
       return;
     }
@@ -1009,7 +1025,7 @@ export class PanelIndicator extends LitElement {
         indicators: { ...this.config.indicators, ...updatedItems },
       };
       fireEvent(this, 'config-changed', { config: this.config });
-      this._resetItems();
+      this._validateAndReindexItems();
     };
 
     if (type === 'single') {
@@ -1025,23 +1041,5 @@ export class PanelIndicator extends LitElement {
     } else {
       console.error('Invalid or unknown indicator type');
     }
-  }
-
-  _hideClearButton(): void {
-    this.updateComplete.then(() => {
-      const entityPickers = this.shadowRoot?.querySelectorAll('#entity-picker-form');
-      if (entityPickers) {
-        entityPickers.forEach((entityPicker) => {
-          const comboBox = entityPicker.shadowRoot
-            ?.querySelector('ha-combo-box')
-            ?.shadowRoot?.querySelector('vaadin-combo-box-light > ha-svg-icon.clear-button') as HTMLElement;
-          if (comboBox) {
-            comboBox.style.display = 'none';
-          } else {
-            return;
-          }
-        });
-      }
-    });
   }
 }

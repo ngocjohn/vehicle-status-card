@@ -2,7 +2,7 @@ import { mdiGestureTap, mdiPalette } from '@mdi/js';
 import memoizeOne from 'memoize-one';
 
 import { CARD_TYPES, BUTTON_TYPE } from '../editor-const';
-import { computeActionsFormSchema } from './actions-config';
+import { computeOptionalActionSchema } from './actions-config';
 
 export const BASE_BUTTON_SCHEMA = memoizeOne(
   (typeDisabled: boolean) =>
@@ -122,7 +122,7 @@ export const BASE_BUTTON_ACTION_SCHEMA = [
         selector: { entity: {} },
         helper: 'Entity to control when the button is pressed',
       },
-      ...computeActionsFormSchema(),
+      ...computeOptionalActionSchema(),
     ],
   },
 ] as const;

@@ -213,13 +213,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     // console.log('Dispatched event', type, detail);
   }
 
-  private _handlePanelExpandedChanged(ev: Event, panelKey: string): void {
-    const panel = ev.target as HTMLElement;
-    if (panelKey === 'indicators' && (panel as any).expanded) {
-      this._panelIndicator?._hideClearButton();
-    }
-  }
-
   private _handleSelectedConfigType(ev: CustomEvent): void {
     ev.stopPropagation();
     this._selectedConfigType = ev.detail.value;
@@ -279,13 +272,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       { content: group, key: 'group', label: 'Group' },
     ];
 
-    return html`<div class="card-config">
+    return html`
       ${Create.VicTab({
         activeTabIndex: this._indicatorTabIndex || 0,
         onTabChange: (index: number) => (this._indicatorTabIndex = index),
         tabs: tabsConfig,
       })}
-    </div>`;
+    `;
   }
 
   private _renderGroupIndicator(): TemplateResult {

@@ -1,0 +1,69 @@
+import memoizeOne from 'memoize-one';
+
+export const RANGE_ITEM_SCHEMA = memoizeOne(
+  (entityId: string, required: boolean = false) =>
+    [
+      {
+        name: 'entity',
+        required: required,
+        selector: { entity: {} },
+      },
+      {
+        name: 'attribute',
+        label: 'Attribute',
+        selector: {
+          attribute: {
+            entity_id: entityId,
+          },
+        },
+      },
+      {
+        name: 'icon',
+        selector: { icon: {} },
+        context: { icon_entity: 'entity' },
+      },
+    ] as const
+);
+
+export const PROGRESS_BAR_SCHEMA = [
+  {
+    name: '',
+    type: 'grid',
+    schema: [
+      {
+        name: 'bar_height',
+        label: 'Bar Height (px)',
+        default: 5,
+        selector: {
+          number: {
+            min: 1,
+            mode: 'box',
+          },
+        },
+      },
+      {
+        name: 'bar_width',
+        label: 'Bar Width (px)',
+        default: 60,
+        selector: {
+          number: {
+            min: 1,
+            max: 100,
+            mode: 'box',
+          },
+        },
+      },
+      {
+        name: 'bar_radius',
+        label: 'Bar Radius (px)',
+        default: 5,
+        selector: {
+          number: {
+            min: 1,
+            mode: 'box',
+          },
+        },
+      },
+    ],
+  },
+] as const;

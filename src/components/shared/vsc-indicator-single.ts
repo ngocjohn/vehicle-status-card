@@ -7,7 +7,7 @@ import { customElement, state, property } from 'lit/decorators.js';
 // CSS
 import cardcss from '../../css/card.css';
 // Utils
-import { HomeAssistant, IndicatorConfig } from '../../types';
+import { hasTemplate, HomeAssistant, IndicatorConfig } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions } from '../../utils';
 
@@ -66,11 +66,7 @@ export class VscIndicatorSingle extends LitElement {
   }
 
   private async _subscribeRenderTemplate(key: TemplateKey): Promise<void> {
-    if (
-      this._unsubSingleRenderTemplates.get(key) !== undefined ||
-      !this.hass ||
-      !this.isTemplate(this.indicator[key])
-    ) {
+    if (this._unsubSingleRenderTemplates.get(key) !== undefined || !this.hass || !hasTemplate(this.indicator[key])) {
       return;
     }
 

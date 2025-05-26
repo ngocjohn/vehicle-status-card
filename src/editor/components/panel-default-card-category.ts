@@ -1,3 +1,4 @@
+import { mdiDelete, mdiPencil } from '@mdi/js';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -7,7 +8,6 @@ import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { CardItemConfig, DefaultCardConfig, HomeAssistant } from '../../types';
 import { processCardItemEntities } from '../../utils/process-editor-entities';
-import { VehicleStatusCardEditor } from '../editor';
 
 export const defaultCardSchema = [
   {
@@ -73,7 +73,6 @@ export const defaultCardItemSchema = memoizeOne(
 @customElement('vsc-panel-default-card')
 export class PanelDefaultCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
   @property({ attribute: false }) defaultCardConfig!: DefaultCardConfig;
 
   @state() private _cardConfig?: DefaultCardConfig;
@@ -110,16 +109,18 @@ export class PanelDefaultCard extends LitElement {
   private _renderItemList(): TemplateResult {
     const items = this._cardItemEntities || [];
     const actionMap = [
-      { title: 'Edit', icon: 'mdi:pencil', action: (index: number) => (this._selectedItem = index) },
+      { title: 'Edit', icon: mdiPencil, action: (index: number) => (this._selectedItem = index) },
       {
         title: 'Delete',
-        icon: 'mdi:delete',
+        icon: mdiDelete,
         action: (index: number) => this._deleteItem(index),
-        color: 'var(--error-color)',
       },
     ];
 
     return html`
+      <div class="header-row no-padding">
+        <div class="header-title">Items</div>
+      </div>
       <div class="indicator-list">
         ${repeat(
           items,
@@ -127,40 +128,25 @@ export class PanelDefaultCard extends LitElement {
           (item: CardItemConfig, index: number) => html`
             <div class="item-config-row" data-index="${index}">
               <div class="item-content">
-                  <ha-selector
-                    .hass=${this.hass}
-                    .value=${item.entity}
-                    .index=${index}
-                    .selector=${{ entity: {} }}
-                    @value-changed=${this._updateItem}
-                  ></ha-selector>
-                </div>
-                <ha-button-menu
-                  .corner=${'BOTTOM_START'}
-                  .fixed=${true}
-                  .menuCorner=${'START'}
-                  .activatable=${true}
-                  .naturalMenuWidth=${true}
-                  @closed=${(ev: Event) => ev.stopPropagation()}
-                >
-                  <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-                  ${actionMap.map(
-                    (action) => html`
-                      <mwc-list-item
-                        @click=${() => action.action(index)}
-                        .graphic=${'icon'}
-                        style="${action.color ? `color: ${action.color}` : ''}"
-                      >
-                        <ha-icon
-                          .icon=${action.icon}
-                          slot="graphic"
-                          style="${action.color ? `color: ${action.color}` : ''}"
-                        ></ha-icon>
-                        ${action.title}
-                      </mwc-list-item>
-                    `
-                  )}
-                </ha-button-menu>
+                <ha-selector
+                  .hass=${this.hass}
+                  .value=${item.entity}
+                  .index=${index}
+                  .selector=${{ entity: {} }}
+                  @value-changed=${this._updateItem}
+                ></ha-selector>
+              </div>
+              <div class="item-actions">
+                ${actionMap.map(
+                  (action) => html`
+                    <ha-icon-button
+                      class="action-icon"
+                      .label=${action.title}
+                      .path=${action.icon}
+                      @click=${() => action.action(index)}
+                    ></ha-icon-button>
+                  `
+                )}
               </div>
             </div>
           `
@@ -286,11 +272,14 @@ export class PanelDefaultCard extends LitElement {
           display: block;
           /* margin-left: 36px;
           margin-inline-start: 36px; */
-          margin-inline-end: 48px;
+          margin-inline-end: calc(2 * (var(--mdc-icon-button-size, 48px) + var(--vic-gutter-gap)));
           direction: var(--direction);
         }
         .sub-content {
           margin-bottom: unset;
+        }
+        .header-row.no-padding {
+          padding: 0 !important;
         }
       `,
       editorcss,
