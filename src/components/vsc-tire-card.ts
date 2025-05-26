@@ -1,14 +1,15 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { CSSResultGroup, html, LitElement, TemplateResult, css } from 'lit';
+import { CSSResultGroup, html, LitElement, TemplateResult, css, nothing } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 // local
 import { TIRE_BG } from '../const/img-const';
 // styles
 import cardstyles from '../css/card.css';
 import { HomeAssistant, TireEntity } from '../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../types/ha-frontend/data/ws-templates';
+import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../types/ha-frontend/data/ws-templates';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 const TEMPLATE_KEYS = ['color'] as const;
@@ -152,11 +153,6 @@ export class VehicleTireCard extends LitElement {
     this._tryDisconnect();
   }
 
-  private isTemplate(tireKey: string, key: TemplateKey): boolean {
-    const value = this.tireConfig.tires[tireKey][key];
-    return value?.includes('{');
-  }
-
   private async _tryConnect(): Promise<void> {
     const tireEntities = Object.keys(this.tireConfig.tires);
 
@@ -168,7 +164,7 @@ export class VehicleTireCard extends LitElement {
   }
 
   private async _subscribeRenderTemplate(tire: string, key: TemplateKey): Promise<void> {
-    if (!this.hass || !this.isTemplate(tire, key)) {
+    if (!this.hass || !hasTemplate(this.tireConfig.tires[tire][key])) {
       return;
     }
 
@@ -277,9 +273,13 @@ export class VehicleTireCard extends LitElement {
 
     return html`
       <div class="default-card">
-        <div class="data-header">${tireCardTitle}</div>
-        <div class="tyre-toggle-btn click-shrink" @click=${(ev: Event) => this.toggleTireDirection(ev)}>
-          <ha-icon .hidden=${hideRotationButton} icon="mdi:rotate-right-variant"></ha-icon>
+        ${ifDefined(tireCardTitle) ? html`<div class="data-header">${tireCardTitle}</div>` : nothing}
+        <div
+          .hidden=${hideRotationButton}
+          class="tyre-toggle-btn click-shrink"
+          @click=${(ev: Event) => this.toggleTireDirection(ev)}
+        >
+          <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
         </div>
 
         <div class="data-box tyre-wrapper" rotated=${isHorizontal} style=${styleMap(sizeStyle)}>
