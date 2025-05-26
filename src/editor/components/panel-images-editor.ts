@@ -13,9 +13,10 @@ import editorcss from '../../css/editor.css';
 import { VehicleStatusCardConfig, ImageConfig, HomeAssistant, fireEvent } from '../../types';
 import { EntitiesEditorEvent } from '../../types/ha-frontend/data/image';
 import { processEditorEntities } from '../../utils';
-import { TabBar, Picker } from '../../utils/create';
+import { VicTab } from '../../utils/create';
 import { uploadImage } from '../../utils/ha-helper';
-import { IMAGE_CONFIG_ACTIONS, CONFIG_VALUES, IMAGE_ACTIONS } from '../editor-const';
+import { IMAGE_CONFIG_ACTIONS, IMAGE_ACTIONS } from '../editor-const';
+import { IMAGES_SLIDE_SCHEMA } from '../form';
 
 @customElement('panel-images-editor')
 export class PanelImagesEditor extends LitElement {
@@ -26,11 +27,11 @@ export class PanelImagesEditor extends LitElement {
   @property({ type: Boolean }) isDragging = false;
 
   @state() _yamlEditorActive = false;
+  @state() _dropAreaActive = false;
   @state() _newImage: string = '';
   @state() _sortable: Sortable | null = null;
   @state() _reindexImages: boolean = false;
   @state() private _activeTabIndex: number = 0;
-  @state() _newItemName: Map<string, string> = new Map();
   @state() private _imageEntities?: EntityConfig[];
   private _helpDismissed = false;
   private _debouncedConfigChanged = debounce(this.configChanged.bind(this), 300);
@@ -114,7 +115,13 @@ export class PanelImagesEditor extends LitElement {
       this._images = this.config.images;
       return true;
     }
-    if (_changedProperties.has('_activeTabIndex') && this._activeTabIndex === 0) {
+
+    const shouldInitSortable =
+      (_changedProperties.has('_activeTabIndex') && this._activeTabIndex === 0) ||
+      _changedProperties.has('_yamlEditorActive') ||
+      (_changedProperties.has('_dropAreaActive') && _changedProperties.get('_dropAreaActive') === true) ||
+      _changedProperties.get('_yamlEditorActive') === true;
+    if (shouldInitSortable) {
       this.initSortable();
     }
 
@@ -155,7 +162,11 @@ export class PanelImagesEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        ${TabBar({ tabs: tabsconfig, activeTabIndex: this._activeTabIndex, onTabChange: this._handleTabChange })}
+        ${VicTab({
+          tabs: tabsconfig,
+          activeTabIndex: this._activeTabIndex || 0,
+          onTabChange: (index: number) => (this._activeTabIndex = index),
+        })}
       </div>
     `;
   }
@@ -199,12 +210,14 @@ export class PanelImagesEditor extends LitElement {
           delete an image, click on the delete button and select the image to delete.
         </ha-alert>`
       : html``;
+
     const dropArea = this._renderDropArea();
     const yamlEditor = this._renderYamlEditor();
     const actionMap = [
       { title: 'Show Image', icon: 'mdi:eye', action: IMAGE_ACTIONS.SHOW_IMAGE },
       { title: 'Delete Image', icon: 'mdi:delete', action: IMAGE_ACTIONS.DELETE },
     ];
+
     const images = this.config?.images || [];
     const imageList =
       this._reindexImages || !images.length
@@ -252,21 +265,27 @@ export class PanelImagesEditor extends LitElement {
           </div>`;
 
     const actionFooter = html`<div class="action-footer">
-      <ha-button id="upload-btn" @click=${this.toggleAction('upload')}>Add Image</ha-button>
-      <ha-button id="yaml-btn" @click=${this.toggleAction('yaml-editor')} class=${!images.length ? 'hidden' : ''}
+      <ha-button id="upload-btn" @click=${() => (this._dropAreaActive = true)}>Add Image</ha-button>
+      <ha-button id="yaml-btn" @click=${() => (this._yamlEditorActive = true)} class=${!images.length ? 'hidden' : ''}
         >Edit YAML</ha-button
       >
     </div> `;
-    return html` ${infoText} ${dropArea} ${imageList} ${yamlEditor} ${actionFooter} `;
+    return html` ${infoText}
+    ${this._yamlEditorActive ? yamlEditor : this._dropAreaActive ? dropArea : html` ${imageList} ${actionFooter}`}`;
   }
 
   private _renderYamlEditor(): TemplateResult {
+    if (!this._yamlEditorActive) return html``;
     return html`
-      <div id="yaml-editor" style="display: none;">
+      <div id="yaml-editor">
         <vsc-sub-panel-yaml
           .hass=${this._hass}
           .config=${this.config}
           .configDefault=${this.config.images}
+          .extraAction=${true}
+          @close-editor=${() => {
+            this._yamlEditorActive = false;
+          }}
           @yaml-config-changed=${this._yamlChanged}
         ></vsc-sub-panel-yaml>
       </div>
@@ -282,8 +301,9 @@ export class PanelImagesEditor extends LitElement {
   }
 
   private _renderDropArea(): TemplateResult {
+    if (!this._dropAreaActive) return html``;
     return html`
-      <div id="drop-area" style="display: none;">
+      <div id="drop-area">
         <div
           class="drop-area" ?dragging=${this.isDragging}
           @dragover=${this._handleDragOver}
@@ -310,112 +330,36 @@ export class PanelImagesEditor extends LitElement {
         </div>
         <ha-alert id="image-alert" class="hidden" alert-type="success">New image added successfully!</ha-alert>
       </div>
+      <div class="action-footer">
+        <ha-button id="upload-btn" @click=${() => (this._dropAreaActive = false)}>Cancel</ha-button>
+      </div>
     `;
   }
 
   private _renderImageLayoutConfig(): TemplateResult {
-    const layoutConfig = this.config?.layout_config || {};
-    const image = layoutConfig?.images_swipe || {};
+    const imagesSwipeConfig = this.config?.layout_config?.images_swipe || {};
+    const DATA = { ...imagesSwipeConfig };
 
-    const sharedConfig = {
-      component: this,
-      configType: 'layout_config',
-      configIndex: 'images_swipe',
-    };
-
-    const swiperConfig = [
-      {
-        value: image.max_height || 150,
-        configValue: 'max_height',
-        label: 'Max Height (px)',
-        options: { selector: { number: { min: 100, max: 500, mode: 'slider', step: 1 } } },
-        pickerType: 'number' as 'number',
-      },
-      {
-        value: image.max_width || 450,
-        configValue: 'max_width',
-        label: 'Max Width (px)',
-        options: { selector: { number: { min: 100, max: 500, mode: 'slider', step: 1 } } },
-        pickerType: 'number' as 'number',
-      },
-
-      {
-        value: image.delay || 3000,
-        configValue: 'delay',
-        label: 'Delay (ms)',
-        options: { selector: { number: { min: 500, max: 10000, mode: 'slider', step: 50 } } },
-        pickerType: 'number' as 'number',
-      },
-      {
-        value: image.speed || 500,
-        configValue: 'speed',
-        label: 'Speed (ms)',
-        options: { selector: { number: { min: 100, max: 5000, mode: 'slider', step: 50 } } },
-        pickerType: 'number' as 'number',
-      },
-      {
-        value: image.effect || 'slide',
-        configValue: 'effect',
-        label: 'Effect',
-        items: [
-          {
-            value: 'slide',
-            label: 'Slide',
-          },
-          {
-            value: 'fade',
-            label: 'Fade',
-          },
-          {
-            value: 'coverflow',
-            label: 'Coverflow',
-          },
-        ],
-        pickerType: 'attribute' as 'attribute',
-      },
-    ];
-    const swiperBooleanConfig = [
-      {
-        value: image.autoplay || false,
-        configValue: 'autoplay',
-        label: 'Autoplay',
-        pickerType: 'selectorBoolean' as 'selectorBoolean',
-      },
-      {
-        value: image.loop || false,
-        configValue: 'loop',
-        label: 'Loop',
-        pickerType: 'selectorBoolean' as 'selectorBoolean',
-      },
-      {
-        value: image.hide_pagination || false,
-        configValue: 'hide_pagination',
-        label: 'Hide Pagination',
-        pickerType: 'selectorBoolean' as 'selectorBoolean',
-      },
-    ];
-
-    return html` <div class="sub-panel-config button-card">
-      <div class="sub-header">
-        <div>Slide layout configuration</div>
-      </div>
-      <div class="sub-panel">
-        <div>${swiperConfig.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }))}</div>
-      </div>
-      <div class="sub-content">
-        ${swiperBooleanConfig.map((config) => this.generateItemPicker({ ...config, ...sharedConfig }), 'sub-content')}
-      </div>
-    </div>`;
+    return html`
+      <ha-form
+        .hass=${this._hass}
+        .data=${DATA}
+        .schema=${IMAGES_SLIDE_SCHEMA}
+        .computeLabel=${(schema: any) => schema.label || schema.name || ''}
+        @value-changed=${this._hanleSwipeConfigChanged}
+      ></ha-form>
+    `;
   }
 
-  private generateItemPicker(config: any, wrapperClass = 'item-content'): TemplateResult {
-    return html`
-      <div class=${wrapperClass}>
-        ${Picker({
-          ...config,
-        })}
-      </div>
-    `;
+  private _hanleSwipeConfigChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const swipeConfig = ev.detail.value;
+    const layoutConfig = { ...(this.config.layout_config || {}) };
+    let imagesSwipe = { ...(layoutConfig.images_swipe || {}) };
+    imagesSwipe = swipeConfig;
+    layoutConfig.images_swipe = imagesSwipe;
+    this.config = { ...this.config, layout_config: layoutConfig };
+    this._debouncedConfigChanged();
   }
 
   private _imageInputChanged(ev: any, idx: number): void {
@@ -471,46 +415,18 @@ export class PanelImagesEditor extends LitElement {
           ...this.config,
           images: update,
         };
+
         this._debouncedConfigChanged();
       };
 
-      const showDropArea = () => {
-        const dropArea = this.shadowRoot?.getElementById('drop-area') as HTMLElement;
-        const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
-        const addImageBtn = this.shadowRoot?.getElementById('upload-btn') as HTMLElement;
-        const isHidden = dropArea?.style.display === 'none';
-        if (isHidden) {
-          dropArea.style.display = 'block';
-          if (imageList) {
-            imageList.style.display = 'none';
-          }
-          addImageBtn.innerHTML = 'Cancel';
-        } else {
-          dropArea.style.display = 'none';
-          if (imageList) {
-            imageList.style.display = 'block';
-          }
-          addImageBtn.innerHTML = 'Add Image';
-          this.initSortable();
-        }
-      };
-
-      const showYamlEditor = () => {
-        const yamlEditor = this.shadowRoot?.getElementById('yaml-editor') as HTMLElement;
-        const imageList = this.shadowRoot?.getElementById('images-list') as HTMLElement;
-        const addImageBtn = this.shadowRoot?.getElementById('upload-btn') as HTMLElement;
-        const yamlBtn = this.shadowRoot?.getElementById('yaml-btn') as HTMLElement;
-        const yamlEditorActive = yamlEditor?.style.display === 'block';
-        if (!yamlEditorActive) {
-          yamlEditor.style.display = 'block';
-          imageList.style.display = 'none';
-          addImageBtn.style.display = 'none';
-          yamlBtn.innerHTML = 'Close YAML Editor';
-        } else {
-          yamlEditor.style.display = 'none';
-          imageList.style.display = 'block';
-          addImageBtn.style.display = 'block';
-          yamlBtn.innerHTML = 'Edit YAML';
+      const showAlert = () => {
+        const imageAlert = this.shadowRoot?.getElementById('image-alert') as HTMLElement;
+        if (imageAlert) {
+          imageAlert.classList.remove('hidden');
+          setTimeout(() => {
+            imageAlert.classList.add('hidden');
+            this._dropAreaActive = false;
+          }, 1500);
         }
       };
 
@@ -525,29 +441,17 @@ export class PanelImagesEditor extends LitElement {
             }
             break;
 
-          case 'upload':
-            showDropArea();
-            break;
-
           case 'add-new-url':
             if (!this._newImage) return;
-            const imageAlert = this.shadowRoot?.getElementById('image-alert') as HTMLElement;
             const imagesList = [...(this.config?.images || [])];
             imagesList.push({ url: this._newImage, title: this._newImage });
+            showAlert();
             updateChanged(imagesList);
             this._newImage = '';
-            if (imageAlert) {
-              imageAlert.classList.remove('hidden');
-              setTimeout(() => {
-                imageAlert.classList.add('hidden');
-              }, 3000);
-            }
+
             break;
           case 'show-image':
             this.editor?._dispatchEvent('show-image', { index: idx });
-            break;
-          case 'yaml-editor':
-            showYamlEditor();
             break;
         }
       };
@@ -598,6 +502,7 @@ export class PanelImagesEditor extends LitElement {
 
     const files = Array.from(input.files); // Convert FileList to Array for easier iteration
     console.log('Files:', files);
+    let imagesList = [...(this.config?.images || [])];
     for (const file of files) {
       try {
         const imageUrl = await uploadImage(this.editor._hass, file);
@@ -605,20 +510,25 @@ export class PanelImagesEditor extends LitElement {
         if (!imageUrl) continue;
 
         const imageName = file.name.toUpperCase();
-        const imagesList = [...(this.config?.images || [])];
-        imagesList.push({ url: imageUrl, title: imageName });
-        const imageAlert = this.shadowRoot?.querySelector('.image-alert') as HTMLElement;
-        if (imageAlert) {
-          imageAlert.classList.remove('hidden');
-          setTimeout(() => {
-            imageAlert.classList.add('hidden');
-          }, 3000);
-        }
 
-        fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
+        imagesList.push({ url: imageUrl, title: imageName });
       } catch (error) {
         console.error('Error uploading image:', error);
       }
+    }
+    if (imagesList.length > 0) {
+      const imageAlert = this.shadowRoot?.getElementById('image-alert') as HTMLElement;
+      if (imageAlert) {
+        imageAlert.classList.remove('hidden');
+        setTimeout(() => {
+          imageAlert.classList.add('hidden');
+          this._dropAreaActive = false;
+        }, 1500);
+      } else {
+        this._dropAreaActive = false;
+      }
+
+      fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
     }
   }
 
@@ -649,36 +559,5 @@ export class PanelImagesEditor extends LitElement {
         this.initSortable();
       });
     }, 200);
-  }
-
-  _valueChanged(ev: any): void {
-    ev.stopPropagation();
-    if (!this.config) return;
-
-    const target = ev.target;
-    const configType = target.configType;
-    const configIndex = target.configIndex;
-    const configValue = target.configValue;
-
-    let newValue: any = target.value;
-
-    if (CONFIG_VALUES.includes(configValue)) {
-      newValue = ev.detail.value;
-    } else {
-      newValue = target.value;
-    }
-    console.log('Value changed:', configType, configIndex, configValue, newValue);
-    const updates: Partial<VehicleStatusCardConfig> = {};
-
-    if (configType === 'layout_config') {
-      const layoutConfig = { ...(this.config.layout_config || {}) };
-      const imagesSwipe = { ...(layoutConfig.images_swipe || {}) };
-      imagesSwipe[configValue] = newValue;
-      layoutConfig.images_swipe = imagesSwipe;
-      updates.layout_config = layoutConfig;
-    }
-
-    this.config = { ...this.config, ...updates };
-    this._debouncedConfigChanged();
   }
 }

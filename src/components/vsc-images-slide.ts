@@ -220,6 +220,7 @@ export class ImagesSlide extends LitElement {
           align-items: center;
           width: 100%;
           height: 100%;
+          align-self: anchor-center;
         }
         .swiper-slide:active {
           scale: 1.02;
