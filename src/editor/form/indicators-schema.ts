@@ -1,13 +1,14 @@
 import { mdiGestureTap, mdiPalette } from '@mdi/js';
 import memoizeOne from 'memoize-one';
 
-import { computeActionsFormSchema } from './actions-config';
+import { computeActionsFormSchema, computeOptionalActionSchema } from './actions-config';
 
 export const singleIndicatorSchema = memoizeOne(
   (entity: string) =>
     [
       {
         name: 'entity',
+        required: true,
         selector: {
           entity: {},
         },
@@ -76,7 +77,7 @@ export const singleActionSchema = [
         selector: { entity: {} },
         helper: 'The entity to be controlled by the action.',
       },
-      ...computeActionsFormSchema(),
+      ...computeOptionalActionSchema(),
     ],
   },
 ] as const;
@@ -150,6 +151,19 @@ export const subGroupItemSchema = memoizeOne(
         selector: { template: {} },
         helper: 'Customize the state based on a template. The template should return a valid state name.',
       },
-      ...singleActionSchema,
+      {
+        name: 'action_config',
+        type: 'expandable',
+        title: 'Interaction Configuration',
+        iconPath: mdiGestureTap,
+        schema: [
+          {
+            name: 'entity',
+            selector: { entity: {} },
+            helper: 'The entity to be controlled by the action.',
+          },
+          ...computeActionsFormSchema(),
+        ],
+      },
     ] as const
 );
