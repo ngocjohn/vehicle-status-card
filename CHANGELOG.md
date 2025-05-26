@@ -1,3 +1,21 @@
+<a id="v1.11.3"></a>
+# [v1.11.3](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.11.3) - 2025-05-26
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.11.3 -->
+
+## What's Changed
+### Fixes 🐛
+* Add tire schema and update related components for tire configuration [#117](https://github.com/ngocjohn/vehicle-status-card/pull/117)
+* Add base button and default card panel components [#118](https://github.com/ngocjohn/vehicle-status-card/pull/118)
+### Other Changes
+* Update config schema with HA forms [#119]( https://github.com/ngocjohn/vehicle-status-card/pull/119)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.2...v1.11.3
+
+[Changes][v1.11.3]
+
+
 <a id="v1.11.2"></a>
 # [v1.11.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.11.2) - 2025-05-21
 
@@ -412,6 +430,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.11.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.2...v1.11.3
 [v1.11.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.0...v1.11.2
 [v1.11.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.10.0...v1.11.0
 [v1.10.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.9.0...v1.10.0
