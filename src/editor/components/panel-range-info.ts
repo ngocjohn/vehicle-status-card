@@ -276,7 +276,7 @@ export class PanelRangeInfo extends LitElement {
               ${createSection(configContent)}
               ${Create.ExpansionPanel({
                 content: html`${createSection(rangeAndChargingConfig)}`,
-                options: { header: 'Range level and Charging entities (Optional)' },
+                options: { header: 'Range level and Charging entity (Optional)' },
               })}
               ${Create.ExpansionPanel({
                 content: html`${createSection(progressBarFields)}`,

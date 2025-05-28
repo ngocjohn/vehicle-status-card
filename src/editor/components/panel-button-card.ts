@@ -2,7 +2,6 @@ import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css, 
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
-import Sortable from 'sortablejs';
 
 import '../../editor/components/panel-editor-ui';
 import '../../editor/components/sub-panel-yaml';
@@ -46,9 +45,6 @@ export class PanelButtonCard extends LitElement {
   @state() _yamlEditorActive: boolean = false;
   @state() _yamlDefaultCardActive: boolean = false;
 
-  private _sortable: Sortable | null = null;
-  private _btnSortable: Sortable | null = null;
-
   @query('vsc-panel-tire-config') _panelTireConfig?: PanelTireConfig;
   @query('vsc-panel-base-button') _panelBaseButton?: PanelBaseButton;
   @query('vsc-panel-default-card') _panelDefaultCard?: PanelDefaultCard;
@@ -57,6 +53,7 @@ export class PanelButtonCard extends LitElement {
     return [
       editorcss,
       css`
+        *[hidden],
         .hidden {
           display: none !important;
         }
@@ -71,105 +68,30 @@ export class PanelButtonCard extends LitElement {
 
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
-    this.initBtnSortable();
-  }
-
-  private initBtnSortable(): void {
-    this.updateComplete.then(() => {
-      const list = this.shadowRoot?.getElementById('button-list');
-      if (!list) {
-        console.log('List not found');
-        return;
-      }
-
-      console.log('Init sortable');
-      this._btnSortable = new Sortable(list, {
-        handle: '.handle',
-        ghostClass: 'sortable-ghost',
-        ignore: '.ignore',
-        animation: 150,
-        onEnd: (evt) => {
-          this._btnHandleSortEnd(evt);
-        },
-      });
-    });
-  }
-
-  private _btnHandleSortEnd(evt: any): void {
-    const { oldIndex, newIndex } = evt;
-    const buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
-    const button = buttonCardConfig[oldIndex];
-    buttonCardConfig.splice(oldIndex, 1);
-    buttonCardConfig.splice(newIndex, 0, button);
-    this.config = { ...this.config, button_card: buttonCardConfig };
-    fireEvent(this, 'config-changed', { config: this.config });
-    this._reindexButton = true;
-    setTimeout(() => {
-      this.resetItems();
-    }, 50);
-  }
-
-  private initSortable(): void {
-    this.updateComplete.then(() => {
-      const list = this.shadowRoot?.getElementById('default-card-list');
-      if (!list) {
-        console.log('List not found');
-        return;
-      }
-
-      console.log('Init sortable');
-      this._sortable = new Sortable(list, {
-        handle: '.handle',
-        ghostClass: 'sortable-ghost',
-        animation: 150,
-        onEnd: (evt) => {
-          this._handleSortEnd(evt);
-        },
-      });
-    });
-  }
-
-  private _handleSortEnd(evt: any): void {
-    const { oldIndex, newIndex } = evt;
-    const cardIndex = evt.item.getAttribute('data-index');
-    if (cardIndex === null) {
-      return;
-    }
-
-    const buttonIndex = this._buttonIndex;
-    if (buttonIndex === null) {
-      return;
-    }
-
-    let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
-    let defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
-    const card = defaultCard[cardIndex];
-    defaultCard.splice(oldIndex, 1);
-    defaultCard.splice(newIndex, 0, card);
-    buttonCardConfig[buttonIndex].default_card = defaultCard;
-    this.config = { ...this.config, button_card: buttonCardConfig };
-    fireEvent(this, 'config-changed', { config: this.config });
-
-    this._reindexing = true;
-    setTimeout(() => {
-      this.resetItems();
-    }, 50);
+    // this.initBtnSortable();
   }
 
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
-    if (changedProps.has('_buttonIndex') && this._buttonIndex === null && this._activePreview !== null) {
-      this.resetEditorPreview();
-    }
 
-    if (changedProps.has('_activeTabIndex') && this._activePreview !== null) {
+    if (changedProps.has('_buttonIndex') && this._buttonIndex === null && this._activePreview !== null) {
       this.resetEditorPreview();
       this.cardEditor._cleanConfig();
     }
 
-    if (changedProps.has('_activeTabIndex') && this._activeTabIndex === 1) {
-      this.initSortable();
+    if (
+      changedProps.has('_buttonIndex') &&
+      this._buttonIndex === null &&
+      (this._cardIndex !== null || this._activeTabIndex !== 0)
+    ) {
+      this._cardIndex = null;
+      this._activeTabIndex = 0;
     }
+
+    if (changedProps.has('_activeTabIndex') && this._activePreview !== null) {
+      this.resetEditorPreview();
+    }
+
     if (changedProps.has('_activeTabIndex') && this._yamlDefaultCardActive) {
       this._yamlDefaultCardActive = false;
     }
@@ -184,27 +106,24 @@ export class PanelButtonCard extends LitElement {
 
   private _renderButtonList(): TemplateResult {
     const buttons = this.config.button_card ?? [];
-
-    if (this._reindexButton) {
-      return html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`;
-    }
-
     let foundHiddenDivider = false;
 
-    return html`
-      <div class="card-config">
-        ${this._renderSubHeader(
-          'Button List',
-          [],
-          false,
-          html`<ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>`
-        )}
-        ${!buttons.length
-          ? html`<span>No buttons added</span>`
-          : html`
-              <div class="button-list" id="button-list">
-                ${buttons.map((button, index) => {
-                  const isHidden = button.hide_button;
+    return html` <div class="card-config">
+      ${this._renderSubHeader(
+        'Button List',
+        [],
+        false,
+        html`<ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>`
+      )}
+      ${!buttons.length
+        ? html`<span>No buttons added</span>`
+        : html`<ha-sortable handle-selector=".handle" @item-moved=${this._buttonsMoved}>
+            <div class="button-list" id="button-list">
+              ${repeat(
+                buttons,
+                (btn: ButtonCardConfig) => btn.button.primary,
+                (btn: ButtonCardConfig, index: number) => {
+                  const isHidden = btn.hide_button;
                   // Add a divider before the first hidden button
                   if (isHidden && !foundHiddenDivider) {
                     foundHiddenDivider = true;
@@ -212,15 +131,15 @@ export class PanelButtonCard extends LitElement {
                       <div class="sub-header divider">
                         <div>Hidden Buttons</div>
                       </div>
-                      ${this._renderButton(button, index)}
+                      ${this._renderButton(btn, index)}
                     `;
                   }
-                  return this._renderButton(button, index);
-                })}
-              </div>
-            `}
-      </div>
-    `;
+                  return this._renderButton(btn, index);
+                }
+              )}
+            </div>
+          </ha-sortable>`}
+    </div>`;
   }
 
   private _renderButton(button: any, index: number): TemplateResult {
@@ -305,6 +224,7 @@ export class PanelButtonCard extends LitElement {
       </div>
     `;
   }
+
   private _renderButtonCardConfig(): TemplateResult {
     if (this._buttonIndex === null) {
       return html``;
@@ -477,66 +397,67 @@ export class PanelButtonCard extends LitElement {
       { title: 'Duplicate', action: ACTIONS.CATEGORY_DUPLICATE, icon: 'mdi:content-duplicate' },
       { title: 'Delete', action: ACTIONS.CATEGORY_DELETE, icon: 'mdi:delete', color: 'var(--error-color)' },
     ];
-    const defaultCardlist = this._reindexing
-      ? html`<span>Reindexing...</span>`
-      : html`<div class="default-card-list" id="default-card-list">
-          ${repeat(
-            defaultCard,
-            (card, cardIndex) => html`
-              <div class="item-config-row" data-index="${cardIndex}">
-                <div class="handle">
-                  <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
-                </div>
-                <div class="item-content">
-                  <ha-selector
-                    .hass=${this.hass}
-                    .value=${card.title}
-                    .configValue=${'title'}
-                    .configType=${'default_card'}
-                    .configIndex=${buttonIndex}
-                    .cardIndex=${cardIndex}
-                    .label=${`Category #${cardIndex + 1}`}
-                    .selector=${{ text: {} }}
-                    .required=${false}
-                    @value-changed=${this._handleTitlePrimaryChanged}
-                  ></ha-selector>
-                </div>
-                <div class="item-actions">
-                  <ha-icon-button
-                    class="action-icon"
-                    .path=${ICON.PENCIL}
-                    @click="${this.toggleAction('category-edit', buttonIndex, cardIndex)}"
-                  ></ha-icon-button>
-                  <ha-button-menu
-                    .corner=${'BOTTOM_START'}
-                    .fixed=${true}
-                    .menuCorner=${'START'}
-                    .activatable=${true}
-                    .naturalMenuWidth=${true}
-                    @closed=${(ev: Event) => ev.stopPropagation()}
-                  >
-                    <ha-icon-button class="action-icon" .path=${ICON.DOTS_VERTICAL} slot="trigger"></ha-icon-button>
-                    ${actions.map(
-                      (action) =>
-                        html`<mwc-list-item
-                          @click=${this.toggleAction(action.action, buttonIndex, cardIndex)}
-                          .graphic=${'icon'}
-                          style="${action.color ? `color: ${action.color}` : ''}"
-                        >
-                          <ha-icon
-                            icon=${action.icon}
-                            slot="graphic"
-                            style="${action.color ? `color: ${action.color}` : ''}"
-                          ></ha-icon>
-                          ${action.title}
-                        </mwc-list-item>`
-                    )}
-                  </ha-button-menu>
-                </div>
+    const defaultCardlist = html` <ha-sortable handle-selector=".handle" @item-moved=${this._defaultCardListMoved}>
+      <div class="default-card-list" id="default-card-list">
+        ${repeat(
+          defaultCard,
+          (card: DefaultCardConfig) => card.title,
+          (card: DefaultCardConfig, cardIndex: number) => html`
+            <div class="item-config-row" data-card-title=${card.title} data-index="${cardIndex}">
+              <div class="handle">
+                <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
               </div>
-            `
-          )}
-        </div>`;
+              <div class="item-content">
+                <ha-selector
+                  .hass=${this.hass}
+                  .value=${card.title}
+                  .configValue=${'title'}
+                  .configType=${'default_card'}
+                  .configIndex=${buttonIndex}
+                  .cardIndex=${cardIndex}
+                  .label=${`Category #${cardIndex + 1}`}
+                  .selector=${{ text: {} }}
+                  .required=${false}
+                  @value-changed=${this._handleTitlePrimaryChanged}
+                ></ha-selector>
+              </div>
+              <div class="item-actions">
+                <ha-icon-button
+                  class="action-icon"
+                  .path=${ICON.PENCIL}
+                  @click="${this.toggleAction('category-edit', buttonIndex, cardIndex)}"
+                ></ha-icon-button>
+                <ha-button-menu
+                  .corner=${'BOTTOM_START'}
+                  .fixed=${true}
+                  .menuCorner=${'START'}
+                  .activatable=${true}
+                  .naturalMenuWidth=${true}
+                  @closed=${(ev: Event) => ev.stopPropagation()}
+                >
+                  <ha-icon-button class="action-icon" .path=${ICON.DOTS_VERTICAL} slot="trigger"></ha-icon-button>
+                  ${actions.map(
+                    (action) =>
+                      html`<mwc-list-item
+                        @click=${this.toggleAction(action.action, buttonIndex, cardIndex)}
+                        .graphic=${'icon'}
+                        style="${action.color ? `color: ${action.color}` : ''}"
+                      >
+                        <ha-icon
+                          icon=${action.icon}
+                          slot="graphic"
+                          style="${action.color ? `color: ${action.color}` : ''}"
+                        ></ha-icon>
+                        ${action.title}
+                      </mwc-list-item>`
+                  )}
+                </ha-button-menu>
+              </div>
+            </div>
+          `
+        )}
+      </div></ha-sortable
+    >`;
 
     const yamlDefaultEditor = html` <vsc-sub-panel-yaml
       .hass=${this.hass}
@@ -571,6 +492,29 @@ export class PanelButtonCard extends LitElement {
     `;
   }
 
+  private _defaultCardListMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    console.log('Default card moved', oldIndex, newIndex);
+    const buttonIndex = this._buttonIndex;
+    if (buttonIndex === null) {
+      return;
+    }
+    let buttonCardConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+    const defaultCard = buttonCardConfig[buttonIndex]?.default_card.concat() || [];
+    defaultCard.splice(newIndex, 0, defaultCard.splice(oldIndex, 1)[0]);
+    buttonCardConfig[buttonIndex].default_card = defaultCard;
+    this.config = { ...this.config, button_card: buttonCardConfig };
+    fireEvent(this, 'config-changed', { config: this.config });
+    if (this._activePreview === 'default') {
+      this._activePreview = null;
+      this.requestUpdate();
+      this.updateComplete.then(() => {
+        this._togglePreview('default', this._buttonIndex);
+      });
+    }
+  }
+
   private _renderCardItemList(cardIndex: number, buttonIndex: number): TemplateResult {
     if (this._cardIndex === null) return html``;
     const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex] as DefaultCardConfig;
@@ -595,18 +539,16 @@ export class PanelButtonCard extends LitElement {
 
   private _renderCustomCardConfig(buttonIndex: number): TemplateResult {
     const customCard = this.config.button_card[buttonIndex].custom_card;
-    const isHidden = customCard === undefined;
+    const isHidden = customCard === undefined || !customCard.length;
 
     return html`
-      <div class="sub-header">
+      <div class="sub-header" ?hidden=${isHidden}>
         <div>Custom Card Configuration</div>
-        ${!isHidden
-          ? html` <div class="subcard-icon">
-              <ha-button @click=${() => this._togglePreview('custom', buttonIndex)}>
-                ${this._activePreview === 'custom' ? 'Close Preview' : 'Preview'}</ha-button
-              >
-            </div>`
-          : ''}
+        <div class="subcard-icon">
+          <ha-button @click=${() => this._togglePreview('custom', buttonIndex)}>
+            ${this._activePreview === 'custom' ? 'Close Preview' : 'Preview'}</ha-button
+          >
+        </div>
       </div>
       <div class="sub-panel">
         <panel-editor-ui
@@ -665,8 +607,6 @@ export class PanelButtonCard extends LitElement {
       const updateChange = (updated: any) => {
         this.config = { ...this.config, button_card: updated };
         fireEvent(this, 'config-changed', { config: this.config });
-        this._reindexing = this._activePreview === 'default' && this._buttonIndex === buttonIndex;
-        this._reindexing ? this.resetItems() : this.resetEditorPreview();
       };
 
       const handleButtonAction = async () => {
@@ -676,15 +616,18 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'back-to-list':
             this._buttonIndex = null;
-            this.initBtnSortable();
             break;
           case 'category-back':
             this._cardIndex = null;
-            this._reindexing = true;
-            this.resetItems();
             break;
           case 'add-new-button':
-            updateChange([...(this.config.button_card || []), NEW_BUTTON_CONFIG]);
+            const buttonCardConfig = [...(this.config.button_card || [])];
+            const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
+            const newButton = JSON.parse(JSON.stringify(NEW_BUTTON_CONFIG));
+            buttonCardConfig.splice(visibleButtons.length, 0, newButton);
+            updateChange(buttonCardConfig);
+            this.requestUpdate();
+
             break;
           case 'delete-button':
             if (buttonIndex !== undefined) {
@@ -748,8 +691,10 @@ export class PanelButtonCard extends LitElement {
             if (buttonIndex !== undefined) {
               const buttonCardConfig = [...(this.config.button_card || [])];
               const newButton = JSON.parse(JSON.stringify(buttonCardConfig[buttonIndex]));
-              buttonCardConfig.push(newButton);
+              const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
+              buttonCardConfig.splice(visibleButtons.length, 0, newButton);
               updateChange(buttonCardConfig);
+              this.requestUpdate();
             }
             break;
           case 'hide-button':
@@ -760,18 +705,20 @@ export class PanelButtonCard extends LitElement {
               const button = buttonCardConfig.splice(buttonIndex, 1);
               buttonCardConfig.push(button[0]);
               updateChange(buttonCardConfig);
+              this.requestUpdate();
             }
             break;
           case 'unhide-button':
             if (buttonIndex !== undefined) {
+              console.log('Unhide button', buttonIndex);
               const buttonCardConfig = [...(this.config.button_card || [])];
               buttonCardConfig[buttonIndex].hide_button = false;
               // move the button to the end of visible buttons
               const button = buttonCardConfig.splice(buttonIndex, 1);
               const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
               buttonCardConfig.splice(visibleButtons.length, 0, button[0]);
-
               updateChange(buttonCardConfig);
+              this.requestUpdate();
             }
             break;
 
@@ -788,25 +735,19 @@ export class PanelButtonCard extends LitElement {
     };
   }
 
-  private validateListAndReset(buttonIndex: number): void {
-    setTimeout(() => {
-      const cardList = this.shadowRoot?.querySelectorAll('.default-card-list .item-config-row').length || 0;
-      let configCardListCount: number = 0;
-      if (this.config.button_card) {
-        configCardListCount = this.config.button_card[buttonIndex].default_card.length;
-      }
-      console.log('Card list count', cardList, configCardListCount);
-      if (cardList !== configCardListCount) {
-        this._sortable?.destroy();
-        this._reindexing = true;
-        this.requestUpdate();
-        if (this._activePreview && this._activePreview === 'default') {
-          this._togglePreview('default', buttonIndex);
-        } else {
-          this.resetItems();
-        }
-      }
-    }, 100);
+  private _buttonsMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    console.log('button moved', oldIndex, newIndex);
+
+    const newButtonsConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
+    newButtonsConfig.splice(newIndex, 0, newButtonsConfig.splice(oldIndex, 1)[0]);
+    this.config = {
+      ...this.config,
+      button_card: [...newButtonsConfig],
+    };
+
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private resetEditorPreview(): void {
@@ -817,29 +758,6 @@ export class PanelButtonCard extends LitElement {
       this.requestUpdate();
       this.updateComplete.then(() => {
         this.cardEditor._dispatchEvent('toggle-preview', { cardType: null });
-      });
-    }
-  }
-
-  private resetItems(): void {
-    setTimeout(() => {
-      this._reindexing = false;
-      this._reindexButton = false;
-      // console.log('Reindexing done');
-      if (this._activeTabIndex === 1) {
-        // console.log('Reinit sortable');
-        this.initSortable();
-      }
-      if (!this._activePreview) {
-        this.initBtnSortable();
-      }
-    }, 50);
-
-    if (this._activePreview === 'default') {
-      this._activePreview = null;
-      this.requestUpdate();
-      this.updateComplete.then(() => {
-        this._togglePreview('default', this._buttonIndex);
       });
     }
   }

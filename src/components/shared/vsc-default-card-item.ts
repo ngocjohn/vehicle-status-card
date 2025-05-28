@@ -7,6 +7,7 @@ import cardstyles from '../../css/card.css';
 // Local
 import { CardItemConfig, HomeAssistant } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
+import { computeEntityName } from '../../utils';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 
 const TEMPLATE_KEY = ['state_template'] as const;
@@ -172,7 +173,10 @@ export class VehicleDefaultCardItem extends LitElement {
     const item = this.defaultCardItem;
 
     const entity = item.entity;
-    const name = item.name || this.hass.states[item.entity].attributes.friendly_name;
+    const name =
+      item.name ||
+      computeEntityName(this.hass.states[entity], this.hass) ||
+      this.hass.formatEntityAttributeValue(this.hass.states[entity], 'friendly_name');
     const icon = item.icon;
 
     // Fallback to default state if template state isn't available yet

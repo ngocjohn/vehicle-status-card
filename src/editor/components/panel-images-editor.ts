@@ -1,11 +1,12 @@
 import { EntityConfig } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
+import { HassEntity } from 'home-assistant-js-websocket';
 import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { repeat } from 'lit/directives/repeat.js';
 
 import './sub-panel-yaml';
 
+import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
 import { ICON } from '../../const/const';
@@ -101,6 +102,7 @@ export class PanelImagesEditor extends LitElement {
 
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
+    this.initSortable();
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -177,7 +179,7 @@ export class PanelImagesEditor extends LitElement {
         .hass=${this._hass}
         .label=${'Image Entities'}
         .entities=${this._imageEntities}
-        .entityFilter=${(entity) => {
+        .entityFilter=${(entity: HassEntity) => {
           return entity.entity_id.startsWith('image.');
         }}
         @entities-changed=${this._entitiesValueChanged}
@@ -341,13 +343,20 @@ export class PanelImagesEditor extends LitElement {
     const DATA = { ...imagesSwipeConfig };
 
     return html`
-      <ha-form
-        .hass=${this._hass}
-        .data=${DATA}
-        .schema=${IMAGES_SLIDE_SCHEMA}
-        .computeLabel=${(schema: any) => schema.label || schema.name || ''}
-        @value-changed=${this._hanleSwipeConfigChanged}
-      ></ha-form>
+      <div class="sub-panel-config button-card">
+        <div class="sub-header">
+          <div>Slide configuration</div>
+        </div>
+        <div class="sub-panel">
+          <ha-form
+            .hass=${this._hass}
+            .data=${DATA}
+            .schema=${IMAGES_SLIDE_SCHEMA}
+            .computeLabel=${(schema: any) => schema.label || schema.name || ''}
+            @value-changed=${this._hanleSwipeConfigChanged}
+          ></ha-form>
+        </div>
+      </div>
     `;
   }
 

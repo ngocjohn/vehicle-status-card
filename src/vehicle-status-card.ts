@@ -395,7 +395,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     return html`
       <div class="default-card">
         <div class="data-header">${title} ${header}</div>
-        <div class="data-box" ?active=${collapsed_items}>
+        <div class="data-box" ?active=${collapsed_items || !items.length}>
           ${items.map((item, index) => {
             const isLastItem = index === items.length - 1;
             return html`<vsc-default-card-item

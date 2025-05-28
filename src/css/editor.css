@@ -9,7 +9,7 @@
 
 .card-config {
 	width: 100%;
-	padding-block: var(--vic-gutter-gap);
+	/* padding-block: var(--vic-gutter-gap); */
 }
 
 .sub-card-header {
@@ -140,7 +140,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	gap: var(--vic-gutter-gap);
+	/* gap: var(--vic-gutter-gap); */
 }
 
 .indicator-config {
@@ -498,6 +498,7 @@ ha-selector#vic-boolean-selector {
 	font-size: 1.3rem;
 	align-items: center;
 	margin-inline-end: 0.5rem;
+	min-height: 56px;
 	/* margin-bottom: var(--vic-card-padding); */
 }
 
@@ -619,11 +620,8 @@ ha-selector#vic-boolean-selector {
 .tip-content {
 	display: flex;
 	flex-direction: column;
+	margin-top: var(--vic-gutter-gap);
 	gap: var(--vic-gutter-gap);
-	/* background-color: #f9f9f9; */
-	/* padding: 1.5rem; */
-	border-radius: 8px;
-	/* box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); */
 }
 
 .tip-item {

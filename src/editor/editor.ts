@@ -4,7 +4,7 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import Sortable from 'sortablejs';
 
-import { CARD_SECTIONS, CARD_VERSION, ICON, SECTION } from '../const/const';
+import { CARD_VERSION, ICON, SECTION } from '../const/const';
 // Import styles
 import editorcss from '../css/editor.css';
 import { HomeAssistant, VehicleStatusCardConfig, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../types';
@@ -20,6 +20,7 @@ import {
   PanelMapEditor,
 } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
+import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA } from './form';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
@@ -62,7 +63,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   constructor() {
     super();
-    this._handleTabChange = this._handleTabChange.bind(this);
   }
 
   protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
@@ -120,17 +120,20 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       this._cleanConfig();
     }
 
-    if (changedProps.has('_selectedConfigType') && this._selectedConfigType === 'images') {
-      console.log('Init sortable');
-      this._panelImages.initSortable();
-    }
-
     if (
       changedProps.has('activeTabIndex') &&
       this.activeTabIndex === 2 &&
       this._selectedConfigType === 'layout_config'
     ) {
       this._initSectionSortable();
+    }
+
+    if (
+      changedProps.has('_selectedConfigType') &&
+      changedProps.get('_selectedConfigType') !== null &&
+      (this._selectedConfigType === null || changedProps.get('_selectedConfigType') !== this._selectedConfigType)
+    ) {
+      this._toggleMenu();
     }
   }
 
@@ -213,19 +216,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     // console.log('Dispatched event', type, detail);
   }
 
-  private _handleSelectedConfigType(ev: CustomEvent): void {
-    ev.stopPropagation();
-    this._selectedConfigType = ev.detail.value;
-    this.updateComplete.then(() => {
-      this._toggleMenu();
-    });
-  }
-
-  private _handleTabChange(index: number): void {
-    this.activeTabIndex = index;
-    this.requestUpdate();
-  }
-
   private _renderButtonCard(): TemplateResult {
     return html`<panel-button-card
       .hass=${this._hass}
@@ -237,22 +227,32 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   private _renderConfigTypeSelector(): TemplateResult {
     const OPTIONS = CONFIG_TYPES.options;
     const ITEMS = [
-      { label: 'Select Config Type', value: '' },
+      // { label: 'Select Config Type', value: '' },
       ...Object.keys(OPTIONS).map((key) => ({ label: OPTIONS[key].name, value: key })),
     ];
 
-    const selectorComboBox = html`<ha-combo-box
-      .label=${CONFIG_TYPES.name}
-      .item-value-path=${'value'}
-      .item-label-path=${'label'}
-      .placeholder=${'Select Config Type'}
-      .configValue=${'type'}
-      .value=${this._selectedConfigType ?? ''}
-      .items=${ITEMS}
-      @value-changed=${this._handleSelectedConfigType}
-    ></ha-combo-box>`;
+    const selectorWrapper = html`
+      <ha-selector
+        style="width: 100%;"
+        .hass=${this._hass}
+        .label=${'Select Config Type'}
+        .value=${this._selectedConfigType ?? ''}
+        .placeholder=${'Select Config Type'}
+        .selector=${{
+          select: {
+            mode: 'dropdown',
+            options: ITEMS,
+          },
+        }}
+        .required=${false}
+        @value-changed=${(ev: CustomEvent) => {
+          ev.stopPropagation();
+          this._selectedConfigType = ev.detail.value;
+        }}
+      ></ha-selector>
+    `;
 
-    return selectorComboBox;
+    return selectorWrapper;
   }
 
   private _renderImages(): TemplateResult {
@@ -295,59 +295,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   private _renderLayoutConfig(): TemplateResult {
     const layout = this._config.layout_config || {};
-    const buttonGrid = layout.button_grid || {};
 
-    const sharedButtonConfig = {
-      component: this,
-      configIndex: 'button_grid',
-      configType: 'layout_config',
-    };
-
-    const buttonGridPicker = [
-      {
-        configValue: 'rows',
-        label: 'Rows',
-        options: { selector: { number: { max: 10, min: 1, mode: 'box', step: 1 } } },
-        pickerType: 'number',
-        value: buttonGrid.rows || 2,
-      },
-      {
-        configValue: 'columns',
-        label: 'Columns',
-        options: { selector: { number: { max: 10, min: 1, mode: 'box', step: 1 } } },
-        pickerType: 'number',
-        value: buttonGrid.columns || 2,
-      },
-      {
-        configValue: 'swipe',
-        label: 'Use swipe for buttons',
-        options: { selector: { boolean: ['true', 'false'] } },
-        pickerType: 'selectorBoolean',
-        value: buttonGrid.swipe || false,
-      },
-    ];
-
-    const hide = layout.hide || {};
-    const sharedBoolConfig = {
-      component: this,
-      configIndex: 'hide',
-      configType: 'layout_config',
-      options: { selector: { boolean: ['true', 'false'] } },
-      pickerType: 'selectorBoolean',
-    };
-    const hidePicker = [
-      { configValue: 'card_name', label: 'Card Name', value: hide.card_name || false },
-      { configValue: 'indicators', label: 'Indicators', value: hide.indicators || false },
-      { configValue: 'range_info', label: 'Range Info', value: hide.range_info || false },
-      { configValue: 'images', label: 'Images', value: hide.images || false },
-      { configValue: 'mini_map', label: 'Mini Map', value: hide.mini_map || false },
-      { configValue: 'buttons', label: 'Buttons', value: hide.buttons || false },
-      {
-        configValue: 'button_notify',
-        label: 'Notify badge on buttons',
-        value: hide.button_notify || false,
-      },
-    ];
+    const BUTTON_GRID_DATA = { ...layout.button_grid };
+    const HIDE_CONFIG_DATA = { ...layout.hide };
 
     const themeConfig = layout.theme_config || {};
 
@@ -404,7 +354,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
           <div>Button Grid Configuration</div>
         </div>
         <div class="sub-panel">
-          <div class="sub-content">${buttonGridPicker.map((config) => createPickers(config, sharedButtonConfig))}</div>
+          ${this._createHaForm(BUTTON_GRID_DATA, BUTTON_GRID_SCHEMA, 'layout_config', 'button_grid')}
         </div>
       </div>
     `;
@@ -414,9 +364,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         <div class="sub-header">
           <div>Choose the items / sections to hide</div>
         </div>
-        <div class="sub-panel">
-          <div class="sub-content">${hidePicker.map((config) => createPickers(config, sharedBoolConfig))}</div>
-        </div>
+        <div class="sub-panel">${this._createHaForm(HIDE_CONFIG_DATA, HIDE_SCHEMA, 'layout_config', 'hide')}</div>
       </div>
       <div class="sub-panel-config button-card">
         <div class="sub-header">
@@ -459,13 +407,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       { content: hideWrapper, key: 'hide', label: 'Appearance' },
     ];
 
-    // return html`<div class="card-config">
-    //   ${Create.TabBar({
-    //     activeTabIndex: this.activeTabIndex || 0,
-    //     onTabChange: (index: number) => (this.activeTabIndex = index),
-    //     tabs: tabsConfig,
-    //   })}
-    // </div>`;
     return html`
       <div class="card-config">
         ${Create.VicTab({
@@ -498,16 +439,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderMainEditorPage(): TemplateResult {
-    const cardTypeSelector = this._renderConfigTypeSelector();
-
     const menuButton = html`<div class="config-menu-wrapper">
-      <div id="menu-icon" class="menu-icon click-shrink" @click="${() => this._toggleMenu()}">
+      <div id="menu-icon" class="menu-icon click-shrink">
         <div class="menu-icon-inner">
           <ha-icon icon="mdi:menu"></ha-icon>
         </div>
       </div>
       <div class="menu-wrapper">
-        <div class="menu-selector hidden">${cardTypeSelector}</div>
         <div class="menu-content-wrapper">
           <div class="menu-label">
             <span class="primary">${CONFIG_TYPES.name}</span>
@@ -638,6 +576,31 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
   }
 
+  private _createHaForm(data: any, schema: any, configType?: string, configIndex?: string): TemplateResult {
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${schema}
+        .configIndex=${configIndex}
+        .configType=${configType}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
+    `;
+  }
+
+  private _computeLabel(schema: any) {
+    if (schema.name === 'entity') {
+      return '';
+    }
+    return schema.label || schema.name;
+  }
+  private _computeHelper(schema: any) {
+    return schema.helper || '';
+  }
+
   public _valueChanged(ev: any): void {
     if (!this._config || !this._hass) {
       return;
@@ -654,40 +617,28 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     let hiddenChanged = false;
     // console.log('Config Value:', configValue, 'Config Type:', configType, 'New Value:', newValue);
     const updates: Partial<VehicleStatusCardConfig> = {};
-    if (configType === 'layout_config') {
+    if (configType === 'layout_config' && ['button_grid', 'hide'].includes(configIndex)) {
+      let layoutConfig = { ...(this._config.layout_config || {}) };
       newValue = ev.detail.value;
-      if (configIndex === 'button_grid') {
-        const layoutConfig = { ...(this._config.layout_config || {}) };
-        const buttonGrid = { ...(layoutConfig.button_grid || {}) };
-        buttonGrid[configValue] = newValue;
-        layoutConfig.button_grid = buttonGrid;
-        updates.layout_config = layoutConfig;
-      } else if (configIndex === 'hide') {
-        const layoutConfig = { ...(this._config.layout_config || {}) };
-        const hide = { ...(layoutConfig.hide || {}) };
-        hide[configValue] = newValue;
-        layoutConfig.hide = hide;
+      layoutConfig[configIndex] = newValue;
 
-        if (CARD_SECTIONS.includes(configValue)) {
-          const sectionOrder = [...(this._config.layout_config?.section_order || [])];
-          const updatedOrder = this._setOrderList(hide, sectionOrder);
-          layoutConfig.section_order = updatedOrder;
-          hiddenChanged = true;
-        }
-        updates.layout_config = layoutConfig;
-      } else if (configIndex === 'theme_config') {
-        newValue = ev.detail.value ?? ev.target.value;
-        const layoutConfig = { ...(this._config.layout_config || {}) };
-        const themeConfig = { ...(layoutConfig.theme_config || {}) };
-        if (themeConfig[configValue] === newValue) {
-          return;
-        }
-
-        themeConfig[configValue] = newValue;
-        layoutConfig.theme_config = themeConfig;
-        updates.layout_config = layoutConfig;
-        console.log('Theme Config:', themeConfig);
+      if (configIndex === 'hide') {
+        const sectionOrder = [...(this._config.layout_config?.section_order || [])];
+        const updatedOrder = this._setOrderList(newValue, sectionOrder);
+        layoutConfig.section_order = updatedOrder;
+        hiddenChanged = true;
       }
+      updates.layout_config = layoutConfig;
+    } else if (configIndex === 'theme_config') {
+      newValue = ev.detail.value;
+      const layoutConfig = { ...(this._config.layout_config || {}) };
+      const themeConfig = { ...(layoutConfig.theme_config || {}) };
+      if (themeConfig[configValue] && themeConfig[configValue] === newValue) {
+        return; // No change
+      }
+      themeConfig[configValue] = newValue;
+      layoutConfig.theme_config = themeConfig;
+      updates.layout_config = layoutConfig;
     } else {
       updates[configValue] = newValue;
     }

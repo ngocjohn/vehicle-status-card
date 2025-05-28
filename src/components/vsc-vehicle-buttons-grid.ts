@@ -10,7 +10,7 @@ import swipercss from 'swiper/swiper-bundle.css';
 
 // local
 import cardstyles from '../css/card.css';
-import { ButtonCardEntity, HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { ButtonCardEntity, HomeAssistant, LayoutConfig, VehicleStatusCardConfig } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import './shared/vsc-button-single';
 
@@ -32,10 +32,12 @@ export class VehicleButtonsGrid extends LitElement {
     }
   }
 
-  private get gridConfig(): { rows: number; columns: number } {
+  private get gridConfig(): LayoutConfig['button_grid'] {
     return {
       rows: this.config.layout_config?.button_grid?.rows || 2,
       columns: this.config.layout_config?.button_grid?.columns || 2,
+      button_layout: this.config.layout_config?.button_grid?.button_layout || 'horizontal',
+      swipe: this.config.layout_config?.button_grid?.swipe || false,
     };
   }
 
@@ -106,6 +108,7 @@ export class VehicleButtonsGrid extends LitElement {
       ._card=${this as any}
       ._buttonConfig=${button}
       ._index=${index}
+      .layout=${this.gridConfig.button_layout}
     ></vsc-button-single>`;
   }
 

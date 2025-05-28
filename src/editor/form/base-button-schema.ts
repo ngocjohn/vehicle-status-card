@@ -65,28 +65,10 @@ export const BASE_BUTTON_APPEARANCE_SCHEMA = memoizeOne(
             ],
           },
           {
-            name: 'picture_template',
-            label: 'Picture & Icon template',
-            helper:
-              'Result starts with `http` or "/" will be treated as image URL, otherwise as icon. (this change picked icon)',
-            selector: { template: {} },
-          },
-          {
-            name: 'notify',
-            label: 'Notification template',
-            helper: 'Use Jinja2 template with result `true` to display notification badge',
-            selector: { template: {} },
-          },
-          {
-            name: 'color',
-            label: 'Color template',
-            helper: 'Template for the icon color',
-            selector: { template: {} },
-          },
-          {
             name: 'secondary',
             type: 'expandable',
             title: 'Secondary Info',
+            expanded: true,
             schema: [
               {
                 name: 'entity',
@@ -105,7 +87,33 @@ export const BASE_BUTTON_APPEARANCE_SCHEMA = memoizeOne(
               },
             ],
           },
-        ],
+          {
+            name: '',
+            type: 'expandable',
+            title: 'Advanced Options',
+            schema: [
+              {
+                name: 'picture_template',
+                label: 'Picture & Icon template',
+                helper:
+                  'Result starts with `http` or "/" will be treated as image URL, otherwise as icon. (this change picked icon)',
+                selector: { template: {} },
+              },
+              {
+                name: 'notify',
+                label: 'Notification Badge template',
+                helper: 'Use Jinja2 template with result `true` to display notification badge',
+                selector: { template: {} },
+              },
+              {
+                name: 'color',
+                label: 'Color template',
+                helper: 'Template for the icon color',
+                selector: { template: {} },
+              },
+            ],
+          },
+        ] as const,
       },
     ] as const
 );

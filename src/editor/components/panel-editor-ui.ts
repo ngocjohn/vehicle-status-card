@@ -56,6 +56,13 @@ export class PanelEditorUI extends LitElement {
       css`
         .toolbar {
           display: flex;
+          align-items: center;
+        }
+        .toolbar > .title {
+          flex: 1 1 0%;
+          font-size: 1.1em;
+          color: var(--secondary-text-color);
+          padding: 0px 8px;
         }
 
         #card-options {
@@ -103,17 +110,21 @@ export class PanelEditorUI extends LitElement {
 
     const toolBar = html`
       <div class="toolbar">
-        <vic-tab-bar>
-          ${this.cards.map(
-            (_card, i) =>
-              html`<vic-tab
-                .active=${selected === i}
-                .name=${(i + 1).toString()}
-                @click=${() => (this._selectedCard = i)}
-                style="flex: 0 !important;"
-              ></vic-tab>`
-          )}
-        </vic-tab-bar>
+        ${!cardsLength
+          ? html`<div class="title">Choose card to add</div>`
+          : html`
+              <vic-tab-bar>
+                ${this.cards.map(
+                  (_card, i) =>
+                    html`<vic-tab
+                      .active=${selected === i}
+                      .name=${(i + 1).toString()}
+                      @click=${() => (this._selectedCard = i)}
+                      style="flex: 0 !important;"
+                    ></vic-tab>`
+                )}
+              </vic-tab-bar>
+            `}
         <vic-tab id="add-card" .active=${selected === cardsLength} @click=${this._handleAddCard} .narrow=${true}>
           <ha-svg-icon .path="${ICON.PLUS}" slot="icon"></ha-svg-icon>
         </vic-tab>

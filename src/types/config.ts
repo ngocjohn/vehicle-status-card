@@ -243,13 +243,15 @@ type CARD_TYPE = 'custom' | 'default' | 'tire';
 export type ButtonCardEntity = ButtonCardEntityItem[];
 
 export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
+export type BUTTON_LAYOUT = 'horizontal' | 'vertical';
 
 /* ----------------------------- LAYOUT CONFIG ----------------------------- */
-interface LayoutConfig {
+export interface LayoutConfig {
   button_grid: {
     rows: number;
     columns: number;
     swipe: boolean;
+    button_layout?: BUTTON_LAYOUT;
   };
   images_swipe: {
     max_height: number;
@@ -273,7 +275,7 @@ interface LayoutConfig {
   };
   theme_config: {
     mode: THEME_MODE;
-    theme: string;
+    theme?: string;
   };
   section_order?: Array<string>;
 }

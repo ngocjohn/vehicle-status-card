@@ -29,6 +29,7 @@ export const PROGRESS_BAR_SCHEMA = [
   {
     name: '',
     type: 'grid',
+    column_min_width: '150px',
     schema: [
       {
         name: 'bar_height',

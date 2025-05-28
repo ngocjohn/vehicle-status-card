@@ -38,7 +38,7 @@ export class VicTabBar extends LitElement {
       display: flex;
       flex-direction: row;
       align-items: stretch;
-      height: var(--header-height);
+      height: 49px;
       overflow-x: auto;
       overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
