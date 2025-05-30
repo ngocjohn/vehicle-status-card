@@ -10,7 +10,14 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { SECTION, SECTION_ORDER } from '../const/const';
 import { DEFAULT_HA_MAP_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
 import './shared/vsc-maptiler-popup';
-import { Address, HistoryStates, isComponentLoaded, MapData, subscribeHistoryStatesTimeWindow } from '../types';
+import {
+  Address,
+  HistoryStates,
+  HomeAssistant,
+  isComponentLoaded,
+  MapData,
+  subscribeHistoryStatesTimeWindow,
+} from '../types';
 import { _getHistoryPoints } from '../utils';
 import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
 import parseAspectRatio from '../utils/parse-aspect-ratio';
@@ -21,14 +28,15 @@ export const DEFAULT_ZOOM = 14;
 
 @customElement('mini-map-box')
 export class MiniMapBox extends LitElement {
-  @property({ attribute: false }) private mapData!: MapData;
-  @property({ attribute: false }) private card!: VehicleStatusCard;
-  @property({ type: Boolean }) private isDark: boolean = false;
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) mapData!: MapData;
+  @property({ attribute: false }) card!: VehicleStatusCard;
+  @property({ type: Boolean }) isDark: boolean = false;
   @property({ type: Boolean }) open!: boolean;
 
-  private map: L.Map | null = null;
-  private marker: L.Marker | null = null;
+  @state() private map: L.Map | null = null;
   private latLon: L.LatLng | null = null;
+  private marker: L.Marker | null = null;
 
   private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
@@ -77,17 +85,19 @@ export class MiniMapBox extends LitElement {
 
   private _subscribeHistory() {
     const _config = this.card._config;
-    const hass = this.card._hass;
+    const hass = this.hass;
     if (
       !isComponentLoaded(hass!, 'history') ||
       this._subscribed ||
-      (!_config.mini_map?.history_period && !_config.mini_map?.hours_to_show)
+      (!_config.mini_map?.history_period && !_config.mini_map?.hours_to_show) ||
+      (!_config.mini_map?.history_period && _config.mini_map?.hours_to_show === 0)
     ) {
       // console.log(
       //   'History not loaded or already subscribed',
       //   this._subscribed,
       //   !_config.mini_map?.history_period && !_config.mini_map?.hours_to_show
       // );
+      console.log('History not loaded or already subscribed');
       return;
     }
     console.log('Subscribing to history...');
@@ -149,6 +159,27 @@ export class MiniMapBox extends LitElement {
         this._getAddress();
       }
     }
+  }
+
+  protected shouldUpdate(changedProperties: PropertyValues): boolean {
+    if (changedProperties.has('hass') && this.hass && this.map) {
+      const { lat, lon } = this.mapData;
+      const stateObj = this.hass.states[this.card._config.mini_map.device_tracker];
+      if (stateObj) {
+        const { latitude, longitude } = stateObj.attributes;
+        if (lat !== latitude || lon !== longitude) {
+          console.log('Updating map position...');
+          this._addressReady = false;
+          this.mapData.lat = latitude;
+          this.mapData.lon = longitude;
+          this.latLon = this._getTargetLatLng(this.map);
+          this.marker?.setLatLng([latitude, longitude]);
+          this.map.setView(this.latLon, this.zoom);
+          this._getAddress();
+        }
+      }
+    }
+    return true;
   }
 
   private getResponsivePopupSize(aspectRatio: string): { width: string; height: string } {

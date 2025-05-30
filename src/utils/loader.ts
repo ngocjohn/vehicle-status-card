@@ -177,18 +177,6 @@ export const loadMapCard = async (entities: string[]): Promise<void> => {
   }
 };
 
-// export const loadExtraMapCard = async (): Promise<void> => {
-//   (window as any).customCards = (window as any).customCards || [];
-//   if (!(window as any).customCards.find((card: any) => card.type === 'extra-map-card')) {
-//     const script = document.createElement('script');
-//     script.type = 'module';
-//     script.src = EXTRA_MAP_CARD_URL;
-//     script.onload = () => console.log('extra-map-card loaded');
-//     script.onerror = () => console.error('Failed to load extra-map-card');
-//     document.body.appendChild(script);
-//     console.log('extra-map-card script added to the document');
-//   }
-// };
 export const loadExtraMapCard = async () => {
   (window as any).customCards = (window as any).customCards || [];
 

@@ -39,7 +39,6 @@ const sharedDefaultMapConfig = [
   {
     name: 'history_period',
     label: 'History Period',
-    default: '',
     selector: {
       select: {
         mode: 'dropdown',

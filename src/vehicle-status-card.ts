@@ -18,6 +18,7 @@ import {
   PREVIEW_TYPE,
   ButtonCardEntityItem,
   DefaultCardConfig,
+  MapData,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
 import { HaHelp, isDarkColor, isEmpty, loadExtraMapCard, applyThemesOnElement } from './utils';
@@ -25,6 +26,18 @@ import { createSingleMapCard, getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement implements LovelaceCard {
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import('./editor/editor');
+    return document.createElement('vehicle-status-card-editor');
+  }
+
+  public static getStubConfig = (hass: HomeAssistant): Record<string, unknown> => {
+    const DEFAULT_CONFIG = getDefaultConfig(hass);
+    return {
+      ...DEFAULT_CONFIG,
+    };
+  };
+
   public setConfig(config: VehicleStatusCardConfig): void {
     this._config = config;
   }
@@ -39,6 +52,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @state() public _tireCardPreview: TireEntity | undefined = undefined;
 
   @state() public _singleMapCard: LovelaceCardConfig[] = [];
+  @state() MapData?: MapData;
 
   @state() public _buttonCards: ButtonCardEntity = [];
 
@@ -74,18 +88,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         }
       });
     }
-  }
-
-  public static getStubConfig = (hass: HomeAssistant): Record<string, unknown> => {
-    const DEFAULT_CONFIG = getDefaultConfig(hass);
-    return {
-      ...DEFAULT_CONFIG,
-    };
-  };
-
-  public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editor/editor');
-    return document.createElement('vehicle-status-card-editor');
   }
 
   connectedCallback(): void {
@@ -201,7 +203,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       return this._renderCardPreview();
     }
 
-    if (this._config.mini_map.single_map_card && this._singleMapCard.length) {
+    if (this._config.mini_map?.single_map_card === true && this._singleMapCard.length) {
       const mapCard = this._singleMapCard[0];
       return html`${mapCard}`;
     }
@@ -233,7 +235,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
           case SECTION.BUTTONS:
             return this._renderButtons();
           default:
-            console.log(`Unknown section ${section}`);
             return html``;
         }
       })}
@@ -308,10 +309,10 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     if (!deviceTracker || !stateObj || /(unknown)/.test(stateObj.state)) {
       return this._showWarning('Device tracker not available');
     }
-    const mapData = { lat: stateObj.attributes.latitude, lon: stateObj.attributes.longitude };
+
     return html`
       <div id=${SECTION.MINI_MAP} style=${`min-width: ${this._cardWidth}px`}>
-        <mini-map-box .mapData=${mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
+        <mini-map-box .hass=${this._hass} .mapData=${this.MapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
       </div>
     `;
   }

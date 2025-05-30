@@ -94,7 +94,7 @@ const STYLE_SCHEME_OPTIONS = () => {
 export const STYLE_OPTIONS = STYLE_SCHEME_OPTIONS();
 
 export const DEFAULT_HOURS_TO_SHOW = 0;
-export const DEFAULT_ZOOM = 14;
+export const DEFAULT_ZOOM = 13;
 export const MARKER_CIRCLE_RADIUS = 0.05;
 export const MARKER_CIRCLE_STEPS = 64;
 
