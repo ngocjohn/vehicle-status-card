@@ -2,39 +2,45 @@ export const BUTTON_GRID_SCHEMA = [
   {
     name: '',
     type: 'grid',
+    column_min_width: '150px',
     schema: [
       {
         name: 'swipe',
-        label: 'Use swipe for buttons',
+        label: 'Use swipe',
         selector: { boolean: {} },
       },
-      {
-        name: 'button_layout',
-        label: 'Button Layout',
-        default: 'horizontal',
-        selector: {
-          select: {
-            mode: 'dropdown',
-            options: [
-              { value: 'horizontal', label: 'Horizontal' },
-              { value: 'vertical', label: 'Vertical' },
-            ],
-          },
-        },
-      },
+
       {
         name: 'rows',
         label: 'Rows',
-        default: 2,
         selector: { number: { min: 1, max: 10, mode: 'box' } },
       },
       {
         name: 'columns',
         label: 'Columns',
-        default: 2,
         selector: { number: { min: 1, max: 10, mode: 'box' } },
       },
     ],
+  },
+  {
+    name: 'button_layout',
+    label: 'Button layout',
+    required: true,
+    default: 'horizontal',
+    selector: {
+      select: {
+        mode: 'box',
+        options: ['horizontal', 'vertical'].map((value) => ({
+          label: value.charAt(0).toUpperCase() + value.slice(1),
+          value,
+          image: {
+            src: `/static/images/form/tile_content_layout_${value}.svg`,
+            src_dark: `/static/images/form/tile_content_layout_${value}_dark.svg`,
+            flip_rtl: true,
+          },
+        })),
+      },
+    },
   },
 ] as const;
 
@@ -48,18 +54,16 @@ const HIDE_OPTIONS = [
   'button_notify',
 ] as const;
 
-const createBooleanSelector = (name: string) => ({
-  name,
-  label: name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-  selector: { boolean: {} },
-});
-
 export const HIDE_SCHEMA = [
   {
     name: '',
     type: 'grid',
     column_min_width: '150px',
-    schema: HIDE_OPTIONS.map(createBooleanSelector),
+    schema: HIDE_OPTIONS.map((option) => ({
+      label: option.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+      name: option,
+      selector: { boolean: {} },
+    })),
   },
 ] as const;
 
@@ -73,6 +77,8 @@ export const THEME_CONFIG_SCHEMA = [
       {
         name: 'theme',
         label: 'Theme',
+        default: 'default',
+        required: true,
         selector: { theme: { include_default: true } },
       },
       {
@@ -90,5 +96,15 @@ export const THEME_CONFIG_SCHEMA = [
         },
       },
     ],
+  },
+] as const;
+
+export const NAME_SCHEMA = [
+  {
+    name: 'name',
+    label: 'Card Name',
+    required: false,
+    default: '',
+    selector: { text: { multiline: false } },
   },
 ] as const;

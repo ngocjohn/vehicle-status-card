@@ -188,7 +188,7 @@ export class VehicleButtonsGrid extends LitElement {
 
   private _computeGridColumns() {
     const { columns } = this.gridConfig;
-    const minWidth = `calc((100% - 24px) / ${columns})`;
+    const minWidth = `calc((100% / ${columns}) - 8px)`;
     return styleMap({
       gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
     });

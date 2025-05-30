@@ -218,7 +218,7 @@ export class VehicleButtonSingle extends LitElement {
     return html`
       <div class="grid-item" id="actionBtn" @click=${this._handleNavigate}>
         <ha-ripple></ha-ripple>
-        <div class="click-container click-shrink" layout=${this.layout}>
+        <div class="click-container click-shrink" ?vertical=${this.layout === 'vertical'}>
           <div class="item-icon">
             <div class="icon-background" style=${`--vic-icon-bg-color: ${iconBackground}`}>
               ${isPictureUrl

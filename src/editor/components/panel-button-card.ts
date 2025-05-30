@@ -34,7 +34,6 @@ export class PanelButtonCard extends LitElement {
   @property({ attribute: false }) config!: VehicleStatusCardConfig;
 
   @state() _activePreview: string | null = null;
-
   @state() _activeTabIndex: number = 0;
   @state() _buttonIndex: number | null = null;
   @state() _cardIndex: number | null = null;
@@ -68,15 +67,13 @@ export class PanelButtonCard extends LitElement {
 
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
-    // this.initBtnSortable();
   }
 
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
 
-    if (changedProps.has('_buttonIndex') && this._buttonIndex === null && this._activePreview !== null) {
+    if (changedProps.has('_buttonIndex') && changedProps.get('_buttonIndex') !== null && this._buttonIndex === null) {
       this.resetEditorPreview();
-      this.cardEditor._cleanConfig();
     }
 
     if (
@@ -506,7 +503,7 @@ export class PanelButtonCard extends LitElement {
     buttonCardConfig[buttonIndex].default_card = defaultCard;
     this.config = { ...this.config, button_card: buttonCardConfig };
     fireEvent(this, 'config-changed', { config: this.config });
-    if (this._activePreview === 'default') {
+    if (this._activePreview !== null && this._activePreview === 'default') {
       this._activePreview = null;
       this.requestUpdate();
       this.updateComplete.then(() => {
@@ -662,20 +659,19 @@ export class PanelButtonCard extends LitElement {
           case 'category-duplicate':
             if (buttonIndex !== undefined && cardIndex !== undefined) {
               console.log('Duplicate category', buttonIndex, cardIndex);
-              const buttonCardConfig = [...(this.config.button_card || [])];
+              let buttonCardConfig = [...(this.config.button_card || [])];
               const defaultCards = buttonCardConfig[buttonIndex]?.default_card || [];
               console.log('Default cards', defaultCards);
               const newCard = JSON.parse(JSON.stringify(defaultCards[cardIndex]));
               console.log('New card', newCard);
-              this.config = {
-                ...this.config,
-                button_card: [
-                  ...buttonCardConfig.slice(0, buttonIndex),
-                  { ...buttonCardConfig[buttonIndex], default_card: [...defaultCards, newCard] },
-                  ...buttonCardConfig.slice(buttonIndex + 1),
-                ],
-              };
-              fireEvent(this, 'config-changed', { config: this.config });
+
+              buttonCardConfig = [
+                ...buttonCardConfig.slice(0, buttonIndex),
+                { ...buttonCardConfig[buttonIndex], default_card: [...defaultCards, newCard] },
+                ...buttonCardConfig.slice(buttonIndex + 1),
+              ];
+              this._copyToPreview(buttonCardConfig[buttonIndex].default_card);
+              updateChange(buttonCardConfig);
             }
             break;
           case 'category-add':
@@ -684,6 +680,7 @@ export class PanelButtonCard extends LitElement {
               const defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
               const newCard = { title: 'New Category', collapsed_items: false, items: [] };
               buttonCardConfig[buttonIndex].default_card = [...defaultCard, newCard];
+              this._copyToPreview(buttonCardConfig[buttonIndex].default_card);
               updateChange(buttonCardConfig);
             }
             break;
@@ -752,6 +749,7 @@ export class PanelButtonCard extends LitElement {
 
   private resetEditorPreview(): void {
     console.log('Resetting editor preview');
+    this.cardEditor._cleanConfig();
 
     if (this._activePreview !== null) {
       this._activePreview = null;
@@ -782,19 +780,29 @@ export class PanelButtonCard extends LitElement {
       this._activePreview = null;
       sentEvent(this._activePreview);
       this.cardEditor._cleanConfig();
-    } else {
+      return;
+    } else if (index !== null) {
       this._activePreview = type;
-      if (type === 'default' && index !== null) {
-        let defaultCardConfig = this.config.button_card[index].default_card || [];
-        setPreviewConfig('default_card_preview', defaultCardConfig);
-      } else if (type === 'custom' && index !== null) {
-        let cardConfig = this.config.button_card[index].custom_card || {};
-        setPreviewConfig('card_preview', cardConfig);
-      } else if (type === 'tire' && index !== null) {
-        let tirePreviewConfig = this.config.button_card[index].tire_card || {};
-        setPreviewConfig('tire_preview', tirePreviewConfig);
+      const buttonCardConfig = this.config.button_card[index];
+      let previewConfig: any = {};
+
+      switch (type) {
+        case 'default':
+          previewConfig = buttonCardConfig.default_card || [];
+          setPreviewConfig('default_card_preview', previewConfig);
+          break;
+        case 'custom':
+          previewConfig = buttonCardConfig.custom_card || {};
+          setPreviewConfig('card_preview', previewConfig);
+          break;
+        case 'tire':
+          previewConfig = buttonCardConfig.tire_card || {};
+          setPreviewConfig('tire_preview', previewConfig);
+          break;
       }
+
       sentEvent(this._activePreview);
+      return;
     }
   };
 
@@ -832,8 +840,8 @@ export class PanelButtonCard extends LitElement {
       defaultCard[cardIndex] = card;
       buttonCard.default_card = defaultCard;
       buttonCardConfig[buttonIndex] = buttonCard;
-      updates.button_card = buttonCardConfig;
       this._copyToPreview(defaultCard);
+      updates.button_card = buttonCardConfig;
     } else if (configType === 'button') {
       let buttonCard = { ...buttonCardConfig[buttonIndex] };
       let button = { ...buttonCard.button };
@@ -878,8 +886,8 @@ export class PanelButtonCard extends LitElement {
     defaultCard[cardIndex] = card;
     buttonCard.default_card = defaultCard;
     buttonCardConfig[buttonIndex] = buttonCard;
-    this.config = { ...this.config, button_card: buttonCardConfig };
     this._copyToPreview(defaultCard);
+    this.config = { ...this.config, button_card: buttonCardConfig };
     fireEvent(this, 'config-changed', { config: this.config });
   }
 

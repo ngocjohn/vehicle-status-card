@@ -38,6 +38,11 @@ export interface IndicatorGroupItemConfig {
   action_config: ButtonActionConfig;
 }
 
+export interface IndicatorsConfig {
+  single: IndicatorConfig[];
+  group: IndicatorGroupConfig[];
+}
+
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
 
 export interface RangeInfoConfig {
@@ -285,16 +290,13 @@ export interface LayoutConfig {
  */
 
 export interface VehicleStatusCardConfig extends LovelaceCardConfig {
-  button_card: Array<ButtonCardConfig>;
-  images: Array<ImageConfig>;
-  image_entities?: (EntityConfig | string)[];
-  indicators: {
-    group: Array<IndicatorGroupConfig>;
-    single: Array<IndicatorConfig>;
-  };
-  layout_config: LayoutConfig;
-  mini_map: MiniMapConfig;
-  name?: string;
-  range_info: Array<RangeInfoConfig>;
   type: string;
+  name?: string;
+  button_card?: ButtonCardConfig[];
+  range_info?: RangeInfoConfig[];
+  images?: ImageConfig[];
+  mini_map: MiniMapConfig;
+  indicators: IndicatorsConfig;
+  layout_config: LayoutConfig;
+  image_entities?: (EntityConfig | string)[];
 }

@@ -2,7 +2,6 @@
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-import Sortable from 'sortablejs';
 
 import { CARD_VERSION, ICON, SECTION } from '../const/const';
 // Import styles
@@ -20,7 +19,7 @@ import {
   PanelMapEditor,
 } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
-import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA } from './form';
+import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA, NAME_SCHEMA, THEME_CONFIG_SCHEMA } from './form';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
@@ -31,20 +30,15 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @state() private activeTabIndex: null | number = null;
   @state() private _indicatorTabIndex: number = 0;
 
-  @query('panel-button-card') _buttonCardEditor?: any;
-  @state() _helpOverlayActive: boolean = false;
+  @state() _selectedConfigType: null | string = null;
 
-  @query('panel-images-editor') _panelImages!: PanelImagesEditor;
-  @query('panel-indicator') _panelIndicator!: PanelIndicator;
-  @query('panel-range-info') _panelRangeInfo!: PanelRangeInfo;
+  @state() private _reloadSectionList: boolean = false;
+  @query('panel-images-editor') _panelImages?: PanelImagesEditor;
+  @query('panel-indicator') _panelIndicator?: PanelIndicator;
+  @query('panel-range-info') _panelRangeInfo?: PanelRangeInfo;
   @query('panel-editor-ui') _panelEditorUI?: PanelEditorUI;
   @query('panel-button-card') _panelButtonCard?: PanelButtonCard;
   @query('panel-map-editor') _panelMapEditor?: PanelMapEditor;
-
-  @state() _selectedConfigType: null | string = null;
-
-  @state() _sectionSortable: Sortable | null = null;
-  @state() private _reloadSectionList: boolean = false;
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     this._config = { ...config };
@@ -121,49 +115,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
 
     if (
-      changedProps.has('activeTabIndex') &&
-      this.activeTabIndex === 2 &&
-      this._selectedConfigType === 'layout_config'
-    ) {
-      this._initSectionSortable();
-    }
-
-    if (
       changedProps.has('_selectedConfigType') &&
       changedProps.get('_selectedConfigType') !== null &&
       (this._selectedConfigType === null || changedProps.get('_selectedConfigType') !== this._selectedConfigType)
     ) {
       this._toggleMenu();
     }
-  }
-
-  private _initSectionSortable(): void {
-    this.updateComplete.then(() => {
-      const sectionList = this.shadowRoot?.getElementById('section-list') as HTMLElement;
-      if (!sectionList) return;
-      this._sectionSortable = new Sortable(sectionList, {
-        animation: 150,
-        handle: '.handle',
-        ghostClass: 'sortable-ghost',
-        onEnd: (evt) => {
-          this._handleSectionSort(evt);
-        },
-      });
-      console.log('Section sortable initialized');
-    });
-  }
-
-  private _handleSectionSort(evt: Sortable.SortableEvent): void {
-    if (!this._config) return;
-    evt.preventDefault();
-    const oldIndex = evt.oldIndex as number;
-    const newIndex = evt.newIndex as number;
-    const sections = [...(this._config.layout_config.section_order || [])];
-    const [removed] = sections.splice(oldIndex, 1);
-    sections.splice(newIndex, 0, removed);
-
-    this._config.layout_config.section_order = sections;
-    fireEvent(this, 'config-changed', { config: this._config });
   }
 
   /* ---------------------------- RENDER FUNCTIONS ---------------------------- */
@@ -173,10 +130,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
 
     return html`
-      <div class="card-config">
-        <div class="base-config">
-          ${!this._selectedConfigType ? this._renderMainEditorPage() : this._renderSelectedType()}
-        </div>
+      <div class="base-config">
+        ${!this._selectedConfigType ? this._renderMainEditorPage() : this._renderSelectedType()}
       </div>
     `;
   }
@@ -193,13 +148,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       )
     ) {
       console.log('Cleaning config of preview keys');
-      this._config = {
-        ...this._config,
-        ...PREVIEW_CONFIG_TYPES.reduce((acc: any, key: string) => {
-          acc[key] = undefined;
-          return acc;
-        }, {}),
-      };
+      // Remove all preview config types from the _config object
+      PREVIEW_CONFIG_TYPES.forEach((key) => {
+        if (this._config.hasOwnProperty(key)) {
+          delete this._config[key];
+        }
+      });
+
       fireEvent(this, 'config-changed', { config: this._config });
     } else {
       return;
@@ -298,108 +253,69 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
     const BUTTON_GRID_DATA = { ...layout.button_grid };
     const HIDE_CONFIG_DATA = { ...layout.hide };
+    const THEME_DATA = { ...layout.theme_config };
+    const NAME_DATA = { name: this._config.name || '' };
 
-    const themeConfig = layout.theme_config || {};
-
-    const sharedThemeConfig = {
-      component: this,
-      configIndex: 'theme_config',
-      configType: 'layout_config',
+    const _renderPanels = (
+      sections: {
+        title: string;
+        content: TemplateResult;
+        expansion?: boolean;
+      }[]
+    ): TemplateResult => {
+      return html`
+        ${sections.map(({ title, content, expansion }) => {
+          if (expansion) {
+            return Create.ExpansionPanel({
+              content,
+              options: {
+                header: title,
+                expanded: false,
+              },
+            });
+          } else {
+            return html`
+              <div class="sub-panel-config button-card">
+                <div class="sub-header">${title}</div>
+                <div class="sub-panel">${content}</div>
+              </div>
+            `;
+          }
+        })}
+      `;
     };
 
-    const themeMode = [
-      { value: 'auto', label: 'Auto' },
-      { value: 'dark', label: 'Dark' },
-      { value: 'light', label: 'Light' },
-    ];
-    const themeModeSelect = [
+    const buttonGridWrapper = _renderPanels([
       {
-        configValue: 'theme',
-        label: 'Theme',
-        pickerType: 'baseSelector',
-        value: themeConfig.theme || 'default',
-        options: {
-          selector: {
-            theme: {
-              include_default: true,
-            },
-          },
-          required: true,
-        },
+        title: 'Button Grid Configuration',
+        content: this._createHaForm(BUTTON_GRID_DATA, BUTTON_GRID_SCHEMA, 'layout_config', 'button_grid'),
+      },
+    ]);
+
+    // Hide configuration wrapper
+    const hideWrapper = _renderPanels([
+      {
+        title: 'Choose the items / sections to hide',
+        content: this._createHaForm(HIDE_CONFIG_DATA, HIDE_SCHEMA, 'layout_config', 'hide'),
       },
       {
-        configValue: 'mode',
-        options: {
-          selector: {
-            select: {
-              sort: true,
-              mode: 'dropdown',
-              options: themeMode,
-            },
-          },
-        },
-        label: 'Theme Mode',
-        pickerType: 'baseSelector',
-        value: themeConfig.mode || 'auto',
+        title: 'Section Order Configuration',
+        content: this._renderSectionOrder(),
+        expansion: true,
       },
-    ];
+    ]);
 
-    const createPickers = (config: any, sharedConfig: any) => {
-      return Create.Picker({ ...config, ...sharedConfig });
-    };
-
-    const buttonGridWrapper = html`
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">
-          <div>Button Grid Configuration</div>
-        </div>
-        <div class="sub-panel">
-          ${this._createHaForm(BUTTON_GRID_DATA, BUTTON_GRID_SCHEMA, 'layout_config', 'button_grid')}
-        </div>
-      </div>
-    `;
-
-    const hideWrapper = html`
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">
-          <div>Choose the items / sections to hide</div>
-        </div>
-        <div class="sub-panel">${this._createHaForm(HIDE_CONFIG_DATA, HIDE_SCHEMA, 'layout_config', 'hide')}</div>
-      </div>
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">
-          <div>Section Order Configuration</div>
-        </div>
-        <div class="sub-panel">${this._renderSectionOrder()}</div>
-      </div>
-    `;
-
-    const themeWrapper = html`
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">
-          <div>Select the name for card</div>
-        </div>
-        <div class="sub-panel">
-          <div class="item-config-row">
-            <ha-textfield
-              style="width: 100%;"
-              .label=${'Name (Optional)'}
-              .placeholder=${'Vehicle Status Card'}
-              .configValue=${'name'}
-              .value=${this._config.name}
-              .required=${false}
-              @change=${this._valueChanged}
-            ></ha-textfield>
-          </div>
-          <div class="sub-header">
-            <div>Theme Configuration</div>
-          </div>
-          <div class="sub-panel">
-            <div class="sub-content">${themeModeSelect.map((config) => createPickers(config, sharedThemeConfig))}</div>
-          </div>
-        </div>
-      </div>
-    `;
+    // Theme configuration wrapper
+    const themeWrapper = _renderPanels([
+      {
+        title: 'Select the name for card',
+        content: this._createHaForm(NAME_DATA, NAME_SCHEMA),
+      },
+      {
+        title: 'Theme Configuration',
+        content: this._createHaForm(THEME_DATA, THEME_CONFIG_SCHEMA, 'layout_config', 'theme_config'),
+      },
+    ]);
 
     const tabsConfig = [
       { content: themeWrapper, key: 'theme_config', label: 'Theme' },
@@ -419,23 +335,43 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   private _renderSectionOrder(): TemplateResult {
-    if (this._reloadSectionList) return html``;
+    if (this._reloadSectionList) return html` <ha-spinner .size=${'small'}></ha-spinner> `;
 
     const sectionList = this._config.layout_config?.section_order || [];
-    return html` <div id="section-list">
-      ${repeat(
-        sectionList,
-        (section) => section,
-        (section, index) => html` <div class="item-config-row" data-index="${index}">
-          <div class="handle">
-            <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
-          </div>
-          <div class="item-content">
-            <div class="primary">${section.replace(/_/g, ' ').toUpperCase()}</div>
-          </div>
-        </div>`
-      )}
-    </div>`;
+    return html` <ha-sortable handle-selector=".handle" @item-moved=${this._sectionMoved}>
+      <div id="section-order-list">
+        ${repeat(
+          sectionList,
+          (section: string) => section,
+          (section: string, index: number) => html` <div class="item-config-row" data-index="${index}">
+            <div class="handle">
+              <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+            </div>
+            <div class="item-content">
+              <div class="primary">${section.replace(/_/g, ' ').toUpperCase()}</div>
+            </div>
+          </div>`
+        )}
+      </div>
+    </ha-sortable>`;
+  }
+
+  private _sectionMoved(event: CustomEvent): void {
+    event.stopPropagation();
+    if (!this._config) return;
+    const { oldIndex, newIndex } = event.detail;
+    console.log('Section moved from', oldIndex, 'to', newIndex);
+    const sections = [...(this._config.layout_config.section_order || [])];
+    sections.splice(newIndex, 0, sections.splice(oldIndex, 1)[0]);
+    this._config = {
+      ...this._config,
+      layout_config: {
+        ...this._config.layout_config,
+        section_order: sections,
+      },
+    };
+    fireEvent(this, 'config-changed', { config: this._config });
+    console.log('Updated section order:', this._config.layout_config.section_order);
   }
 
   private _renderMainEditorPage(): TemplateResult {
@@ -455,7 +391,16 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       </div>
     </div>`;
 
-    const tipsContent = this._renderTipContent(); // Tips content
+    // const tipsContent = this._renderTipContent(); // Tips content
+    const tipsContent = html`<div class="tip-content">
+      ${Object.entries(CONFIG_TYPES.options).map(
+        ([key, { description, name }]) =>
+          html`<div class="tip-item click-shrink" @click=${() => (this._selectedConfigType = key)}>
+            <div class="tip-title">${name}</div>
+            <span>${description}</span>
+          </div>`
+      )}
+    </div>`;
 
     const versionFooter = html` <div class="version-footer">Version: ${CARD_VERSION}</div>`;
 
@@ -526,60 +471,33 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     return html`${menuButton} ${typeMap[selected]}`;
   }
 
-  private _renderTipContent(): TemplateResult {
-    const options = CONFIG_TYPES.options;
-
-    return html`<div class="tip-content">
-      ${Object.entries(options).map(
-        ([key, { description, name }]) =>
-          html`<div class="tip-item click-shrink" @click=${() => (this._selectedConfigType = key)}>
-            <div class="tip-title">${name}</div>
-            <span>${description}</span>
-          </div>`
-      )}
-    </div>`;
-  }
-
   /* ---------------------------- PANEL TEMPLATE ---------------------------- */
 
-  _toggleHelp(selected: string): void {
-    const activeType = selected;
-    const event = new CustomEvent('editor-event', {
-      bubbles: true,
-      composed: true,
-      detail: { activeType, type: 'toggle-helper' },
-    });
-    this.dispatchEvent(event);
-    console.log('Toggle Help:', activeType);
-  }
-
   private _toggleMenu(): void {
-    const menuSelector = this.shadowRoot?.querySelector('.menu-selector') as HTMLElement;
-    const menuContent = this.shadowRoot?.querySelector('.menu-content-wrapper') as HTMLElement;
-    const menuIcon = this.shadowRoot?.getElementById('menu-icon') as HTMLElement;
-    const haIcon = menuIcon?.querySelector('ha-icon') as HTMLElement;
-    if (menuSelector && menuContent) {
-      const isHidden = menuSelector.classList.contains('hidden');
-      if (isHidden) {
-        menuIcon.classList.add('active');
-        haIcon?.setAttribute('icon', 'mdi:close');
-        menuSelector.classList.remove('hidden');
-        menuContent.classList.add('hidden');
-      } else {
-        menuSelector.classList.add('hidden');
-        haIcon?.setAttribute('icon', 'mdi:menu');
-        menuIcon.classList.remove('active');
-        setTimeout(() => {
-          menuContent.classList.remove('hidden');
-        }, 200);
-      }
+    const root = this.shadowRoot;
+    const menuSelector = root?.querySelector('.menu-selector') as HTMLElement;
+    const menuContent = root?.querySelector('.menu-content-wrapper') as HTMLElement;
+    const menuIcon = root?.getElementById('menu-icon') as HTMLElement;
+    const haIcon = menuIcon?.querySelector('ha-icon');
+
+    if (!menuSelector || !menuContent || !menuIcon || !haIcon) return;
+
+    const isHidden = menuSelector.classList.contains('hidden');
+    menuIcon.classList.toggle('active', isHidden);
+    haIcon.setAttribute('icon', isHidden ? 'mdi:close' : 'mdi:menu');
+    menuSelector.classList.toggle('hidden', !isHidden);
+
+    if (!isHidden) {
+      setTimeout(() => menuContent.classList.remove('hidden'), 200);
+    } else {
+      menuContent.classList.add('hidden');
     }
   }
 
   private _createHaForm(data: any, schema: any, configType?: string, configIndex?: string): TemplateResult {
     return html`
       <ha-form
-        .hass=${this.hass}
+        .hass=${this._hass}
         .data=${data}
         .schema=${schema}
         .configIndex=${configIndex}
@@ -607,21 +525,17 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
 
     const target = ev.target;
-    const configValue = target.configValue;
     const configType = target.configType;
     const configIndex = target.configIndex;
 
     // Ensure we handle the boolean value correctly
-    let newValue: any = target.checked !== undefined ? target.checked : target.value;
+    const newValue = ev.detail.value;
 
     let hiddenChanged = false;
-    // console.log('Config Value:', configValue, 'Config Type:', configType, 'New Value:', newValue);
     const updates: Partial<VehicleStatusCardConfig> = {};
-    if (configType === 'layout_config' && ['button_grid', 'hide'].includes(configIndex)) {
+    if (configType === 'layout_config' && configIndex) {
       let layoutConfig = { ...(this._config.layout_config || {}) };
-      newValue = ev.detail.value;
       layoutConfig[configIndex] = newValue;
-
       if (configIndex === 'hide') {
         const sectionOrder = [...(this._config.layout_config?.section_order || [])];
         const updatedOrder = this._setOrderList(newValue, sectionOrder);
@@ -629,18 +543,13 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         hiddenChanged = true;
       }
       updates.layout_config = layoutConfig;
-    } else if (configIndex === 'theme_config') {
-      newValue = ev.detail.value;
-      const layoutConfig = { ...(this._config.layout_config || {}) };
-      const themeConfig = { ...(layoutConfig.theme_config || {}) };
-      if (themeConfig[configValue] && themeConfig[configValue] === newValue) {
-        return; // No change
-      }
-      themeConfig[configValue] = newValue;
-      layoutConfig.theme_config = themeConfig;
-      updates.layout_config = layoutConfig;
     } else {
-      updates[configValue] = newValue;
+      this._config = {
+        ...this._config,
+        ...newValue,
+      };
+      fireEvent(this, 'config-changed', { config: this._config });
+      return;
     }
 
     // Apply the updates and trigger the config change event
@@ -651,28 +560,38 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         this._reloadSectionList = true;
         setTimeout(() => {
           this._reloadSectionList = false;
-          this._initSectionSortable();
-        }, 0);
+        }, 200);
       }
     }
   }
 
   private _setOrderList(hide: VehicleStatusCardConfig['layout_config']['hide'], currentOrder: string[]) {
     let sectionOrder = [...currentOrder];
-    const section = {
-      indicators: SECTION.INDICATORS,
-      range_info: SECTION.RANGE_INFO,
-      images: SECTION.IMAGES,
-      mini_map: SECTION.MINI_MAP,
-      buttons: SECTION.BUTTONS,
-    };
-    for (const key in section) {
-      if (['indicators', 'range_info'].includes(key)) {
-        if (hide.indicators && hide.range_info) {
+    const section = [
+      SECTION.INDICATORS,
+      SECTION.RANGE_INFO,
+      SECTION.IMAGES,
+      SECTION.MINI_MAP,
+      SECTION.BUTTONS,
+    ] as string[];
+    // const section = {
+    //   indicators: SECTION.INDICATORS,
+    //   range_info: SECTION.RANGE_INFO,
+    //   images: SECTION.IMAGES,
+    //   mini_map: SECTION.MINI_MAP,
+    //   buttons: SECTION.BUTTONS,
+    // };
+
+    for (const key of section) {
+      if ((SECTION.INDICATORS, SECTION.INDICATORS.includes(key))) {
+        if (hide[SECTION.INDICATORS] && hide[SECTION.RANGE_INFO]) {
           if (sectionOrder.includes(SECTION.HEADER_INFO)) {
             sectionOrder = sectionOrder.filter((s) => s !== SECTION.HEADER_INFO);
           }
-        } else if ((!hide.indicators || !hide.range_info) && !sectionOrder.includes(SECTION.HEADER_INFO)) {
+        } else if (
+          (!hide[SECTION.INDICATORS] || !hide[SECTION.RANGE_INFO]) &&
+          !sectionOrder.includes(SECTION.HEADER_INFO)
+        ) {
           sectionOrder.push(SECTION.HEADER_INFO);
         }
       } else if (hide[key] && sectionOrder.includes(key)) {

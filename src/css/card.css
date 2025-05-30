@@ -366,7 +366,7 @@ header h1 {
   gap: 10px;
 }
 
-.grid-item .click-container[layout='vertical'] {
+.grid-item .click-container[vertical] {
   flex-direction: column;
   text-align: center;
 }

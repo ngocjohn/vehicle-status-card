@@ -370,7 +370,7 @@ span.info-alert {
 	border: solid 1px var(--divider-color);
 	padding: var(--vic-gutter-gap);
 	border-radius: var(--ha-card-border-radius, 12px);
-	margin-top: var(--vic-gutter-gap);
+	margin-block: var(--vic-gutter-gap);
 }
 
 .sub-panel-config.button-card:last-child {

@@ -272,9 +272,13 @@ export async function handleFirstUpdated(card: VehicleStatusCard): Promise<void>
   const hass = card._hass as HomeAssistant;
   const config = card._config as VehicleStatusCardConfig;
 
-  card._buttonReady = false;
-  card._buttonCards = await getButtonCard(hass, config.button_card);
-  card._buttonReady = true;
+  if (config.button_card && config.button_card.length > 0) {
+    card._buttonReady = false;
+    card._buttonCards = await getButtonCard(hass, config.button_card);
+    card._buttonReady = true;
+  }
+
+  card.MapData = _getMapData(card) as MapData;
 }
 
 export function _getMapData(card: VehicleStatusCard): MapData | void {
