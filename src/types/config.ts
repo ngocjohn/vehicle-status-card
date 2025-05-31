@@ -166,6 +166,7 @@ export interface TireEntityConfig {
 export interface TireTemplateConfig {
   title?: string;
   background: string;
+  background_entity?: string;
   horizontal: boolean;
   image_size: number;
   value_size: number;
@@ -181,6 +182,7 @@ export interface TireTemplateConfig {
 export type TireEntity = {
   title: string;
   background: string;
+  background_entity?: string;
   image_size: number;
   value_size: number;
   top: number;

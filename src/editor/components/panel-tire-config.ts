@@ -4,7 +4,6 @@ import { customElement, property, state } from 'lit/decorators.js';
 import editorcss from '../../css/editor.css';
 import { HomeAssistant, TireTemplateConfig } from '../../types';
 import { Create } from '../../utils';
-import { uploadImage } from '../../utils/ha-helper';
 import { VehicleStatusCardEditor } from '../editor';
 import { DEFAULT_TIRE_CONFIG, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../form';
 
@@ -55,16 +54,6 @@ export class PanelTireConfig extends LitElement {
     const content = html`
       ${bgForm}
       <div class="sub-content">
-        <ha-button
-          @click=${() => this.shadowRoot?.getElementById('file-to-upload')?.click()}
-          .label=${'Upload image'}
-        ></ha-button>
-        <input
-          style="display: none;"
-          type="file"
-          id="file-to-upload"
-          @change=${(ev: any) => this.handleFilePicked(ev)}
-        />
         ${this.tireConfig.background
           ? html`<ha-button @click=${this._handleAction('reset_background')} .label=${'Use Default'}></ha-button>`
           : nothing}
@@ -165,22 +154,6 @@ export class PanelTireConfig extends LitElement {
         console.log('Unknown action');
     }
   };
-
-  private async handleFilePicked(ev: Event): Promise<void> {
-    const input = ev.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-    console.log();
-    const file = input.files[0];
-    const url = await uploadImage(this.hass, file);
-    if (url) {
-      this.tireConfig = {
-        ...this.tireConfig,
-        background: url,
-      };
-      input.value = ''; // Clear the input
-      this._dispatchConfigChange(this.tireConfig);
-    }
-  }
 
   private _handleYamlConfigChanged(ev: CustomEvent): void {
     ev.stopPropagation();

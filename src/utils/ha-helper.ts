@@ -116,6 +116,7 @@ export async function getTireCard(
   tireCardItem = {
     title: tireCard.title || '',
     background: tireCard.background || '',
+    background_entity: tireCard.background_entity || '',
     image_size: tireCard.image_size || 100,
     value_size: tireCard.value_size || 100,
     top: tireCard.top || 50,
@@ -179,22 +180,13 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
 export async function uploadImage(hass: HomeAssistant, file: File): Promise<null | string> {
   console.log('Uploading image:', file.name);
 
-  // Check if hass.auth and hass.auth.data are available
-  if (!hass || !hass.auth || !hass.auth.data || !hass.auth.data.access_token) {
-    console.error('hass.auth.data or access_token is missing');
-    throw new Error('Authorization token is missing');
-  }
-
   const formData = new FormData();
   formData.append('file', file);
 
   try {
-    const response = await fetch('/api/image/upload', {
-      body: formData,
-      headers: {
-        Authorization: `Bearer ${hass.auth.data.access_token}`,
-      },
+    const response = await hass.fetchWithAuth('/api/image/upload', {
       method: 'POST',
+      body: formData,
     });
 
     if (!response.ok) {
