@@ -45,7 +45,6 @@ export class PanelIndicator extends LitElement {
     super();
     this._toggleEditGroupItem = this._toggleEditGroupItem.bind(this);
     this._removeIndicatorType = this._removeIndicatorType.bind(this);
-    this.initSortable = this.initSortable.bind(this);
   }
 
   static get styles(): CSSResultGroup {
@@ -69,6 +68,7 @@ export class PanelIndicator extends LitElement {
           margin-inline-start: 36px;
           margin-inline-end: 48px;
           direction: var(--direction);
+          margin-bottom: var(--vic-card-padding);
         }
         .edit-yaml-btn {
           --mdc-theme-primary: var(--accent-color);
@@ -98,27 +98,6 @@ export class PanelIndicator extends LitElement {
 
   protected firstUpdated(changedProps: PropertyValues): void {
     super.firstUpdated(changedProps);
-    // this._resetItems();
-    this.initSortable();
-  }
-
-  protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-    const shouldReset =
-      (_changedProperties.has('_activeSubPanel') && this._activeSubPanel === null) ||
-      (_changedProperties.has('_activeGroupItem') && this._activeGroupItem === null) ||
-      ((_changedProperties.has('_yamlEditorVisible') || _changedProperties.has('_yamlSubPanelVisible')) &&
-        (_changedProperties.get('_yamlEditorVisible') === true ||
-          _changedProperties.get('_yamlSubPanelVisible') === true));
-
-    if (shouldReset) {
-      if (this._sortable) {
-        this._sortable?.destroy();
-        this._sortable = null;
-      }
-      this._resetItems();
-    }
-
-    return true;
   }
 
   protected render(): TemplateResult {
@@ -282,7 +261,7 @@ export class PanelIndicator extends LitElement {
     const _singleSchema = (entity: string) => [
       ...singleIndicatorSchema(entity),
       ...singleApparenceSchema,
-      ...singleActionSchema,
+      ...singleActionSchema(),
     ];
 
     const singleForm = html`
@@ -349,12 +328,7 @@ export class PanelIndicator extends LitElement {
         <vic-tab
           id="add-item"
           .active=${selectedItem === itemsLength}
-          @click=${() => {
-            this._addNewType('item');
-            setTimeout(() => {
-              this._selectedItem = itemsLength;
-            }, 200);
-          }}
+          @click=${(ev: CustomEvent) => this._addNewType(ev, 'item')}
           .narrow=${true}
         >
           <ha-svg-icon .path=${ICON.PLUS} slot="icon"></ha-svg-icon>
@@ -390,13 +364,14 @@ export class PanelIndicator extends LitElement {
     const items = this.config.indicators?.group[this._activeSubPanel!].items;
     const item = items[index];
     const itemData = { ...item };
-    const _itemSchema = () => [...subGroupItemSchema(item.entity)];
+    const _itemSchema = (entity: string) => [...subGroupItemSchema(entity)];
 
     const itemForm = html`
       <ha-form
         .hass=${this.hass}
-        .schema=${_itemSchema()}
+        .schema=${_itemSchema(itemData.entity)}
         .data=${itemData}
+        .itemIndex=${index}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._groupItemValueChanged}
@@ -458,14 +433,15 @@ export class PanelIndicator extends LitElement {
     console.log('YAML config changed:', key, value);
   }
 
-  private _addNewType(type: string, value?: string): void {
+  private async _addNewType(ev: CustomEvent, type: string): Promise<void> {
+    ev.stopPropagation();
+    const value = ev.detail.value;
     const updateConfig = (newIndicators: Partial<VehicleStatusCardConfig['indicators']>) => {
       this.config = {
         ...this.config,
         indicators: { ...this.config.indicators, ...newIndicators },
       };
       fireEvent(this, 'config-changed', { config: this.config });
-      this._validateAndReindexItems();
     };
 
     // const entity = this._newIndicator.get('entity');
@@ -479,19 +455,20 @@ export class PanelIndicator extends LitElement {
         entity,
         action_config: {
           entity: entity,
-          tap_action: {
-            action: 'none',
-          },
-          hold_action: {
-            action: 'none',
-          },
-          double_tap_action: {
-            action: 'none',
-          },
+          // tap_action: {
+          //   action: 'none',
+          // },
+          // hold_action: {
+          //   action: 'none',
+          // },
+          // double_tap_action: {
+          //   action: 'none',
+          // },
         },
       };
       singleIndicators.push(newIndicator);
       indicators.single = singleIndicators;
+      (ev.target as any).value = ''; // Reset the input value
       updateConfig(indicators);
     } else if (type === 'group' && value) {
       const name = value;
@@ -514,15 +491,15 @@ export class PanelIndicator extends LitElement {
         entity: '',
         action_config: {
           entity: '',
-          tap_action: {
-            action: 'none',
-          },
-          hold_action: {
-            action: 'none',
-          },
-          double_tap_action: {
-            action: 'none',
-          },
+          // tap_action: {
+          //   action: 'none',
+          // },
+          // hold_action: {
+          //   action: 'none',
+          // },
+          // double_tap_action: {
+          //   action: 'none',
+          // },
         },
       };
       const updatedItems = [...items, newItem];
@@ -533,6 +510,8 @@ export class PanelIndicator extends LitElement {
         ...groupIndicators.slice(this._activeSubPanel + 1),
       ];
       updateConfig({ group: updatedGroups });
+      this._selectedItem = updatedItems.length - 1; // Set the active item to the newly added one
+      this.requestUpdate();
     } else {
       console.error('Invalid or unknown indicator type');
     }
@@ -586,9 +565,7 @@ export class PanelIndicator extends LitElement {
       html`<ha-entity-picker
         .hass=${this.hass}
         .allowCustomEntity=${true}
-        @value-changed=${(ev: CustomEvent) => {
-          this._addNewType('single', ev.detail.value);
-        }}
+        @value-changed=${(ev: CustomEvent) => this._addNewType(ev, 'single')}
       ></ha-entity-picker>`
     );
   }
@@ -623,46 +600,50 @@ export class PanelIndicator extends LitElement {
         color: 'var(--error-color)',
       },
     ];
-    return html`
-      <div class="indicator-list" id="indicator-${this.type}-list">
-        ${repeat(
-          indicators,
-          getKey,
-          (indicator: T, index: number) => html`
-            <div class="item-config-row" data-index=${index}>
-              <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
-              <div class="item-content">${renderContent(indicator, index)}</div>
-              <ha-button-menu
-                .corner=${'BOTTOM_START'}
-                .fixed=${true}
-                .menuCorner=${'START'}
-                .activatable=${true}
-                .naturalMenuWidth=${true}
-                @closed=${(ev: Event) => ev.stopPropagation()}
-              >
-                <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-                ${actionMap.map(
-                  (action) => html`
-                    <mwc-list-item
-                      @click=${() => action.action(index)}
-                      .graphic=${'icon'}
-                      style="${action.color ? `color: ${action.color}` : ''}"
-                    >
-                      <ha-icon
-                        .icon=${action.icon}
-                        slot="graphic"
+    return html`<ha-sortable
+        handle-selector=".handle"
+        @item-moved=${this.type === 'group' ? this._groupMoved : this._singMoved}
+      >
+        <div class="indicator-list" id="indicator-${this.type}-list">
+          ${repeat(
+            indicators,
+            getKey,
+            (indicator: T, index: number) => html`
+              <div class="item-config-row" data-index=${index}>
+                <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
+                <div class="item-content">${renderContent(indicator, index)}</div>
+                <ha-button-menu
+                  .corner=${'BOTTOM_START'}
+                  .fixed=${true}
+                  .menuCorner=${'START'}
+                  .activatable=${true}
+                  .naturalMenuWidth=${true}
+                  @closed=${(ev: Event) => ev.stopPropagation()}
+                >
+                  <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                  ${actionMap.map(
+                    (action) => html`
+                      <mwc-list-item
+                        @click=${() => action.action(index)}
+                        .graphic=${'icon'}
                         style="${action.color ? `color: ${action.color}` : ''}"
-                      ></ha-icon>
-                      ${action.title}
-                    </mwc-list-item>
-                  `
-                )}
-              </ha-button-menu>
-            </div>
-          `
-        )}
-        <div class="add-entity">${addedContent}</div>
-      </div>
+                      >
+                        <ha-icon
+                          .icon=${action.icon}
+                          slot="graphic"
+                          style="${action.color ? `color: ${action.color}` : ''}"
+                        ></ha-icon>
+                        ${action.title}
+                      </mwc-list-item>
+                    `
+                  )}
+                </ha-button-menu>
+              </div>
+            `
+          )}
+        </div>
+      </ha-sortable>
+      <div class="add-entity">${addedContent}</div>
       <div class="action-footer">
         <ha-button
           .outlined=${true}
@@ -677,8 +658,31 @@ export class PanelIndicator extends LitElement {
           .label=${this._yamlEditorVisible ? 'Close YAML' : 'Edit YAML'}
         >
         </ha-button>
-      </div>
-    `;
+      </div> `;
+  }
+
+  private _groupMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    console.log('Group moved from', oldIndex, 'to', newIndex);
+    const indicators = { ...(this.config.indicators || {}) };
+    const groupIndicators = [...(indicators.group || [])];
+    groupIndicators.splice(newIndex, 0, groupIndicators.splice(oldIndex, 1)[0]);
+    indicators.group = groupIndicators;
+    this.config = { ...this.config, indicators };
+    fireEvent(this, 'config-changed', { config: this.config });
+  }
+
+  private _singMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    console.log('Single moved from', oldIndex, 'to', newIndex);
+    const indicators = { ...(this.config.indicators || {}) };
+    const singleIndicators = [...(indicators.single || [])];
+    singleIndicators.splice(newIndex, 0, singleIndicators.splice(oldIndex, 1)[0]);
+    indicators.single = singleIndicators;
+    this.config = { ...this.config, indicators };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _togglePromptNewGroup = async () => {
@@ -686,7 +690,12 @@ export class PanelIndicator extends LitElement {
     if (!newGroupName || newGroupName === '') {
       return;
     }
-    this._addNewType('group', newGroupName);
+    const ev = new CustomEvent('value-changed', {
+      detail: {
+        value: newGroupName,
+      },
+    }) as CustomEvent;
+    this._addNewType(ev, 'group');
   };
   private _toggleEditGroupItem(index: number): void {
     this._activeGroupItem = index;
@@ -722,7 +731,7 @@ export class PanelIndicator extends LitElement {
     const singleIndicators = [...(indicators.single || [])];
     let singleItem = { ...singleIndicators[singleIndex] };
     singleItem = { ...config };
-    if (!singleItem.action_config.entity && singleItem.entity) {
+    if (!singleItem.action_config?.entity && singleItem.entity) {
       singleItem.action_config.entity = singleItem.entity;
     }
 
@@ -765,18 +774,16 @@ export class PanelIndicator extends LitElement {
     if (!this.config) {
       return;
     }
+    const target = ev.target as any;
+    const itemIndex = target.itemIndex; // Index of the group item being modified
     const config = ev.detail.value;
     const groupIndex = this._activeSubPanel!;
-    const itemIndex = this._activeGroupItem!;
     const indicators = { ...(this.config.indicators || {}) };
-    const groupIndicators = [...(indicators.group || [])];
+    let groupIndicators = [...(indicators.group || [])];
     let groupItem = { ...groupIndicators[groupIndex] };
     let items = groupItem.items || [];
     let item = { ...items[itemIndex] };
-    item = { ...config };
-    if (!item.action_config.entity && item.entity) {
-      item.action_config.entity = item.entity;
-    }
+    item = { ...item, ...config };
 
     items[itemIndex] = item;
     groupItem.items = items;
@@ -802,7 +809,6 @@ export class PanelIndicator extends LitElement {
     const configType = target.configType; // single || group
     const configValue = target.configValue; // E.g., entity, icon, attribute, etc
 
-    let configIndex = target.configIndex;
     let newValue = ev.detail.value; // New value from the selector or input
 
     // if (CONFIG_VALUES.includes(configValue)) {
@@ -871,32 +877,12 @@ export class PanelIndicator extends LitElement {
         updates.indicators = indicatorsConfig;
         console.log('group changed:', configValue, ':', newValue);
       }
-    } else if (configType === 'group_item_action' && this._activeSubPanel !== null) {
-      let groupIndicators = [...indicatorsConfig.group];
-      let group = { ...groupIndicators[this._activeSubPanel] };
-      let items = group.items || [];
-      let groupItem = { ...items[configIndex] };
-
-      if (groupItem.action_config[configValue] === newValue) {
-        console.log('Value not changed');
-        return;
-      } else {
-        const actionConfig = { ...groupItem.action_config, [configValue]: newValue };
-        groupItem.action_config = actionConfig;
-        items[configIndex] = groupItem;
-        group.items = items;
-        groupIndicators[this._activeSubPanel] = group;
-        indicatorsConfig.group = groupIndicators;
-        updates.indicators = indicatorsConfig;
-        console.log('group action changed:', configValue, ':', newValue);
-      }
     }
 
     if (Object.keys(updates).length > 0) {
       this.config = { ...this.config, ...updates };
       fireEvent(this, 'config-changed', { config: this.config });
       // console.log('config changed', updates);
-      this._validateAndReindexItems();
     }
   }
 
@@ -909,7 +895,6 @@ export class PanelIndicator extends LitElement {
         indicators: { ...this.config.indicators, ...updatedItems },
       };
       fireEvent(this, 'config-changed', { config: this.config });
-      this._validateAndReindexItems();
     };
 
     if (type === 'single' && index !== null) {
@@ -926,78 +911,6 @@ export class PanelIndicator extends LitElement {
     console.log('Removed indicator', type, index);
   }
 
-  private initSortable(): void {
-    const list = this.shadowRoot?.getElementById(`indicator-${this.type}-list`);
-    if (!list) {
-      console.log('List not found');
-      return;
-    }
-
-    // console.log('Init sortable');
-    this._sortable = new Sortable(list, {
-      handle: '.handle',
-      animation: 150,
-      onEnd: (evt) => {
-        this._handleSortEnd(evt);
-      },
-    });
-  }
-
-  private _validateAndReindexItems(): void {
-    console.log('Validating and reindexing items');
-    this.updateComplete.then(() => {
-      const itemListCount = this.shadowRoot?.querySelectorAll('.indicator-list .item-config-row');
-      const itemsDataIndex = Array.from(itemListCount || []).map((item) => item.getAttribute('data-index'));
-
-      let configIndicatorsCount: number = 0;
-      let typeObjectKeys: string[] = [];
-
-      if (this.type === 'single') {
-        configIndicatorsCount = this.config.indicators?.single?.length;
-        typeObjectKeys = Object.keys(this.config.indicators?.single || []);
-      } else if (this.type === 'group') {
-        configIndicatorsCount = this.config.indicators?.group?.length;
-        typeObjectKeys = Object.keys(this.config.indicators?.group || []);
-      }
-
-      const hasDiffs =
-        itemListCount?.length !== configIndicatorsCount ||
-        JSON.stringify(itemsDataIndex) !== JSON.stringify(typeObjectKeys);
-
-      if (hasDiffs) {
-        console.log('Detected differences in item count or indices', {
-          itemListCount: itemListCount?.length,
-          configIndicatorsCount,
-          typeObjectKeys,
-          itemsDataIndex,
-        });
-        setTimeout(() => {
-          console.log('Reindexing items');
-          // Destroy the sortable instance and reset items
-          if (this._sortable) {
-            this._sortable?.destroy();
-            this._sortable = null;
-          }
-          this._reindexItems = true;
-          this.requestUpdate();
-          this._resetItems();
-        }, 200);
-      }
-    });
-  }
-
-  private _resetItems(): void {
-    console.log('Resetting items');
-    setTimeout(() => {
-      this._reindexItems = false;
-      this.updateComplete.then(() => {
-        if (!this._sortable) {
-          this.initSortable();
-        }
-      });
-    }, 200);
-  }
-
   private _computeLabel(schema: any) {
     if (schema.name === 'entity') {
       return '';
@@ -1006,40 +919,5 @@ export class PanelIndicator extends LitElement {
   }
   private _computeHelper(schema: any) {
     return schema.helper || '';
-  }
-  /* ---------------------------- SORTABLE HANDLERS --------------------------- */
-
-  private _handleSortEnd(evt: any): void {
-    evt.stopPropagation();
-    const oldIndex = evt.oldIndex;
-    const newIndex = evt.newIndex;
-    console.log('Sort end:', { oldIndex, newIndex });
-    if (oldIndex === newIndex) {
-      return;
-    }
-    const type = this.type;
-
-    const updateConfig = (updatedItems: Partial<VehicleStatusCardConfig['indicators']>) => {
-      this.config = {
-        ...this.config,
-        indicators: { ...this.config.indicators, ...updatedItems },
-      };
-      fireEvent(this, 'config-changed', { config: this.config });
-      this._validateAndReindexItems();
-    };
-
-    if (type === 'single') {
-      let indicators = [...(this.config.indicators?.single || [])];
-      const [indicator] = indicators.splice(oldIndex, 1);
-      indicators.splice(newIndex, 0, indicator);
-      updateConfig({ single: indicators });
-    } else if (type === 'group') {
-      let groupIndicators = [...(this.config.indicators?.group || [])];
-      const [group] = groupIndicators.splice(oldIndex, 1);
-      groupIndicators.splice(newIndex, 0, group);
-      updateConfig({ group: groupIndicators });
-    } else {
-      console.error('Invalid or unknown indicator type');
-    }
   }
 }
