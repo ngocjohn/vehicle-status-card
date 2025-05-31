@@ -139,7 +139,7 @@ export class PanelButtonCard extends LitElement {
     </div>`;
   }
 
-  private _renderButton(button: any, index: number): TemplateResult {
+  private _renderButton(button: ButtonCardConfig, index: number): TemplateResult {
     let actionMap = [
       { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
       { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
@@ -184,6 +184,7 @@ export class PanelButtonCard extends LitElement {
             .selector=${{ text: {} }}
             .required=${false}
             @value-changed=${this._handleTitlePrimaryChanged}
+            .disabled=${button.hide_button}
           ></ha-selector>
         </div>
         <div class="item-actions">
@@ -193,9 +194,9 @@ export class PanelButtonCard extends LitElement {
             .path=${ICON.PENCIL}
           ></ha-icon-button>
           <ha-button-menu
-            .corner=${'TOP_START'}
+            .corner=${'TOP_LEFT'}
             .fixed=${true}
-            .menuCorner=${'START'}
+            .menuCorner=${'END'}
             .activatable=${true}
             .naturalMenuWidth=${true}
             @closed=${(ev: Event) => ev.stopPropagation()}
@@ -203,7 +204,7 @@ export class PanelButtonCard extends LitElement {
             <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
             ${actionMap.map(
               (action) =>
-                html`<mwc-list-item
+                html`<ha-list-item
                   @click=${this.toggleAction(action.action, index)}
                   .graphic=${'icon'}
                   style="z-index: 6; ${action.color ? `color: ${action.color}` : ''}"
@@ -214,7 +215,7 @@ export class PanelButtonCard extends LitElement {
                     style="${action.color ? `color: ${action.color}` : ''}"
                   ></ha-icon>
                   ${action.title}
-                </mwc-list-item>`
+                </ha-list-item>`
             )}
           </ha-button-menu>
         </div>
@@ -338,9 +339,10 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderButtonConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
-    const headerActions = !buttonCard.hide_button
-      ? [{ title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) }]
-      : [];
+    const headerActions =
+      !this.config.layout_config.hide.buttons && !buttonCard.hide_button
+        ? [{ title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) }]
+        : [];
 
     const btnHeader = this._renderSubHeader('Button configuration', headerActions);
     const infoText = CONFIG_TYPES.options.button_card.subpanels.button.description;

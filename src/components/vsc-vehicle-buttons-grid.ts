@@ -30,6 +30,52 @@ export class VehicleButtonsGrid extends LitElement {
     if (this.useSwiper) {
       this.initSwiper();
     }
+    this._setUpButtonAnimation();
+  }
+
+  private _setUpButtonAnimation(): void {
+    if (this.card.isEditorPreview) return;
+    if (!this.shadowRoot) return;
+
+    const runAnimation = () => {
+      const gridItems = this.shadowRoot?.querySelectorAll('vsc-button-single') as NodeListOf<HTMLElement>;
+      if (!gridItems || gridItems.length === 0) return;
+
+      gridItems.forEach((grid, index) => {
+        // Defer to ensure shadow DOM is ready
+        requestAnimationFrame(() => {
+          const gridItem = grid.shadowRoot?.querySelector('.grid-item') as HTMLElement;
+          if (gridItem) {
+            gridItem.style.animationDelay = `${index * 50}ms`;
+            gridItem.classList.add('zoom-in');
+            gridItem.addEventListener(
+              'animationend',
+              () => {
+                gridItem.classList.remove('zoom-in');
+              },
+              { once: true }
+            );
+          }
+        });
+      });
+
+      observer.disconnect();
+    };
+
+    const observer = new MutationObserver(() => {
+      const buttons = this.shadowRoot?.querySelectorAll('vsc-button-single') as NodeListOf<HTMLElement>;
+      if (buttons && buttons.length > 0) {
+        requestAnimationFrame(() => runAnimation());
+      }
+    });
+
+    observer.observe(this.shadowRoot, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Initial fallback
+    requestAnimationFrame(() => runAnimation());
   }
 
   private get gridConfig(): LayoutConfig['button_grid'] {
