@@ -392,6 +392,7 @@ export async function createSingleMapCard(card: VehicleStatusCard): Promise<Love
     color: mapConfig.path_color || '',
     label_mode: mapConfig.label_mode,
     attribute: mapConfig.attribute || '',
+    focus: true,
   };
 
   let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(mapConfig, [

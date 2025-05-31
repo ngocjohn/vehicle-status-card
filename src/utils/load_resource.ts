@@ -1,4 +1,4 @@
-const loadCache = new Map<string, Promise<string>>();
+export const loadCache = new Map<string, Promise<string>>();
 
 const _load = (tag: 'link' | 'script' | 'img', url: string, type?: 'module') => {
   if (loadCache.has(url)) return loadCache.get(url)!;
@@ -39,6 +39,8 @@ const _load = (tag: 'link' | 'script' | 'img', url: string, type?: 'module') => 
   });
 
   loadCache.set(url, promise);
+  console.log(`Loading ${tag} from: ${url}`);
+  console.log(`Current cache size: ${loadCache.size}`);
   return promise;
 };
 
