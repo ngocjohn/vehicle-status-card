@@ -35,7 +35,7 @@ export interface IndicatorGroupItemConfig {
   icon_template?: string;
   name?: string;
   state_template?: string;
-  action_config: ButtonActionConfig;
+  action_config?: ButtonActionConfig;
 }
 
 export interface IndicatorsConfig {
@@ -60,6 +60,9 @@ export type RangeItemConfig = {
   attribute?: string;
   entity?: string;
   icon?: string;
+  tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  double_tap_action?: ActionConfig;
 };
 
 /* ------------------------- CONFIG IMAGES INTERFACE ------------------------ */
@@ -148,9 +151,9 @@ export interface CardItemConfig {
 
 export interface ButtonActionConfig {
   entity: string;
-  double_tap_action?: ActionConfig;
-  hold_action?: ActionConfig;
   tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  double_tap_action?: ActionConfig;
 }
 
 export interface TireEntityConfig {
@@ -292,8 +295,8 @@ export interface LayoutConfig {
 export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   type: string;
   name?: string;
-  button_card?: ButtonCardConfig[];
-  range_info?: RangeInfoConfig[];
+  button_card: ButtonCardConfig[];
+  range_info: RangeInfoConfig[];
   images?: ImageConfig[];
   mini_map: MiniMapConfig;
   indicators: IndicatorsConfig;

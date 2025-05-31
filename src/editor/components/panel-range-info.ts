@@ -30,10 +30,6 @@ export class PanelRangeInfo extends LitElement {
 
   private _tinycolor = tinycolor;
 
-  constructor() {
-    super();
-  }
-
   static get styles(): CSSResultGroup {
     return [editorcss];
   }
@@ -301,71 +297,92 @@ export class PanelRangeInfo extends LitElement {
         color: 'var(--error-color)',
       },
     ];
-    return html`${
-      !this._yamlEditorActive && this.config.range_info
+    return html`${!this._yamlEditorActive && this.config.range_info
         ? html`
-            <div class="range-info-list">
-              ${repeat(this.config.range_info, (rangeItem: RangeInfoConfig, index: number) => {
-                const entity = rangeItem.energy_level.entity || '';
-                const icon = rangeItem.energy_level.icon || '';
-                const progressColor = rangeItem.progress_color || 'var(--primary-color)';
-                return html`
-                  <div class="item-config-row" data-index=${index}>
-                    <div class="handle" style="margin: var(--vic-card-padding)">
-                      <ha-icon icon=${icon ? icon : 'mdi:gas-station'} style=${`color: ${progressColor}`}></ha-icon>
-                    </div>
-                    <div
-                      class="item-content click-shrink"
-                      @click=${() => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}
-                    >
-                      <div class="primary">Range Info #${index + 1}</div>
-                      <div class="secondary">${entity}</div>
-                    </div>
-                    <div class="item-actions">
-                      <ha-button-menu
-                        .corner=${'BOTTOM_START'}
-                        .fixed=${true}
-                        .menuCorner=${'START'}
-                        .activatable=${true}
-                        .naturalMenuWidth=${true}
-                        @closed=${(ev: Event) => ev.stopPropagation()}
-                      >
-                        <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-                        ${actionMap.map(
-                          (action) => html`
-                            <mwc-list-item
-                              @click=${() => action.action(index)}
-                              .graphic=${'icon'}
-                              style="${action.color ? `color: ${action.color}` : ''}"
-                            >
-                              <ha-icon
-                                .icon=${action.icon}
-                                slot="graphic"
-                                style="${action.color ? `color: ${action.color}` : ''}"
-                              ></ha-icon>
-                              ${action.title}
-                            </mwc-list-item>
-                          `
-                        )}
-                      </ha-button-menu>
-                    </div>
-                  </div>
-                `;
-              })}
-            </div>
+            <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
+              <div class="range-info-list">
+                ${repeat(
+                  this.config.range_info || [],
+                  (rangeItem: RangeInfoConfig) => rangeItem.energy_level.entity,
+                  (rangeItem: RangeInfoConfig, index: number) => {
+                    const entity = rangeItem.energy_level.entity || '';
+                    const icon = rangeItem.energy_level.icon || '';
+                    const progressColor = rangeItem.progress_color || 'var(--primary-color)';
+                    return html`
+                      <div class="item-config-row" data-index=${index}>
+                        <div class="handle">
+                          <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
+                        </div>
+                        <ha-icon
+                          icon=${icon ? icon : 'mdi:gas-station'}
+                          style=${`color: ${progressColor}; margin-inline-end: 0.5rem;`}
+                        ></ha-icon>
+                        <div
+                          class="item-content click-shrink"
+                          @click=${() => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}
+                        >
+                          <div class="primary">Range Info #${index + 1}</div>
+                          <div class="secondary">${entity}</div>
+                        </div>
+                        <div class="item-actions">
+                          <ha-button-menu
+                            .corner=${'BOTTOM_START'}
+                            .fixed=${true}
+                            .menuCorner=${'START'}
+                            .activatable=${true}
+                            .naturalMenuWidth=${true}
+                            @closed=${(ev: Event) => ev.stopPropagation()}
+                          >
+                            <ha-icon-button
+                              class="action-icon"
+                              slot="trigger"
+                              .path=${ICON.DOTS_VERTICAL}
+                            ></ha-icon-button>
+                            ${actionMap.map(
+                              (action) => html`
+                                <mwc-list-item
+                                  @click=${() => action.action(index)}
+                                  .graphic=${'icon'}
+                                  style="${action.color ? `color: ${action.color}` : ''}"
+                                >
+                                  <ha-icon
+                                    .icon=${action.icon}
+                                    slot="graphic"
+                                    style="${action.color ? `color: ${action.color}` : ''}"
+                                  ></ha-icon>
+                                  ${action.title}
+                                </mwc-list-item>
+                              `
+                            )}
+                          </ha-button-menu>
+                        </div>
+                      </div>
+                    `;
+                  }
+                )}
+              </div>
+            </ha-sortable>
           `
-        : this._renderYamlEditor()
-    }
-        <div class="action-footer">
-          <ha-button @click=${() => this._toggleAction('add')}>
-            <span>Add new info bar</span>
-          </ha-button>
-          <ha-button @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}>
-            <span>${!this._yamlEditorActive ? 'Edit YAML' : 'Close YAML'}</span>
-          </ha-button>
-        </div>
-      </div>
-    `;
+        : this._renderYamlEditor()}
+      <div class="action-footer">
+        <ha-button .outlined=${true} @click=${() => this._toggleAction('add')} .label=${'Add Range Info'}> </ha-button>
+        <ha-button
+          .outlined=${true}
+          class="edit-yaml-btn"
+          @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}
+          .label=${!this._yamlEditorActive ? 'Edit YAML' : 'Close YAML'}
+        >
+        </ha-button>
+      </div> `;
+  }
+
+  private _entityMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    const newRangeInfo = this.config.range_info.concat();
+    newRangeInfo.splice(newIndex, 0, newRangeInfo.splice(oldIndex, 1)[0]);
+    this.config = { ...this.config, range_info: newRangeInfo };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _renderYamlEditor(): TemplateResult | typeof nothing {

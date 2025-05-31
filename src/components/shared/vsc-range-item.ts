@@ -4,9 +4,14 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import cardcss from '../../css/card.css';
-import { HomeAssistant, RangeInfoConfig, RenderTemplateResult, subscribeRenderTemplate } from '../../types';
-import { fireEvent } from '../../types/ha-frontend/fire-event';
-import { hasTemplate } from '../../utils';
+import {
+  ButtonActionConfig,
+  HomeAssistant,
+  RangeInfoConfig,
+  RenderTemplateResult,
+  subscribeRenderTemplate,
+} from '../../types';
+import { addActions, hasTemplate } from '../../utils';
 
 const TEMPLATE_KEYS = ['color_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -44,6 +49,7 @@ export class VscRangeItem extends LitElement {
 
   protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
     super.firstUpdated(_changedProperties);
+    this._addActions();
   }
 
   protected updated(changedProperties: PropertyValues): void {
@@ -136,6 +142,21 @@ export class VscRangeItem extends LitElement {
     }
   }
 
+  private _addActions(): void {
+    const hasActions = (config: ButtonActionConfig) =>
+      ['tap_action', 'hold_action', 'double_tap_action'].some((action) => config[action] && config[action].action);
+    const energeActions = this.getValue('energyActions');
+    const rangeActions = this.getValue('rangeActions');
+    if (hasActions(energeActions)) {
+      const energyItem = this.shadowRoot?.getElementById('energy-item') as HTMLElement;
+      addActions(energyItem, energeActions);
+    }
+    if (hasActions(rangeActions)) {
+      const rangeItem = this.shadowRoot?.getElementById('range-item') as HTMLElement;
+      addActions(rangeItem, rangeActions);
+    }
+  }
+
   private getValue(key: string) {
     const { energy_level, range_level, charging_entity, progress_color, bar_height, bar_radius, bar_width } =
       this.rangeItem;
@@ -143,6 +164,18 @@ export class VscRangeItem extends LitElement {
     const energyAttr = energy_level?.attribute;
     const rangeEntity = range_level?.entity;
     const rangeAttr = range_level?.attribute;
+    const energyActions = {
+      entity: energyEntity,
+      tap_action: energy_level?.tap_action,
+      hold_action: energy_level?.hold_action,
+      double_tap_action: energy_level?.double_tap_action,
+    } as ButtonActionConfig;
+    const rangeActions = {
+      entity: rangeEntity || '',
+      tap_action: range_level?.tap_action,
+      hold_action: range_level?.hold_action,
+      double_tap_action: range_level?.double_tap_action,
+    } as ButtonActionConfig;
 
     const getEntityState = (entity?: string, attr?: string) =>
       entity && this.hass.states[entity]
@@ -183,6 +216,10 @@ export class VscRangeItem extends LitElement {
         return bar_width || 60;
       case 'barRadius':
         return bar_radius || 4;
+      case 'energyActions':
+        return energyActions || {};
+      case 'rangeActions':
+        return rangeActions || {};
     }
   }
 
@@ -193,15 +230,10 @@ export class VscRangeItem extends LitElement {
     const level = this.getValue('level');
     const barColor = this.getValue('barColor');
     const booleanChargingState = this.getValue('chargingState');
-    const energyEntity = this.getValue('energyEntity');
-    const rangeEntity = this.getValue('rangeEntity');
     const barHeight = this.getValue('barHeight');
     const barWidth = this.getValue('barWidth');
     const barRadius = this.getValue('barRadius');
 
-    const moreInfo = (entity: string) => {
-      fireEvent(this, 'hass-more-info', { entityId: entity });
-    };
     const styles = {
       '--vsc-bar-height': `${barHeight}px`,
       '--vsc-bar-width': `${barWidth}%`,
@@ -211,7 +243,7 @@ export class VscRangeItem extends LitElement {
     };
 
     return html` <div class="info-box range" style="${styleMap(styles)}">
-      <div class="item" @click="${() => moreInfo(energyEntity)}" ?hidden="${!energyState}">
+      <div class="item" ?hidden="${!energyState}" id="energy-item">
         <ha-icon icon="${icon}"></ha-icon>
         <span>${energyState}</span>
         <ha-icon
@@ -226,7 +258,7 @@ export class VscRangeItem extends LitElement {
       <div class="fuel-wrapper">
         <div class="fuel-level-bar" style="width: ${level}%; background: ${barColor};"></div>
       </div>
-      <div class="item" @click="${() => moreInfo(rangeEntity)}" ?hidden="${!rangeState}">
+      <div class="item" ?hidden="${!rangeState}" id="range-item">
         <span>${rangeState}</span>
       </div>
     </div>`;
