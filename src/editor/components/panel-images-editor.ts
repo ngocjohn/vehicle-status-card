@@ -7,7 +7,6 @@ import { customElement, property, state } from 'lit/decorators.js';
 import './sub-panel-yaml';
 
 import { repeat } from 'lit/directives/repeat.js';
-import Sortable from 'sortablejs';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
@@ -30,8 +29,7 @@ export class PanelImagesEditor extends LitElement {
   @state() _yamlEditorActive = false;
   @state() _dropAreaActive = false;
   @state() _newImage: string = '';
-  @state() _sortable: Sortable | null = null;
-  @state() _reindexImages: boolean = false;
+  @state() private _selectedItems: Set<string> = new Set();
   @state() private _activeTabIndex: number = 0;
   @state() private _imageEntities?: EntityConfig[];
   private _helpDismissed = false;
@@ -50,6 +48,7 @@ export class PanelImagesEditor extends LitElement {
     return [
       editorcss,
       css`
+        *[hidden],
         .hidden {
           display: none;
         }
@@ -100,52 +99,12 @@ export class PanelImagesEditor extends LitElement {
     ];
   }
 
-  protected firstUpdated(changedProps: PropertyValues): void {
-    super.firstUpdated(changedProps);
-    this.initSortable();
-  }
-
-  protected updated(changedProps: PropertyValues): void {
-    super.updated(changedProps);
-    if (changedProps.has('config')) {
+  protected willUpdate(_changedProperties: PropertyValues): void {
+    super.willUpdate(_changedProperties);
+    if (_changedProperties.has('config') && this.config) {
+      this._images = this.config.images || [];
       this._imageEntities = this.config.image_entities ? processEditorEntities(this.config.image_entities) : [];
     }
-  }
-
-  protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-    if (_changedProperties.has('config') && this.config.images && this.config.images.length > 0) {
-      this._images = this.config.images;
-      return true;
-    }
-
-    const shouldInitSortable =
-      (_changedProperties.has('_activeTabIndex') && this._activeTabIndex === 0) ||
-      _changedProperties.has('_yamlEditorActive') ||
-      (_changedProperties.has('_dropAreaActive') && _changedProperties.get('_dropAreaActive') === true) ||
-      _changedProperties.get('_yamlEditorActive') === true;
-    if (shouldInitSortable) {
-      this.initSortable();
-    }
-
-    return true;
-  }
-
-  public initSortable() {
-    this.updateComplete.then(() => {
-      const imagesList = this.shadowRoot?.getElementById('images-list');
-      if (imagesList) {
-        // console.log(imagesList);
-        this._sortable = new Sortable(imagesList, {
-          animation: 150,
-          handle: '.handle',
-          ghostClass: 'sortable-ghost',
-          onEnd: (evt: Event) => {
-            this._handleSort(evt);
-          },
-        });
-        console.log('Sortable initialized');
-      }
-    });
   }
 
   protected render(): TemplateResult {
@@ -202,16 +161,16 @@ export class PanelImagesEditor extends LitElement {
   }
 
   private _renderImageList(): TemplateResult {
-    const infoText = !this._helpDismissed
-      ? html` <ha-alert
-          alert-type="info"
-          dismissable
-          @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
-        >
-          To change order of images, use ${html`<ha-icon icon="mdi:drag"></ha-icon>`} drag and drop the image row. To
-          delete an image, click on the delete button and select the image to delete.
-        </ha-alert>`
-      : html``;
+    // const infoText = !this._helpDismissed
+    //   ? html` <ha-alert
+    //       alert-type="info"
+    //       dismissable
+    //       @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
+    //     >
+    //       To change order of images, use ${html`<ha-icon icon="mdi:drag"></ha-icon>`} drag and drop the image row. To
+    //       delete an image, click on the delete button and select the image to delete.
+    //     </ha-alert>`
+    //   : html``;
 
     const dropArea = this._renderDropArea();
     const yamlEditor = this._renderYamlEditor();
@@ -220,60 +179,101 @@ export class PanelImagesEditor extends LitElement {
       { title: 'Delete Image', icon: 'mdi:delete', action: IMAGE_ACTIONS.DELETE },
     ];
 
-    const images = this.config?.images || [];
-    const imageList =
-      this._reindexImages || !images.length
-        ? html`<div></div>`
-        : html` <div class="images-list" id="images-list">
+    const images = this._images || [];
+    const imageList = !images.length
+      ? html`<div></div>`
+      : html` <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
+          <div class="images-list" id="images-list">
             ${repeat(
               images,
-              (image) => image.url,
-              (image, idx) => html`
-                <div class="item-config-row" data-url="${image.url}">
-                  <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
-                  <div class="item-content">
-                    <ha-textfield
-                      .label=${`Image #${idx + 1}`}
-                      .value=${image.title}
-                      .configType=${'images'}
-                      .configIndex=${idx}
-                      .configValue=${'url'}
-                      @input=${(ev: any) => this._imageInputChanged(ev, idx)}
-                    ></ha-textfield>
+              (image: ImageConfig) => image.url,
+              (image: ImageConfig, idx: number) => {
+                return html`
+                  <div class="item-config-row" data-url="${image.url}">
+                    <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
+                    <div class="item-content">
+                      <ha-textfield
+                        .label=${`Image #${idx + 1}`}
+                        .value=${image.title}
+                        .configType=${'images'}
+                        .configIndex=${idx}
+                        .configValue=${'url'}
+                        @input=${(ev: any) => this._imageInputChanged(ev, idx)}
+                      ></ha-textfield>
+                    </div>
+                    <div class="item-actions">
+                      <ha-button-menu
+                        .corner=${'BOTTOM_START'}
+                        .fixed=${true}
+                        .menuCorner=${'START'}
+                        .activatable=${true}
+                        .naturalMenuWidth=${true}
+                        @closed=${(ev: Event) => ev.stopPropagation()}
+                      >
+                        <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                        ${actionMap.map(
+                          (action) => html`
+                            <mwc-list-item @click=${this.toggleAction(action.action, idx)} .graphic=${'icon'}>
+                              <ha-icon slot="graphic" .icon=${action.icon}></ha-icon>
+                              ${action.title}
+                            </mwc-list-item>
+                          `
+                        )}
+                      </ha-button-menu>
+                      <ha-checkbox
+                        .checked=${false}
+                        @change=${(ev: Event) => this._toggleSelection(ev, image.url)}
+                      ></ha-checkbox>
+                    </div>
                   </div>
-                  <div class="item-actions">
-                    <ha-button-menu
-                      .corner=${'BOTTOM_START'}
-                      .fixed=${true}
-                      .menuCorner=${'START'}
-                      .activatable=${true}
-                      .naturalMenuWidth=${true}
-                      @closed=${(ev: Event) => ev.stopPropagation()}
-                    >
-                      <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-                      ${actionMap.map(
-                        (action) => html`
-                          <mwc-list-item @click=${this.toggleAction(action.action, idx)} .graphic=${'icon'}>
-                            <ha-icon slot="graphic" .icon=${action.icon}></ha-icon>
-                            ${action.title}
-                          </mwc-list-item>
-                        `
-                      )}
-                    </ha-button-menu>
-                  </div>
-                </div>
-              `
+                `;
+              }
             )}
-          </div>`;
+          </div></ha-sortable
+        >`;
 
-    const actionFooter = html`<div class="action-footer">
+    const actionHeader = html`<div class="action-footer">
       <ha-button id="upload-btn" @click=${() => (this._dropAreaActive = true)}>Add Image</ha-button>
       <ha-button id="yaml-btn" @click=${() => (this._yamlEditorActive = true)} class=${!images.length ? 'hidden' : ''}
         >Edit YAML</ha-button
       >
     </div> `;
-    return html` ${infoText}
-    ${this._yamlEditorActive ? yamlEditor : this._dropAreaActive ? dropArea : html` ${imageList} ${actionFooter}`}`;
+    const actionFooter = html` <div class="action-footer" ?hidden=${!this._images.length}>
+      <ha-button
+        @click=${this.toggleAction('select-all')}
+        .label=${'Select All'}
+        .disabled=${this._selectedItems.size === images.length}
+      ></ha-button>
+      <ha-button
+        @click=${this.toggleAction('deselect-all')}
+        .disabled=${!this._selectedItems.size}
+        .label=${'Deselect All'}
+        ?hidden=${!this._selectedItems.size}
+      ></ha-button>
+
+      <ha-button
+        @click=${this.toggleAction('delete-selected')}
+        .disabled=${!this._selectedItems.size}
+        .label=${'Delete Selected'}
+        ?hidden=${!this._selectedItems.size}
+        style="color: var(--error-color);"
+      ></ha-button>
+    </div>`;
+
+    return html` ${this._yamlEditorActive
+      ? yamlEditor
+      : this._dropAreaActive
+      ? dropArea
+      : html`${actionHeader} ${imageList} ${actionFooter}`}`;
+  }
+
+  private _entityMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    const newImages = this._images.concat();
+    newImages.splice(newIndex, 0, newImages.splice(oldIndex, 1)[0]);
+    this.config = { ...this.config, images: newImages };
+    this._debouncedConfigChanged();
   }
 
   private _renderYamlEditor(): TemplateResult {
@@ -416,7 +416,17 @@ export class PanelImagesEditor extends LitElement {
       console.log(event);
     }
   }
-
+  private _toggleSelection(event: Event, url: string): void {
+    event.stopPropagation();
+    const checkbox = event.target as HTMLInputElement;
+    if (checkbox.checked) {
+      this._selectedItems.add(url);
+      this.requestUpdate();
+    } else {
+      this._selectedItems.delete(url);
+      this.requestUpdate();
+    }
+  }
   private toggleAction(action: IMAGE_CONFIG_ACTIONS, idx?: number): () => void {
     return () => {
       const updateChanged = (update: any) => {
@@ -446,12 +456,12 @@ export class PanelImagesEditor extends LitElement {
               const imagesList = [...(this.config?.images || [])];
               imagesList.splice(idx, 1);
               updateChanged(imagesList);
-              this._validateAndReindexImages();
             }
             break;
 
           case 'add-new-url':
             if (!this._newImage) return;
+            this._newImage = this._newImage.trim();
             const imagesList = [...(this.config?.images || [])];
             imagesList.push({ url: this._newImage, title: this._newImage });
             showAlert();
@@ -461,6 +471,35 @@ export class PanelImagesEditor extends LitElement {
             break;
           case 'show-image':
             this.editor?._dispatchEvent('show-image', { index: idx });
+            break;
+          case 'deselect-all':
+            this._selectedItems.clear();
+            const checkboxes = this.shadowRoot?.querySelectorAll(
+              '.images-list ha-checkbox'
+            ) as NodeListOf<HTMLInputElement>;
+            checkboxes?.forEach((checkbox) => {
+              checkbox.checked = false;
+            });
+            this.requestUpdate();
+            break;
+          case 'select-all':
+            const allCheckboxes = this.shadowRoot?.querySelectorAll(
+              '.images-list ha-checkbox'
+            ) as NodeListOf<HTMLInputElement>;
+            allCheckboxes?.forEach((checkbox) => {
+              checkbox.checked = true;
+            });
+            this._selectedItems.clear();
+            this._images.forEach((image) => {
+              this._selectedItems.add(image.url);
+            });
+            this.requestUpdate();
+            break;
+          case 'delete-selected':
+            if (this._selectedItems.size === 0) return;
+            const updatedImages = this._images.filter((image) => !this._selectedItems.has(image.url));
+            updateChanged(updatedImages);
+            this._selectedItems.clear();
             break;
         }
       };
@@ -477,24 +516,6 @@ export class PanelImagesEditor extends LitElement {
     const alert = ev.target as HTMLElement;
     alert.style.display = 'none';
     this._helpDismissed = true;
-  }
-
-  private _handleSort(evt: any) {
-    evt.preventDefault();
-    const oldIndex = evt.oldIndex;
-    const newIndex = evt.newIndex;
-
-    if (oldIndex !== newIndex) {
-      this._reorderImages(oldIndex, newIndex);
-    }
-  }
-
-  private _reorderImages(oldIndex: number, newIndex: number) {
-    const imagesList = this._images.concat();
-    const movedItem = imagesList.splice(oldIndex, 1)[0];
-    imagesList.splice(newIndex, 0, movedItem);
-    this.config = { ...this.config, images: imagesList };
-    this._debouncedConfigChanged();
   }
 
   private configChanged(): void {
@@ -539,34 +560,5 @@ export class PanelImagesEditor extends LitElement {
 
       fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
     }
-  }
-
-  private _validateAndReindexImages(): void {
-    setTimeout(() => {
-      const imageListId = this.shadowRoot?.getElementById('images-list') as HTMLElement;
-      const imagesList = imageListId?.querySelectorAll('.item-config-row').length || 0;
-
-      let configImagesCount: number = 0;
-
-      if (this.config?.images) {
-        configImagesCount = this.config.images.length;
-      }
-
-      console.log(imagesList, configImagesCount);
-      if (imagesList !== configImagesCount) {
-        this._sortable?.destroy();
-        this._reindexImages = true;
-        this._resetItems();
-      }
-    }, 200);
-  }
-
-  private _resetItems(): void {
-    setTimeout(() => {
-      this._reindexImages = false;
-      this.updateComplete.then(() => {
-        this.initSortable();
-      });
-    }, 200);
   }
 }
