@@ -139,7 +139,17 @@ export enum ACTIONS {
   UNHIDE_BUTTON = 'unhide-button',
 }
 
-type IMAGE_CONFIG_ACTIONS = 'add' | 'showDelete' | 'delete' | 'upload' | 'add-new-url' | 'show-image' | 'yaml-editor';
+type IMAGE_CONFIG_ACTIONS =
+  | 'add'
+  | 'showDelete'
+  | 'delete'
+  | 'upload'
+  | 'add-new-url'
+  | 'show-image'
+  | 'yaml-editor'
+  | 'deselect-all'
+  | 'select-all'
+  | 'delete-selected';
 
 export enum IMAGE_ACTIONS {
   ADD = 'add',
@@ -148,6 +158,10 @@ export enum IMAGE_ACTIONS {
   UPLOAD = 'upload',
   ADD_NEW_URL = 'add-new-url',
   SHOW_IMAGE = 'show-image',
+  YAML_EDITOR = 'yaml-editor',
+  DESELECT_ALL = 'deselect-all',
+  SELECT_ALL = 'select-all',
+  DELETE_SELECTED = 'delete-selected',
 }
 
 export enum RANGE_ACTIONS {

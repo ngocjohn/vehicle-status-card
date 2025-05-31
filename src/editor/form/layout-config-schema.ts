@@ -2,23 +2,24 @@ export const BUTTON_GRID_SCHEMA = [
   {
     name: '',
     type: 'grid',
-    column_min_width: '150px',
+    column_min_width: '140px',
     schema: [
       {
         name: 'swipe',
         label: 'Use swipe',
-        selector: { boolean: {} },
+        type: 'boolean',
+        default: false,
       },
 
       {
         name: 'rows',
         label: 'Rows',
-        selector: { number: { min: 1, max: 10, mode: 'box' } },
+        type: 'integer',
       },
       {
         name: 'columns',
         label: 'Columns',
-        selector: { number: { min: 1, max: 10, mode: 'box' } },
+        type: 'integer',
       },
     ],
   },
@@ -58,12 +59,15 @@ export const HIDE_SCHEMA = [
   {
     name: '',
     type: 'grid',
-    column_min_width: '150px',
-    schema: HIDE_OPTIONS.map((option) => ({
-      label: option.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-      name: option,
-      selector: { boolean: {} },
-    })),
+    column_min_width: '140px',
+    schema: [
+      ...HIDE_OPTIONS.map((option) => ({
+        label: option.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        name: option,
+        type: 'boolean',
+        default: false,
+      })),
+    ],
   },
 ] as const;
 
@@ -78,7 +82,7 @@ export const THEME_CONFIG_SCHEMA = [
         name: 'theme',
         label: 'Theme',
         default: 'default',
-        required: true,
+        required: false,
         selector: { theme: { include_default: true } },
       },
       {
@@ -105,6 +109,6 @@ export const NAME_SCHEMA = [
     label: 'Card Name',
     required: false,
     default: '',
-    selector: { text: { multiline: false } },
+    type: 'string',
   },
 ] as const;

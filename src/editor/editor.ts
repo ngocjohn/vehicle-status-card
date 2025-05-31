@@ -318,9 +318,9 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ]);
 
     const tabsConfig = [
-      { content: themeWrapper, key: 'theme_config', label: 'Theme' },
-      { content: buttonGridWrapper, key: 'button_grid', label: 'Button Grid' },
       { content: hideWrapper, key: 'hide', label: 'Appearance' },
+      { content: buttonGridWrapper, key: 'button_grid', label: 'Button Grid' },
+      { content: themeWrapper, key: 'theme_config', label: 'Theme' },
     ];
 
     return html`
@@ -567,31 +567,20 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   private _setOrderList(hide: VehicleStatusCardConfig['layout_config']['hide'], currentOrder: string[]) {
     let sectionOrder = [...currentOrder];
-    const section = [
-      SECTION.INDICATORS,
-      SECTION.RANGE_INFO,
-      SECTION.IMAGES,
-      SECTION.MINI_MAP,
-      SECTION.BUTTONS,
-    ] as string[];
-    // const section = {
-    //   indicators: SECTION.INDICATORS,
-    //   range_info: SECTION.RANGE_INFO,
-    //   images: SECTION.IMAGES,
-    //   mini_map: SECTION.MINI_MAP,
-    //   buttons: SECTION.BUTTONS,
-    // };
-
-    for (const key of section) {
-      if ((SECTION.INDICATORS, SECTION.INDICATORS.includes(key))) {
-        if (hide[SECTION.INDICATORS] && hide[SECTION.RANGE_INFO]) {
+    const section = {
+      indicators: SECTION.INDICATORS,
+      range_info: SECTION.RANGE_INFO,
+      images: SECTION.IMAGES,
+      mini_map: SECTION.MINI_MAP,
+      buttons: SECTION.BUTTONS,
+    };
+    for (const key in section) {
+      if (['indicators', 'range_info'].includes(key)) {
+        if (hide.indicators && hide.range_info) {
           if (sectionOrder.includes(SECTION.HEADER_INFO)) {
             sectionOrder = sectionOrder.filter((s) => s !== SECTION.HEADER_INFO);
           }
-        } else if (
-          (!hide[SECTION.INDICATORS] || !hide[SECTION.RANGE_INFO]) &&
-          !sectionOrder.includes(SECTION.HEADER_INFO)
-        ) {
+        } else if ((!hide.indicators || !hide.range_info) && !sectionOrder.includes(SECTION.HEADER_INFO)) {
           sectionOrder.push(SECTION.HEADER_INFO);
         }
       } else if (hide[key] && sectionOrder.includes(key)) {

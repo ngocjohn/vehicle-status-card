@@ -298,6 +298,7 @@ export class PanelDefaultCard extends LitElement {
           margin-inline-start: 36px;
           margin-inline-end: calc(2 * (var(--mdc-icon-button-size, 48px) + var(--vic-gutter-gap)));
           direction: var(--direction);
+          margin-bottom: var(--vic-card-padding);
         }
         .sub-content {
           margin-bottom: unset;
