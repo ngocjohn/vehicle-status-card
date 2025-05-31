@@ -9,12 +9,12 @@ const themeModes = ['auto', 'light', 'dark'] as const;
 const labelModes = ['name', 'state', 'icon', 'attribute'] as const;
 
 const sharedDefaultMapConfig = [
-  { name: 'aspect_ratio', label: 'Aspect Ratio', selector: { text: {} } },
+  { name: 'aspect_ratio', label: 'Aspect Ratio', type: 'string' },
   {
+    type: 'integer',
     name: 'default_zoom',
     label: 'Default Zoom',
     default: DEFAULT_ZOOM,
-    selector: { number: { mode: 'box', min: 0 } },
   },
   {
     name: 'theme_mode',
@@ -31,10 +31,10 @@ const sharedDefaultMapConfig = [
     },
   },
   {
+    type: 'integer',
     name: 'hours_to_show',
     label: 'Hours to Show',
     default: DEFAULT_HOURS_TO_SHOW,
-    selector: { number: { mode: 'box', min: 0 } },
   },
   {
     name: 'history_period',
@@ -53,13 +53,13 @@ const sharedDefaultMapConfig = [
     name: 'auto_fit',
     label: 'Auto Fit',
     default: false,
-    selector: { boolean: {} },
+    type: 'boolean',
   },
   {
     name: 'fit_zones',
     label: 'Fit Zones',
     default: false,
-    selector: { boolean: {} },
+    type: 'boolean',
   },
 ];
 
@@ -154,37 +154,37 @@ export const miniMapConfigSchema = memoizeOne(
                 name: 'enable_popup',
                 label: 'Enable Popup',
                 default: false,
-                selector: { boolean: {} },
+                type: 'boolean',
               },
               {
                 name: 'us_format',
                 label: 'US Address Format',
                 default: false,
-                selector: { boolean: {} },
+                type: 'boolean',
               },
               {
                 name: 'hide_map_address',
                 label: 'Hide address',
                 default: false,
-                selector: { boolean: {} },
+                type: 'boolean',
               },
               {
                 name: 'use_zone_name',
                 label: 'Use zone name',
                 default: false,
-                selector: { boolean: {} },
+                type: 'boolean',
               },
               {
                 name: 'map_zoom',
                 label: 'Map Zoom',
                 default: 14,
-                selector: { number: { mode: 'box', min: 0, max: 500, step: 1 } },
+                type: 'integer',
               },
               {
                 name: 'map_height',
                 label: 'Map Height',
                 default: 150,
-                selector: { number: { mode: 'slider', min: 150, max: 500, step: 10 } },
+                selector: { number: { mode: 'box', min: 150, max: 500, step: 10 } },
               },
             ],
           },

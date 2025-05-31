@@ -75,7 +75,9 @@ export class MiniMapBox extends LitElement {
 
   public connectedCallback() {
     super.connectedCallback();
-    this._subscribeHistory();
+    if (this.hasUpdated && this.card._config.mini_map.device_tracker) {
+      this._subscribeHistory();
+    }
   }
 
   public disconnectedCallback() {
