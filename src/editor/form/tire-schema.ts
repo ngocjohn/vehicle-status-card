@@ -80,7 +80,8 @@ export const TIRE_BACKGROUND_SCHEMA = [
     name: 'background',
     label: 'Background image URL',
     selector: { text: { type: 'text' } },
-    helper: 'URL to the background image',
+    helper:
+      'The image should be square with a maximum resolution of 450x450 pixels. A transparent background is recommended.',
   },
 ];
 

@@ -154,7 +154,10 @@ export class VehicleTireCard extends LitElement {
   }
 
   private async _tryConnect(): Promise<void> {
-    const tireEntities = Object.keys(this.tireConfig.tires);
+    const tireEntities = Object.keys(this.tireConfig.tires) || [];
+    if (!tireEntities || tireEntities.length === 0) {
+      return;
+    }
 
     for (const tire of tireEntities) {
       TEMPLATE_KEYS.forEach((key) => {

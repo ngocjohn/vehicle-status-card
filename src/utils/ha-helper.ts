@@ -4,6 +4,7 @@ const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelper
 import memoizeOne from 'memoize-one';
 
 import { DEFAULT_CONFIG } from '../const/const';
+import { DEFAULT_TIRE_CONFIG } from '../editor/form';
 import {
   ButtonCardEntity,
   DefaultCardConfig,
@@ -159,7 +160,7 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
 
     const customCard = (await createCardElement(hass, btnCrd.custom_card)) || [];
 
-    const tireCard = btnCrd.tire_card ? await getTireCard(hass, btnCrd.tire_card) : {};
+    const tireCard = (await getTireCard(hass, btnCrd.tire_card ?? DEFAULT_TIRE_CONFIG)) || ({} as TireEntity);
 
     buttonCardItem.push({
       button: buttonDetails,

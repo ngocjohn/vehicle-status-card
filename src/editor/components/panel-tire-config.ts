@@ -1,4 +1,4 @@
-import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, nothing, css } from 'lit';
+import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
@@ -15,10 +15,6 @@ export class PanelTireConfig extends LitElement {
   @property({ attribute: false }) tireConfig!: TireTemplateConfig;
 
   @state() public yamlMode: boolean = false;
-
-  protected firstUpdated(_changedProperties: PropertyValues): void {
-    super.firstUpdated(_changedProperties);
-  }
 
   static get styles(): CSSResultGroup {
     return [
@@ -55,13 +51,8 @@ export class PanelTireConfig extends LitElement {
     `;
   }
   private _renderBackground(): TemplateResult {
-    const info = `The image should be square with a maximum resolution of 450x450 pixels. A transparent background is recommended.`;
-
     const bgForm = this._createHaForm(TIRE_BACKGROUND_SCHEMA);
     const content = html`
-      ${Create.HaAlert({
-        message: info,
-      })}
       ${bgForm}
       <div class="sub-content">
         <ha-button
@@ -154,7 +145,10 @@ export class PanelTireConfig extends LitElement {
     if (!this.tireConfig) return;
     switch (action) {
       case 'reset_background':
-        this.tireConfig.background = DEFAULT_TIRE_CONFIG.background;
+        this.tireConfig = {
+          ...this.tireConfig,
+          background: '',
+        };
         this._dispatchConfigChange(this.tireConfig);
         break;
       case 'reset_appearance':
@@ -175,11 +169,15 @@ export class PanelTireConfig extends LitElement {
   private async handleFilePicked(ev: Event): Promise<void> {
     const input = ev.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
-
+    console.log();
     const file = input.files[0];
     const url = await uploadImage(this.hass, file);
     if (url) {
-      this.tireConfig.background = url;
+      this.tireConfig = {
+        ...this.tireConfig,
+        background: url,
+      };
+      input.value = ''; // Clear the input
       this._dispatchConfigChange(this.tireConfig);
     }
   }
@@ -199,7 +197,6 @@ export class PanelTireConfig extends LitElement {
   }
 
   private _dispatchConfigChange(newConfig: TireTemplateConfig): void {
-    if (!this.tireConfig) return;
     this.tireConfig = { ...this.tireConfig, ...newConfig };
     const event = new CustomEvent('tire-config-changed', {
       detail: { config: this.tireConfig },
