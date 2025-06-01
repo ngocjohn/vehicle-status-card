@@ -177,7 +177,12 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
   return buttonCardItem;
 }
 
-export async function uploadImage(hass: HomeAssistant, file: File): Promise<null | string> {
+type IMAGE = {
+  url: string;
+  name: string;
+};
+
+export async function uploadImage(hass: HomeAssistant, file: File): Promise<IMAGE | null> {
   console.log('Uploading image:', file.name);
 
   const formData = new FormData();
@@ -203,7 +208,10 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<null
       return null;
     }
 
-    return `/api/image/serve/${imageId}/original`;
+    return {
+      url: `/api/image/serve/${imageId}/original`,
+      name: file.name,
+    };
   } catch (err) {
     console.error('Error during image upload:', err);
     throw err;

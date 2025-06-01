@@ -1,29 +1,38 @@
+import { mdiCodeBracesBox, mdiDelete, mdiEye, mdiImagePlus, mdiListBoxOutline, mdiPlus, mdiTable } from '@mdi/js';
 import { EntityConfig } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
 import { HassEntity } from 'home-assistant-js-websocket';
-import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
 
 import './sub-panel-yaml';
 
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { VehicleStatusCardConfig, ImageConfig, HomeAssistant, fireEvent } from '../../types';
 import { EntitiesEditorEvent } from '../../types/ha-frontend/data/image';
-import { processEditorEntities } from '../../utils';
+import { processEditorEntities, showConfirmDialog } from '../../utils';
 import { VicTab } from '../../utils/create';
 import { uploadImage } from '../../utils/ha-helper';
 import { IMAGE_CONFIG_ACTIONS, IMAGE_ACTIONS } from '../editor-const';
 import { IMAGES_SLIDE_SCHEMA } from '../form';
 
+const ADD_IMAGE_TYPE = [
+  { value: 'file', label: 'Upload files' },
+  { value: 'path', label: 'Local path or web URL' },
+];
+
+enum ADD_TYPE {
+  FILE = 'file',
+  PATH = 'path',
+}
 @customElement('panel-images-editor')
 export class PanelImagesEditor extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ type: Object }) public editor?: any;
   @property({ type: Object }) public config!: VehicleStatusCardConfig;
-  @property({ type: Array }) _images: ImageConfig[] = [];
   @property({ type: Boolean }) isDragging = false;
 
   @state() _yamlEditorActive = false;
@@ -31,8 +40,14 @@ export class PanelImagesEditor extends LitElement {
   @state() _newImage: string = '';
   @state() private _selectedItems: Set<string> = new Set();
   @state() private _activeTabIndex: number = 0;
+  @state() private _images: ImageConfig[] = [];
   @state() private _imageEntities?: EntityConfig[];
-  private _helpDismissed = false;
+  @state() private _uploading = false;
+  @state() private _uploadedImages?: ImageConfig[] = [];
+  @state() private _imageAddType: ADD_TYPE = ADD_TYPE.FILE;
+  @state() private _listView: boolean = false;
+
+  @query('ha-file-upload') private _fileUpload?: any;
   private _debouncedConfigChanged = debounce(this.configChanged.bind(this), 300);
 
   set hass(hass: HomeAssistant) {
@@ -44,34 +59,108 @@ export class PanelImagesEditor extends LitElement {
     this._handleTabChange = this._handleTabChange.bind(this);
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._debouncedConfigChanged.cancel();
+  }
+
   static get styles(): CSSResultGroup {
     return [
       editorcss,
       css`
+        *[active] {
+          color: var(--primary-color);
+        }
         *[hidden],
         .hidden {
           display: none;
         }
-        #drop-area {
-          margin-block: var(--vic-card-padding);
-          border-block: 1px solid var(--divider-color);
-        }
 
         .drop-area {
-          border: 2px dashed var(--divider-color);
-          padding: 20px;
-          text-align: center;
-          cursor: pointer;
-          transition: background-color 0.3s;
           margin-block: var(--vic-card-padding);
+          display: flex;
+          flex-direction: column;
+          gap: var(--vic-card-padding);
+          overflow: hidden;
         }
 
-        .drop-area[dragging] {
-          background-color: rgba(var(--rgb-primary-text-color), 0.05);
+        .image-preview {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+          gap: 8px;
+          padding: 4px;
         }
 
-        input[type='file'] {
-          display: none;
+        .image-item {
+          position: relative;
+          width: 100%;
+          height: 100px;
+          overflow: hidden;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          border: 1px solid var(--divider-color);
+          transition: border 0.3s ease;
+        }
+
+        .image-item:hover {
+          border: 1px solid var(--primary-color);
+        }
+        .image-item:hover > img {
+          filter: blur(0.5rem) brightness(0.5);
+          transition: all 0.3s ease;
+        }
+
+        .image-item img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 8px;
+          opacity: 0.7;
+        }
+        .image-item ha-svg-icon.delete-icon {
+          position: absolute;
+          top: 4px;
+          left: 4px;
+          color: var(--disabled-text-color);
+          cursor: pointer;
+          width: 24px;
+          height: 24px;
+          z-index: 2;
+        }
+
+        .image-item ha-svg-icon.delete-icon:hover {
+          color: var(--error-color) !important;
+        }
+
+        .image-item ha-svg-icon.preview-icon {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          color: var(--primary-color);
+          cursor: pointer;
+          z-index: 1;
+          transform: translate(-50%, -50%);
+        }
+        .image-item:hover ha-svg-icon.preview-icon {
+          opacity: 1;
+          transition: opacity 0.3s ease;
+        }
+
+        .image-item > ha-checkbox {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          z-index: 4;
         }
 
         .new-image-url {
@@ -83,13 +172,7 @@ export class PanelImagesEditor extends LitElement {
         }
 
         .new-url-btn {
-          display: none;
-        }
-
-        .new-url-btn.show {
-          display: inline-block;
           color: var(--secondary-text-color);
-          cursor: pointer;
         }
 
         .new-url-btn:hover {
@@ -104,6 +187,25 @@ export class PanelImagesEditor extends LitElement {
     if (_changedProperties.has('config') && this.config) {
       this._images = this.config.images || [];
       this._imageEntities = this.config.image_entities ? processEditorEntities(this.config.image_entities) : [];
+    }
+    if (_changedProperties.has('_uploadedImages') && this._uploadedImages) {
+      // If new images are uploaded, merge them with existing images
+      const imagesList = this.config?.images?.concat(this._uploadedImages) || this._uploadedImages;
+      this.config = { ...this.config, images: imagesList };
+      fireEvent(this, 'config-changed', { config: this.config });
+      this._uploadedImages = [];
+    }
+  }
+
+  protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
+    if (_changedProperties.has('_activeTabIndex')) {
+      const oldIndex = _changedProperties.get('_activeTabIndex') as number | undefined;
+      const newIndex = this._activeTabIndex;
+      if (oldIndex !== undefined && newIndex !== 0) {
+        this._yamlEditorActive = false;
+        this._dropAreaActive = false;
+      }
     }
   }
 
@@ -161,17 +263,6 @@ export class PanelImagesEditor extends LitElement {
   }
 
   private _renderImageList(): TemplateResult {
-    // const infoText = !this._helpDismissed
-    //   ? html` <ha-alert
-    //       alert-type="info"
-    //       dismissable
-    //       @alert-dismissed-clicked=${(ev: CustomEvent) => this._handlerAlert(ev)}
-    //     >
-    //       To change order of images, use ${html`<ha-icon icon="mdi:drag"></ha-icon>`} drag and drop the image row. To
-    //       delete an image, click on the delete button and select the image to delete.
-    //     </ha-alert>`
-    //   : html``;
-
     const dropArea = this._renderDropArea();
     const yamlEditor = this._renderYamlEditor();
     const actionMap = [
@@ -181,7 +272,7 @@ export class PanelImagesEditor extends LitElement {
 
     const images = this._images || [];
     const imageList = !images.length
-      ? html`<div></div>`
+      ? nothing
       : html` <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
           <div class="images-list" id="images-list">
             ${repeat(
@@ -233,16 +324,36 @@ export class PanelImagesEditor extends LitElement {
         >`;
 
     const actionHeader = html`<div class="action-footer">
-      <ha-button id="upload-btn" @click=${() => (this._dropAreaActive = true)}>Add Image</ha-button>
-      <ha-button id="yaml-btn" @click=${() => (this._yamlEditorActive = true)} class=${!images.length ? 'hidden' : ''}
-        >Edit YAML</ha-button
-      >
+      <ha-button
+        class="warning-btn"
+        .outlined=${true}
+        @click=${() => (this._dropAreaActive = true)}
+        .label=${'Add Image'}
+      ></ha-button>
+      <div class="item-actions">
+        <ha-icon-button ?active=${!this._listView} .path=${mdiTable} @click=${() => (this._listView = false)}>
+        </ha-icon-button>
+        <ha-icon-button ?active=${this._listView} .path=${mdiListBoxOutline} @click=${() => (this._listView = true)}>
+        </ha-icon-button>
+
+        <ha-icon-button .path=${mdiCodeBracesBox} @click=${() => (this._yamlEditorActive = true)}></ha-icon-button>
+      </div>
     </div> `;
-    const actionFooter = html` <div class="action-footer" ?hidden=${!this._images.length}>
+    const actionFooter = html` <div
+      class="action-footer"
+      ?hidden=${!this._images.length}
+      style="flex-direction: row-reverse;"
+    >
       <ha-button
         @click=${this.toggleAction('select-all')}
         .label=${'Select All'}
         .disabled=${this._selectedItems.size === images.length}
+      ></ha-button>
+      <ha-button
+        @click=${this.toggleAction('delete-selected')}
+        .label=${'Delete Selected'}
+        ?hidden=${!this._selectedItems.size}
+        class="delete-btn"
       ></ha-button>
       <ha-button
         @click=${this.toggleAction('deselect-all')}
@@ -250,21 +361,15 @@ export class PanelImagesEditor extends LitElement {
         .label=${'Deselect All'}
         ?hidden=${!this._selectedItems.size}
       ></ha-button>
-
-      <ha-button
-        @click=${this.toggleAction('delete-selected')}
-        .disabled=${!this._selectedItems.size}
-        .label=${'Delete Selected'}
-        ?hidden=${!this._selectedItems.size}
-        style="color: var(--error-color);"
-      ></ha-button>
     </div>`;
 
     return html` ${this._yamlEditorActive
       ? yamlEditor
       : this._dropAreaActive
       ? dropArea
-      : html`${actionHeader} ${imageList} ${actionFooter}`}`;
+      : html`<div class="base-config" style="gap: var(--vic-gutter-gap);">
+          ${actionHeader} ${this._listView ? imageList : this._renderPreview()} ${actionFooter}
+        </div>`}`;
   }
 
   private _entityMoved(ev: CustomEvent): void {
@@ -304,38 +409,122 @@ export class PanelImagesEditor extends LitElement {
 
   private _renderDropArea(): TemplateResult {
     if (!this._dropAreaActive) return html``;
+    const previewCon = this._renderPreview();
+    const fileAddCon = this._renderFileAddCon();
     return html`
-      <div id="drop-area">
-        <div
-          class="drop-area" ?dragging=${this.isDragging}
-          @dragover=${this._handleDragOver}
-          @dragleave=${this._handleDragLeave}
-          @drop=${this._handleDrop}
-          @click=${() => this.shadowRoot?.getElementById('file-to-upload')?.click()}
-        >
-          <span>Drag & drop files here or click to select files</span>
-          <p>Supports JPEG, PNG, or GIF image.</p>
-            <input type="file" id="file-to-upload" multiple @change=${(ev: any) => this.handleFilePicked(ev)} />
-          </p>
-        </div>
+      <div class="drop-area">
+        ${fileAddCon} ${previewCon}
 
-        <div class="new-image-url">
-          <ha-textfield
-            style="width: 100%;"
-            .label=${'Image URL'}
-            .value=${this._newImage}
-            @input=${this.toggleAddButton}
-            ></ha-textfield>
-          <div class="new-url-btn">
-            <ha-icon icon="mdi:plus" @click=${this.toggleAction('add-new-url')}></ha-icon>
-          </div>
-        </div>
         <ha-alert id="image-alert" class="hidden" alert-type="success">New image added successfully!</ha-alert>
       </div>
       <div class="action-footer">
         <ha-button id="upload-btn" @click=${() => (this._dropAreaActive = false)}>Cancel</ha-button>
       </div>
     `;
+  }
+
+  private _renderFileAddCon(): TemplateResult {
+    const fileUpload = html` <ha-file-upload
+      .hass=${this._hass}
+      .icon=${mdiImagePlus}
+      .value=${''}
+      .secondary=${'Drag & drop files here or click to select files'}
+      .supports=${'Supports JPEG, PNG, or GIF image.'}
+      .uploading=${this._uploading}
+      @file-picked=${this._handleFilePicked}
+      accept="image/png, image/jpeg, image/gif"
+      .multiple=${true}
+      style="height: auto;"
+    ></ha-file-upload>`;
+
+    const pathInput = html` <div class="new-image-url">
+      <ha-textfield
+        style="width: 100%;"
+        .label=${'Image URL'}
+        .value=${this._newImage}
+        @input=${this._handleNewImagePath}
+      ></ha-textfield>
+      <ha-icon-button
+        class="new-url-btn"
+        .path=${mdiPlus}
+        @click=${this.toggleAction('add-new-url')}
+        title="Add new image URL"
+        .disabled=${!this._newImage || this._newImage.length === 0}
+      ></ha-icon-button>
+    </div>`;
+
+    return html`
+      <ha-selector .hass=${this._hass} .selector=${{ image: {} }} style="display: none;"></ha-selector>
+      <ha-selector
+        .hass=${this._hass}
+        .value=${this._imageAddType}
+        .label=${'Select method to add image'}
+        .selector=${{
+          select: { mode: 'list', options: ADD_IMAGE_TYPE },
+        }}
+        @value-changed=${(ev: CustomEvent) => {
+          ev.stopPropagation();
+          this._imageAddType = ev.detail.value;
+        }}
+      ></ha-selector>
+      ${this._imageAddType === ADD_TYPE.FILE ? fileUpload : pathInput}
+    `;
+  }
+
+  private _renderPreview(): TemplateResult {
+    if (!this._images || this._images.length === 0) {
+      return html``;
+    }
+    const helpText = 'Drag and drop to reorder images, click on the image to show on card.';
+    return html`
+      <div class="sub-panel-config button-card">
+        <div class="sub-header">
+          <span>Current items</span>
+          <ha-tooltip content=${helpText}>
+            <ha-icon .icon=${'mdi:help-circle'}></ha-icon>
+          </ha-tooltip>
+        </div>
+        <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved} .noStyle=${true}>
+          <div class="image-preview">
+            ${repeat(
+              this._images,
+              (image: ImageConfig) => image.url,
+              (image: ImageConfig, index: number) => html`
+                <div class="image-item handle" data-url="${image.url}">
+                  <ha-checkbox
+                    .checked=${false}
+                    @change=${(ev: Event) => this._toggleSelection(ev, image.url)}
+                  ></ha-checkbox>
+                  <ha-svg-icon
+                    .path=${mdiDelete}
+                    class="delete-icon"
+                    @click=${() => this._deletePreviewImage(index)}
+                    title="Delete Image"
+                  ></ha-svg-icon>
+                  <ha-svg-icon
+                    .path=${mdiEye}
+                    class="preview-icon"
+                    @click=${this.toggleAction('show-image', index)}
+                    title="Show Image"
+                  ></ha-svg-icon>
+                  <img src="${image.url}" alt="${image.title}" />
+                </div>
+              `
+            )}
+          </div>
+        </ha-sortable>
+      </div>
+    `;
+  }
+
+  private _deletePreviewImage(index: number): void {
+    if (!this._images) return;
+    const imagesList = [...this._images];
+    const imageToDelete = imagesList[index];
+    console.log('Deleting image:', imageToDelete);
+    imagesList.splice(index, 1);
+    this.config = { ...this.config, images: imagesList };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _renderImageLayoutConfig(): TemplateResult {
@@ -386,36 +575,12 @@ export class PanelImagesEditor extends LitElement {
     }
   }
 
-  private toggleAddButton(ev: Event): void {
+  private _handleNewImagePath(ev: Event): void {
     ev.stopPropagation();
     const target = ev.target as HTMLInputElement;
-    const addButton = target.parentElement?.querySelector('.new-url-btn') as HTMLElement;
-    if (!addButton) return;
-    if (target.value && target.value.length > 0) {
-      this._newImage = target.value;
-      addButton.classList.add('show');
-    } else {
-      addButton.classList.remove('show');
-    }
+    this._newImage = target.value;
   }
 
-  private _handleDragOver(event: DragEvent) {
-    event.preventDefault();
-    this.isDragging = true;
-  }
-
-  private _handleDragLeave() {
-    this.isDragging = false;
-  }
-  private _handleDrop(event: DragEvent) {
-    event.preventDefault();
-    this.isDragging = false;
-    const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      this.handleFilePicked({ target: { files } });
-      console.log(event);
-    }
-  }
   private _toggleSelection(event: Event, url: string): void {
     event.stopPropagation();
     const checkbox = event.target as HTMLInputElement;
@@ -444,12 +609,11 @@ export class PanelImagesEditor extends LitElement {
           imageAlert.classList.remove('hidden');
           setTimeout(() => {
             imageAlert.classList.add('hidden');
-            this._dropAreaActive = false;
           }, 1500);
         }
       };
 
-      const handleImageAction = () => {
+      const handleImageAction = async () => {
         switch (action) {
           case 'delete':
             if (idx !== undefined) {
@@ -474,18 +638,14 @@ export class PanelImagesEditor extends LitElement {
             break;
           case 'deselect-all':
             this._selectedItems.clear();
-            const checkboxes = this.shadowRoot?.querySelectorAll(
-              '.images-list ha-checkbox'
-            ) as NodeListOf<HTMLInputElement>;
+            const checkboxes = this.shadowRoot?.querySelectorAll('ha-checkbox') as NodeListOf<HTMLInputElement>;
             checkboxes?.forEach((checkbox) => {
               checkbox.checked = false;
             });
             this.requestUpdate();
             break;
           case 'select-all':
-            const allCheckboxes = this.shadowRoot?.querySelectorAll(
-              '.images-list ha-checkbox'
-            ) as NodeListOf<HTMLInputElement>;
+            const allCheckboxes = this.shadowRoot?.querySelectorAll('ha-checkbox') as NodeListOf<HTMLInputElement>;
             allCheckboxes?.forEach((checkbox) => {
               checkbox.checked = true;
             });
@@ -497,6 +657,12 @@ export class PanelImagesEditor extends LitElement {
             break;
           case 'delete-selected':
             if (this._selectedItems.size === 0) return;
+            let confirmDelete = await showConfirmDialog(
+              this,
+              'Are you sure you want to delete the selected images?',
+              'Delete'
+            );
+            if (!confirmDelete) return;
             const updatedImages = this._images.filter((image) => !this._selectedItems.has(image.url));
             updateChanged(updatedImages);
             this._selectedItems.clear();
@@ -512,14 +678,41 @@ export class PanelImagesEditor extends LitElement {
     this.requestUpdate();
   }
 
-  private _handlerAlert(ev: CustomEvent): void {
-    const alert = ev.target as HTMLElement;
-    alert.style.display = 'none';
-    this._helpDismissed = true;
-  }
-
   private configChanged(): void {
     fireEvent(this, 'config-changed', { config: this.config });
+  }
+
+  private async _handleFilePicked(ev: CustomEvent) {
+    console.log('File picked:', ev);
+    const files = ev.detail.files;
+
+    let imagesList: ImageConfig[] = [];
+    this._uploading = true;
+    for (const file of files) {
+      try {
+        const image = await uploadImage(this._hass, file);
+        console.log('Image :', image);
+        if (!image) continue;
+
+        imagesList.push({ url: image.url, title: image.name });
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
+    }
+
+    this._uploading = false;
+    (ev.target as any).value = null; // Clear the input value after processing
+    this._fileUpload!.value = null; // Clear the file upload component value
+
+    if (imagesList.length > 0) {
+      console.log('New images:', imagesList);
+      this._uploadedImages = imagesList;
+      // const configImages = this.config?.images?.concat(imagesList) || imagesList;
+      // this.config = { ...this.config, images: configImages };
+      // this.configChanged();
+
+      // fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
+    }
   }
 
   private async handleFilePicked(ev: any): Promise<void> {
@@ -541,7 +734,7 @@ export class PanelImagesEditor extends LitElement {
 
         const imageName = file.name.toUpperCase();
 
-        imagesList.push({ url: imageUrl, title: imageName });
+        imagesList.push({ url: imageUrl.url, title: imageUrl.name || imageName });
       } catch (error) {
         console.error('Error uploading image:', error);
       }
