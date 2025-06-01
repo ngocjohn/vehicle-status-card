@@ -93,6 +93,12 @@ export const BASE_BUTTON_APPEARANCE_SCHEMA = memoizeOne(
             title: 'Advanced Options',
             schema: [
               {
+                name: 'color',
+                label: 'Color icon template',
+                helper: 'Template for the icon color',
+                selector: { template: {} },
+              },
+              {
                 name: 'picture_template',
                 label: 'Picture & Icon template',
                 helper:
@@ -100,16 +106,29 @@ export const BASE_BUTTON_APPEARANCE_SCHEMA = memoizeOne(
                 selector: { template: {} },
               },
               {
-                name: 'notify',
-                label: 'Notification Badge template',
-                helper: 'Use Jinja2 template with result `true` to display notification badge',
-                selector: { template: {} },
-              },
-              {
-                name: 'color',
-                label: 'Color template',
-                helper: 'Template for the icon color',
-                selector: { template: {} },
+                name: '',
+                type: 'expandable',
+                title: 'Notification Badge Options',
+                schema: [
+                  {
+                    name: 'notify',
+                    label: 'Notification Badge visibility template',
+                    helper: 'Use Jinja2 template with result `true` to display notification badge',
+                    selector: { template: {} },
+                  },
+                  {
+                    name: 'notify_color',
+                    label: 'Notification Badge color template',
+                    helper: 'Use Jinja2 template to set the badge color',
+                    selector: { template: {} },
+                  },
+                  {
+                    name: 'notify_icon',
+                    label: 'Notification Badge icon template',
+                    helper: 'Template with result in `mdi:` format to set the badge icon',
+                    selector: { template: {} },
+                  },
+                ],
               },
             ],
           },
