@@ -157,6 +157,8 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
       button_action: btnCrd.button_action,
       icon: button.icon || '',
       notify: button.notify || '',
+      notify_color: button.notify_color || '',
+      notify_icon: button.notify_icon || '',
       primary: button.primary || '',
       secondary: button.secondary || [],
       color: button.color || '',

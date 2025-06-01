@@ -13,7 +13,7 @@ import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions, hasTemplate, strStartsWith } from '../../utils';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 
-const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template'] as const;
+const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template', 'notify_color', 'notify_icon'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 const COLOR_AlPHA = '.2';
@@ -101,6 +101,14 @@ export class VehicleButtonSingle extends LitElement {
       case 'picture_template':
         const picture = button.picture_template ? this.getValue('picture_template') || button.picture_template : '';
         return picture;
+      case 'notify_color':
+        const notifyColor = button.notify_color
+          ? this.getValue('notify_color') || button.notify_color
+          : 'var(--error-color)';
+        return notifyColor;
+      case 'notify_icon':
+        const notifyIcon = button.notify_icon ? this.getValue('notify_icon') || button.notify_icon : 'mdi:alert-circle';
+        return notifyIcon;
     }
   }
   private async _tryConnect(): Promise<void> {
@@ -203,6 +211,8 @@ export class VehicleButtonSingle extends LitElement {
     const state = this._getTemplateValue('state_template');
     const color = this._getTemplateValue('color');
     const notify = this._getTemplateValue('notify');
+    const notifyColor = this._getTemplateValue('notify_color');
+    const notifyIcon = this._getTemplateValue('notify_icon');
     const iconBackground = color ? color : 'var(--primary-text-color)';
     const picture = String(this._getTemplateValue('picture_template'));
     const isPictureUrl = strStartsWith(picture, 'http') || strStartsWith(picture, '/');
@@ -230,8 +240,8 @@ export class VehicleButtonSingle extends LitElement {
                     style=${color ? `color: ${color}` : ''}
                   ></ha-state-icon>`}
             </div>
-            <div class="item-notify" ?hidden=${!notify || hideNotify}>
-              <ha-icon icon="mdi:alert-circle"></ha-icon>
+            <div class="item-notify" ?hidden=${!notify || hideNotify} style=${`--vic-notify-color: ${notifyColor}`}>
+              <ha-icon icon=${notifyIcon}></ha-icon>
             </div>
           </div>
           <div class="item-content">

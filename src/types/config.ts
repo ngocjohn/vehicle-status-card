@@ -129,6 +129,8 @@ type SecondaryInfoConfig = {
 export interface ButtonConfig {
   icon: string;
   notify?: string;
+  notify_color?: string;
+  notify_icon?: string;
   primary: string;
   color: string;
   secondary: SecondaryInfoConfig;
@@ -235,6 +237,8 @@ export interface ButtonCardEntityItem {
     secondary: SecondaryInfoConfig;
     color: string;
     picture_template: string;
+    notify_color?: string;
+    notify_icon?: string;
   };
   button_type: BUTTON_TYPE;
   card_type: CARD_TYPE;

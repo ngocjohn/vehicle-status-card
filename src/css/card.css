@@ -400,8 +400,7 @@ header h1 {
   top: -2px;
   right: -3px;
   line-height: 0;
-  color: #db4437;
-  color: var(--error-color, #db4437);
+  color: var(--vic-notify-color, var(--error-color));
   --mdc-icon-size: 1.35rem;
   justify-content: center;
   align-items: center;
