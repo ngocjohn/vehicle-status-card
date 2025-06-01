@@ -16,6 +16,7 @@ import { EntitiesEditorEvent } from '../../types/ha-frontend/data/image';
 import { processEditorEntities, showConfirmDialog } from '../../utils';
 import { VicTab } from '../../utils/create';
 import { uploadImage } from '../../utils/ha-helper';
+import { VehicleStatusCardEditor } from '../editor';
 import { IMAGE_CONFIG_ACTIONS, IMAGE_ACTIONS } from '../editor-const';
 import { IMAGES_SLIDE_SCHEMA } from '../form';
 
@@ -30,10 +31,9 @@ enum ADD_TYPE {
 }
 @customElement('panel-images-editor')
 export class PanelImagesEditor extends LitElement {
-  @property({ attribute: false }) public _hass!: HomeAssistant;
-  @property({ type: Object }) public editor?: any;
-  @property({ type: Object }) public config!: VehicleStatusCardConfig;
-  @property({ type: Boolean }) isDragging = false;
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) editor?: VehicleStatusCardEditor;
+  @property({ attribute: false }) config!: VehicleStatusCardConfig;
 
   @state() _yamlEditorActive = false;
   @state() _dropAreaActive = false;
@@ -49,10 +49,6 @@ export class PanelImagesEditor extends LitElement {
 
   @query('ha-file-upload') private _fileUpload?: any;
   private _debouncedConfigChanged = debounce(this.configChanged.bind(this), 300);
-
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
-  }
 
   constructor() {
     super();
@@ -210,7 +206,7 @@ export class PanelImagesEditor extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.config || !this._hass) {
+    if (!this.config || !this.hass) {
       return html`<div class="card-config">Loading...</div>`;
     }
     const imagesList = this._renderImageList();
@@ -237,7 +233,7 @@ export class PanelImagesEditor extends LitElement {
   private _renderImageEntity(): TemplateResult {
     return html`
       <hui-entity-editor
-        .hass=${this._hass}
+        .hass=${this.hass}
         .label=${'Image Entities'}
         .entities=${this._imageEntities}
         .entityFilter=${(entity: HassEntity) => {
@@ -386,7 +382,7 @@ export class PanelImagesEditor extends LitElement {
     return html`
       <div id="yaml-editor">
         <vsc-sub-panel-yaml
-          .hass=${this._hass}
+          .hass=${this.hass}
           .config=${this.config}
           .configDefault=${this.config.images}
           .extraAction=${true}
@@ -425,7 +421,7 @@ export class PanelImagesEditor extends LitElement {
 
   private _renderFileAddCon(): TemplateResult {
     const fileUpload = html` <ha-file-upload
-      .hass=${this._hass}
+      .hass=${this.hass}
       .icon=${mdiImagePlus}
       .value=${''}
       .secondary=${'Drag & drop files here or click to select files'}
@@ -454,9 +450,9 @@ export class PanelImagesEditor extends LitElement {
     </div>`;
 
     return html`
-      <ha-selector .hass=${this._hass} .selector=${{ image: {} }} style="display: none;"></ha-selector>
+      <ha-selector .hass=${this.hass} .selector=${{ image: {} }} style="display: none;"></ha-selector>
       <ha-selector
-        .hass=${this._hass}
+        .hass=${this.hass}
         .value=${this._imageAddType}
         .label=${'Select method to add image'}
         .selector=${{
@@ -538,7 +534,7 @@ export class PanelImagesEditor extends LitElement {
         </div>
         <div class="sub-panel">
           <ha-form
-            .hass=${this._hass}
+            .hass=${this.hass}
             .data=${DATA}
             .schema=${IMAGES_SLIDE_SCHEMA}
             .computeLabel=${(schema: any) => schema.label || schema.name || ''}
@@ -690,7 +686,7 @@ export class PanelImagesEditor extends LitElement {
     this._uploading = true;
     for (const file of files) {
       try {
-        const image = await uploadImage(this._hass, file);
+        const image = await uploadImage(this.hass, file);
         console.log('Image :', image);
         if (!image) continue;
 
@@ -712,46 +708,6 @@ export class PanelImagesEditor extends LitElement {
       // this.configChanged();
 
       // fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
-    }
-  }
-
-  private async handleFilePicked(ev: any): Promise<void> {
-    const input = ev.target as HTMLInputElement;
-
-    if (!input.files || input.files.length === 0) {
-      console.log('No files selected.');
-      return;
-    }
-
-    const files = Array.from(input.files); // Convert FileList to Array for easier iteration
-    console.log('Files:', files);
-    let imagesList = [...(this.config?.images || [])];
-    for (const file of files) {
-      try {
-        const imageUrl = await uploadImage(this.editor._hass, file);
-        console.log('Image URL:', imageUrl);
-        if (!imageUrl) continue;
-
-        const imageName = file.name.toUpperCase();
-
-        imagesList.push({ url: imageUrl.url, title: imageUrl.name || imageName });
-      } catch (error) {
-        console.error('Error uploading image:', error);
-      }
-    }
-    if (imagesList.length > 0) {
-      const imageAlert = this.shadowRoot?.getElementById('image-alert') as HTMLElement;
-      if (imageAlert) {
-        imageAlert.classList.remove('hidden');
-        setTimeout(() => {
-          imageAlert.classList.add('hidden');
-          this._dropAreaActive = false;
-        }, 1500);
-      } else {
-        this._dropAreaActive = false;
-      }
-
-      fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
     }
   }
 }

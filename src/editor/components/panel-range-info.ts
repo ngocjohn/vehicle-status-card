@@ -11,14 +11,15 @@ import editorcss from '../../css/editor.css';
 import { HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig, fireEvent } from '../../types';
 import * as Create from '../../utils/create';
 import './sub-panel-yaml';
+import { VehicleStatusCardEditor } from '../editor';
 import { RANGE_ACTIONS } from '../editor-const';
 import { PROGRESS_BAR_SCHEMA, RANGE_ITEM_SCHEMA } from '../form';
 
 @customElement('panel-range-info')
 export class PanelRangeInfo extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) editor?: any;
-  @property({ type: Object }) config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) editor?: VehicleStatusCardEditor;
+  @property({ attribute: false }) config!: VehicleStatusCardConfig;
 
   @state() private _activeIndexItem: number | null = null;
   @state() private _activeColorPicker: number | null = null;
@@ -188,36 +189,34 @@ export class PanelRangeInfo extends LitElement {
     const colorTemplate = (index: number) => this._renderColorTemplate(index);
     const barHeightWidth = (index: number) => this._renderBarDimensions(index);
     const colorPicker = (index: number) => this._colorPicker(index);
-    const infoAlert = (helper: string) =>
-      html`<span slot="message" class="info-alert" style="flex: 0; display: none"> ${helper} </span>`;
     const configContent = {
       energy_level: {
-        title: 'Energy Level (Required)',
-        helper: infoAlert('Entity to display the energy level (e.g., battery, fuel)'),
+        title: 'Energy entity (Required)',
+        helper: 'Entity to display the energy level (e.g., battery, fuel)',
         config: energyConfig,
       },
     };
     const rangeAndChargingConfig = {
       range_level: {
         title: 'Range Level (Optional)',
-        helper: infoAlert('Entity to display the range level (e.g., distance, range)'),
+        helper: 'Entity to display the range level (e.g., distance, range)',
         config: rangeConfig,
       },
       charging_entity: {
         title: 'Charging Entity (Optional)',
-        helper: infoAlert('Entity to display the charging status'),
+        helper: 'Entity to display the charging status',
         config: chargingEntity,
       },
     };
     const progressBarFields = {
       bar_dimensions: {
         title: 'Bar Dimensions',
-        helper: infoAlert('Height(px) and Width(%) of the progress bar'),
+        helper: 'Height(px) and Width(%) of the progress bar',
         config: barHeightWidth,
       },
       progress_color: {
         title: 'Progress Color',
-        helper: infoAlert('Color to display the progress bar'),
+        helper: 'Color to display the progress bar',
         config: colorPicker,
       },
       color_template: {
@@ -233,14 +232,11 @@ export class PanelRangeInfo extends LitElement {
             <span>${section[key].title}</span>
             ${section[key].helper
               ? html`
-                  <ha-icon
-                    class="info-icon"
-                    icon="mdi:help-circle"
-                    @click=${(ev: Event) => this._toggleHelp(ev)}
-                  ></ha-icon>
+                  <ha-tooltip content=${section[key].helper}>
+                    <ha-icon icon="mdi:help-circle"></ha-icon>
+                  </ha-tooltip>
                 `
               : nothing}
-            ${section[key].helper}
           </div>
           ${section[key].config(index)}
         </div>`
@@ -269,7 +265,10 @@ export class PanelRangeInfo extends LitElement {
           `
         : html`
             <div class="sub-panel-config" data-index=${index}>
-              ${createSection(configContent)}
+              ${Create.ExpansionPanel({
+                content: html`${createSection(configContent)}`,
+                options: { header: 'Energy level', expanded: true, noCollapse: true },
+              })}
               ${Create.ExpansionPanel({
                 content: html`${createSection(rangeAndChargingConfig)}`,
                 options: { header: 'Range level and Charging entity (Optional)' },

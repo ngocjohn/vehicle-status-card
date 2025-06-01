@@ -46,7 +46,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
   @property({ attribute: false }) public layout?: string;
 
-  @state() public _currentPreview: PREVIEW_TYPE = null;
+  @state() public _currentPreview: PREVIEW_TYPE | null = null;
   @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
   @state() public _defaultCardPreview: DefaultCardConfig[] = [];
   @state() public _tireCardPreview: TireEntity | undefined = undefined;
@@ -455,6 +455,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       if (this._activeCardIndex === null) return;
 
       const cardIndexNum = Number(this._activeCardIndex);
+      console.log('Current card index:', cardIndexNum);
       const totalCards = this._buttonCards.filter((button) => !button.hide_button).length;
 
       const isNotActionType = (index: number): boolean => this._buttonCards[index].button_type !== 'action';
@@ -470,6 +471,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         do {
           newCardIndex = newCardIndex === 0 ? totalCards - 1 : newCardIndex - 1;
         } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
+        console.log('New card index:', newCardIndex);
       } else {
         this._activeCardIndex = null;
         return;

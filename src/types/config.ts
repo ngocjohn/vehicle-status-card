@@ -252,7 +252,11 @@ type CARD_TYPE = 'custom' | 'default' | 'tire';
 
 export type ButtonCardEntity = ButtonCardEntityItem[];
 
-export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
+export enum PREVIEW_TYPE {
+  CUSTOM = 'custom',
+  DEFAULT = 'default',
+  TIRE = 'tire',
+}
 export type BUTTON_LAYOUT = 'horizontal' | 'vertical';
 
 /* ----------------------------- LAYOUT CONFIG ----------------------------- */

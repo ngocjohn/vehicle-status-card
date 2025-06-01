@@ -16,11 +16,17 @@ import {
   MapData,
   Address,
   MiniMapConfig,
+  PREVIEW_TYPE,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 import type { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
 import type { HassEntity } from 'home-assistant-js-websocket';
+
+export function computeDarkMode(hass?: HomeAssistant): boolean {
+  if (!hass) return false;
+  return (hass.themes as any).darkMode as boolean;
+}
 
 export async function createCardElement(
   hass: HomeAssistant,
@@ -218,9 +224,7 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<IMAG
   }
 }
 
-type cardType = 'custom' | 'default' | 'tire' | null;
-
-export async function previewHandler(cardType: cardType, card: VehicleStatusCard): Promise<void> {
+export async function previewHandler(cardType: PREVIEW_TYPE | null, card: VehicleStatusCard): Promise<void> {
   if (!cardType && !card.isEditorPreview) return;
   const hass = card._hass as HomeAssistant;
   const config = card._config as VehicleStatusCardConfig;
@@ -228,19 +232,19 @@ export async function previewHandler(cardType: cardType, card: VehicleStatusCard
   let cardElement: LovelaceCardConfig[] | DefaultCardConfig[] | TireEntity | undefined;
 
   switch (cardType) {
-    case 'custom':
+    case PREVIEW_TYPE.CUSTOM:
       cardConfig = config?.card_preview as LovelaceCardConfig[];
       if (!cardConfig) return;
       cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
       card._cardPreviewElement = cardElement;
       break;
-    case 'default':
+    case PREVIEW_TYPE.DEFAULT:
       cardConfig = config?.default_card_preview as DefaultCardConfig[];
       if (!cardConfig) return;
       cardElement = cardConfig;
       card._defaultCardPreview = cardElement;
       break;
-    case 'tire':
+    case PREVIEW_TYPE.TIRE:
       cardConfig = config?.tire_preview as TireTemplateConfig;
       if (!cardConfig) return;
       cardElement = (await getTireCard(hass, cardConfig)) as TireEntity;
@@ -337,11 +341,11 @@ export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
 
   // Ensure a card preview is configured during the first update if applicable
   if (!card._currentPreview && card._config?.card_preview) {
-    card._currentPreview = 'custom'; // Set a default card preview type if none is set
+    card._currentPreview = PREVIEW_TYPE.CUSTOM;
   } else if (!card._currentPreview && card._config?.default_card_preview) {
-    card._currentPreview = 'default';
+    card._currentPreview = PREVIEW_TYPE.DEFAULT;
   } else if (!card._currentPreview && card._config?.tire_preview) {
-    card._currentPreview = 'tire';
+    card._currentPreview = PREVIEW_TYPE.TIRE;
   }
 
   if (card._currentPreview !== null) {

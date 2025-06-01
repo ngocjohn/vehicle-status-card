@@ -19,7 +19,7 @@ export class ImagesSlide extends LitElement {
 
   protected updated(_changedProperties: PropertyValues): void {
     super.updated(_changedProperties);
-    if (_changedProperties.has('config') && this.config.image_entities && this.config.image_entities.length) {
+    if (_changedProperties.has('config') && (this.config.images || this.config.image_entities)) {
       this._handleImageConfig();
     }
   }

@@ -11,18 +11,24 @@ export const RANGE_ITEM_SCHEMA = memoizeOne(
         selector: { entity: {} },
       },
       {
-        name: 'attribute',
-        label: 'Attribute',
-        selector: {
-          attribute: {
-            entity_id: entityId,
+        name: '',
+        type: 'grid',
+        schema: [
+          {
+            name: 'icon',
+            selector: { icon: {} },
+            context: { icon_entity: 'entity' },
           },
-        },
-      },
-      {
-        name: 'icon',
-        selector: { icon: {} },
-        context: { icon_entity: 'entity' },
+          {
+            name: 'attribute',
+            label: 'Attribute',
+            selector: {
+              attribute: {
+                entity_id: entityId,
+              },
+            },
+          },
+        ],
       },
       {
         name: '',

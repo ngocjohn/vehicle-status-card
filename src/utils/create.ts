@@ -247,12 +247,20 @@ export const ExpansionPanel = ({
   options,
 }: {
   content: TemplateResult;
-  options: { expanded?: boolean; header: string; icon?: string; secondary?: string; outlined?: boolean };
+  options: {
+    expanded?: boolean;
+    header: string;
+    icon?: string;
+    secondary?: string;
+    outlined?: boolean;
+    noCollapse?: boolean;
+  };
 }): TemplateResult => {
   return html`
     <ha-expansion-panel
       .outlined=${options?.outlined || true}
       .expanded=${options?.expanded || false}
+      .noCollapse=${options?.noCollapse || false}
       .header=${options.header}
       .secondary=${options?.secondary || ''}
       .leftChevron=${false}

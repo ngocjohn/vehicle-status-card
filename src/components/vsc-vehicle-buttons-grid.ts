@@ -115,7 +115,7 @@ export class VehicleButtonsGrid extends LitElement {
     const order = this.config.layout_config?.section_order || [];
     const isMiniMapPrev = order.indexOf('buttons') - order.indexOf('mini_map') === 1;
     return styleMap({
-      marginTop: !isMiniMapPrev ? 'var(--vic-card-padding)' : '',
+      marginTop: !isMiniMapPrev ? 'var(--vic-card-padding)' : 'unset',
     });
   }
 
