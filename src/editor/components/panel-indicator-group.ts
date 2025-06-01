@@ -1,0 +1,469 @@
+import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
+
+import { ICON } from '../../const/const';
+import editorcss from '../../css/editor.css';
+import { HomeAssistant, IndicatorGroupConfig, IndicatorGroupItemConfig, fireEvent } from '../../types';
+import { showPromptDialog } from '../../utils';
+import { VehicleStatusCardEditor } from '../editor';
+import { mainGroupSchema, groupApparenceSchema, subGroupItemSchema } from '../form/indicators-schema';
+
+@customElement('vsc-panel-indicator-group')
+export class PanelIndicatorGroup extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public editor!: VehicleStatusCardEditor;
+  @property({ attribute: false }) private groupConfig?: IndicatorGroupConfig[];
+
+  @state() private _yamlMode?: boolean = false;
+  @state() private _selectedGroup: number | null = null;
+  @state() private _selectedItem: number = 0;
+  @state() private groupItems?: IndicatorGroupItemConfig[];
+
+  private get _groupPreview(): boolean {
+    return this.editor._config.hasOwnProperty('active_group');
+  }
+
+  protected willUpdate(_changedProperties: PropertyValues): void {
+    super.willUpdate(_changedProperties);
+    if (_changedProperties.has('_selectedGroup')) {
+      const oldValue = _changedProperties.get('_selectedGroup') as number | null;
+      const newValue = this._selectedGroup;
+      if (oldValue !== undefined && oldValue !== newValue) {
+        console.log('Active sub-panel changed from', oldValue, 'to', newValue);
+        if (newValue === null && this._groupPreview) {
+          // delte active group when sub-panel is closed
+          delete this.editor._config.active_group;
+        } else {
+          // set active group when sub-panel is opened
+          this.editor._config.active_group = newValue;
+        }
+        fireEvent(this, 'config-changed', { config: this.editor._config });
+      }
+    }
+  }
+
+  protected render(): TemplateResult {
+    return html`
+      <div class="base-config">${this._selectedGroup === null ? this._renderGroupList() : this._renderSubGroup()}</div>
+    `;
+  }
+
+  private _renderGroupList(): TemplateResult {
+    if (this._yamlMode) {
+      return this._renderYamlEditor();
+    }
+    const groups = this.groupConfig || [];
+    const actionMap = [
+      { title: 'Edit', icon: 'mdi:pencil', action: (index: number) => this._handleAction('edit-group', index) },
+      {
+        title: 'Remove',
+        icon: 'mdi:delete',
+        action: (index: number) => this._handleAction('remove-group', index),
+        color: 'var(--error-color)',
+      },
+    ];
+
+    return !groups.length
+      ? html`<div class="empty-list">No groups added</div>`
+      : html`
+          <ha-sortable handle-selector=".handle" @item-moved=${this._groupMoved}>
+            <div class="indicator-list">
+              ${repeat(
+                groups,
+                (group: IndicatorGroupConfig) => group.name,
+                (group: IndicatorGroupConfig, index: number) => html`
+                  <div class="item-config-row" data-index=${index}>
+                    <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
+                    <div class="item-content">
+                      <div class="secondary">Group #${index + 1}</div>
+                      <div class="primary">${group.name}</div>
+                    </div>
+                    <ha-button-menu
+                      .corner=${'BOTTOM_START'}
+                      .fixed=${true}
+                      .menuCorner=${'START'}
+                      .activatable=${true}
+                      .naturalMenuWidth=${true}
+                      @closed=${(ev: Event) => ev.stopPropagation()}
+                    >
+                      <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                      ${actionMap.map(
+                        (action) => html`
+                          <mwc-list-item
+                            @click=${() => action.action(index)}
+                            .graphic=${'icon'}
+                            style="${action.color ? `color: ${action.color}` : ''}"
+                          >
+                            <ha-icon
+                              .icon=${action.icon}
+                              slot="graphic"
+                              style="${action.color ? `color: ${action.color}` : ''}"
+                            ></ha-icon>
+                            ${action.title}
+                          </mwc-list-item>
+                        `
+                      )}
+                    </ha-button-menu>
+                  </div>
+                `
+              )}
+            </div>
+          </ha-sortable>
+          <div class="action-footer">
+            <ha-button .outlined=${true} @click=${this._togglePromptNewGroup} .label=${'Add new group'}></ha-button>
+            <ha-button
+              .outlined=${true}
+              class="edit-yaml-btn"
+              @click=${() => (this._yamlMode = !this._yamlMode)}
+              .label=${this._yamlMode ? 'Close YAML' : 'Edit YAML'}
+            >
+            </ha-button>
+          </div>
+        `;
+  }
+
+  private _renderSubGroup(): TemplateResult {
+    if (this._yamlMode) {
+      return this._renderYamlEditor();
+    }
+
+    const groupIndex = this._selectedGroup!;
+    const group = this.groupConfig![groupIndex] as IndicatorGroupConfig;
+    const DATA = { ...group };
+    const _groupSchema = () => [...mainGroupSchema, ...groupApparenceSchema];
+
+    const groupForm = html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${DATA}
+        .schema=${_groupSchema()}
+        .index=${groupIndex}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._subGroupChanged}
+      ></ha-form>
+    `;
+
+    this.groupItems = group.items || [];
+    const selectedItem = this._selectedItem!;
+    const itemsLength = this.groupItems.length;
+
+    const toolBar = html`
+      <div class="toolbar">
+        ${!this.groupItems.length || this.groupItems.length === 0
+          ? html`<div class="empty-list">No items yet, click + to add</div>`
+          : html`
+              <vic-tab-bar>
+                ${this.groupItems.map(
+                  (_item, i) =>
+                    html`<vic-tab
+                      .active=${selectedItem === i}
+                      .name=${`#${i + 1}`}
+                      @click=${() => (this._selectedItem = i)}
+                      style="flex: 0!important;"
+                    ></vic-tab>`
+                )}
+              </vic-tab-bar>
+            `}
+        <vic-tab
+          id="add-item"
+          .active=${selectedItem === itemsLength}
+          @click=${() => this._addNewGroupItem()}
+          .narrow=${true}
+        >
+          <ha-svg-icon .path=${ICON.PLUS} slot="icon"></ha-svg-icon>
+        </vic-tab>
+      </div>
+    `;
+
+    const header = html` <div class="header-row">
+      <div class="icon-title">
+        <ha-icon-button .path=${ICON.CLOSE} @click=${() => (this._selectedGroup = null)}></ha-icon-button>
+      </div>
+      <div class="header-title">Group: ${group.name}</div>
+      <ha-icon-button
+        class="header-yaml-icon"
+        @click=${() => (this._yamlMode = !this._yamlMode)}
+        .path=${ICON.CODE_JSON}
+      ></ha-icon-button>
+    </div>`;
+
+    const previewClass = this._groupPreview ? 'preview-btn active' : 'preview-btn';
+    return html`
+      <div class="sub-panel">
+        ${header} ${groupForm}
+        <ha-button
+          .label=${this._groupPreview ? 'Close preview' : 'Show items preview'}
+          @click=${() => this._tooglePreview()}
+          .outlined=${true}
+          class=${previewClass}
+        ></ha-button>
+        <div class="sub-panel-config group">
+          ${toolBar}
+          ${this.groupItems.map((_, index) => {
+            return html`
+              <div ?hidden=${selectedItem !== index}>
+                ${this._renderSubGroupItemConfig(index)}
+                <div class="action-footer" style="justify-content: flex-end;">
+                  <ha-button
+                    class="delete-btn"
+                    .label=${'Remove Item'}
+                    @click=${() => {
+                      this._removeGroupItem(index), (this._selectedItem = index === 0 ? 0 : index - 1);
+                    }}
+                  ></ha-button>
+                </div>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderSubGroupItemConfig(index: number): TemplateResult {
+    const item = this.groupItems![index];
+    const DATA = { ...item };
+    const _subGroupSchema = (entity: string) => [...subGroupItemSchema(entity)];
+
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${DATA}
+        .schema=${_subGroupSchema(DATA.entity || '')}
+        .itemIndex=${index}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._groupItemValueChanged}
+      ></ha-form>
+    `;
+  }
+
+  private _renderYamlEditor(): TemplateResult {
+    const mainConfig = this.groupConfig || [];
+    const subConfig = this.groupConfig![this._selectedGroup!] as IndicatorGroupConfig;
+
+    const yamlConfig = this._selectedGroup === null ? mainConfig : subConfig;
+    const configKey = this._selectedGroup === null ? 'main_group' : 'sub_group';
+    const header = html`
+      <div class="sub-header">
+        <div class="icon-title" @click=${() => (this._yamlMode = false)}>
+          <ha-icon icon="mdi:close"></ha-icon>
+          <span>Close editor</span>
+        </div>
+        <div>YAML editor</div>
+      </div>
+    `;
+    return html`
+      ${header}
+      <div class="sub-panel-config">
+        <vsc-sub-panel-yaml
+          .hass=${this.hass}
+          .config=${this.editor._config}
+          .cardEditor=${this.editor}
+          .configDefault=${yamlConfig}
+          .configKey=${configKey}
+          @yaml-config-changed=${this._yamlConfigChanged}
+        >
+        </vsc-sub-panel-yaml>
+      </div>
+    `;
+  }
+
+  private _groupMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    const newGroups = [...(this.groupConfig || [])];
+    newGroups.splice(newIndex, 0, newGroups.splice(oldIndex, 1)[0]);
+    this._configChanged(newGroups);
+  }
+
+  private _handleAction(action: 'edit-group' | 'remove-group', index: number): void {
+    switch (action) {
+      case 'edit-group':
+        this._selectedGroup = index;
+        this._yamlMode = false;
+        this.requestUpdate();
+        break;
+      case 'remove-group':
+        const newGroups = [...(this.groupConfig || [])];
+        newGroups.splice(index, 1);
+        this._configChanged(newGroups);
+        break;
+    }
+  }
+
+  private _togglePromptNewGroup = async () => {
+    let newGroupName = await showPromptDialog(this, 'Enter new group name', 'Group name');
+    if (!newGroupName || newGroupName === '') {
+      return;
+    }
+
+    const newGroup: IndicatorGroupConfig = {
+      name: newGroupName,
+      icon: 'mdi:car',
+      visibility: '',
+      items: [],
+    };
+    const newGroups = this.groupConfig?.concat([newGroup]) || [newGroup];
+    this._configChanged(newGroups);
+  };
+
+  private _yamlConfigChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { key, isValid, value } = ev.detail;
+    if (!isValid || !value) {
+      return;
+    }
+    if (key === 'main_group') {
+      this._configChanged(value as IndicatorGroupConfig[]);
+    } else if (key === 'sub_group' && this._selectedGroup !== null) {
+      const newGroups = [...(this.groupConfig || [])];
+      newGroups[this._selectedGroup] = value as IndicatorGroupConfig;
+      this._configChanged(newGroups);
+    }
+  }
+
+  private _removeGroupItem(index: number): void {
+    const groupIndex = this._selectedGroup!;
+    const newGroupItems = [...(this.groupConfig![groupIndex].items || [])];
+    newGroupItems.splice(index, 1);
+    const newGroupConfig = {
+      ...this.groupConfig![groupIndex],
+      items: newGroupItems,
+    } as IndicatorGroupConfig;
+    const newGroups = [...(this.groupConfig || [])];
+    newGroups[groupIndex] = newGroupConfig;
+    this._configChanged(newGroups);
+  }
+
+  private _addNewGroupItem(): void {
+    const groupIndex = this._selectedGroup!;
+    const newItem: IndicatorGroupItemConfig = {
+      entity: '',
+      action_config: {
+        entity: '',
+        tap_action: { action: 'none' },
+      },
+    };
+    const newGroupItems = [...(this.groupConfig![groupIndex].items || []), newItem];
+    const newGroupConfig = {
+      ...this.groupConfig![groupIndex],
+      items: newGroupItems,
+    } as IndicatorGroupConfig;
+    const newGroups = [...(this.groupConfig || [])];
+    newGroups[groupIndex] = newGroupConfig;
+    this._configChanged(newGroups);
+    this._selectedItem = newGroupItems.length - 1; // Select the newly added item
+  }
+
+  private _groupItemValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const itemIndex = (ev.target as any).itemIndex;
+    const itemConfig = ev.detail.value as IndicatorGroupItemConfig;
+    const groupIndex = this._selectedGroup!;
+    const newGroupItems = [...(this.groupConfig![groupIndex].items || [])];
+    newGroupItems[itemIndex] = itemConfig;
+    const newGroupConfig = {
+      ...this.groupConfig![groupIndex],
+      items: newGroupItems,
+    } as IndicatorGroupConfig;
+    const newGroups = [...(this.groupConfig || [])];
+    newGroups[groupIndex] = newGroupConfig;
+    this._configChanged(newGroups);
+  }
+
+  private _subGroupChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const groupIndex = (ev.target as any).index;
+    const groupConfig = ev.detail.value as IndicatorGroupConfig;
+    const newGroups = [...(this.groupConfig || [])];
+    newGroups[groupIndex] = groupConfig;
+    this._configChanged(newGroups);
+  }
+
+  private _configChanged(newConfig: IndicatorGroupConfig[]): void {
+    this.editor._config = {
+      ...this.editor._config,
+      indicators: {
+        ...this.editor._config.indicators,
+        group: newConfig,
+      },
+    };
+
+    fireEvent(this, 'config-changed', {
+      config: this.editor._config,
+    });
+  }
+
+  private _computeLabel(schema: any) {
+    if (schema.name === 'entity') {
+      return '';
+    }
+    return schema.label || schema.name;
+  }
+
+  private _computeHelper(schema: any) {
+    return schema.helper || '';
+  }
+
+  _tooglePreview(): void {
+    if (this._groupPreview) {
+      delete this.editor._config.active_group;
+    } else {
+      this.editor._config.active_group = this._selectedGroup;
+    }
+    fireEvent(this, 'config-changed', { config: this.editor._config });
+    this.requestUpdate();
+  }
+
+  static get styles(): CSSResultGroup {
+    return [
+      css`
+        *[hidden] {
+          display: none !important;
+        }
+        ha-expansion-panel:not(:last-child) {
+          margin-bottom: var(--vic-gutter-gap);
+        }
+
+        ha-button.preview-btn {
+          width: 100%;
+          margin-block: var(--vic-gutter-gap);
+        }
+        ha-button.preview-btn.active {
+          --mdc-theme-primary: var(--accent-color);
+        }
+        .edit-yaml-btn {
+          --mdc-theme-primary: var(--accent-color);
+          place-self: flex-end;
+        }
+        .toolbar {
+          display: flex;
+        }
+        .sub-panel-config.group {
+          border: 1px solid var(--outline-color);
+          margin-block: var(--vic-gutter-gap);
+          padding: 4px 8px;
+          border-radius: 8px;
+        }
+        .empty-list {
+          display: flex;
+          flex: 1;
+          align-items: anchor-center;
+          text-transform: uppercase;
+          font-weight: 500;
+          font-size: 14px;
+        }
+      `,
+      editorcss,
+    ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'vsc-panel-indicator-group': PanelIndicatorGroup;
+  }
+}

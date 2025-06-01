@@ -54,11 +54,6 @@ export class VscIndicatorSingle extends LitElement {
     this._setEventListeners();
   }
 
-  private isTemplate(value: string | undefined): boolean {
-    if (!value || typeof value !== 'string') return false;
-    return value.includes('{');
-  }
-
   private async _tryConnect(): Promise<void> {
     TEMPLATE_KEYS.forEach((key) => {
       this._subscribeRenderTemplate(key);

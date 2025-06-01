@@ -154,7 +154,12 @@ export const subGroupItemSchema = memoizeOne(
             name: 'state_template',
             label: 'State Template',
             selector: { template: {} },
-            helper: 'Customize the state based on a template. The template should return a valid state name.',
+            helper: 'Customize the state based on a template',
+          },
+          {
+            name: 'color',
+            label: 'Color Template',
+            selector: { template: {} },
           },
         ] as const,
       },

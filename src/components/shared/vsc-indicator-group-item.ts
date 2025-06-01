@@ -7,11 +7,11 @@ import { customElement, state, property } from 'lit/decorators.js';
 // CSS
 import cardcss from '../../css/card.css';
 // Utils
-import { HomeAssistant, IndicatorGroupItemConfig } from '../../types';
+import { hasTemplate, HomeAssistant, IndicatorGroupItemConfig } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions } from '../../utils';
 
-const TEMPLATE_KEYS = ['state_template', 'icon_template'] as const;
+const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-indicator-group-item')
@@ -72,11 +72,6 @@ export class VscIndicatorGroupItem extends LitElement {
     }
   }
 
-  private isTemplate(value: string | undefined): boolean {
-    if (!value || typeof value !== 'string') return false;
-    return value.includes('{');
-  }
-
   private async _tryConnect(): Promise<void> {
     TEMPLATE_KEYS.forEach((key) => {
       this._subscribeRenderTemplate(key);
@@ -84,7 +79,7 @@ export class VscIndicatorGroupItem extends LitElement {
   }
 
   private async _subscribeRenderTemplate(key: TemplateKey): Promise<void> {
-    if (this._unsubItemRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(this.item[key])) return;
+    if (this._unsubItemRenderTemplates.get(key) !== undefined || !this.hass || !hasTemplate(this.item[key])) return;
 
     try {
       const sub = subscribeRenderTemplate(
@@ -166,11 +161,17 @@ export class VscIndicatorGroupItem extends LitElement {
       : this.hass.states[entity] !== undefined
       ? this.hass.formatEntityState(this.hass.states[entity])
       : '';
+    const color = item.color ? this._itemTemplateResults.color?.result || item.color : '';
 
     return html`
       <div class="item charge" id="group-item-action">
         <div class="icon-state">
-          <ha-state-icon .hass=${this.hass} .stateObj=${this.hass.states[entity]} .icon=${icon}></ha-state-icon>
+          <ha-state-icon
+            .hass=${this.hass}
+            .stateObj=${entity ? this.hass.states[entity] : undefined}
+            .icon=${icon}
+            style=${color ? `color: ${color};` : ''}
+          ></ha-state-icon>
           <span>${state}</span>
         </div>
         <div class="item-name">

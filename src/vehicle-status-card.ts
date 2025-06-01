@@ -156,6 +156,18 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       console.log('Reconfiguring card preview');
       HaHelp.previewHandler(this._currentPreview, this);
     }
+    if (changedProps.has('_config') && this._config.active_group !== undefined && this.isEditorPreview) {
+      // If active group is set, show the group indicator in the card
+      const groupIndex = this._config.active_group;
+      console.log('Active group index:', groupIndex);
+      if (this._indicators) {
+        this._indicators._activeGroupIndicator = groupIndex;
+        console.log('Setting active group indicator:', this._indicators._activeGroupIndicator);
+        if (this._rangeInfo) {
+          this._rangeInfo._groupIndicatorActive = groupIndex;
+        }
+      }
+    }
   }
 
   private _isSectionHidden(section: SECTION): boolean {

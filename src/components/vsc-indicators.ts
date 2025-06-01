@@ -19,7 +19,7 @@ export class VscIndicators extends LitElement {
   @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
-  @state() private _activeGroupIndicator: number | null = null;
+  @state() public _activeGroupIndicator: number | null = null;
   @query('vsc-indicator-group-item') private _groupIndicatorItem!: VscIndicatorGroupItem;
 
   // group indicators
@@ -88,11 +88,6 @@ export class VscIndicators extends LitElement {
         single.style.display = '';
       }
     });
-  }
-
-  private isTemplate(value: string | undefined): boolean {
-    if (!value || typeof value !== 'string') return false;
-    return value.includes('{');
   }
 
   private async _tryConnect(): Promise<void> {
@@ -249,7 +244,7 @@ export class VscIndicators extends LitElement {
     return html`${groupIndicators}`;
   }
 
-  private _toggleGroupIndicator(index: number): void {
+  public _toggleGroupIndicator(index: number): void {
     const distpatchEvent = (active: number | null) => {
       this.dispatchEvent(
         new CustomEvent('indicator-toggle', {

@@ -33,6 +33,7 @@ export interface IndicatorGroupItemConfig {
   entity: string;
   icon?: string;
   icon_template?: string;
+  color?: string;
   name?: string;
   state_template?: string;
   action_config?: ButtonActionConfig;

@@ -93,7 +93,7 @@ const DETAIL_CONFIG_VALUES = [
   'hide_pagination',
 ];
 
-const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview'];
+const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview', 'active_group'];
 
 type BUTTON_CARD_ACTIONS =
   | 'add-item'
