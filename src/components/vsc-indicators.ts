@@ -264,7 +264,9 @@ export class VscIndicators extends LitElement {
 
     if (this._activeGroupIndicator === index) {
       this._activeGroupIndicator = null;
-      distpatchEvent(null);
+      setTimeout(() => {
+        distpatchEvent(null);
+      }, 0);
     } else {
       this._activeGroupIndicator = null;
       setTimeout(() => {

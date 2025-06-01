@@ -17,9 +17,14 @@ export class ImagesSlide extends LitElement {
   @state() swiper: null | Swiper = null;
   @state() private _images: ImageConfig[] = [];
 
+  protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
+    if (_changedProperties.has('config') && (this.config.images || this.config.image_entities)) {
+      this._handleImageConfig();
+    }
+  }
   protected firstUpdated(changeProperties: PropertyValues): void {
     super.firstUpdated(changeProperties);
-    this._handleImageConfig();
   }
 
   protected shouldUpdate(_changedProperties: PropertyValues): boolean {
@@ -196,7 +201,7 @@ export class ImagesSlide extends LitElement {
       unsafeCSS(swipercss),
       css`
         :host {
-          --swiper-pagination-bottom: -8px;
+          --swiper-pagination-bottom: -4px;
           --swiper-theme-color: var(--primary-text-color);
         }
         * [hidden] {

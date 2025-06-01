@@ -1,5 +1,7 @@
 import memoizeOne from 'memoize-one';
 
+import { computeOptionalActionSchema } from './actions-config';
+
 export const RANGE_ITEM_SCHEMA = memoizeOne(
   (entityId: string, required: boolean = false) =>
     [
@@ -9,18 +11,31 @@ export const RANGE_ITEM_SCHEMA = memoizeOne(
         selector: { entity: {} },
       },
       {
-        name: 'attribute',
-        label: 'Attribute',
-        selector: {
-          attribute: {
-            entity_id: entityId,
+        name: '',
+        type: 'grid',
+        schema: [
+          {
+            name: 'icon',
+            selector: { icon: {} },
+            context: { icon_entity: 'entity' },
           },
-        },
+          {
+            name: 'attribute',
+            label: 'Attribute',
+            selector: {
+              attribute: {
+                entity_id: entityId,
+              },
+            },
+          },
+        ],
       },
       {
-        name: 'icon',
-        selector: { icon: {} },
-        context: { icon_entity: 'entity' },
+        name: '',
+        type: 'expandable',
+        title: 'Interaction Options',
+        icon: 'mdi:gesture-tap-button',
+        schema: [...computeOptionalActionSchema()],
       },
     ] as const
 );
@@ -29,6 +44,7 @@ export const PROGRESS_BAR_SCHEMA = [
   {
     name: '',
     type: 'grid',
+    column_min_width: '140px',
     schema: [
       {
         name: 'bar_height',

@@ -4,7 +4,7 @@ import memoizeOne from 'memoize-one';
 import { computeActionsFormSchema, computeOptionalActionSchema } from './actions-config';
 
 export const singleIndicatorSchema = memoizeOne(
-  (entity: string) =>
+  (entity: string | undefined) =>
     [
       {
         name: 'entity',
@@ -65,7 +65,7 @@ export const singleApparenceSchema = [
   },
 ] as const;
 
-export const singleActionSchema = [
+export const singleActionSchema = memoizeOne((fullActions: boolean = true) => [
   {
     name: 'action_config',
     type: 'expandable',
@@ -77,10 +77,10 @@ export const singleActionSchema = [
         selector: { entity: {} },
         helper: 'The entity to be controlled by the action.',
       },
-      ...computeOptionalActionSchema(),
+      ...computeOptionalActionSchema(fullActions),
     ],
   },
-] as const;
+]);
 
 export const mainGroupSchema = [
   {
@@ -140,16 +140,23 @@ export const subGroupItemSchema = memoizeOne(
         ],
       },
       {
-        name: 'icon_template',
-        label: 'Icon Template',
-        selector: { template: {} },
-        helper: 'Customize the icon based on a template. The template should return a valid icon name.',
-      },
-      {
-        name: 'state_template',
-        label: 'State Template',
-        selector: { template: {} },
-        helper: 'Customize the state based on a template. The template should return a valid state name.',
+        name: '',
+        type: 'expandable',
+        title: 'Extra templates',
+        schema: [
+          {
+            name: 'icon_template',
+            label: 'Icon Template',
+            selector: { template: {} },
+            helper: 'Customize the icon based on a template. The template should return a valid icon name.',
+          },
+          {
+            name: 'state_template',
+            label: 'State Template',
+            selector: { template: {} },
+            helper: 'Customize the state based on a template. The template should return a valid state name.',
+          },
+        ] as const,
       },
       {
         name: 'action_config',
@@ -163,7 +170,7 @@ export const subGroupItemSchema = memoizeOne(
             helper: 'The entity to be controlled by the action.',
           },
           ...computeActionsFormSchema(),
-        ],
+        ] as const,
       },
     ] as const
 );

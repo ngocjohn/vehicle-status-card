@@ -9,7 +9,7 @@
 
 .card-config {
 	width: 100%;
-	padding-block: var(--vic-gutter-gap);
+	/* padding-block: var(--vic-gutter-gap); */
 }
 
 .sub-card-header {
@@ -106,6 +106,15 @@
 	--mdc-theme-primary: var(--error-color);
 }
 
+.action-footer .warning-btn {
+	--mdc-theme-primary: var(--warning-color);
+}
+
+.edit-yaml-btn {
+	--mdc-theme-primary: var(--accent-color);
+	place-self: flex-end;
+}
+
 .card-type-content {
 	display: flex;
 	flex-direction: column;
@@ -140,7 +149,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	gap: var(--vic-gutter-gap);
+	/* gap: var(--vic-gutter-gap); */
 }
 
 .indicator-config {
@@ -218,12 +227,13 @@
 	border-bottom: solid 1px var(--divider-color);
 }
 
-.item-config-row[hiddenoncard] {
+/* .item-config-row[hiddenoncard] {
 	opacity: 0.6;
-}
+} */
 
 .item-config-row[hiddenoncard]>.ignore {
-	display: none;
+	visibility: hidden;
+	margin-right: var(--vic-card-padding);
 }
 
 .item-content {
@@ -370,7 +380,7 @@ span.info-alert {
 	border: solid 1px var(--divider-color);
 	padding: var(--vic-gutter-gap);
 	border-radius: var(--ha-card-border-radius, 12px);
-	margin-top: var(--vic-gutter-gap);
+	margin-block: var(--vic-gutter-gap);
 }
 
 .sub-panel-config.button-card:last-child {
@@ -498,6 +508,7 @@ ha-selector#vic-boolean-selector {
 	font-size: 1.3rem;
 	align-items: center;
 	margin-inline-end: 0.5rem;
+	min-height: 56px;
 	/* margin-bottom: var(--vic-card-padding); */
 }
 
@@ -619,11 +630,8 @@ ha-selector#vic-boolean-selector {
 .tip-content {
 	display: flex;
 	flex-direction: column;
+	margin-top: var(--vic-gutter-gap);
 	gap: var(--vic-gutter-gap);
-	/* background-color: #f9f9f9; */
-	/* padding: 1.5rem; */
-	border-radius: 8px;
-	/* box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); */
 }
 
 .tip-item {

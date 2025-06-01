@@ -35,7 +35,12 @@ export interface IndicatorGroupItemConfig {
   icon_template?: string;
   name?: string;
   state_template?: string;
-  action_config: ButtonActionConfig;
+  action_config?: ButtonActionConfig;
+}
+
+export interface IndicatorsConfig {
+  single: IndicatorConfig[];
+  group: IndicatorGroupConfig[];
 }
 
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
@@ -55,6 +60,9 @@ export type RangeItemConfig = {
   attribute?: string;
   entity?: string;
   icon?: string;
+  tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  double_tap_action?: ActionConfig;
 };
 
 /* ------------------------- CONFIG IMAGES INTERFACE ------------------------ */
@@ -143,9 +151,9 @@ export interface CardItemConfig {
 
 export interface ButtonActionConfig {
   entity: string;
-  double_tap_action?: ActionConfig;
-  hold_action?: ActionConfig;
   tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  double_tap_action?: ActionConfig;
 }
 
 export interface TireEntityConfig {
@@ -158,6 +166,7 @@ export interface TireEntityConfig {
 export interface TireTemplateConfig {
   title?: string;
   background: string;
+  background_entity?: string;
   horizontal: boolean;
   image_size: number;
   value_size: number;
@@ -173,6 +182,7 @@ export interface TireTemplateConfig {
 export type TireEntity = {
   title: string;
   background: string;
+  background_entity?: string;
   image_size: number;
   value_size: number;
   top: number;
@@ -242,14 +252,20 @@ type CARD_TYPE = 'custom' | 'default' | 'tire';
 
 export type ButtonCardEntity = ButtonCardEntityItem[];
 
-export type PREVIEW_TYPE = 'default' | 'custom' | 'tire' | null;
+export enum PREVIEW_TYPE {
+  CUSTOM = 'custom',
+  DEFAULT = 'default',
+  TIRE = 'tire',
+}
+export type BUTTON_LAYOUT = 'horizontal' | 'vertical';
 
 /* ----------------------------- LAYOUT CONFIG ----------------------------- */
-interface LayoutConfig {
+export interface LayoutConfig {
   button_grid: {
     rows: number;
     columns: number;
     swipe: boolean;
+    button_layout?: BUTTON_LAYOUT;
   };
   images_swipe: {
     max_height: number;
@@ -273,7 +289,7 @@ interface LayoutConfig {
   };
   theme_config: {
     mode: THEME_MODE;
-    theme: string;
+    theme?: string;
   };
   section_order?: Array<string>;
 }
@@ -283,16 +299,13 @@ interface LayoutConfig {
  */
 
 export interface VehicleStatusCardConfig extends LovelaceCardConfig {
-  button_card: Array<ButtonCardConfig>;
-  images: Array<ImageConfig>;
-  image_entities?: (EntityConfig | string)[];
-  indicators: {
-    group: Array<IndicatorGroupConfig>;
-    single: Array<IndicatorConfig>;
-  };
-  layout_config: LayoutConfig;
-  mini_map: MiniMapConfig;
-  name?: string;
-  range_info: Array<RangeInfoConfig>;
   type: string;
+  name?: string;
+  button_card: ButtonCardConfig[];
+  range_info: RangeInfoConfig[];
+  images?: ImageConfig[];
+  mini_map: MiniMapConfig;
+  indicators: IndicatorsConfig;
+  layout_config: LayoutConfig;
+  image_entities?: (EntityConfig | string)[];
 }

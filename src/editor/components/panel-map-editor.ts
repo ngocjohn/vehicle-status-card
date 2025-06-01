@@ -44,11 +44,12 @@ export class PanelMapEditor extends LitElement {
       entity: this._mapConfig.device_tracker,
       label_mode: this._mapConfig.label_mode,
       attribute: this._mapConfig.attribute,
+      focus: true,
     };
   }
 
-  protected updated(_changedProperties: PropertyValues): void {
-    super.updated(_changedProperties);
+  protected willUpdate(_changedProperties: PropertyValues): void {
+    super.willUpdate(_changedProperties);
     if (_changedProperties.has('_config') && this._config.mini_map) {
       this._mapCardConfig = {
         ...(this._config.mini_map || {}),
@@ -70,7 +71,6 @@ export class PanelMapEditor extends LitElement {
         });
       }
     }
-
     if (_changedProperties.has('_yamlMode') && !this._yamlMode) {
       const oldYamlMode = _changedProperties.get('_yamlMode') as boolean;
       if (oldYamlMode === true && this._yamlMode === false) {
@@ -79,7 +79,7 @@ export class PanelMapEditor extends LitElement {
           const miniMapConfig = { ...(this._config.mini_map || {}) };
           this._config = {
             ...this._config,
-            map_popup_config: {
+            mini_map: {
               ...miniMapConfig,
               ...mapConfig,
             },
@@ -91,6 +91,9 @@ export class PanelMapEditor extends LitElement {
         }
       }
     }
+  }
+  protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
 
     if (
       (_changedProperties.has('_useSingleMapCard') && this._useSingleMapCard) ||
@@ -116,13 +119,15 @@ export class PanelMapEditor extends LitElement {
         .schema=${[
           {
             name: 'single_map_card',
-            label: 'Mini Map as Single Card (MapTiler API Key is required)',
-            selector: { boolean: {} },
+            label: 'Mini Map as Single Card',
+            helper: '(MapTiler API Key is required)',
+            type: 'boolean',
             default: false,
             disabled: this._mapCardConfig?.maptiler_api_key ? false : true,
           },
         ]}
         .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
         @value-changed=${this._valueChanged}
       >
       </ha-form>
@@ -155,6 +160,7 @@ export class PanelMapEditor extends LitElement {
         .data=${this._mapConfig}
         .schema=${miniMapConfigSchema(this._mapConfig.device_tracker, this._mapConfig.label_mode !== 'attribute')}
         .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
         @value-changed=${this._valueChanged}
       >
       </ha-form>
@@ -271,9 +277,7 @@ export class PanelMapEditor extends LitElement {
               .hass=${this.hass}
               .config=${this._config}
               .configDefault=${this._config.mini_map}
-              .extraAction=${true}
               @yaml-config-changed=${this._yamlChanged}
-              @close-editor=${() => (this._yamlMode = false)}
             >
             </vsc-sub-panel-yaml>`
           : html`
@@ -312,6 +316,7 @@ export class PanelMapEditor extends LitElement {
         .data=${this._mapConfig}
         .schema=${baseMapConfigSchema()}
         .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
         @value-changed=${this._valueChanged}
       >
       </ha-form>
@@ -339,6 +344,12 @@ export class PanelMapEditor extends LitElement {
     label = this.hass?.localize(`ui.panel.lovelace.editor.card.${schema.label}`);
     if (label) return label;
     return schema.label;
+  };
+
+  private _computeHelper = (schema: any) => {
+    if (schema.helper) {
+      return schema.helper;
+    }
   };
 }
 

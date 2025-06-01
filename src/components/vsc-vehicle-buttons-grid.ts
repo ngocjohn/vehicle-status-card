@@ -10,7 +10,7 @@ import swipercss from 'swiper/swiper-bundle.css';
 
 // local
 import cardstyles from '../css/card.css';
-import { ButtonCardEntity, HomeAssistant, VehicleStatusCardConfig } from '../types';
+import { ButtonCardEntity, HomeAssistant, LayoutConfig, VehicleStatusCardConfig } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import './shared/vsc-button-single';
 
@@ -30,12 +30,60 @@ export class VehicleButtonsGrid extends LitElement {
     if (this.useSwiper) {
       this.initSwiper();
     }
+    this._setUpButtonAnimation();
   }
 
-  private get gridConfig(): { rows: number; columns: number } {
+  private _setUpButtonAnimation(): void {
+    if (this.card.isEditorPreview) return;
+    if (!this.shadowRoot) return;
+
+    const runAnimation = () => {
+      const gridItems = this.shadowRoot?.querySelectorAll('vsc-button-single') as NodeListOf<HTMLElement>;
+      if (!gridItems || gridItems.length === 0) return;
+
+      gridItems.forEach((grid, index) => {
+        // Defer to ensure shadow DOM is ready
+        requestAnimationFrame(() => {
+          const gridItem = grid.shadowRoot?.querySelector('.grid-item') as HTMLElement;
+          if (gridItem) {
+            gridItem.style.animationDelay = `${index * 50}ms`;
+            gridItem.classList.add('zoom-in');
+            gridItem.addEventListener(
+              'animationend',
+              () => {
+                gridItem.classList.remove('zoom-in');
+              },
+              { once: true }
+            );
+          }
+        });
+      });
+
+      observer.disconnect();
+    };
+
+    const observer = new MutationObserver(() => {
+      const buttons = this.shadowRoot?.querySelectorAll('vsc-button-single') as NodeListOf<HTMLElement>;
+      if (buttons && buttons.length > 0) {
+        requestAnimationFrame(() => runAnimation());
+      }
+    });
+
+    observer.observe(this.shadowRoot, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Initial fallback
+    requestAnimationFrame(() => runAnimation());
+  }
+
+  private get gridConfig(): LayoutConfig['button_grid'] {
     return {
       rows: this.config.layout_config?.button_grid?.rows || 2,
       columns: this.config.layout_config?.button_grid?.columns || 2,
+      button_layout: this.config.layout_config?.button_grid?.button_layout || 'horizontal',
+      swipe: this.config.layout_config?.button_grid?.swipe || false,
     };
   }
 
@@ -67,7 +115,7 @@ export class VehicleButtonsGrid extends LitElement {
     const order = this.config.layout_config?.section_order || [];
     const isMiniMapPrev = order.indexOf('buttons') - order.indexOf('mini_map') === 1;
     return styleMap({
-      marginTop: !isMiniMapPrev ? 'var(--vic-card-padding)' : '',
+      marginTop: !isMiniMapPrev ? 'var(--vic-card-padding)' : 'unset',
     });
   }
 
@@ -106,6 +154,7 @@ export class VehicleButtonsGrid extends LitElement {
       ._card=${this as any}
       ._buttonConfig=${button}
       ._index=${index}
+      .layout=${this.gridConfig.button_layout}
     ></vsc-button-single>`;
   }
 
@@ -185,7 +234,7 @@ export class VehicleButtonsGrid extends LitElement {
 
   private _computeGridColumns() {
     const { columns } = this.gridConfig;
-    const minWidth = `calc((100% - 24px) / ${columns})`;
+    const minWidth = `calc((100% / ${columns}) - 8px)`;
     return styleMap({
       gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
     });

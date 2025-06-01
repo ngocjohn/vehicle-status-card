@@ -2,7 +2,6 @@ const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelper
 
 import { LovelaceConfig } from 'custom-card-helpers';
 
-import { EXTRA_MAP_CARD_URL } from '../const/const';
 import { VehicleStatusCardConfig } from '../types';
 import { loadModule } from './load_resource';
 
@@ -42,18 +41,24 @@ export const stickyPreview = () => {
   const content = dialog?.querySelector('ha-dialog')?.shadowRoot?.getElementById('content');
   const previewElement = dialog?.querySelector('div.element-preview') as HTMLElement;
   const editorElement = dialog?.querySelector('div.element-editor') as HTMLElement;
+  const previewHui = previewElement?.querySelector('hui-card') as HTMLElement;
 
   // Exit early if any required element is missing
   if (!content || !editorElement || !previewElement) return;
 
   // Apply styles
   Object.assign(content.style, { padding: '8px' });
-  Object.assign(editorElement.style, { margin: '0 4px' });
+  Object.assign(editorElement.style, { margin: '0 4px', maxWidth: '480px' });
   Object.assign(previewElement.style, {
     position: 'sticky',
     top: '0',
     padding: '0',
     // justifyItems: 'center',
+  });
+  Object.assign(previewHui.style, {
+    padding: '8px 4px',
+    margin: 'auto',
+    display: 'block',
   });
 };
 
@@ -177,23 +182,44 @@ export const loadMapCard = async (entities: string[]): Promise<void> => {
   }
 };
 
-// export const loadExtraMapCard = async (): Promise<void> => {
-//   (window as any).customCards = (window as any).customCards || [];
-//   if (!(window as any).customCards.find((card: any) => card.type === 'extra-map-card')) {
-//     const script = document.createElement('script');
-//     script.type = 'module';
-//     script.src = EXTRA_MAP_CARD_URL;
-//     script.onload = () => console.log('extra-map-card loaded');
-//     script.onerror = () => console.error('Failed to load extra-map-card');
-//     document.body.appendChild(script);
-//     console.log('extra-map-card script added to the document');
-//   }
-// };
-export const loadExtraMapCard = async () => {
-  (window as any).customCards = (window as any).customCards || [];
+const EXTRA_MAP_CARD_BASE = 'https://cdn.jsdelivr.net/npm/extra-map-card@';
 
-  if (!(window as any).customCards.find((card: any) => card.type === 'extra-map-card')) {
-    await loadModule(EXTRA_MAP_CARD_URL);
-    console.log('extra-map-card loaded');
+export const loadExtraMapCard = async () => {
+  const latestVersion = await getLatestNpmVersion();
+  if (!latestVersion) return;
+
+  const cardList = (window as any).customCards || [];
+  const existingCard = cardList.find((card: any) => card.type === 'extra-map-card');
+
+  // Check if already loaded with latest version
+  if (existingCard?.version === latestVersion) {
+    return;
+  }
+
+  const latestUrl = `${EXTRA_MAP_CARD_BASE}${latestVersion}/dist/extra-map-card-bundle.min.js`;
+
+  // Remove old <script> tags
+  document.querySelectorAll(`script[src*="extra-map-card"]`).forEach((el) => el.remove());
+
+  // Remove outdated entry from customCards
+  (window as any).customCards = cardList.filter((card: any) => card.type !== 'extra-map-card');
+
+  try {
+    await loadModule(latestUrl);
+    // console.log(`extra-map-card reloaded to version ${latestVersion}`);
+  } catch (err) {
+    console.error('Failed to load extra-map-card:', err);
   }
 };
+
+async function getLatestNpmVersion(): Promise<string | null> {
+  try {
+    const res = await fetch(`https://registry.npmjs.org/extra-map-card`);
+    if (!res.ok) throw new Error('Package not found');
+    const data = await res.json();
+    return data['dist-tags']?.latest || null;
+  } catch (error) {
+    console.error('Failed to fetch version:', error);
+    return null;
+  }
+}

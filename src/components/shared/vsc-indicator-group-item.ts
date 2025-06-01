@@ -163,7 +163,9 @@ export class VscIndicatorGroupItem extends LitElement {
       ? this._itemTemplateResults.state_template?.result
       : item.attribute
       ? this.hass.formatEntityAttributeValue(this.hass.states[entity], item.attribute)
-      : this.hass.formatEntityState(this.hass.states[entity]);
+      : this.hass.states[entity] !== undefined
+      ? this.hass.formatEntityState(this.hass.states[entity])
+      : '';
 
     return html`
       <div class="item charge" id="group-item-action">

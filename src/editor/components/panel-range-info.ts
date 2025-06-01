@@ -11,14 +11,15 @@ import editorcss from '../../css/editor.css';
 import { HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig, fireEvent } from '../../types';
 import * as Create from '../../utils/create';
 import './sub-panel-yaml';
+import { VehicleStatusCardEditor } from '../editor';
 import { RANGE_ACTIONS } from '../editor-const';
 import { PROGRESS_BAR_SCHEMA, RANGE_ITEM_SCHEMA } from '../form';
 
 @customElement('panel-range-info')
 export class PanelRangeInfo extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) editor?: any;
-  @property({ type: Object }) config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) editor?: VehicleStatusCardEditor;
+  @property({ attribute: false }) config!: VehicleStatusCardConfig;
 
   @state() private _activeIndexItem: number | null = null;
   @state() private _activeColorPicker: number | null = null;
@@ -29,10 +30,6 @@ export class PanelRangeInfo extends LitElement {
   @state() _colorChangeTimeout?: number = undefined;
 
   private _tinycolor = tinycolor;
-
-  constructor() {
-    super();
-  }
 
   static get styles(): CSSResultGroup {
     return [editorcss];
@@ -192,36 +189,34 @@ export class PanelRangeInfo extends LitElement {
     const colorTemplate = (index: number) => this._renderColorTemplate(index);
     const barHeightWidth = (index: number) => this._renderBarDimensions(index);
     const colorPicker = (index: number) => this._colorPicker(index);
-    const infoAlert = (helper: string) =>
-      html`<span slot="message" class="info-alert" style="flex: 0; display: none"> ${helper} </span>`;
     const configContent = {
       energy_level: {
-        title: 'Energy Level (Required)',
-        helper: infoAlert('Entity to display the energy level (e.g., battery, fuel)'),
+        title: 'Energy entity (Required)',
+        helper: 'Entity to display the energy level (e.g., battery, fuel)',
         config: energyConfig,
       },
     };
     const rangeAndChargingConfig = {
       range_level: {
         title: 'Range Level (Optional)',
-        helper: infoAlert('Entity to display the range level (e.g., distance, range)'),
+        helper: 'Entity to display the range level (e.g., distance, range)',
         config: rangeConfig,
       },
       charging_entity: {
         title: 'Charging Entity (Optional)',
-        helper: infoAlert('Entity to display the charging status'),
+        helper: 'Entity to display the charging status',
         config: chargingEntity,
       },
     };
     const progressBarFields = {
       bar_dimensions: {
         title: 'Bar Dimensions',
-        helper: infoAlert('Height(px) and Width(%) of the progress bar'),
+        helper: 'Height(px) and Width(%) of the progress bar',
         config: barHeightWidth,
       },
       progress_color: {
         title: 'Progress Color',
-        helper: infoAlert('Color to display the progress bar'),
+        helper: 'Color to display the progress bar',
         config: colorPicker,
       },
       color_template: {
@@ -237,14 +232,11 @@ export class PanelRangeInfo extends LitElement {
             <span>${section[key].title}</span>
             ${section[key].helper
               ? html`
-                  <ha-icon
-                    class="info-icon"
-                    icon="mdi:help-circle"
-                    @click=${(ev: Event) => this._toggleHelp(ev)}
-                  ></ha-icon>
+                  <ha-tooltip content=${section[key].helper}>
+                    <ha-icon icon="mdi:help-circle"></ha-icon>
+                  </ha-tooltip>
                 `
               : nothing}
-            ${section[key].helper}
           </div>
           ${section[key].config(index)}
         </div>`
@@ -273,10 +265,13 @@ export class PanelRangeInfo extends LitElement {
           `
         : html`
             <div class="sub-panel-config" data-index=${index}>
-              ${createSection(configContent)}
+              ${Create.ExpansionPanel({
+                content: html`${createSection(configContent)}`,
+                options: { header: 'Energy level', expanded: true, noCollapse: true },
+              })}
               ${Create.ExpansionPanel({
                 content: html`${createSection(rangeAndChargingConfig)}`,
-                options: { header: 'Range level and Charging entities (Optional)' },
+                options: { header: 'Range level and Charging entity (Optional)' },
               })}
               ${Create.ExpansionPanel({
                 content: html`${createSection(progressBarFields)}`,
@@ -301,71 +296,92 @@ export class PanelRangeInfo extends LitElement {
         color: 'var(--error-color)',
       },
     ];
-    return html`${
-      !this._yamlEditorActive && this.config.range_info
+    return html`${!this._yamlEditorActive && this.config.range_info
         ? html`
-            <div class="range-info-list">
-              ${repeat(this.config.range_info, (rangeItem: RangeInfoConfig, index: number) => {
-                const entity = rangeItem.energy_level.entity || '';
-                const icon = rangeItem.energy_level.icon || '';
-                const progressColor = rangeItem.progress_color || 'var(--primary-color)';
-                return html`
-                  <div class="item-config-row" data-index=${index}>
-                    <div class="handle" style="margin: var(--vic-card-padding)">
-                      <ha-icon icon=${icon ? icon : 'mdi:gas-station'} style=${`color: ${progressColor}`}></ha-icon>
-                    </div>
-                    <div
-                      class="item-content click-shrink"
-                      @click=${() => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}
-                    >
-                      <div class="primary">Range Info #${index + 1}</div>
-                      <div class="secondary">${entity}</div>
-                    </div>
-                    <div class="item-actions">
-                      <ha-button-menu
-                        .corner=${'BOTTOM_START'}
-                        .fixed=${true}
-                        .menuCorner=${'START'}
-                        .activatable=${true}
-                        .naturalMenuWidth=${true}
-                        @closed=${(ev: Event) => ev.stopPropagation()}
-                      >
-                        <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-                        ${actionMap.map(
-                          (action) => html`
-                            <mwc-list-item
-                              @click=${() => action.action(index)}
-                              .graphic=${'icon'}
-                              style="${action.color ? `color: ${action.color}` : ''}"
-                            >
-                              <ha-icon
-                                .icon=${action.icon}
-                                slot="graphic"
-                                style="${action.color ? `color: ${action.color}` : ''}"
-                              ></ha-icon>
-                              ${action.title}
-                            </mwc-list-item>
-                          `
-                        )}
-                      </ha-button-menu>
-                    </div>
-                  </div>
-                `;
-              })}
-            </div>
+            <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
+              <div class="range-info-list">
+                ${repeat(
+                  this.config.range_info || [],
+                  (rangeItem: RangeInfoConfig) => rangeItem.energy_level.entity,
+                  (rangeItem: RangeInfoConfig, index: number) => {
+                    const entity = rangeItem.energy_level.entity || '';
+                    const icon = rangeItem.energy_level.icon || '';
+                    const progressColor = rangeItem.progress_color || 'var(--primary-color)';
+                    return html`
+                      <div class="item-config-row" data-index=${index}>
+                        <div class="handle">
+                          <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
+                        </div>
+                        <ha-icon
+                          icon=${icon ? icon : 'mdi:gas-station'}
+                          style=${`color: ${progressColor}; margin-inline-end: 0.5rem;`}
+                        ></ha-icon>
+                        <div
+                          class="item-content click-shrink"
+                          @click=${() => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}
+                        >
+                          <div class="primary">Range Info #${index + 1}</div>
+                          <div class="secondary">${entity}</div>
+                        </div>
+                        <div class="item-actions">
+                          <ha-button-menu
+                            .corner=${'BOTTOM_START'}
+                            .fixed=${true}
+                            .menuCorner=${'START'}
+                            .activatable=${true}
+                            .naturalMenuWidth=${true}
+                            @closed=${(ev: Event) => ev.stopPropagation()}
+                          >
+                            <ha-icon-button
+                              class="action-icon"
+                              slot="trigger"
+                              .path=${ICON.DOTS_VERTICAL}
+                            ></ha-icon-button>
+                            ${actionMap.map(
+                              (action) => html`
+                                <mwc-list-item
+                                  @click=${() => action.action(index)}
+                                  .graphic=${'icon'}
+                                  style="${action.color ? `color: ${action.color}` : ''}"
+                                >
+                                  <ha-icon
+                                    .icon=${action.icon}
+                                    slot="graphic"
+                                    style="${action.color ? `color: ${action.color}` : ''}"
+                                  ></ha-icon>
+                                  ${action.title}
+                                </mwc-list-item>
+                              `
+                            )}
+                          </ha-button-menu>
+                        </div>
+                      </div>
+                    `;
+                  }
+                )}
+              </div>
+            </ha-sortable>
           `
-        : this._renderYamlEditor()
-    }
-        <div class="action-footer">
-          <ha-button @click=${() => this._toggleAction('add')}>
-            <span>Add new info bar</span>
-          </ha-button>
-          <ha-button @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}>
-            <span>${!this._yamlEditorActive ? 'Edit YAML' : 'Close YAML'}</span>
-          </ha-button>
-        </div>
-      </div>
-    `;
+        : this._renderYamlEditor()}
+      <div class="action-footer">
+        <ha-button .outlined=${true} @click=${() => this._toggleAction('add')} .label=${'Add Range Info'}> </ha-button>
+        <ha-button
+          .outlined=${true}
+          class="edit-yaml-btn"
+          @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}
+          .label=${!this._yamlEditorActive ? 'Edit YAML' : 'Close YAML'}
+        >
+        </ha-button>
+      </div> `;
+  }
+
+  private _entityMoved(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { oldIndex, newIndex } = ev.detail;
+    const newRangeInfo = this.config.range_info.concat();
+    newRangeInfo.splice(newIndex, 0, newRangeInfo.splice(oldIndex, 1)[0]);
+    this.config = { ...this.config, range_info: newRangeInfo };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _renderYamlEditor(): TemplateResult | typeof nothing {

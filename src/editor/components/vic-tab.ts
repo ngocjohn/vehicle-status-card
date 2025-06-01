@@ -53,7 +53,7 @@ export class VicTab extends LitElement {
       align-items: center;
       justify-content: center;
       width: 100%;
-      height: var(--header-height);
+      height: 49px;
       cursor: pointer;
       position: relative;
       outline: none;

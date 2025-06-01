@@ -4,6 +4,7 @@ const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelper
 import memoizeOne from 'memoize-one';
 
 import { DEFAULT_CONFIG } from '../const/const';
+import { DEFAULT_TIRE_CONFIG } from '../editor/form';
 import {
   ButtonCardEntity,
   DefaultCardConfig,
@@ -15,11 +16,17 @@ import {
   MapData,
   Address,
   MiniMapConfig,
+  PREVIEW_TYPE,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
 import type { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
 import type { HassEntity } from 'home-assistant-js-websocket';
+
+export function computeDarkMode(hass?: HomeAssistant): boolean {
+  if (!hass) return false;
+  return (hass.themes as any).darkMode as boolean;
+}
 
 export async function createCardElement(
   hass: HomeAssistant,
@@ -115,6 +122,7 @@ export async function getTireCard(
   tireCardItem = {
     title: tireCard.title || '',
     background: tireCard.background || '',
+    background_entity: tireCard.background_entity || '',
     image_size: tireCard.image_size || 100,
     value_size: tireCard.value_size || 100,
     top: tireCard.top || 50,
@@ -159,7 +167,7 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
 
     const customCard = (await createCardElement(hass, btnCrd.custom_card)) || [];
 
-    const tireCard = btnCrd.tire_card ? await getTireCard(hass, btnCrd.tire_card) : {};
+    const tireCard = (await getTireCard(hass, btnCrd.tire_card ?? DEFAULT_TIRE_CONFIG)) || ({} as TireEntity);
 
     buttonCardItem.push({
       button: buttonDetails,
@@ -175,25 +183,21 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
   return buttonCardItem;
 }
 
-export async function uploadImage(hass: HomeAssistant, file: File): Promise<null | string> {
-  console.log('Uploading image:', file.name);
+type IMAGE = {
+  url: string;
+  name: string;
+};
 
-  // Check if hass.auth and hass.auth.data are available
-  if (!hass || !hass.auth || !hass.auth.data || !hass.auth.data.access_token) {
-    console.error('hass.auth.data or access_token is missing');
-    throw new Error('Authorization token is missing');
-  }
+export async function uploadImage(hass: HomeAssistant, file: File): Promise<IMAGE | null> {
+  console.log('Uploading image:', file.name);
 
   const formData = new FormData();
   formData.append('file', file);
 
   try {
-    const response = await fetch('/api/image/upload', {
-      body: formData,
-      headers: {
-        Authorization: `Bearer ${hass.auth.data.access_token}`,
-      },
+    const response = await hass.fetchWithAuth('/api/image/upload', {
       method: 'POST',
+      body: formData,
     });
 
     if (!response.ok) {
@@ -210,16 +214,17 @@ export async function uploadImage(hass: HomeAssistant, file: File): Promise<null
       return null;
     }
 
-    return `/api/image/serve/${imageId}/original`;
+    return {
+      url: `/api/image/serve/${imageId}/original`,
+      name: file.name,
+    };
   } catch (err) {
     console.error('Error during image upload:', err);
     throw err;
   }
 }
 
-type cardType = 'custom' | 'default' | 'tire' | null;
-
-export async function previewHandler(cardType: cardType, card: VehicleStatusCard): Promise<void> {
+export async function previewHandler(cardType: PREVIEW_TYPE | null, card: VehicleStatusCard): Promise<void> {
   if (!cardType && !card.isEditorPreview) return;
   const hass = card._hass as HomeAssistant;
   const config = card._config as VehicleStatusCardConfig;
@@ -227,19 +232,19 @@ export async function previewHandler(cardType: cardType, card: VehicleStatusCard
   let cardElement: LovelaceCardConfig[] | DefaultCardConfig[] | TireEntity | undefined;
 
   switch (cardType) {
-    case 'custom':
+    case PREVIEW_TYPE.CUSTOM:
       cardConfig = config?.card_preview as LovelaceCardConfig[];
       if (!cardConfig) return;
       cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
       card._cardPreviewElement = cardElement;
       break;
-    case 'default':
+    case PREVIEW_TYPE.DEFAULT:
       cardConfig = config?.default_card_preview as DefaultCardConfig[];
       if (!cardConfig) return;
       cardElement = cardConfig;
       card._defaultCardPreview = cardElement;
       break;
-    case 'tire':
+    case PREVIEW_TYPE.TIRE:
       cardConfig = config?.tire_preview as TireTemplateConfig;
       if (!cardConfig) return;
       cardElement = (await getTireCard(hass, cardConfig)) as TireEntity;
@@ -272,9 +277,13 @@ export async function handleFirstUpdated(card: VehicleStatusCard): Promise<void>
   const hass = card._hass as HomeAssistant;
   const config = card._config as VehicleStatusCardConfig;
 
-  card._buttonReady = false;
-  card._buttonCards = await getButtonCard(hass, config.button_card);
-  card._buttonReady = true;
+  if (config.button_card && config.button_card.length > 0) {
+    card._buttonReady = false;
+    card._buttonCards = await getButtonCard(hass, config.button_card);
+    card._buttonReady = true;
+  }
+
+  card.MapData = _getMapData(card) as MapData;
 }
 
 export function _getMapData(card: VehicleStatusCard): MapData | void {
@@ -332,11 +341,11 @@ export async function _setUpPreview(card: VehicleStatusCard): Promise<void> {
 
   // Ensure a card preview is configured during the first update if applicable
   if (!card._currentPreview && card._config?.card_preview) {
-    card._currentPreview = 'custom'; // Set a default card preview type if none is set
+    card._currentPreview = PREVIEW_TYPE.CUSTOM;
   } else if (!card._currentPreview && card._config?.default_card_preview) {
-    card._currentPreview = 'default';
+    card._currentPreview = PREVIEW_TYPE.DEFAULT;
   } else if (!card._currentPreview && card._config?.tire_preview) {
-    card._currentPreview = 'tire';
+    card._currentPreview = PREVIEW_TYPE.TIRE;
   }
 
   if (card._currentPreview !== null) {
@@ -388,6 +397,7 @@ export async function createSingleMapCard(card: VehicleStatusCard): Promise<Love
     color: mapConfig.path_color || '',
     label_mode: mapConfig.label_mode,
     attribute: mapConfig.attribute || '',
+    focus: true,
   };
 
   let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(mapConfig, [

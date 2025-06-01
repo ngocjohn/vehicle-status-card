@@ -18,6 +18,7 @@ import {
   PREVIEW_TYPE,
   ButtonCardEntityItem,
   DefaultCardConfig,
+  MapData,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
 import { HaHelp, isDarkColor, isEmpty, loadExtraMapCard, applyThemesOnElement } from './utils';
@@ -25,6 +26,18 @@ import { createSingleMapCard, getDefaultConfig } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement implements LovelaceCard {
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import('./editor/editor');
+    return document.createElement('vehicle-status-card-editor');
+  }
+
+  public static getStubConfig = (hass: HomeAssistant): Record<string, unknown> => {
+    const DEFAULT_CONFIG = getDefaultConfig(hass);
+    return {
+      ...DEFAULT_CONFIG,
+    };
+  };
+
   public setConfig(config: VehicleStatusCardConfig): void {
     this._config = config;
   }
@@ -33,12 +46,13 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
   @property({ attribute: false }) public layout?: string;
 
-  @state() public _currentPreview: PREVIEW_TYPE = null;
+  @state() public _currentPreview: PREVIEW_TYPE | null = null;
   @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
   @state() public _defaultCardPreview: DefaultCardConfig[] = [];
   @state() public _tireCardPreview: TireEntity | undefined = undefined;
 
   @state() public _singleMapCard: LovelaceCardConfig[] = [];
+  @state() MapData?: MapData;
 
   @state() public _buttonCards: ButtonCardEntity = [];
 
@@ -46,14 +60,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @state() _currentSwipeIndex?: number;
   @state() public _buttonReady = false;
 
-  @state() _resizeInitiated = false;
   @state() _connected = false;
-  @state() private _resizeObserver: ResizeObserver | null = null;
-  @state() private _resizeEntries: ResizeObserverEntry[] = [];
-  @state() private _cardWidth: number = 0;
-  @state() private _cardHeight: number = 0;
-
-  private _prevTheme?: string;
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
@@ -74,83 +81,58 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         }
       });
     }
-  }
-
-  public static getStubConfig = (hass: HomeAssistant): Record<string, unknown> => {
-    const DEFAULT_CONFIG = getDefaultConfig(hass);
-    return {
-      ...DEFAULT_CONFIG,
-    };
-  };
-
-  public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editor/editor');
-    return document.createElement('vehicle-status-card-editor');
+    if (this._singleMapCard && this._singleMapCard.length) {
+      this._singleMapCard.map((card) => {
+        card.hass = hass;
+      });
+    }
   }
 
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
+    loadExtraMapCard();
     if (this.isEditorPreview) {
       // console.log('Editor preview connected');
       document.addEventListener('editor-event', this._handleEditorEvent.bind(this));
     }
     this._connected = true;
-
-    if (!this._resizeInitiated && !this._resizeObserver) {
-      this.delayedAttachResizeObserver();
-    }
   }
 
   disconnectedCallback(): void {
     document.removeEventListener('editor-event', this._handleEditorEvent.bind(this));
-    this.detachResizeObserver();
     this._connected = false;
-    this._resizeInitiated = false;
     super.disconnectedCallback();
   }
 
-  delayedAttachResizeObserver(): void {
-    // wait for loading to finish before attaching resize observer
-    setTimeout(() => {
-      this.attachResizeObserver();
-      this._resizeInitiated = true;
-    }, 0);
-  }
-  attachResizeObserver(): void {
-    const ro = new ResizeObserver((entries: ResizeObserverEntry[]) => {
-      this._resizeEntries = entries;
-      this.measureCard();
-    });
-
-    const card = this.shadowRoot?.querySelector('ha-card') as HTMLElement;
-    if (card) {
-      ro.observe(card);
-      this._resizeObserver = ro;
+  protected async willUpdate(changedProps: PropertyValues): Promise<void> {
+    super.willUpdate(changedProps);
+    if (changedProps.has('_config') && !this._buttonReady) {
+      await HaHelp.handleFirstUpdated(this);
+    }
+    if (
+      changedProps.has('_config') &&
+      this._config.mini_map?.single_map_card === true &&
+      this._config.mini_map?.device_tracker &&
+      this._config.mini_map?.maptiler_api_key
+    ) {
+      if (!this._singleMapCard.length) {
+        this.createSingleMapCard();
+      }
+    }
+    if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
+      const oldTheme = changedProps.get('_config')?.layout_config?.theme_config?.theme;
+      const newTheme = this._config.layout_config?.theme_config?.theme;
+      if (oldTheme !== newTheme) {
+        this.applyTheme(newTheme);
+      }
     }
   }
 
-  detachResizeObserver(): void {
-    if (this._resizeObserver) {
-      this._resizeObserver.disconnect();
-      this._resizeObserver = null;
-    }
-  }
-
-  private measureCard(): void {
-    if (this._resizeEntries.length > 0) {
-      const entry = this._resizeEntries[0];
-      this._cardWidth = entry.borderBoxSize[0].inlineSize;
-      this._cardHeight = entry.borderBoxSize[0].blockSize;
-    }
-  }
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    loadExtraMapCard();
     HaHelp._setUpPreview(this);
-    await HaHelp.handleFirstUpdated(this);
-    this.measureCard();
-    this.createSingleMapCard();
+    // await HaHelp.handleFirstUpdated(this);
   }
 
   private createSingleMapCard() {
@@ -169,23 +151,10 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   protected async updated(changedProps: PropertyValues): Promise<void> {
     super.updated(changedProps);
     if (!this._config || !this._hass) return;
-
-    // Apply theme when the theme configuration changes
-    if (changedProps.has('_config') && !this._prevTheme && this._config.layout_config?.theme_config?.theme) {
-      this.applyTheme(this._config.layout_config.theme_config.theme);
-      this._prevTheme = this._config.layout_config.theme_config.theme;
-    }
-
     // Always configure the card preview when there are config changes
     if (changedProps.has('_config') && this._currentPreview !== null) {
       console.log('Reconfiguring card preview');
       HaHelp.previewHandler(this._currentPreview, this);
-    }
-
-    if (changedProps.has('_connected') && this._connected) {
-      // console.log('set up button animation');
-      this._setUpButtonAnimation();
-      this._setUpRangeObserver();
     }
   }
 
@@ -201,7 +170,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       return this._renderCardPreview();
     }
 
-    if (this._config.mini_map.single_map_card && this._singleMapCard.length) {
+    if (this._config.mini_map?.single_map_card === true && this._singleMapCard.length) {
       const mapCard = this._singleMapCard[0];
       return html`${mapCard}`;
     }
@@ -233,7 +202,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
           case SECTION.BUTTONS:
             return this._renderButtons();
           default:
-            console.log(`Unknown section ${section}`);
             return html``;
         }
       })}
@@ -308,10 +276,10 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     if (!deviceTracker || !stateObj || /(unknown)/.test(stateObj.state)) {
       return this._showWarning('Device tracker not available');
     }
-    const mapData = { lat: stateObj.attributes.latitude, lon: stateObj.attributes.longitude };
+
     return html`
-      <div id=${SECTION.MINI_MAP} style=${`min-width: ${this._cardWidth}px`}>
-        <mini-map-box .mapData=${mapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
+      <div id=${SECTION.MINI_MAP}>
+        <mini-map-box .hass=${this._hass} .mapData=${this.MapData} .card=${this} .isDark=${this.isDark}> </mini-map-box>
       </div>
     `;
   }
@@ -320,7 +288,11 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     const { range_info } = this._config;
     if (!range_info) return html``;
 
-    return html`<div id="range" ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}>
+    return html`<div
+      id="range"
+      ?noMargin=${this._isSectionHidden(SECTION.INDICATORS)}
+      ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}
+    >
       <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>
     </div>`;
   }
@@ -395,7 +367,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     return html`
       <div class="default-card">
         <div class="data-header">${title} ${header}</div>
-        <div class="data-box" ?active=${collapsed_items}>
+        <div class="data-box" ?active=${collapsed_items || !items.length}>
           ${items.map((item, index) => {
             const isLastItem = index === items.length - 1;
             return html`<vsc-default-card-item
@@ -477,27 +449,13 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     }
   }
 
-  _changeCustomTheme(theme: string, mode: boolean | undefined) {
-    const detail = {
-      theme,
-      dark: mode,
-    };
-
-    this.dispatchEvent(
-      new CustomEvent('settheme', {
-        detail,
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
   private toggleCard(action: 'next' | 'prev'): void {
     forwardHaptic('light');
     setTimeout(() => {
       if (this._activeCardIndex === null) return;
 
       const cardIndexNum = Number(this._activeCardIndex);
+      console.log('Current card index:', cardIndexNum);
       const totalCards = this._buttonCards.filter((button) => !button.hide_button).length;
 
       const isNotActionType = (index: number): boolean => this._buttonCards[index].button_type !== 'action';
@@ -513,6 +471,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         do {
           newCardIndex = newCardIndex === 0 ? totalCards - 1 : newCardIndex - 1;
         } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
+        console.log('New card index:', newCardIndex);
       } else {
         this._activeCardIndex = null;
         return;
@@ -543,62 +502,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     dataBoxElement.toggleAttribute('active', !isHidden);
   }
 
-  private _setUpButtonAnimation = (): void => {
-    if (this.isEditorPreview || this._isSectionHidden(SECTION.BUTTONS) || !this._vehicleButtonsGrid) return;
-
-    const observeGridItems = () => {
-      const gridItems = this._vehicleButtonsGrid.shadowRoot?.querySelectorAll('vsc-button-single');
-      if (!gridItems || gridItems.length === 0) return; // Wait if grid items are not yet available
-
-      gridItems.forEach((grid, index) => {
-        if (grid.shadowRoot) {
-          const gridItem = grid.shadowRoot.querySelector('.grid-item') as HTMLElement;
-          if (gridItem) {
-            gridItem.style.animationDelay = `${index * 50}ms`;
-            gridItem.classList.add('zoom-in');
-            gridItem.addEventListener('animationend', () => {
-              gridItem.classList.remove('zoom-in');
-            });
-          }
-        }
-      });
-      observer.disconnect(); // Stop observing once items are found
-    };
-
-    const observer = new MutationObserver(observeGridItems);
-    const config = { childList: true, subtree: true }; // Observe child elements
-
-    // Start observing the DOM changes
-    observer.observe(this._vehicleButtonsGrid.shadowRoot as Node, config);
-
-    // Set a timeout as a fallback in case the items are already rendered
-    setTimeout(observeGridItems, 0);
-  };
-
-  private _setUpRangeObserver = (): void => {
-    if (this._isSectionHidden(SECTION.RANGE_INFO) || !this._rangeInfo) return;
-    const rangeEl = this.shadowRoot?.getElementById('range');
-    // Set up the range info
-    const changeRangeInfo = () => {
-      const rangeInfo = this.shadowRoot?.getElementById('range');
-      if (!rangeInfo) return;
-      const previousSibling = rangeInfo?.previousElementSibling;
-      if (previousSibling === null) {
-        rangeInfo.style.marginTop = 'unset';
-      } else {
-        return;
-      }
-      observer.disconnect();
-    };
-
-    const observer = new MutationObserver(changeRangeInfo);
-
-    observer.observe(rangeEl as Node, {
-      attributes: true,
-    });
-    setTimeout(changeRangeInfo, 0);
-  };
-
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
   private _handleEditorEvent(ev: any): void {
     ev.stopPropagation();
@@ -607,6 +510,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     const type = detail.type;
     switch (type) {
       case 'show-button':
+        if (this._isSectionHidden(SECTION.BUTTONS) || this._config.mini_map?.single_map_card === true) return;
         console.log('Show button:', detail.data.buttonIndex);
         if (this._currentPreview !== null) {
           this._currentPreview = null;
@@ -617,6 +521,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         break;
 
       case 'show-image':
+        if (this._isSectionHidden(SECTION.IMAGES)) return;
         this._imagesSlide?.showImage(detail.data.index);
         break;
       case 'toggle-preview':
@@ -631,7 +536,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   }
 
   public getCardSize(): number {
-    return 3;
+    return 4;
   }
 
   public getGridOptions(): LovelaceGridOptions {
@@ -669,11 +574,11 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
 (window as any).customCards = (window as any).customCards || [];
 (window as any).customCards.push({
-  description: 'A custom card to track vehicle status',
-  documentationURL: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#configuration',
-  name: 'Vehicle Status Card',
-  preview: true,
   type: 'vehicle-status-card',
+  name: 'Vehicle Status Card',
+  description: 'A custom card to track vehicle status',
+  preview: true,
+  documentationURL: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#configuration',
 });
 
 declare global {

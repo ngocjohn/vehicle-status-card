@@ -8,7 +8,7 @@ import tinycolor from 'tinycolor2';
 // styles
 import cardstyles from '../../css/card.css';
 // local
-import { ButtonCardEntityItem, HomeAssistant } from '../../types';
+import { BUTTON_LAYOUT, ButtonCardEntityItem, HomeAssistant } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions, hasTemplate, strStartsWith } from '../../utils';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
@@ -24,6 +24,7 @@ export class VehicleButtonSingle extends LitElement {
   @property({ attribute: false }) _card!: VehicleButtonsGrid;
   @property({ attribute: false }) _buttonConfig!: ButtonCardEntityItem;
   @property({ attribute: false }) _index!: number;
+  @property({ attribute: 'layout', type: String }) layout?: BUTTON_LAYOUT;
 
   @state() private _templateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
 
@@ -184,12 +185,6 @@ export class VehicleButtonSingle extends LitElement {
     return colorObj.setAlpha(COLOR_AlPHA).toRgbString();
   }
 
-  private _getBackgroundColors(): string {
-    const cssColor = getComputedStyle(this).getPropertyValue('--primary-text-color');
-    const rgbaColor = this._setColorAlpha(cssColor);
-    return rgbaColor;
-  }
-
   static get styles(): CSSResultGroup {
     return [
       cardstyles,
@@ -208,7 +203,7 @@ export class VehicleButtonSingle extends LitElement {
     const state = this._getTemplateValue('state_template');
     const color = this._getTemplateValue('color');
     const notify = this._getTemplateValue('notify');
-    const iconBackground = color ? this._setColorAlpha(color) : this._getBackgroundColors();
+    const iconBackground = color ? color : 'var(--primary-text-color)';
     const picture = String(this._getTemplateValue('picture_template'));
     const isPictureUrl = strStartsWith(picture, 'http') || strStartsWith(picture, '/');
 
@@ -223,9 +218,9 @@ export class VehicleButtonSingle extends LitElement {
     return html`
       <div class="grid-item" id="actionBtn" @click=${this._handleNavigate}>
         <ha-ripple></ha-ripple>
-        <div class="click-container click-shrink">
+        <div class="click-container click-shrink" ?vertical=${this.layout === 'vertical'}>
           <div class="item-icon">
-            <div class="icon-background" style=${`background-color: ${iconBackground}`}>
+            <div class="icon-background" style=${`--vic-icon-bg-color: ${iconBackground}`}>
               ${isPictureUrl
                 ? html`<img class="icon-picture" src=${picture} />`
                 : html` <ha-state-icon
