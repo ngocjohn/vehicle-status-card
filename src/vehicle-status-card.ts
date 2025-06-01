@@ -133,7 +133,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     super.firstUpdated(changedProps);
     HaHelp._setUpPreview(this);
     // await HaHelp.handleFirstUpdated(this);
-    this._setUpRangeObserver();
   }
 
   private createSingleMapCard() {
@@ -289,7 +288,11 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     const { range_info } = this._config;
     if (!range_info) return html``;
 
-    return html`<div id="range" ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}>
+    return html`<div
+      id="range"
+      ?noMargin=${this._isSectionHidden(SECTION.INDICATORS)}
+      ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}
+    >
       <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>
     </div>`;
   }
@@ -446,21 +449,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     }
   }
 
-  _changeCustomTheme(theme: string, mode: boolean | undefined) {
-    const detail = {
-      theme,
-      dark: mode,
-    };
-
-    this.dispatchEvent(
-      new CustomEvent('settheme', {
-        detail,
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
   private toggleCard(action: 'next' | 'prev'): void {
     forwardHaptic('light');
     setTimeout(() => {
@@ -512,31 +500,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     dataBoxElement.toggleAttribute('active', !isHidden);
   }
 
-  private _setUpRangeObserver = (): void => {
-    if (this._isSectionHidden(SECTION.RANGE_INFO) || !this._rangeInfo) return;
-    console.log('Setting up range observer');
-    const rangeEl = this.shadowRoot?.getElementById('range');
-    // Set up the range info
-    const changeRangeInfo = () => {
-      const rangeInfo = this.shadowRoot?.getElementById('range');
-      if (!rangeInfo) return;
-      const previousSibling = rangeInfo?.previousElementSibling;
-      if (previousSibling === null) {
-        rangeInfo.style.marginTop = 'unset';
-      } else {
-        return;
-      }
-      observer.disconnect();
-    };
-
-    const observer = new MutationObserver(changeRangeInfo);
-
-    observer.observe(rangeEl as Node, {
-      attributes: true,
-    });
-    setTimeout(changeRangeInfo, 0);
-  };
-
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
   private _handleEditorEvent(ev: any): void {
     ev.stopPropagation();
@@ -545,7 +508,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     const type = detail.type;
     switch (type) {
       case 'show-button':
-        if (this._isSectionHidden(SECTION.BUTTONS)) return;
+        if (this._isSectionHidden(SECTION.BUTTONS) || this._config.mini_map?.single_map_card === true) return;
         console.log('Show button:', detail.data.buttonIndex);
         if (this._currentPreview !== null) {
           this._currentPreview = null;

@@ -115,6 +115,10 @@ header h1 {
   margin-top: var(--vic-gutter-gap);
 }
 
+#range[noMargin] {
+  margin-top: unset;
+}
+
 .header-info-box {
   display: flex;
   position: relative;

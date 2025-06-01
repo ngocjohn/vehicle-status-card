@@ -106,6 +106,10 @@
 	--mdc-theme-primary: var(--error-color);
 }
 
+.action-footer .warning-btn {
+	--mdc-theme-primary: var(--warning-color);
+}
+
 .edit-yaml-btn {
 	--mdc-theme-primary: var(--accent-color);
 	place-self: flex-end;
