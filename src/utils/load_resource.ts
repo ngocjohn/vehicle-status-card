@@ -39,8 +39,6 @@ const _load = (tag: 'link' | 'script' | 'img', url: string, type?: 'module') => 
   });
 
   loadCache.set(url, promise);
-  console.log(`Loading ${tag} from: ${url}`);
-  console.log(`Current cache size: ${loadCache.size}`);
   return promise;
 };
 

@@ -12,11 +12,12 @@ import './components/';
 import { loadHaComponents, stickyPreview, Create } from '../utils';
 import {
   PanelImagesEditor,
-  PanelIndicator,
   PanelButtonCard,
   PanelEditorUI,
   PanelRangeInfo,
   PanelMapEditor,
+  PanelIndicatorSingle,
+  PanelIndicatorGroup,
 } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
 import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA, NAME_SCHEMA, THEME_CONFIG_SCHEMA } from './form';
@@ -34,11 +35,12 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   @state() private _reloadSectionList: boolean = false;
   @query('panel-images-editor') _panelImages?: PanelImagesEditor;
-  @query('panel-indicator') _panelIndicator?: PanelIndicator;
   @query('panel-range-info') _panelRangeInfo?: PanelRangeInfo;
   @query('panel-editor-ui') _panelEditorUI?: PanelEditorUI;
   @query('panel-button-card') _panelButtonCard?: PanelButtonCard;
   @query('panel-map-editor') _panelMapEditor?: PanelMapEditor;
+  @query('panel-indicator-single') _panelIndicatorSingle?: PanelIndicatorSingle;
+  @query('panel-indicator-group') _panelIndicatorGroup?: PanelIndicatorGroup;
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     this._config = { ...config };
@@ -100,18 +102,25 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
   }
 
+  protected willUpdate(changedProps: PropertyValues): void {
+    super.willUpdate(changedProps);
+    const oldSelectedConfigType = changedProps.get('_selectedConfigType') as string | null;
+    const shouldUpdate =
+      (this._selectedConfigType === null && oldSelectedConfigType !== null) ||
+      (oldSelectedConfigType === 'button_card' && this._selectedConfigType !== 'button_card') ||
+      (oldSelectedConfigType === 'indicators' && this._selectedConfigType !== 'indicators');
+    if (shouldUpdate) {
+      this._cleanConfig();
+    }
+  }
+
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
+    if (!this._config) return;
     if (changedProps.has('_selectedConfigType') && this._selectedConfigType !== null) {
       setTimeout(() => {
         if (this._selectedConfigType) this._dispatchEvent('toggle-helper', this._selectedConfigType);
       }, 200);
-    }
-    if (
-      (changedProps.has('_selectedConfigType') && this._selectedConfigType === null) ||
-      this._selectedConfigType !== 'button_card'
-    ) {
-      this._cleanConfig();
     }
 
     if (
@@ -120,6 +129,14 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       (this._selectedConfigType === null || changedProps.get('_selectedConfigType') !== this._selectedConfigType)
     ) {
       this._toggleMenu();
+    }
+
+    if (changedProps.has('_indicatorTabIndex') && (changedProps.get('_indicatorTabIndex') as number) !== 0) {
+      if (this._config.hasOwnProperty('active_group')) {
+        // If the active group is set, we need to clean it up
+        delete this._config.active_group;
+        fireEvent(this, 'config-changed', { config: this._config });
+      }
     }
   }
 
@@ -238,13 +255,23 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   private _renderGroupIndicator(): TemplateResult {
     return html`
-      <panel-indicator .hass=${this._hass} .editor=${this} .config=${this._config} .type=${'group'}></panel-indicator>
+      <vsc-panel-indicator-group
+        .hass=${this._hass}
+        .editor=${this}
+        .groupConfig=${this._config.indicators?.group || []}
+      >
+      </vsc-panel-indicator-group>
     `;
   }
 
   private _renderSingleIndicator(): TemplateResult {
     return html`
-      <panel-indicator .hass=${this._hass} .editor=${this} .config=${this._config} .type=${'single'}></panel-indicator>
+      <vsc-panel-indicator-single
+        .hass=${this._hass}
+        .editor=${this}
+        .singleConfig=${this._config.indicators?.single || []}
+      >
+      </vsc-panel-indicator-single>
     `;
   }
 

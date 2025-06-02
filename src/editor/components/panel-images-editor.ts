@@ -1,4 +1,4 @@
-import { mdiCodeBracesBox, mdiDelete, mdiEye, mdiImagePlus, mdiListBoxOutline, mdiPlus, mdiTable } from '@mdi/js';
+import { mdiCodeBracesBox, mdiDelete, mdiEye, mdiGrid, mdiImagePlus, mdiListBoxOutline, mdiPlus } from '@mdi/js';
 import { EntityConfig } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
 import { HassEntity } from 'home-assistant-js-websocket';
@@ -327,7 +327,7 @@ export class PanelImagesEditor extends LitElement {
         .label=${'Add Image'}
       ></ha-button>
       <div class="item-actions">
-        <ha-icon-button ?active=${!this._listView} .path=${mdiTable} @click=${() => (this._listView = false)}>
+        <ha-icon-button ?active=${!this._listView} .path=${mdiGrid} @click=${() => (this._listView = false)}>
         </ha-icon-button>
         <ha-icon-button ?active=${this._listView} .path=${mdiListBoxOutline} @click=${() => (this._listView = true)}>
         </ha-icon-button>
