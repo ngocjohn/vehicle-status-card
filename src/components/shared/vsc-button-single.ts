@@ -3,7 +3,6 @@ import { forwardHaptic } from 'custom-card-helpers';
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import tinycolor from 'tinycolor2';
 
 // styles
 import cardstyles from '../../css/card.css';
@@ -15,8 +14,6 @@ import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template', 'notify_color', 'notify_icon'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
-
-const COLOR_AlPHA = '.2';
 
 @customElement('vsc-button-single')
 export class VehicleButtonSingle extends LitElement {
@@ -188,11 +185,6 @@ export class VehicleButtonSingle extends LitElement {
     }
   }
 
-  private _setColorAlpha(color: string): string {
-    const colorObj = tinycolor(color);
-    return colorObj.setAlpha(COLOR_AlPHA).toRgbString();
-  }
-
   static get styles(): CSSResultGroup {
     return [
       cardstyles,
@@ -209,11 +201,11 @@ export class VehicleButtonSingle extends LitElement {
     const { icon, primary, secondary } = this._buttonConfig.button;
     const entity = secondary.entity || '';
     const state = this._getTemplateValue('state_template');
-    const color = this._getTemplateValue('color');
+    const color = this._getTemplateValue('color') || 'var(--disabled-color)';
     const notify = this._getTemplateValue('notify');
     const notifyColor = this._getTemplateValue('notify_color');
     const notifyIcon = this._getTemplateValue('notify_icon');
-    const iconBackground = color ? color : 'var(--primary-text-color)';
+    const iconBackground = color ? color : 'var(--disabled-color)';
     const picture = String(this._getTemplateValue('picture_template'));
     const isPictureUrl = strStartsWith(picture, 'http') || strStartsWith(picture, '/');
 
@@ -241,7 +233,9 @@ export class VehicleButtonSingle extends LitElement {
                   ></ha-state-icon>`}
             </div>
             <div class="item-notify" ?hidden=${!notify || hideNotify} style=${`--vic-notify-color: ${notifyColor}`}>
-              <ha-icon icon=${notifyIcon}></ha-icon>
+              <div class="notify-icon">
+                <ha-icon icon=${notifyIcon}></ha-icon>
+              </div>
             </div>
           </div>
           <div class="item-content">
