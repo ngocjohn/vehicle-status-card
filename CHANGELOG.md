@@ -1,3 +1,37 @@
+<a id="v1.12.0"></a>
+# [v1.12.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.12.0) - 2025-06-02
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.12.0 -->
+
+## What's Changed
+
+This release introduces several highly requested features, UI enhancements, and internal improvements for a better user experience and customization flexibility.
+
+## ✨ New Features
+- **Vertical Button Layout**  
+  Easily switch the button grid layout to vertical orientation for compact UIs.  [#125](https://github.com/ngocjohn/vehicle-status-card/pull/125) 
+![vsc-vertical-layout](https://github.com/user-attachments/assets/a1971290-afed-4dfe-9586-b7007818d60c)
+
+- **Customizable Notification Badges**  
+  Buttons now support customizable notification badge styles, letting you highlight states more effectively. [#126](https://github.com/ngocjohn/vehicle-status-card/pull/126)
+
+- **Color Template for Indicator Groups Item**  
+  Indicator group items can now use color templates for enhanced visual clarity.  [#127](https://github.com/ngocjohn/vehicle-status-card/pull/127)
+
+- **Tap Action for Range Info Entities**  
+  You can now define a tap action on range info entities for better interactivity.
+
+## 🛠 Other Improvements
+- Map Marker now updates automatically when entity location changes.
+- Refactored action handler events and polished UI components for better responsiveness.  [#128](https://github.com/ngocjohn/vehicle-status-card/pull/128)
+
+---
+
+**🔗 Full Changelog**: [v1.11.3...v1.12.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.3...v1.12.0)
+
+[Changes][v1.12.0]
+
+
 <a id="v1.11.3"></a>
 # [v1.11.3](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.11.3) - 2025-05-26
 
@@ -430,6 +464,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.12.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.3...v1.12.0
 [v1.11.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.2...v1.11.3
 [v1.11.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.0...v1.11.2
 [v1.11.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.10.0...v1.11.0
