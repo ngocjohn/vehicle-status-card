@@ -10,6 +10,7 @@ import cardcss from '../../css/card.css';
 import { hasTemplate, HomeAssistant, IndicatorGroupItemConfig } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions } from '../../utils';
+import { hasActions } from '../../utils/ha-helper';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -65,10 +66,11 @@ export class VscIndicatorGroupItem extends LitElement {
   }
 
   public _setEventListeners(): void {
-    const actionConfig = this.item.action_config;
-    const actionEl = this.shadowRoot?.getElementById('group-item-action');
-    if (actionEl && actionConfig !== undefined) {
-      addActions(actionEl, actionConfig);
+    const actionConfig = this.item.action_config ?? {};
+    if (hasActions(actionConfig)) {
+      const config = { ...actionConfig, entity: this.item.entity };
+      const actionEl = this.shadowRoot?.getElementById('group-item-action') as HTMLElement;
+      addActions(actionEl, config);
     }
   }
 

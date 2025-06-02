@@ -10,6 +10,7 @@ import cardcss from '../../css/card.css';
 import { hasTemplate, HomeAssistant, IndicatorConfig } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions } from '../../utils';
+import { hasActions } from '../../utils/ha-helper';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -132,11 +133,11 @@ export class VscIndicatorSingle extends LitElement {
   }
 
   private _setEventListeners(): void {
-    const actionConfig = this.indicator.action_config;
-    if (!actionConfig) return;
-    const actionEl = this.shadowRoot?.getElementById('single-action');
-    if (actionEl && actionConfig) {
-      addActions(actionEl, actionConfig);
+    const actionConfig = this.indicator.action_config ?? {};
+    if (hasActions(actionConfig)) {
+      const config = { ...actionConfig, entity: this.indicator.entity };
+      const actionEl = this.shadowRoot?.getElementById('single-action') as HTMLElement;
+      addActions(actionEl, config);
     }
   }
 

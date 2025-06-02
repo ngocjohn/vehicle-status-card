@@ -39,8 +39,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @query('panel-editor-ui') _panelEditorUI?: PanelEditorUI;
   @query('panel-button-card') _panelButtonCard?: PanelButtonCard;
   @query('panel-map-editor') _panelMapEditor?: PanelMapEditor;
-  @query('panel-indicator-single') _panelIndicatorSingle?: PanelIndicatorSingle;
-  @query('panel-indicator-group') _panelIndicatorGroup?: PanelIndicatorGroup;
+  @query('vsc-panel-indicator-single') _panelIndicatorSingle?: PanelIndicatorSingle;
+  @query('vsc-panel-indicator-group') _panelIndicatorGroup?: PanelIndicatorGroup;
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     this._config = { ...config };

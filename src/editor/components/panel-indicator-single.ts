@@ -28,9 +28,6 @@ export class PanelIndicatorSingle extends LitElement {
         *[hidden] {
           display: none !important;
         }
-        ha-expansion-panel:not(:last-child) {
-          margin-bottom: var(--vic-gutter-gap);
-        }
         .add-entity {
           display: block;
           margin-left: 36px;
@@ -38,18 +35,6 @@ export class PanelIndicatorSingle extends LitElement {
           margin-inline-end: 48px;
           direction: var(--direction);
           margin-bottom: var(--vic-card-padding);
-        }
-        .edit-yaml-btn {
-          --mdc-theme-primary: var(--accent-color);
-          place-self: flex-end;
-        }
-        .empty-list {
-          display: flex;
-          flex: 1;
-          align-items: anchor-center;
-          text-transform: uppercase;
-          font-weight: 500;
-          font-size: 14px;
         }
       `,
       editorcss,
@@ -83,13 +68,13 @@ export class PanelIndicatorSingle extends LitElement {
                   <div class="item-config-row" data-index=${index}>
                     <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
                     <div class="item-content">
-                      <ha-selector
+                      <ha-entity-picker
                         .hass=${this.hass}
                         .value=${item.entity}
                         .index=${index}
-                        .selector=${{ entity: {} }}
+                        .hideClearIcon=${true}
                         @value-changed=${this._itemChanged}
-                      ></ha-selector>
+                      ></ha-entity-picker>
                     </div>
                     <ha-button-menu
                       .corner=${'BOTTOM_START'}
@@ -231,7 +216,6 @@ export class PanelIndicatorSingle extends LitElement {
     const newItem: IndicatorConfig = {
       entity,
       action_config: {
-        entity,
         tap_action: {
           action: 'more-info',
         },
@@ -264,13 +248,26 @@ export class PanelIndicatorSingle extends LitElement {
   private _singleItemChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     const index = (ev.target as any).index;
-    const value = ev.detail.value;
+    let value = ev.detail.value;
     if (index === undefined || value === undefined) return;
+    console.log('Single item changed', index, value);
+
+    const actions = value.action_config || {};
+    for (const key of Object.keys(actions)) {
+      if (actions[key]?.action === 'none') {
+        delete actions[key];
+      }
+      if (key === 'entity') {
+        delete actions[key];
+      }
+    }
+    value.action_config = actions;
 
     const newConfig = [...(this.singleConfig || [])];
     let item = { ...newConfig[index] };
     item = { ...item, ...value };
     newConfig[index] = item;
+    console.log('New config after change', newConfig[index]);
     this._configChanged(newConfig);
   }
 

@@ -12,6 +12,7 @@ import {
   subscribeRenderTemplate,
 } from '../../types';
 import { addActions, hasTemplate } from '../../utils';
+import { hasActions } from '../../utils/ha-helper';
 
 const TEMPLATE_KEYS = ['color_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -28,6 +29,10 @@ export class VscRangeItem extends LitElement {
     return [
       cardcss,
       css`
+        *[has-actions]:hover {
+          color: var(--primary-color);
+          transition: color 0.3s ease-in-out;
+        }
         .fuel-wrapper {
           height: var(--vsc-bar-height);
           border-radius: var(--vsc-bar-radius);
@@ -57,11 +62,6 @@ export class VscRangeItem extends LitElement {
     if (changedProperties.has('hass')) {
       this._tryConnect();
     }
-  }
-
-  private isTemplate(key: string) {
-    const value = this.rangeItem[key];
-    return hasTemplate(value);
   }
 
   private async _tryConnect(): Promise<void> {
@@ -143,15 +143,15 @@ export class VscRangeItem extends LitElement {
   }
 
   private _addActions(): void {
-    const hasActions = (config: ButtonActionConfig) =>
-      ['tap_action', 'hold_action', 'double_tap_action'].some((action) => config[action] && config[action].action);
     const energeActions = this.getValue('energyActions');
     const rangeActions = this.getValue('rangeActions');
     if (hasActions(energeActions)) {
+      console.log('energy', this.rangeItem.energy_level.entity, 'has actions', energeActions);
       const energyItem = this.shadowRoot?.getElementById('energy-item') as HTMLElement;
       addActions(energyItem, energeActions);
     }
     if (hasActions(rangeActions)) {
+      console.log(this.rangeItem.range_level?.entity, 'has actions', rangeActions);
       const rangeItem = this.shadowRoot?.getElementById('range-item') as HTMLElement;
       addActions(rangeItem, rangeActions);
     }
