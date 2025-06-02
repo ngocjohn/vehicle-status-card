@@ -1,5 +1,5 @@
 import iro from '@jaames/iro';
-import { LitElement, html, TemplateResult, CSSResultGroup, nothing } from 'lit';
+import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -32,7 +32,14 @@ export class PanelRangeInfo extends LitElement {
   private _tinycolor = tinycolor;
 
   static get styles(): CSSResultGroup {
-    return [editorcss];
+    return [
+      css`
+        .sub-panel.section {
+          margin-block: var(--vic-card-padding);
+        }
+      `,
+      editorcss,
+    ];
   }
 
   // Initialize the color picker in the `firstUpdated` method
@@ -227,7 +234,7 @@ export class PanelRangeInfo extends LitElement {
 
     const createSection = (section: any) =>
       Object.keys(section).map(
-        (key: string) => html` <div class="sub-panel">
+        (key: string) => html` <div class="sub-panel section">
           <div class="sub-header">
             <span>${section[key].title}</span>
             ${section[key].helper

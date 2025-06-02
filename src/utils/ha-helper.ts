@@ -1,4 +1,4 @@
-import { LovelaceCardConfig } from 'custom-card-helpers';
+import { hasAction, LovelaceCardConfig } from 'custom-card-helpers';
 
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import memoizeOne from 'memoize-one';
@@ -17,6 +17,7 @@ import {
   Address,
   MiniMapConfig,
   PREVIEW_TYPE,
+  ButtonActionConfig,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
@@ -595,3 +596,9 @@ export const computeStateName = (stateObj: HassEntity): string =>
 
 export const hasLocation = (stateObj: HassEntity) =>
   'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes;
+
+export const hasActions = (config: ButtonActionConfig): boolean => {
+  return Object.keys(config)
+    .filter((key) => key !== 'entity')
+    .some((action) => hasAction(config[action]));
+};

@@ -6,6 +6,15 @@
   --vic-icon-bg-opacity: 0.2;
 }
 
+*[has-action] {
+  cursor: pointer;
+}
+
+*[has-action]:hover {
+  color: var(--primary-color) !important;
+  transition: color 0.3s ease-in-out;
+}
+
 *:focus {
   outline: none;
 }
@@ -397,7 +406,7 @@ header h1 {
 .grid-item .item-notify {
   display: flex;
   position: absolute;
-  top: -2px;
+  top: 0;
   right: -3px;
   line-height: 0;
   color: var(--vic-notify-color, var(--error-color));
@@ -405,6 +414,8 @@ header h1 {
   justify-content: center;
   align-items: center;
 }
+
+
 
 .grid-item .item-notify[hidden] {
   display: none;
@@ -690,7 +701,7 @@ header h1 {
   color: var(--ha-card-header-color, --primary-text-color);
   font-family: var(--ha-card-header-font-family, inherit);
   font-size: 1.5rem;
-  line-height: inherit;
+  line-height: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;

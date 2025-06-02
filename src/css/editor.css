@@ -115,6 +115,15 @@
 	place-self: flex-end;
 }
 
+.empty-list {
+	display: flex;
+	padding: var(--vic-card-padding);
+	align-items: center;
+	justify-content: center;
+	color: var(--disabled-color);
+	flex: 1;
+}
+
 .card-type-content {
 	display: flex;
 	flex-direction: column;
