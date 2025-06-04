@@ -1,3 +1,23 @@
+<a id="v1.12.1"></a>
+# [v1.12.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.12.1) - 2025-06-04
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.12.1 -->
+
+## What's Changed
+
+### 🛠 Fixes
+- **Indicator Config Bug**: Fixed a bug where indicators could be `undefined` if the configuration was missing or incomplete.  
+  [#131](https://github.com/ngocjohn/vehicle-status-card/pull/131)
+
+### ✨ Improvements
+- **MiniMapBox Refactor**:  Integrated `ResizeObserver` to auto-adjust map size when the container resizes [#132](https://github.com/ngocjohn/vehicle-status-card/pull/132)
+
+
+**Full Changelog**: [v1.12.0...v1.12.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.0...v1.12.1)
+
+[Changes][v1.12.1]
+
+
 <a id="v1.12.0"></a>
 # [v1.12.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.12.0) - 2025-06-02
 
@@ -464,6 +484,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.12.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.0...v1.12.1
 [v1.12.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.3...v1.12.0
 [v1.11.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.2...v1.11.3
 [v1.11.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.0...v1.11.2
