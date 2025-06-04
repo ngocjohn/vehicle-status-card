@@ -23,11 +23,11 @@ ha-card {
   position: relative;
   overflow: hidden;
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
   padding: var(--vic-card-padding);
   background-color: var(--card-background-color);
-  max-width: 500px;
+  /* max-width: 500px; */
 }
 
 ha-card.preview-card {
@@ -107,13 +107,13 @@ header h1 {
 
 #mini_map {
   position: relative;
-
+  width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
   place-self: center;
-  width: calc(100% + (var(--vic-card-padding) * 2));
+  min-width: calc(100% + (var(--vic-card-padding) * 2));
 }
 
 /* #indicators {

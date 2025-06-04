@@ -47,7 +47,8 @@ export class MiniMapBox extends LitElement {
   private _stateHistory?: HistoryStates;
   private _historyPoints?: any | undefined;
 
-  private _mapInitialized = false;
+  @state() private _mapInitialized = false;
+  private resizeObserver?: ResizeObserver;
 
   private get mapPopup(): boolean {
     return this.card._config.mini_map?.enable_popup || false;
@@ -73,15 +74,25 @@ export class MiniMapBox extends LitElement {
     return this.card._hass.states[this.card._config.mini_map?.device_tracker].state === 'not_home';
   }
 
-  public connectedCallback() {
+  connectedCallback() {
     super.connectedCallback();
+    this.resizeObserver = new ResizeObserver(() => {
+      this.map?.invalidateSize();
+    });
+    this.updateComplete.then(() => {
+      const container = this.shadowRoot?.getElementById('map');
+      if (container) {
+        this.resizeObserver!.observe(container);
+      }
+    });
     if (this.hasUpdated && this.card._config.mini_map.device_tracker) {
       this._subscribeHistory();
     }
   }
 
-  public disconnectedCallback() {
+  disconnectedCallback() {
     super.disconnectedCallback();
+    this.resizeObserver?.disconnect();
     this._unsubscribeHistory();
   }
 
@@ -153,6 +164,16 @@ export class MiniMapBox extends LitElement {
     }
   }
 
+  protected willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+    if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map) {
+      // console.log('Map initialized, setting view...');
+      this.latLon = this._getTargetLatLng(this.map);
+      this.map.invalidateSize();
+      this.map.setView(this.latLon, this.zoom);
+    }
+  }
+
   protected async updated(changedProperties: PropertyValues): Promise<void> {
     super.updated(changedProperties);
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined && !this.map) {
@@ -164,6 +185,8 @@ export class MiniMapBox extends LitElement {
   }
 
   protected shouldUpdate(changedProperties: PropertyValues): boolean {
+    super.shouldUpdate(changedProperties);
+
     if (changedProperties.has('hass') && this.hass && this.map) {
       const { lat, lon } = this.mapData;
       const stateObj = this.hass.states[this.card._config.mini_map.device_tracker];
@@ -181,6 +204,7 @@ export class MiniMapBox extends LitElement {
         }
       }
     }
+
     return true;
   }
 
@@ -245,8 +269,6 @@ export class MiniMapBox extends LitElement {
 
     this.map = L.map(mapContainer, mapOptions).setView([lat, lon]);
 
-    this.latLon = this._getTargetLatLng(this.map);
-
     // Add tile layer to map
     this._createTileLayer(this.map);
     // Add marker to map
@@ -260,8 +282,6 @@ export class MiniMapBox extends LitElement {
       // console.log('Marker visible:', isMarkerVisible);
     });
     this._mapInitialized = true;
-    this.map.invalidateSize();
-    this.map.setView(this.latLon, this.zoom);
   }
 
   private _getTargetLatLng(map: L.Map): L.LatLng {
