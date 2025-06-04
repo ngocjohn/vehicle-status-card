@@ -34,6 +34,14 @@ export class PanelRangeInfo extends LitElement {
   static get styles(): CSSResultGroup {
     return [
       css`
+        ha-icon.tooltip-icon {
+          color: var(--secondary-text-color);
+          cursor: pointer;
+        }
+        .tooltip-icon:hover {
+          color: var(--primary-text-color);
+        }
+
         .sub-panel.section {
           margin-block: var(--vic-card-padding);
         }
@@ -193,6 +201,7 @@ export class PanelRangeInfo extends LitElement {
     const energyConfig = (index: number) => this._renderEnergyLevelConfig(index);
     const rangeConfig = (index: number) => this._renderRangeLevelConfig(index);
     const chargingEntity = (index: number) => this._renderChargingEntityConfig(index);
+    const chargeTargetEntity = (index: number) => this._renderChargeTargetEntityConfig(index);
     const colorTemplate = (index: number) => this._renderColorTemplate(index);
     const barHeightWidth = (index: number) => this._renderBarDimensions(index);
     const colorPicker = (index: number) => this._colorPicker(index);
@@ -203,16 +212,23 @@ export class PanelRangeInfo extends LitElement {
         config: energyConfig,
       },
     };
-    const rangeAndChargingConfig = {
+    const rangeLevelConfig = {
       range_level: {
         title: 'Range Level (Optional)',
         helper: 'Entity to display the range level (e.g., distance, range)',
         config: rangeConfig,
       },
+    };
+    const chargingEntityConfig = {
       charging_entity: {
-        title: 'Charging Entity (Optional)',
+        title: 'Charging Entity',
         helper: 'Entity to display the charging status',
         config: chargingEntity,
+      },
+      charge_target_entity: {
+        title: 'Charge Target Entity',
+        helper: 'Entity to display the target charge level',
+        config: chargeTargetEntity,
       },
     };
     const progressBarFields = {
@@ -240,7 +256,7 @@ export class PanelRangeInfo extends LitElement {
             ${section[key].helper
               ? html`
                   <ha-tooltip content=${section[key].helper}>
-                    <ha-icon icon="mdi:help-circle"></ha-icon>
+                    <ha-icon class="tooltip-icon" icon="mdi:help-circle"></ha-icon>
                   </ha-tooltip>
                 `
               : nothing}
@@ -274,15 +290,19 @@ export class PanelRangeInfo extends LitElement {
             <div class="sub-panel-config" data-index=${index}>
               ${Create.ExpansionPanel({
                 content: html`${createSection(configContent)}`,
-                options: { header: 'Energy level', expanded: true, noCollapse: true },
+                options: { header: 'Energy level', expanded: true, noCollapse: false },
               })}
               ${Create.ExpansionPanel({
-                content: html`${createSection(rangeAndChargingConfig)}`,
-                options: { header: 'Range level and Charging entity (Optional)' },
+                content: html`${createSection(rangeLevelConfig)}`,
+                options: { header: 'Range level (Optional)' },
+              })}
+              ${Create.ExpansionPanel({
+                content: html`${createSection(chargingEntityConfig)}`,
+                options: { header: 'Charging entities (Optional)' },
               })}
               ${Create.ExpansionPanel({
                 content: html`${createSection(progressBarFields)}`,
-                options: { header: 'Progress Bar Config' },
+                options: { header: 'Progress Bar Customization' },
               })}
             </div>
           `}
@@ -433,12 +453,6 @@ export class PanelRangeInfo extends LitElement {
     fireEvent(this, 'config-changed', { config: { ...this.config, range_info: rangeInfo } });
   }
 
-  private _toggleHelp(ev: Event): void {
-    const target = ev.target as HTMLElement;
-    const alert = target.parentElement?.querySelector('.info-alert') as HTMLElement;
-    alert.style.display = alert.style.display === 'none' ? 'block' : 'none';
-  }
-
   private _renderEnergyLevelConfig(index: number): TemplateResult {
     const DATA = {
       ...this.config.range_info[index].energy_level,
@@ -465,15 +479,55 @@ export class PanelRangeInfo extends LitElement {
   private _renderChargingEntityConfig(index: number): TemplateResult {
     const DATA = {
       charging_entity: this.config.range_info[index].charging_entity || '',
+      charging_template: this.config.range_info[index].charging_template || '',
     };
     const chargingEntitySchema = [
       {
         name: 'charging_entity',
         selector: { entity: {} },
         required: false,
+        helper: 'Entity to display the charging status',
+      },
+      {
+        name: 'charging_template',
+        label: 'Charging Template',
+        helper: 'Template to set the visibility of the charging active icon',
+        selector: { template: {} },
       },
     ];
     return this._createHaForm(DATA, chargingEntitySchema);
+  }
+
+  private _renderChargeTargetEntityConfig(index: number): TemplateResult {
+    const DATA = {
+      charge_target_entity: this.config.range_info[index].charge_target_entity || '',
+      charge_target_color: this.config.range_info[index]?.charge_target_color,
+    };
+    const chargeTargetEntitySchema = [
+      {
+        name: '',
+        type: 'grid',
+        schema: [
+          {
+            name: 'charge_target_entity',
+            selector: { entity: {} },
+            required: false,
+          },
+          {
+            name: 'charge_target_color',
+            label: 'Charge Target Line Color',
+            selector: {
+              ui_color: {
+                include_none: false,
+                include_states: false,
+                default_color: 'accent',
+              },
+            },
+          },
+        ] as const,
+      },
+    ];
+    return this._createHaForm(DATA, chargeTargetEntitySchema);
   }
 
   private _renderColorTemplate(index: number): TemplateResult {
@@ -505,7 +559,7 @@ export class PanelRangeInfo extends LitElement {
   private _colorPicker(index: number): TemplateResult {
     const rangeItem = this.config.range_info[index];
     const progressColor = rangeItem.progress_color;
-    const defaultContent = html` <div class="item-content">
+    const defaultContent = html`
       <div class="sub-content">
         <ha-textfield
           .label=${'Progress Color'}
@@ -514,15 +568,15 @@ export class PanelRangeInfo extends LitElement {
           .index=${index}
           @change=${this._valueChanged}
         ></ha-textfield>
+        <div
+          class="item-content color-preview"
+          style="background-color: ${progressColor}"
+          @click=${() => this._toggleColorPicker(index, progressColor)}
+        >
+          <h3>CHOOSE COLOR</h3>
+        </div>
       </div>
-      <div
-        class="item-content color-preview"
-        style="background-color: ${progressColor}"
-        @click=${() => this._toggleColorPicker(index, progressColor)}
-      >
-        <h3>CHOOSE COLOR</h3>
-      </div>
-    </div>`;
+    `;
 
     const colorPicker = html`
     <div class="item-content color-picker">
@@ -638,7 +692,7 @@ export class PanelRangeInfo extends LitElement {
     `;
   };
   private _computeLabel(schema: any) {
-    if (schema.name === 'entity' || schema.name === 'charging_entity') {
+    if (schema.name === 'entity' || schema.name === 'charging_entity' || schema.name === 'charge_target_entity') {
       return '';
     }
     return schema.label || schema.name;
