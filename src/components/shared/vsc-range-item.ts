@@ -14,7 +14,7 @@ import {
 import { addActions, hasTemplate } from '../../utils';
 import { hasActions } from '../../utils/ha-helper';
 
-const TEMPLATE_KEYS = ['color_template'] as const;
+const TEMPLATE_KEYS = ['color_template', 'charging_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-range-item')
@@ -37,6 +37,20 @@ export class VscRangeItem extends LitElement {
           height: var(--vsc-bar-height);
           border-radius: var(--vsc-bar-radius);
           flex-basis: var(--vsc-bar-width);
+          position: relative;
+        }
+        .fuel-wrapper::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: var(--vsc-bar-charge-target);
+          width: 3px;
+          height: calc(var(--vsc-bar-height) - 3px);
+          background-color: var(--vsc-bar-target-color);
+          border-radius: var(--vsc-bar-radius);
+          box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+          transform: translateY(-50%);
+          display: var(--vsc-bar-target-display, none);
         }
       `,
     ];
@@ -76,7 +90,7 @@ export class VscRangeItem extends LitElement {
     }
 
     const rangeItem = this.rangeItem;
-    const colorTemplate = rangeItem.color_template;
+    const templateValue = this.rangeItem[key];
     try {
       const sub = subscribeRenderTemplate(
         this.hass.connection,
@@ -87,7 +101,7 @@ export class VscRangeItem extends LitElement {
           };
         },
         {
-          template: colorTemplate ?? '',
+          template: templateValue ?? '',
           entity_ids: rangeItem.energy_level.entity ? [rangeItem.energy_level.entity] : undefined,
           variables: {
             config: rangeItem,
@@ -101,7 +115,7 @@ export class VscRangeItem extends LitElement {
     } catch (e) {
       console.warn('Error rendering template', e);
       const result = {
-        result: colorTemplate ?? '',
+        result: templateValue ?? '',
         listeners: {
           all: false,
           domains: [],
@@ -158,8 +172,18 @@ export class VscRangeItem extends LitElement {
   }
 
   private getValue(key: string) {
-    const { energy_level, range_level, charging_entity, progress_color, bar_height, bar_radius, bar_width } =
-      this.rangeItem;
+    const {
+      energy_level,
+      range_level,
+      charging_entity,
+      progress_color,
+      bar_height,
+      bar_radius,
+      bar_width,
+      charging_template,
+      charge_target_entity,
+      charge_target_color,
+    } = this.rangeItem;
     const energyEntity = energy_level?.entity;
     const energyAttr = energy_level?.attribute;
     const rangeEntity = range_level?.entity;
@@ -201,9 +225,23 @@ export class VscRangeItem extends LitElement {
         return this._templateResults['color_template']?.result ?? progress_color;
 
       case 'chargingState': {
-        const state = this.hass.states[charging_entity || '']?.state;
-        return ['charging', 'on', 'true'].includes(state);
+        const state = charging_template
+          ? this._templateResults['charging_template']?.result.toString() === 'true'
+          : charging_entity
+          ? ['on', 'charging', 'true'].includes(this.hass.states[charging_entity]?.state)
+          : '';
+        return state;
       }
+
+      case 'targetChargeState':
+        if (!charge_target_entity) {
+          return '';
+        }
+        const targetState = getEntityState(charge_target_entity);
+        return parseInt(targetState, 10) || 0;
+
+      case 'targetChargeColor':
+        return charge_target_color || 'accent';
 
       case 'energyEntity':
         return energyEntity;
@@ -233,6 +271,8 @@ export class VscRangeItem extends LitElement {
     const barHeight = this.getValue('barHeight');
     const barWidth = this.getValue('barWidth');
     const barRadius = this.getValue('barRadius');
+    const targetChargeState = this.getValue('targetChargeState');
+    const targetChargeColor = this.getValue('targetChargeColor');
 
     const styles = {
       '--vsc-bar-height': `${barHeight}px`,
@@ -240,6 +280,9 @@ export class VscRangeItem extends LitElement {
       '--vsc-bar-radius': `${barRadius}px`,
       '--vsc-bar-level': `${level}%`,
       '--vsc-bar-color': barColor,
+      '--vsc-bar-charge-target': `${targetChargeState}%`,
+      '--vsc-bar-target-display': booleanChargingState ? 'block' : 'none',
+      '--vsc-bar-target-color': `var(--${targetChargeColor}-color)`,
     };
 
     return html` <div class="info-box range" style="${styleMap(styles)}">

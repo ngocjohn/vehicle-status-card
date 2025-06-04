@@ -51,6 +51,9 @@ export interface RangeInfoConfig {
   progress_color: string;
   range_level?: RangeItemConfig;
   charging_entity?: string;
+  charging_template?: string;
+  charge_target_entity?: string;
+  charge_target_color?: string;
   color_template?: string;
   bar_height?: number;
   bar_width?: number;
