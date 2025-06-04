@@ -146,12 +146,12 @@ export class VscRangeItem extends LitElement {
     const energeActions = this.getValue('energyActions');
     const rangeActions = this.getValue('rangeActions');
     if (hasActions(energeActions)) {
-      console.log('energy', this.rangeItem.energy_level.entity, 'has actions', energeActions);
+      // console.log('energy', this.rangeItem.energy_level.entity, 'has actions', energeActions);
       const energyItem = this.shadowRoot?.getElementById('energy-item') as HTMLElement;
       addActions(energyItem, energeActions);
     }
     if (hasActions(rangeActions)) {
-      console.log(this.rangeItem.range_level?.entity, 'has actions', rangeActions);
+      // console.log(this.rangeItem.range_level?.entity, 'has actions', rangeActions);
       const rangeItem = this.shadowRoot?.getElementById('range-item') as HTMLElement;
       addActions(rangeItem, rangeActions);
     }

@@ -221,12 +221,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   }
 
   private _renderIndicators(): TemplateResult {
-    if (
-      !this._config.indicators ||
-      (!this._config.indicators.group.length && !this._config.indicators.single.length) ||
-      this._isSectionHidden(SECTION.INDICATORS)
-    )
-      return html``;
+    if (!this._config.indicators || this._isSectionHidden(SECTION.INDICATORS)) return html``;
     return html` <div id="${SECTION.INDICATORS}">
       <vsc-indicators
         .hass=${this._hass}
@@ -307,9 +302,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
     return html`<div
       id="range"
-      ?noMargin=${!this._config.indicators ||
-      (!this._config.indicators.group.length && !this._config.indicators.single.length) ||
-      this._isSectionHidden(SECTION.INDICATORS)}
+      ?noMargin=${!this._config.indicators || this._isSectionHidden(SECTION.INDICATORS)}
       ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}
     >
       <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info}></vsc-range-info>

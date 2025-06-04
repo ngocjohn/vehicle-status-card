@@ -197,25 +197,7 @@ export class PanelIndicatorGroup extends LitElement {
           .outlined=${true}
           class=${previewClass}
         ></ha-button>
-        <div class="sub-panel-config group">
-          ${toolBar}
-          ${this.groupItems.map((_, index) => {
-            return html`
-              <div ?hidden=${selectedItem !== index}>
-                ${this._renderSubGroupItemConfig(selectedItem)}
-                <div class="action-footer" style="justify-content: flex-end;">
-                  <ha-button
-                    class="delete-btn"
-                    .label=${'Remove Item'}
-                    @click=${() => {
-                      this._removeGroupItem(index), (this._selectedItem = index === 0 ? 0 : index - 1);
-                    }}
-                  ></ha-button>
-                </div>
-              </div>
-            `;
-          })}
-        </div>
+        <div class="sub-panel-config group">${toolBar} ${this._renderSubGroupItemConfig(selectedItem)}</div>
       </div>
     `;
   }
@@ -226,15 +208,26 @@ export class PanelIndicatorGroup extends LitElement {
     const _subGroupSchema = (entity: string) => [...subGroupItemSchema(entity)];
 
     return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${DATA}
-        .schema=${_subGroupSchema(DATA.entity || '')}
-        .itemIndex=${index}
-        .computeLabel=${this._computeLabel}
-        .computeHelper=${this._computeHelper}
-        @value-changed=${this._groupItemValueChanged}
-      ></ha-form>
+      <div ?hidden=${this._selectedItem !== index || !this.groupItems?.length}>
+        <ha-form
+          .hass=${this.hass}
+          .data=${DATA}
+          .schema=${_subGroupSchema(DATA.entity || '')}
+          .itemIndex=${index}
+          .computeLabel=${this._computeLabel}
+          .computeHelper=${this._computeHelper}
+          @value-changed=${this._groupItemValueChanged}
+        ></ha-form>
+        <div class="action-footer" style="justify-content: flex-end;">
+          <ha-button
+            class="delete-btn"
+            .label=${'Remove Item'}
+            @click=${() => {
+              this._removeGroupItem(index), (this._selectedItem = index === 0 ? 0 : index - 1);
+            }}
+          ></ha-button>
+        </div>
+      </div>
     `;
   }
 
@@ -260,7 +253,7 @@ export class PanelIndicatorGroup extends LitElement {
           .hass=${this.hass}
           .config=${this.editor._config}
           .cardEditor=${this.editor}
-          .configDefault=${yamlConfig}
+          .configDefault=${yamlConfig || []}
           .configKey=${configKey}
           @yaml-config-changed=${this._yamlConfigChanged}
         >
@@ -310,16 +303,32 @@ export class PanelIndicatorGroup extends LitElement {
 
   private _yamlConfigChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const { key, isValid, value } = ev.detail;
-    if (!isValid || !value) {
+    const { key, isValid } = ev.detail;
+    if (!isValid) {
       return;
     }
+    let value = ev.detail.value;
+    console.log('YAML config changed', key, value);
+
     if (key === 'main_group') {
-      this._configChanged(value as IndicatorGroupConfig[]);
+      if (value === undefined || value === null || value === '' || !Array.isArray(value)) {
+        value = [];
+      }
+      this.groupConfig = value as IndicatorGroupConfig[];
+      this._configChanged(this.groupConfig);
     } else if (key === 'sub_group' && this._selectedGroup !== null) {
+      console.log('Sub group config changed', this._selectedGroup, value);
       const newGroups = [...(this.groupConfig || [])];
-      newGroups[this._selectedGroup] = value as IndicatorGroupConfig;
-      this._configChanged(newGroups);
+      if (value === undefined || value === null || typeof value !== 'object' || Object.keys(value).length === 0) {
+        this._handleAction('remove-group', this._selectedGroup!);
+        this._yamlMode = false; // Close YAML mode if group is removed
+        this._selectedGroup = null; // Reset selected group if value is empty
+        this.requestUpdate();
+        return;
+      } else {
+        newGroups[this._selectedGroup] = value as IndicatorGroupConfig;
+        this._configChanged(newGroups);
+      }
     }
   }
 
@@ -397,6 +406,10 @@ export class PanelIndicatorGroup extends LitElement {
   }
 
   private _configChanged(newConfig: IndicatorGroupConfig[]): void {
+    console.log('Config changed for group', newConfig);
+    if (newConfig === undefined || newConfig === null) {
+      newConfig = [];
+    }
     this.editor._config = {
       ...this.editor._config,
       indicators: {

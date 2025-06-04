@@ -1,14 +1,14 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property, query } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
 
 import cardcss from '../css/card.css';
-import { HomeAssistant, VehicleStatusCardConfig } from '../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../types';
-import { isEmpty } from '../utils';
+import { HomeAssistant, IndicatorGroupConfig, VehicleStatusCardConfig } from '../types';
 // components items
 import './shared/vsc-indicator-single';
 import './shared/vsc-indicator-group-item';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../types';
 import { VscIndicatorGroupItem } from './shared/vsc-indicator-group-item';
 
 const TEMPLATE_KEYS = ['color', 'visibility'] as const;
@@ -20,7 +20,7 @@ export class VscIndicators extends LitElement {
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() public _activeGroupIndicator: number | null = null;
-  @query('vsc-indicator-group-item') private _groupIndicatorItem!: VscIndicatorGroupItem;
+  @query('vsc-indicator-group-item') _groupIndicatorItem?: VscIndicatorGroupItem;
 
   // group indicators
   @state() private _groupTemplateResults: Record<
@@ -91,14 +91,17 @@ export class VscIndicators extends LitElement {
   }
 
   private async _tryConnect(): Promise<void> {
-    if (!isEmpty(this.config.indicators.group)) {
-      const groupIndicators = this.config.indicators.group;
-      for (let index = 0; index < groupIndicators.length; index++) {
-        TEMPLATE_KEYS.forEach((key) => {
-          this._subscribeRenderTemplate(index, key);
-        });
-      }
+    if (!this.config.indicators.group?.length) {
+      return;
     }
+
+    const groupIndicators = this.config.indicators.group;
+
+    groupIndicators.forEach((_, index) => {
+      TEMPLATE_KEYS.forEach((key) => {
+        this._subscribeRenderTemplate(index, key);
+      });
+    });
   }
 
   private async _subscribeRenderTemplate(index: number, key: TemplateKey): Promise<void> {
@@ -200,6 +203,7 @@ export class VscIndicators extends LitElement {
   }
 
   private _renderSingleIndicators(): TemplateResult {
+    if (!this.config.indicators?.single) return html``;
     const singleIndicators = this.config.indicators.single;
     if (!singleIndicators || singleIndicators.length === 0) return html``;
     const indicator = singleIndicators.map((indicator) => {
@@ -210,38 +214,41 @@ export class VscIndicators extends LitElement {
   }
 
   private _renderGroupIndicators(): TemplateResult {
-    const configGroupIndicators = this.config.indicators.group;
-    if (!configGroupIndicators || configGroupIndicators.length === 0) return html``;
+    if (!this.config.indicators?.group || this.config.indicators.group.length === 0) {
+      return html``;
+    }
+    const configGroupIndicators = this.config.indicators?.group || [];
 
-    const groupIndicators = configGroupIndicators.map((group, index) => {
-      const visible =
-        group.visibility === '' || this._groupTemplateResults[index]?.visibility?.result.toString() !== 'false';
-      const icon = group.icon;
-      const color = group.color ? this._groupTemplateResults[index]?.color?.result : group.color || '';
-      const name = group.name;
-      const active = this._activeGroupIndicator === index;
-      const activeColor = color ? `--group-indicator-color: ${color}` : '';
-      return visible
-        ? html`
-            <div
-              class="item active-btn"
-              style=${activeColor}
-              @click=${() => this._toggleGroupIndicator(index)}
-              ?active=${active}
-            >
-              <ha-icon icon=${icon}></ha-icon>
-              <div class="added-item-arrow">
-                <span>${name}</span>
-                <div class="subcard-icon" ?active=${active} style="margin-bottom: 2px">
-                  <ha-icon icon="mdi:chevron-down"></ha-icon>
-                </div>
+    return html`${repeat(
+      configGroupIndicators || [],
+      (group: IndicatorGroupConfig) => group.name,
+      (group: IndicatorGroupConfig, index: number) => {
+        const visibility = group.visibility
+          ? this._groupTemplateResults[index]?.visibility?.result.toString() !== 'false'
+          : true;
+        const color = group.color ? this._groupTemplateResults[index]?.color?.result : group.color;
+        const { icon, name } = group;
+        const active = this._activeGroupIndicator === index;
+        const activeColor = color ? `--group-indicator-color: ${color}` : '';
+        return html`
+          <div
+            class="item active-btn"
+            style=${activeColor}
+            @click=${() => this._toggleGroupIndicator(index)}
+            ?active=${active}
+            ?hidden=${!visibility}
+          >
+            <ha-icon icon=${icon}></ha-icon>
+            <div class="added-item-arrow">
+              <span>${name}</span>
+              <div class="subcard-icon" ?active=${active} style="margin-bottom: 2px">
+                <ha-icon icon="mdi:chevron-down"></ha-icon>
               </div>
             </div>
-          `
-        : html``;
-    });
-
-    return html`${groupIndicators}`;
+          </div>
+        `;
+      }
+    )}`;
   }
 
   public _toggleGroupIndicator(index: number): void {

@@ -10,6 +10,7 @@ import cardstyles from '../../css/card.css';
 import { BUTTON_LAYOUT, ButtonCardEntityItem, HomeAssistant } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions, hasTemplate, strStartsWith } from '../../utils';
+import { hasActions } from '../../utils/ha-helper';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template', 'notify_color', 'notify_icon'] as const;
@@ -54,8 +55,8 @@ export class VehicleButtonSingle extends LitElement {
       return;
     }
     const actionConfig = this._buttonConfig.button.button_action;
-    const actionEl = this.shadowRoot!.getElementById('actionBtn');
-    if (actionEl) {
+    if (hasActions(actionConfig)) {
+      const actionEl = this.shadowRoot?.getElementById('actionBtn') as HTMLElement;
       addActions(actionEl, actionConfig);
     }
   }
@@ -67,7 +68,6 @@ export class VehicleButtonSingle extends LitElement {
 
   public isTemplate(key: TemplateKey) {
     const button = this._buttonConfig.button;
-
     const value = key === 'state_template' ? button.secondary.state_template : button[key];
     return hasTemplate(value);
   }
@@ -201,11 +201,11 @@ export class VehicleButtonSingle extends LitElement {
     const { icon, primary, secondary } = this._buttonConfig.button;
     const entity = secondary.entity || '';
     const state = this._getTemplateValue('state_template');
-    const color = this._getTemplateValue('color') || 'var(--disabled-color)';
+    const color = this._getTemplateValue('color') || 'var(--secondary-text-color)';
     const notify = this._getTemplateValue('notify');
     const notifyColor = this._getTemplateValue('notify_color');
     const notifyIcon = this._getTemplateValue('notify_icon');
-    const iconBackground = color ? color : 'var(--disabled-color)';
+    const iconBackground = color ? color : 'var(--disabled-text-color)';
     const picture = String(this._getTemplateValue('picture_template'));
     const isPictureUrl = strStartsWith(picture, 'http') || strStartsWith(picture, '/');
 

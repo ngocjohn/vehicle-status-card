@@ -20,10 +20,10 @@ export interface IndicatorConfig {
 
 // IndicatorGroup configuration for a group of indicators
 export interface IndicatorGroupConfig {
-  icon: string;
-  items: Array<IndicatorGroupItemConfig>; // Array of group items
+  icon?: string;
+  items?: Array<IndicatorGroupItemConfig>; // Array of group items
   name: string;
-  visibility: string;
+  visibility?: string;
   color?: string;
 }
 
@@ -40,8 +40,8 @@ export interface IndicatorGroupItemConfig {
 }
 
 export interface IndicatorsConfig {
-  single: IndicatorConfig[];
-  group: IndicatorGroupConfig[];
+  single?: IndicatorConfig[];
+  group?: IndicatorGroupConfig[];
 }
 
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
