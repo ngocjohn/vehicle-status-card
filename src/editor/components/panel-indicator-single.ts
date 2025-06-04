@@ -144,7 +144,7 @@ export class PanelIndicatorSingle extends LitElement {
           .hass=${this.hass}
           .config=${this.editor._config}
           .cardEditor=${this.editor}
-          .configDefault=${config}
+          .configDefault=${config || []}
           @yaml-config-changed=${this._yamlConfigChanged}
         ></vsc-sub-panel-yaml>
       </div>
@@ -296,9 +296,14 @@ export class PanelIndicatorSingle extends LitElement {
 
   private _yamlConfigChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const { key, isValid, value } = ev.detail;
-    if (!isValid || !value) {
+    const { key, isValid } = ev.detail;
+    if (!isValid) {
       return;
+    }
+    let value = ev.detail.value;
+    console.log('YAML config changed', key, value);
+    if (value === undefined || value === null || value === '' || !Array.isArray(value)) {
+      value = [];
     }
 
     if (key === 'single') {
@@ -324,6 +329,10 @@ export class PanelIndicatorSingle extends LitElement {
   }
 
   private _configChanged(newConfig: IndicatorConfig[]): void {
+    console.log('Config changed for single', newConfig);
+    if (newConfig === undefined || newConfig === null) {
+      newConfig = [];
+    }
     this.editor._config = {
       ...this.editor._config,
       indicators: {
