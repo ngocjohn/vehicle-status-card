@@ -71,13 +71,19 @@ export const BASE_BUTTON_APPEARANCE_SCHEMA = memoizeOne(
             expanded: true,
             schema: [
               {
-                name: 'entity',
-                selector: { entity: {} },
-              },
-              {
-                name: 'attribute',
-                label: 'Attribute',
-                selector: { attribute: { entity_id: secondEntity } },
+                name: '',
+                type: 'grid',
+                schema: [
+                  {
+                    name: 'entity',
+                    selector: { entity: {} },
+                  },
+                  {
+                    name: 'attribute',
+                    label: 'Attribute',
+                    selector: { attribute: { entity_id: secondEntity } },
+                  },
+                ],
               },
               {
                 name: 'state_template',

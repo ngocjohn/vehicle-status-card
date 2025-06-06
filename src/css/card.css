@@ -140,29 +140,6 @@ header h1 {
   flex-direction: column;
 }
 
-.combined-info-box {
-  display: grid;
-  width: 100%;
-  /* height: -moz-fit-content;
-  height: 100%; */
-  grid-template-columns: repeat(auto-fill, minmax(49%, 1fr));
-  column-gap: 0.5rem;
-  opacity: 1;
-  transition: all 400ms cubic-bezier(0.3, 0.0, 0.8, 0.15);
-  max-height: 1000px;
-  padding: 0px;
-}
-
-.combined-info-box.not-visible {
-  opacity: 0;
-  padding-top: var(--vic-card-padding);
-  max-height: 0;
-  overflow: hidden;
-  /* transition: padding-top 400ms linear, max-height 400ms cubic-bezier(0.3, 0.0, 0.8, 0.15); */
-  transition: all 400ms cubic-bezier(0.3, 0.0, 0.8, 0.15);
-  transition-delay: 0.3s;
-}
-
 
 .info-box {
   --mdc-icon-size: 20px;

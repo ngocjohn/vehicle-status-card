@@ -148,3 +148,15 @@ export const CHARGE_TARGET_SCHEMA = [
     selector: { template: {} },
   },
 ];
+
+const RANGE_LAYOUTS = ['column', 'row'] as const;
+export const RANGE_LAYOUT_SCHEMA = [
+  {
+    name: 'layout',
+    label: 'Layout appearance',
+    type: 'select',
+    default: 'column',
+    required: false,
+    options: RANGE_LAYOUTS.map((layout) => [layout, layout.charAt(0).toUpperCase() + layout.slice(1)]),
+  },
+] as const;
