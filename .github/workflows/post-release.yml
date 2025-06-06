@@ -18,7 +18,7 @@ jobs:
           node-version: '16'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install axios
 
       - name: Update Bug Report Template
         run: node scripts/update-bug-template.js

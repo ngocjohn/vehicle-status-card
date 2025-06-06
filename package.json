@@ -75,6 +75,6 @@
     "build": "npm run lint && npm run rollup",
     "lint": "eslint src/**/*.ts",
     "rollup": "rollup -c rollup.config.js --bundleConfigAsCjs",
-    "prepare": "husky install"
+    "prepare": "husky"
   }
 }
