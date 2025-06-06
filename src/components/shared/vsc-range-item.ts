@@ -394,8 +394,8 @@ export class VscRangeItem extends LitElement {
         </ha-tooltip>
         <div class="fuel-wrapper">
           <div class="fuel-level-bar" style="width: ${level}%; background: ${barColor};" ?charging="${booleanChargingState}">
-            ${chargingIcon}
-            ${energyPosition === 'inside' ? html`<span id="energy-item">${energyState}</span>` : nothing}
+
+            ${energyPosition === 'inside' ? html`${chargingIcon}<span id="energy-item">${energyState}</span>` : nothing}
           </div>
           ${
             rangePosition === 'inside'
