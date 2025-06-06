@@ -2,22 +2,19 @@ import memoizeOne from 'memoize-one';
 
 import { computeOptionalActionSchema } from './actions-config';
 
+const POSTIONS = ['outside', 'inside', 'off'] as const;
 export const RANGE_ITEM_SCHEMA = memoizeOne(
   (entityId: string, required: boolean = false) =>
     [
       {
-        name: 'entity',
-        required: required,
-        selector: { entity: {} },
-      },
-      {
         name: '',
         type: 'grid',
+        flatten: true,
         schema: [
           {
-            name: 'icon',
-            selector: { icon: {} },
-            context: { icon_entity: 'entity' },
+            name: 'entity',
+            required: required,
+            selector: { entity: {} },
           },
           {
             name: 'attribute',
@@ -25,6 +22,25 @@ export const RANGE_ITEM_SCHEMA = memoizeOne(
             selector: {
               attribute: {
                 entity_id: entityId,
+              },
+            },
+          },
+          {
+            name: 'icon',
+            label: 'Icon',
+            selector: { icon: {} },
+          },
+          {
+            name: 'value_position',
+            label: 'Value Position',
+            default: 'outside',
+            selector: {
+              select: {
+                mode: 'dropdown',
+                options: POSTIONS.map((position) => ({
+                  value: position,
+                  label: position.charAt(0).toUpperCase() + position.slice(1),
+                })),
               },
             },
           },
@@ -52,18 +68,16 @@ export const PROGRESS_BAR_SCHEMA = [
         default: 5,
         selector: {
           number: {
-            min: 1,
             mode: 'box',
           },
         },
       },
       {
         name: 'bar_width',
-        label: 'Bar Width (px)',
-        default: 60,
+        label: 'Bar Width (%)',
+        default: 100,
         selector: {
           number: {
-            min: 1,
             max: 100,
             mode: 'box',
           },
@@ -75,7 +89,6 @@ export const PROGRESS_BAR_SCHEMA = [
         default: 5,
         selector: {
           number: {
-            min: 1,
             mode: 'box',
           },
         },
@@ -83,3 +96,55 @@ export const PROGRESS_BAR_SCHEMA = [
     ],
   },
 ] as const;
+
+export const CHARGING_STATE_SCHEMA = [
+  {
+    name: 'charging_entity',
+    selector: { entity: {} },
+    required: false,
+    helper: 'Entity to display the charging status',
+  },
+  {
+    name: 'charging_template',
+    label: 'Charging Template',
+    helper: 'Template to set the visibility of the charging active icon',
+    selector: { template: {} },
+  },
+] as const;
+export const CHARGE_TARGET_SCHEMA = [
+  {
+    name: '',
+    type: 'grid',
+    schema: [
+      {
+        name: 'charge_target_entity',
+        selector: { entity: {} },
+        required: false,
+      },
+      {
+        name: 'charge_target_color',
+        label: 'Charge Target Line Color',
+        selector: {
+          ui_color: {
+            include_none: false,
+            include_states: false,
+            default_color: 'accent',
+          },
+        },
+      },
+    ] as const,
+  },
+  {
+    name: 'charge_target_tooltip',
+    label: 'Use Tooltip',
+    helper: 'Show tooltip with target value when hovering over the charge target line',
+    default: false,
+    type: 'boolean',
+  },
+  {
+    name: 'charge_target_visibility',
+    label: 'Charge Target Visibility',
+    helper: 'Template to set the visibility of the charge target line, defaults true if charge_target_entity is set',
+    selector: { template: {} },
+  },
+];

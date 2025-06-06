@@ -54,16 +54,19 @@ export interface RangeInfoConfig {
   charging_template?: string;
   charge_target_entity?: string;
   charge_target_color?: string;
+  charge_target_visibility?: string;
+  charge_target_tooltip?: boolean;
   color_template?: string;
   bar_height?: number;
   bar_width?: number;
   bar_radius?: number;
 }
-
+export type RangeValuePosition = 'outside' | 'inside' | 'off';
 export type RangeItemConfig = {
   attribute?: string;
   entity?: string;
   icon?: string;
+  value_position?: RangeValuePosition;
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;
   double_tap_action?: ActionConfig;

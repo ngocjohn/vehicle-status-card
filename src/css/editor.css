@@ -266,50 +266,6 @@
 	color: var(--primary-color);
 }
 
-.item-content.color-preview {
-	border-top-right-radius: 4px;
-	border-top-left-radius: 4px;
-	justify-content: end;
-	align-items: center;
-	cursor: pointer;
-	opacity: 0.8;
-	transition: opacity 0.3s ease-in-out;
-	text-align: center;
-}
-
-.item-content.color-preview:hover {
-	opacity: 1;
-}
-
-.item-content.color-picker {
-	display: flex;
-	justify-content: space-around;
-	align-items: center;
-	flex-direction: column;
-	height: 100%;
-	gap: var(--vic-gutter-gap);
-}
-
-.item-content.color-picker #values {
-	font-family: system-ui;
-	line-height: 150%;
-}
-
-.item-content.color-picker input#hexInput {
-	padding: var(--vic-card-padding);
-	font-family: monospace;
-	letter-spacing: 1px;
-}
-
-input#hexInput:focus {
-	outline: auto;
-}
-
-.picker-wrapper {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
 
 
 
