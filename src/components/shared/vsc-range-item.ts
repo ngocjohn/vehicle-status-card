@@ -1,5 +1,5 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -8,13 +8,14 @@ import {
   ButtonActionConfig,
   HomeAssistant,
   RangeInfoConfig,
+  RangeItemConfig,
   RenderTemplateResult,
   subscribeRenderTemplate,
 } from '../../types';
 import { addActions, hasTemplate } from '../../utils';
 import { hasActions } from '../../utils/ha-helper';
 
-const TEMPLATE_KEYS = ['color_template', 'charging_template'] as const;
+const TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-range-item')
@@ -29,18 +30,88 @@ export class VscRangeItem extends LitElement {
     return [
       cardcss,
       css`
-        *[has-actions]:hover {
-          color: var(--primary-color);
-          transition: color 0.3s ease-in-out;
-        }
-        .fuel-wrapper {
-          height: var(--vsc-bar-height);
-          border-radius: var(--vsc-bar-radius);
-          flex-basis: var(--vsc-bar-width);
+        .fuel-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          /* height: 100%; */
+          max-width: 100%;
+          width: var(--vsc-bar-width);
           position: relative;
         }
-        .fuel-wrapper::after {
-          content: '';
+        .fuel-wrapper {
+          width: 100%;
+          height: var(--vsc-bar-height);
+          border-radius: var(--vsc-bar-radius);
+          background-color: #90909040;
+          align-items: center;
+        }
+
+        .fuel-level-bar {
+          position: absolute;
+          background-color: #4caf50;
+          border-radius: var(--vsc-bar-radius);
+          height: 100%;
+          width: var(--vic-range-width);
+          display: inline-flex;
+          justify-content: flex-end;
+          align-items: center;
+          z-index: 4;
+          padding-inline: var(--vic-card-padding);
+          box-sizing: border-box;
+          min-width: fit-content;
+        }
+        .fuel-level-bar[charging] {
+          justify-content: space-between;
+          gap: var(--vic-gutter-gap);
+        }
+        .fuel-wrapper span {
+          text-shadow: 1px 1px 2px #000000;
+          font-weight: 500;
+        }
+        .fuel-wrapper span.energy-inside {
+          z-index: 3;
+          position: absolute;
+          top: 50%;
+          right: 0;
+          opacity: 0.8;
+          transform: translateY(-50%);
+          padding-inline-end: var(--vic-card-padding);
+        }
+
+        .charging-icon {
+          --mdc-icon-size: inherit;
+          position: relative;
+          animation: fill-color 4s steps(5) infinite;
+          color: var(--range-bar-color);
+          transform: rotate(90deg) !important;
+          margin-bottom: 0 !important;
+        }
+
+        .fuel-level-bar > .charging-icon {
+          color: var(--primary-text-color) !important;
+          box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes fill-color {
+          0%,
+          100% {
+            clip-path: inset(100% 0 0 0);
+            /* Fully hidden */
+            color: var(--primary-text-color) !important;
+          }
+
+          50% {
+            clip-path: inset(0 0 0 0);
+            color: var(--range-bar-color);
+          }
+
+          75% {
+            clip-path: inset(0 0 0 0);
+            color: var(--range-bar-color);
+          }
+        }
+        ha-tooltip .charge-target {
           position: absolute;
           top: 50%;
           left: var(--vsc-bar-charge-target);
@@ -51,6 +122,7 @@ export class VscRangeItem extends LitElement {
           box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
           transform: translateY(-50%);
           display: var(--vsc-bar-target-display, none);
+          z-index: 5;
         }
       `,
     ];
@@ -172,92 +244,89 @@ export class VscRangeItem extends LitElement {
   }
 
   private getValue(key: string) {
-    const {
-      energy_level,
-      range_level,
-      charging_entity,
-      progress_color,
-      bar_height,
-      bar_radius,
-      bar_width,
-      charging_template,
-      charge_target_entity,
-      charge_target_color,
-    } = this.rangeItem;
-    const energyEntity = energy_level?.entity;
-    const energyAttr = energy_level?.attribute;
-    const rangeEntity = range_level?.entity;
-    const rangeAttr = range_level?.attribute;
-    const energyActions = {
-      entity: energyEntity,
-      tap_action: energy_level?.tap_action,
-      hold_action: energy_level?.hold_action,
-      double_tap_action: energy_level?.double_tap_action,
-    } as ButtonActionConfig;
-    const rangeActions = {
-      entity: rangeEntity || '',
-      tap_action: range_level?.tap_action,
-      hold_action: range_level?.hold_action,
-      double_tap_action: range_level?.double_tap_action,
-    } as ButtonActionConfig;
+    const r = this.rangeItem;
+    const hass = this.hass;
 
     const getEntityState = (entity?: string, attr?: string) =>
-      entity && this.hass.states[entity]
+      entity && hass.states[entity]
         ? attr
-          ? this.hass.formatEntityAttributeValue(this.hass.states[entity], attr)
-          : this.hass.formatEntityState(this.hass.states[entity])
+          ? hass.formatEntityAttributeValue(hass.states[entity], attr)
+          : hass.formatEntityState(hass.states[entity])
         : '';
+
+    const getActions = (config?: RangeItemConfig): ButtonActionConfig => ({
+      entity: config?.entity || '',
+      tap_action: config?.tap_action,
+      hold_action: config?.hold_action,
+      double_tap_action: config?.double_tap_action,
+    });
 
     switch (key) {
       case 'icon':
-        return energy_level?.icon ?? '';
+        return r.energy_level?.icon ?? '';
 
+      case 'rangeIcon':
+        return r.range_level?.icon ?? '';
       case 'energyState':
-        return getEntityState(energyEntity, energyAttr);
+        return getEntityState(r.energy_level?.entity, r.energy_level?.attribute);
 
       case 'rangeState':
-        return getEntityState(rangeEntity, rangeAttr);
+        return getEntityState(r.range_level?.entity, r.range_level?.attribute);
 
       case 'level':
         return parseInt(this.getValue('energyState'), 10) || 0;
 
       case 'barColor':
-        return this._templateResults['color_template']?.result ?? progress_color;
+        return this._templateResults['color_template']?.result ?? r.progress_color;
 
       case 'chargingState': {
-        const state = charging_template
-          ? this._templateResults['charging_template']?.result.toString() === 'true'
-          : charging_entity
-          ? ['on', 'charging', 'true'].includes(this.hass.states[charging_entity]?.state)
-          : '';
-        return state;
+        if (r.charging_template) {
+          return this._templateResults['charging_template']?.result.toString() === 'true';
+        }
+        const state = hass.states[r.charging_entity || '']?.state;
+        return ['on', 'charging', 'true'].includes(state);
       }
 
-      case 'targetChargeState':
-        if (!charge_target_entity) {
-          return '';
-        }
-        const targetState = getEntityState(charge_target_entity);
-        return parseInt(targetState, 10) || 0;
+      case 'targetEntityState':
+        return getEntityState(r.charge_target_entity);
+
+      case 'targetChargeState': {
+        const state = getEntityState(r.charge_target_entity);
+        return parseInt(state, 10) || 0;
+      }
 
       case 'targetChargeColor':
-        return charge_target_color || 'accent';
+        return r.charge_target_color || 'accent';
 
-      case 'energyEntity':
-        return energyEntity;
+      case 'targetChargeVisibility':
+        return r.charge_target_visibility
+          ? this._templateResults['charge_target_visibility']?.result.toString() === 'true'
+          : r.charge_target_entity ?? false;
 
-      case 'rangeEntity':
-        return rangeEntity;
+      case 'targetTooltip':
+        return r.charge_target_tooltip || false;
+
       case 'barHeight':
-        return bar_height || 5;
+        return r.bar_height || 5;
+
       case 'barWidth':
-        return bar_width || 60;
+        return r.bar_width || 100;
+
       case 'barRadius':
-        return bar_radius || 4;
+        return r.bar_radius || 4;
+
       case 'energyActions':
-        return energyActions || {};
+        return getActions(r.energy_level);
+
       case 'rangeActions':
-        return rangeActions || {};
+        return getActions(r.range_level);
+
+      case 'energyPosition':
+        return r.energy_level?.value_position || 'outside';
+      case 'rangePosition':
+        return r.range_level?.value_position || 'outside';
+      default:
+        return undefined;
     }
   }
 
@@ -265,14 +334,20 @@ export class VscRangeItem extends LitElement {
     const icon = this.getValue('icon');
     const energyState = this.getValue('energyState');
     const rangeState = this.getValue('rangeState');
+    const rangeIcon = this.getValue('rangeIcon');
     const level = this.getValue('level');
     const barColor = this.getValue('barColor');
     const booleanChargingState = this.getValue('chargingState');
     const barHeight = this.getValue('barHeight');
-    const barWidth = this.getValue('barWidth');
+    const barWidth = this.getValue('barWidth') || 100; // Default to 100% width
     const barRadius = this.getValue('barRadius');
+    const targetEntityState = this.getValue('targetEntityState');
     const targetChargeState = this.getValue('targetChargeState');
     const targetChargeColor = this.getValue('targetChargeColor');
+    const targetChargeVisibility = this.getValue('targetChargeVisibility');
+    const targetTooltip = this.getValue('targetTooltip');
+    const energyPosition = this.getValue('energyPosition');
+    const rangePosition = this.getValue('rangePosition');
 
     const styles = {
       '--vsc-bar-height': `${barHeight}px`,
@@ -280,28 +355,57 @@ export class VscRangeItem extends LitElement {
       '--vsc-bar-radius': `${barRadius}px`,
       '--vsc-bar-level': `${level}%`,
       '--vsc-bar-color': barColor,
+      '--vsc-range-bar-color': barColor,
       '--vsc-bar-charge-target': `${targetChargeState}%`,
-      '--vsc-bar-target-display': booleanChargingState ? 'block' : 'none',
+      '--vsc-bar-target-display': targetChargeVisibility ? 'block' : 'none',
       '--vsc-bar-target-color': `var(--${targetChargeColor}-color)`,
+      '--vsc-energy-state': `${energyState}`,
+      '--vsc-range-state': `${rangeState}`,
     };
 
+    const chargingIcon = html`<ha-icon
+      icon="mdi:battery-high"
+      class="charging-icon"
+      ?hidden="${!booleanChargingState}"
+      style="--range-bar-color: ${barColor};"
+      title="Charging"
+    ></ha-icon>`;
+
+    const energyItem =
+      !energyState || energyPosition !== 'outside'
+        ? nothing
+        : html` <div class="item" ?hidden="${!energyState || energyPosition !== 'outside'}" id="energy-item">
+            <ha-icon icon="${icon}"></ha-icon>
+            <span>${energyState}</span>
+            ${chargingIcon}
+          </div>`;
+
     return html` <div class="info-box range" style="${styleMap(styles)}">
-      <div class="item" ?hidden="${!energyState}" id="energy-item">
-        <ha-icon icon="${icon}"></ha-icon>
-        <span>${energyState}</span>
-        <ha-icon
-          icon="mdi:battery-high"
-          class="charging-icon"
-          style="--range-bar-color: ${barColor}"
-          ?hidden="${!booleanChargingState}"
-          title="Charging"
+      ${energyItem}
+      </ha-icon>
+      <div class="fuel-container">
+        <ha-tooltip
+          content=${`Target: ${targetEntityState}`}
+          placement="right"
+          distance="10"
+          ?disabled="${!targetTooltip}"
         >
-        </ha-icon>
+          <div class="charge-target"></div>
+        </ha-tooltip>
+        <div class="fuel-wrapper">
+          <div class="fuel-level-bar" style="width: ${level}%; background: ${barColor};" ?charging="${booleanChargingState}">
+            ${chargingIcon}
+            ${energyPosition === 'inside' ? html`<span id="energy-item">${energyState}</span>` : nothing}
+          </div>
+          ${
+            rangePosition === 'inside'
+              ? html`<span class="energy-inside" id="range-item">${rangeState}</span>`
+              : nothing
+          }
+        </div>
       </div>
-      <div class="fuel-wrapper">
-        <div class="fuel-level-bar" style="width: ${level}%; background: ${barColor};"></div>
-      </div>
-      <div class="item" ?hidden="${!rangeState}" id="range-item">
+      <div class="item" ?hidden="${!rangeState || rangePosition !== 'outside'}" id="range-item">
+        <ha-icon icon="${rangeIcon}"></ha-icon>
         <span>${rangeState}</span>
       </div>
     </div>`;
