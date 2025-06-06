@@ -262,7 +262,7 @@ export class PanelButtonCard extends LitElement {
     return html`
       <div class="card-config">
         ${this._renderHeader(
-          `#${buttonIndex + 1}: ${button.primary.toUpperCase()}`,
+          `#${buttonIndex + 1}: ${button.primary?.toUpperCase() ?? ''}`,
           `${button.icon}`,
 
           this._yamlEditorActive

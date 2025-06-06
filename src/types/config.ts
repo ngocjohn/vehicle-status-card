@@ -303,6 +303,9 @@ export interface LayoutConfig {
     theme?: string;
   };
   section_order?: Array<string>;
+  range_info_config?: {
+    layout: 'column' | 'row';
+  };
 }
 
 /**

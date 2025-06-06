@@ -20,20 +20,19 @@ import {
   PanelIndicatorGroup,
 } from './components/';
 import { CONFIG_TYPES, PREVIEW_CONFIG_TYPES } from './editor-const';
-import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA, NAME_SCHEMA, THEME_CONFIG_SCHEMA } from './form';
+import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA, NAME_SCHEMA, RANGE_LAYOUT_SCHEMA, THEME_CONFIG_SCHEMA } from './form';
 
 @customElement('vehicle-status-card-editor')
 export class VehicleStatusCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public lovelace?: LovelaceConfig;
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
-
-  @state() private activeTabIndex: null | number = null;
-  @state() private _indicatorTabIndex: number = 0;
-
   @state() _selectedConfigType: null | string = null;
 
   @state() private _reloadSectionList: boolean = false;
+  @state() private _layoutTabIndex: number = 0;
+  @state() private _indicatorTabIndex: number = 0;
+
   @query('panel-images-editor') _panelImages?: PanelImagesEditor;
   @query('panel-range-info') _panelRangeInfo?: PanelRangeInfo;
   @query('panel-editor-ui') _panelEditorUI?: PanelEditorUI;
@@ -55,10 +54,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-  }
-
-  constructor() {
-    super();
   }
 
   protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
@@ -140,19 +135,6 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     }
   }
 
-  /* ---------------------------- RENDER FUNCTIONS ---------------------------- */
-  protected render(): TemplateResult {
-    if (!this._config || !this._hass) {
-      return html``;
-    }
-
-    return html`
-      <div class="base-config">
-        ${!this._selectedConfigType ? this._renderMainEditorPage() : this._renderSelectedType()}
-      </div>
-    `;
-  }
-
   public _cleanConfig(): void {
     // Check if _config exists and is an object
     if (!this._config || typeof this._config !== 'object') {
@@ -188,6 +170,110 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     // console.log('Dispatched event', type, detail);
   }
 
+  /* ---------------------------- RENDER FUNCTIONS ---------------------------- */
+  protected render(): TemplateResult {
+    if (!this._config || !this._hass) {
+      return html``;
+    }
+
+    return html`
+      <div class="base-config">
+        ${!this._selectedConfigType ? this._renderMainEditorPage() : this._renderSelectedType()}
+      </div>
+    `;
+  }
+
+  /* ---------------------------- RENDER SELECTED TYPE ---------------------------- */
+  private _renderSelectedType(): TemplateResult {
+    if (!this._selectedConfigType) {
+      return html``;
+    }
+    const selected = this._selectedConfigType;
+    const CARDCONFIG = CONFIG_TYPES.options[selected] || {};
+    const DOC_URL = CARDCONFIG.doc || '';
+
+    const typeMap = {
+      button_card: this._renderButtonCard(),
+      images: this._renderImages(),
+      indicators: this._renderIndicators(),
+      layout_config: this._renderLayoutConfig(),
+      mini_map: this._renderMiniMap(),
+      range: this._renderRangeInfo(),
+    };
+    const cardTypeSelector = this._renderConfigTypeSelector();
+
+    const isMainEditor = ['layout_config'].includes(selected);
+
+    const menuButton = html`<div class="config-menu-wrapper">
+      <div class="menu-icon click-shrink" @click="${() => (this._selectedConfigType = null)}">
+        <div class="menu-icon-inner">
+          <ha-icon icon="mdi:home"></ha-icon>
+        </div>
+      </div>
+      <div id="menu-icon" class="menu-icon click-shrink" @click="${() => this._toggleMenu()}">
+        <div class="menu-icon-inner">
+          <ha-icon icon="mdi:menu"></ha-icon>
+        </div>
+      </div>
+      <div class="menu-wrapper">
+        <div class="menu-selector hidden">${cardTypeSelector}</div>
+        <div class="menu-content-wrapper">
+          <div class="menu-label">
+            <span class="primary">${CARDCONFIG.name ?? ''}</span>
+          </div>
+          ${isMainEditor
+            ? nothing
+            : html`
+                <div class="menu-info-icon-wrapper">
+                  <div class="menu-info-icon">
+                    <ha-icon icon="mdi:eye" @click="${() => this._dispatchEvent('toggle-helper', selected)}"></ha-icon>
+                  </div>
+                  <div class="menu-info-icon">
+                    <ha-icon icon="mdi:information" @click="${() => window.open(DOC_URL, '_blank')}"></ha-icon>
+                  </div>
+                </div>
+              `}
+        </div>
+      </div>
+    </div>`;
+
+    return html`${menuButton} ${typeMap[selected]}`;
+  }
+
+  private _renderMainEditorPage(): TemplateResult {
+    const menuButton = html`<div class="config-menu-wrapper">
+      <div id="menu-icon" class="menu-icon click-shrink">
+        <div class="menu-icon-inner">
+          <ha-icon icon="mdi:menu"></ha-icon>
+        </div>
+      </div>
+      <div class="menu-wrapper">
+        <div class="menu-content-wrapper">
+          <div class="menu-label">
+            <span class="primary">${CONFIG_TYPES.name}</span>
+            <span class="secondary">${CONFIG_TYPES.description}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    // const tipsContent = this._renderTipContent(); // Tips content
+    const tipsContent = html`<div class="tip-content">
+      ${Object.entries(CONFIG_TYPES.options).map(
+        ([key, { description, name }]) =>
+          html`<div class="tip-item click-shrink" @click=${() => (this._selectedConfigType = key)}>
+            <div class="tip-title">${name}</div>
+            <span>${description}</span>
+          </div>`
+      )}
+    </div>`;
+
+    const versionFooter = html` <div class="version-footer">Version: ${CARD_VERSION}</div>`;
+
+    return html` ${menuButton} ${tipsContent} ${versionFooter}`;
+  }
+
+  /* ---------------------------- RENDER CONFIG TYPES ---------------------------- */
   private _renderButtonCard(): TemplateResult {
     return html`<panel-button-card
       .hass=${this._hass}
@@ -353,8 +439,8 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     return html`
       <div class="card-config">
         ${Create.VicTab({
-          activeTabIndex: this.activeTabIndex || 0,
-          onTabChange: (index: number) => (this.activeTabIndex = index),
+          activeTabIndex: this._layoutTabIndex || 0,
+          onTabChange: (index: number) => (this._layoutTabIndex = index),
           tabs: tabsConfig,
         })}
       </div>
@@ -383,119 +469,30 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     </ha-sortable>`;
   }
 
-  private _sectionMoved(event: CustomEvent): void {
-    event.stopPropagation();
-    if (!this._config) return;
-    const { oldIndex, newIndex } = event.detail;
-    console.log('Section moved from', oldIndex, 'to', newIndex);
-    const sections = [...(this._config.layout_config.section_order || [])];
-    sections.splice(newIndex, 0, sections.splice(oldIndex, 1)[0]);
-    this._config = {
-      ...this._config,
-      layout_config: {
-        ...this._config.layout_config,
-        section_order: sections,
-      },
-    };
-    fireEvent(this, 'config-changed', { config: this._config });
-    console.log('Updated section order:', this._config.layout_config.section_order);
-  }
-
-  private _renderMainEditorPage(): TemplateResult {
-    const menuButton = html`<div class="config-menu-wrapper">
-      <div id="menu-icon" class="menu-icon click-shrink">
-        <div class="menu-icon-inner">
-          <ha-icon icon="mdi:menu"></ha-icon>
-        </div>
-      </div>
-      <div class="menu-wrapper">
-        <div class="menu-content-wrapper">
-          <div class="menu-label">
-            <span class="primary">${CONFIG_TYPES.name}</span>
-            <span class="secondary">${CONFIG_TYPES.description}</span>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-    // const tipsContent = this._renderTipContent(); // Tips content
-    const tipsContent = html`<div class="tip-content">
-      ${Object.entries(CONFIG_TYPES.options).map(
-        ([key, { description, name }]) =>
-          html`<div class="tip-item click-shrink" @click=${() => (this._selectedConfigType = key)}>
-            <div class="tip-title">${name}</div>
-            <span>${description}</span>
-          </div>`
-      )}
-    </div>`;
-
-    const versionFooter = html` <div class="version-footer">Version: ${CARD_VERSION}</div>`;
-
-    return html` ${menuButton} ${tipsContent} ${versionFooter}`;
-  }
-
   private _renderMiniMap(): TemplateResult {
     return html`<panel-map-editor .hass=${this._hass} .editor=${this} ._config=${this._config}></panel-map-editor>`;
   }
 
   private _renderRangeInfo(): TemplateResult {
-    return html`<panel-range-info .hass=${this._hass} .config=${this._config}></panel-range-info>`;
-  }
+    const RANGE_INFO_LAYOUT_DATA = { ...(this._config.layout_config?.range_info_config || {}) };
+    const rangeLayout = this._createHaForm(
+      RANGE_INFO_LAYOUT_DATA,
+      RANGE_LAYOUT_SCHEMA,
+      'layout_config',
+      'range_info_config'
+    );
+    const rangeItemContent = html`<panel-range-info .hass=${this._hass} .config=${this._config}></panel-range-info>`;
 
-  private _renderSelectedType(): TemplateResult {
-    if (!this._selectedConfigType) {
-      return html``;
-    }
-    const selected = this._selectedConfigType;
-    const CARDCONFIG = CONFIG_TYPES.options[selected] || {};
-    const DOC_URL = CARDCONFIG.doc || '';
+    const tabsConfig = [
+      { content: rangeItemContent, key: 'range_info', label: 'Range Info Items' },
+      { content: rangeLayout, key: 'range_info_layout', label: 'Layout appearance' },
+    ];
 
-    const typeMap = {
-      button_card: this._renderButtonCard(),
-      images: this._renderImages(),
-      indicators: this._renderIndicators(),
-      layout_config: this._renderLayoutConfig(),
-      mini_map: this._renderMiniMap(),
-      range: this._renderRangeInfo(),
-    };
-    const cardTypeSelector = this._renderConfigTypeSelector();
-
-    const isMainEditor = ['layout_config'].includes(selected);
-
-    const menuButton = html`<div class="config-menu-wrapper">
-      <div class="menu-icon click-shrink" @click="${() => (this._selectedConfigType = null)}">
-        <div class="menu-icon-inner">
-          <ha-icon icon="mdi:home"></ha-icon>
-        </div>
-      </div>
-      <div id="menu-icon" class="menu-icon click-shrink" @click="${() => this._toggleMenu()}">
-        <div class="menu-icon-inner">
-          <ha-icon icon="mdi:menu"></ha-icon>
-        </div>
-      </div>
-      <div class="menu-wrapper">
-        <div class="menu-selector hidden">${cardTypeSelector}</div>
-        <div class="menu-content-wrapper">
-          <div class="menu-label">
-            <span class="primary">${CARDCONFIG.name ?? ''}</span>
-          </div>
-          ${isMainEditor
-            ? nothing
-            : html`
-                <div class="menu-info-icon-wrapper">
-                  <div class="menu-info-icon">
-                    <ha-icon icon="mdi:eye" @click="${() => this._dispatchEvent('toggle-helper', selected)}"></ha-icon>
-                  </div>
-                  <div class="menu-info-icon">
-                    <ha-icon icon="mdi:information" @click="${() => window.open(DOC_URL, '_blank')}"></ha-icon>
-                  </div>
-                </div>
-              `}
-        </div>
-      </div>
-    </div>`;
-
-    return html`${menuButton} ${typeMap[selected]}`;
+    return Create.VicTab({
+      activeTabIndex: this._layoutTabIndex || 0,
+      onTabChange: (index: number) => (this._layoutTabIndex = index),
+      tabs: tabsConfig,
+    });
   }
 
   /* ---------------------------- PANEL TEMPLATE ---------------------------- */
@@ -590,6 +587,25 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         }, 200);
       }
     }
+  }
+
+  /* ---------------------------- SECTION MOVED HANDLER ---------------------------- */
+  private _sectionMoved(event: CustomEvent): void {
+    event.stopPropagation();
+    if (!this._config) return;
+    const { oldIndex, newIndex } = event.detail;
+    console.log('Section moved from', oldIndex, 'to', newIndex);
+    const sections = [...(this._config.layout_config.section_order || [])];
+    sections.splice(newIndex, 0, sections.splice(oldIndex, 1)[0]);
+    this._config = {
+      ...this._config,
+      layout_config: {
+        ...this._config.layout_config,
+        section_order: sections,
+      },
+    };
+    fireEvent(this, 'config-changed', { config: this._config });
+    console.log('Updated section order:', this._config.layout_config.section_order);
   }
 
   private _setOrderList(hide: VehicleStatusCardConfig['layout_config']['hide'], currentOrder: string[]) {
