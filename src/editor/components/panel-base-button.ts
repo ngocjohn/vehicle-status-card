@@ -70,6 +70,7 @@ export class PanelBaseButton extends LitElement {
     ev.stopPropagation();
     const { isValid, value } = ev.detail;
     if (!isValid) return;
+    console.log('YAML config changed:', value);
     this._dispatchConfigChange(value);
   }
 
