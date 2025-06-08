@@ -21,8 +21,8 @@ import {
   MapData,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
-import { HaHelp, isDarkColor, isEmpty, loadExtraMapCard, applyThemesOnElement } from './utils';
-import { createSingleMapCard, getDefaultConfig } from './utils/ha-helper';
+import { HaHelp, isDarkColor, isEmpty, loadExtraMapCard, applyThemesOnElement, getDefaultConfig } from './utils';
+import { createSingleMapCard } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement implements LovelaceCard {
@@ -31,8 +31,8 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     return document.createElement('vehicle-status-card-editor');
   }
 
-  public static getStubConfig = (hass: HomeAssistant): Record<string, unknown> => {
-    const DEFAULT_CONFIG = getDefaultConfig(hass);
+  public static getStubConfig = async (hass: HomeAssistant): Promise<VehicleStatusCardConfig> => {
+    const DEFAULT_CONFIG = await getDefaultConfig(hass);
     return {
       ...DEFAULT_CONFIG,
     };
@@ -577,7 +577,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     const parentElementClassPreview = this.offsetParent?.classList.contains('element-preview');
     return parentElementClassPreview || false;
   }
-
   // https://lit.dev/docs/components/styles/
   public static get styles(): CSSResultGroup {
     return [cardcss];

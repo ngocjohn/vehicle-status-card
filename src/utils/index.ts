@@ -8,3 +8,5 @@ export * from './apply-theme';
 export * from './process-editor-entities';
 export * from './show-dialog-box';
 export * from './compute_entity_name';
+export * from './create_stub_config';
+export * from './find-entities';
