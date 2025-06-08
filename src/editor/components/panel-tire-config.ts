@@ -67,8 +67,7 @@ export class PanelTireConfig extends LitElement {
   }
 
   private _renderAppearance(): TemplateResult {
-    const positionLabel = this.tireConfig.horizontal ? 'Horizontal' : 'Vertical';
-    const appearanceForm = this._createHaForm(TIRE_APPEARANCE_SCHEMA(positionLabel));
+    const appearanceForm = this._createHaForm(TIRE_APPEARANCE_SCHEMA(this.tireConfig.horizontal));
     const content = html`
       ${appearanceForm}
       <div class="sub-content">
