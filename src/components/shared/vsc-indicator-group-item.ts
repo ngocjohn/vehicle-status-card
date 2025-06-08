@@ -7,7 +7,7 @@ import { customElement, state, property } from 'lit/decorators.js';
 // CSS
 import cardcss from '../../css/card.css';
 // Utils
-import { hasTemplate, HomeAssistant, IndicatorGroupItemConfig } from '../../types';
+import { hasTemplate, HomeAssistant, IndicatorConfig } from '../../types';
 import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
 import { addActions } from '../../utils';
 import { hasActions } from '../../utils/ha-helper';
@@ -18,7 +18,7 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 @customElement('vsc-indicator-group-item')
 export class VscIndicatorGroupItem extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) item!: IndicatorGroupItemConfig;
+  @property({ attribute: false }) item!: IndicatorConfig;
 
   @state() private _itemTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
   @state() private _unsubItemRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
@@ -30,17 +30,27 @@ export class VscIndicatorGroupItem extends LitElement {
         .item {
           display: flex;
           align-items: center;
-          flex-wrap: wrap;
-          flex-direction: column;
+          flex-flow: column wrap;
           gap: initial;
           width: max-content;
+          height: 100%;
+          justify-content: space-between;
         }
 
         .icon-state {
           display: flex;
           height: auto;
-          align-items: flex-end;
+          align-items: center;
           gap: 0.4rem;
+        }
+        .icon-state span {
+          line-height: 100%;
+          /* text-shadow: 0px 2px rgba(0, 0, 0, 0.4); */
+        }
+        .icon-state > state-badge {
+          --mdc-icon-size: 20px !important;
+          max-width: 24px;
+          max-height: 24px;
         }
 
         .item-name {
@@ -163,17 +173,19 @@ export class VscIndicatorGroupItem extends LitElement {
       : this.hass.states[entity] !== undefined
       ? this.hass.formatEntityState(this.hass.states[entity])
       : '';
-    const color = item.color ? this._itemTemplateResults.color?.result || item.color : '';
+    const color = item.color ? this._itemTemplateResults.color?.result || item.color : 'var(--secondary-text-color)';
+    const stateColor = item.state_color ?? false;
 
     return html`
       <div class="item charge" id="group-item-action">
         <div class="icon-state">
-          <ha-state-icon
+          <state-badge
             .hass=${this.hass}
-            .stateObj=${entity ? this.hass.states[entity] : undefined}
-            .icon=${icon}
-            style=${color ? `color: ${color};` : ''}
-          ></ha-state-icon>
+            .stateObj=${this.hass.states[entity]}
+            .stateColor=${stateColor}
+            .overrideIcon=${icon}
+            style=${!stateColor ? `color: ${color}` : ''}
+          ></state-badge>
           <span>${state}</span>
         </div>
         <div class="item-name">

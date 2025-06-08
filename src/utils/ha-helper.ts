@@ -3,7 +3,6 @@ import { hasAction, LovelaceCardConfig } from 'custom-card-helpers';
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import memoizeOne from 'memoize-one';
 
-import { DEFAULT_CONFIG } from '../const/const';
 import { DEFAULT_TIRE_CONFIG } from '../editor/form';
 import {
   ButtonCardEntity,
@@ -164,6 +163,7 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
       secondary: button.secondary || [],
       color: button.color || '',
       picture_template: button.picture_template || '',
+      state_color: button.state_color || false,
     };
 
     // const defaultCard = (await getDefaultCard(hass, btnCrd.default_card)) || [];
@@ -559,29 +559,6 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string): P
     return null;
   }
 }
-
-export const getDefaultConfig = (hass: HomeAssistant) => {
-  const deviceTrackers = Object.keys(hass.states)
-    .filter((entity) => entity.startsWith('device_tracker.'))
-    .filter((entity) => hass.states[entity].attributes.source_type === 'gps');
-  console.log('deviceTrackers:', deviceTrackers);
-  if (deviceTrackers.length > 0) {
-    return {
-      ...DEFAULT_CONFIG,
-      mini_map: {
-        device_tracker: deviceTrackers[0],
-      },
-      layout_config: {
-        ...DEFAULT_CONFIG.layout_config,
-        hide: {
-          ...DEFAULT_CONFIG.layout_config.hide,
-          mini_map: false,
-        },
-      },
-    };
-  }
-  return DEFAULT_CONFIG;
-};
 
 /** Compute the object ID of a state. */
 export const computeObjectId = (entityId: string): string => entityId.substr(entityId.indexOf('.') + 1);

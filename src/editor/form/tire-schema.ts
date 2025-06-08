@@ -22,7 +22,7 @@ export const DEFAULT_TIRE_CONFIG: TireTemplateConfig = {
 };
 
 export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
-  (positionLabel: string) =>
+  (isHorizontal: boolean) =>
     [
       {
         name: 'title',
@@ -48,13 +48,13 @@ export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
           },
           {
             name: 'top',
-            label: `${positionLabel} position`,
+            label: `${!isHorizontal ? 'Top' : 'Left'} position`,
             default: 50,
             selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
           },
           {
             name: 'left',
-            label: `${positionLabel} position`,
+            label: `${!isHorizontal ? 'Left' : 'Top'} position`,
             default: 50,
             selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
           },

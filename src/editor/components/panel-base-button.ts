@@ -58,7 +58,8 @@ export class PanelBaseButton extends LitElement {
   }
 
   private _renderButtonAppearance(): TemplateResult {
-    return this._createHaForm(BASE_BUTTON_APPEARANCE_SCHEMA(this.buttonConfig.button.secondary.entity));
+    const buttonEntity = this.buttonConfig?.button?.secondary?.entity || '';
+    return this._createHaForm(BASE_BUTTON_APPEARANCE_SCHEMA(buttonEntity));
   }
 
   private _renderButtonAction(): TemplateResult {

@@ -65,10 +65,10 @@ export class VscRangeItem extends LitElement {
           justify-content: space-between;
           gap: var(--vic-gutter-gap);
         }
-        .fuel-wrapper span {
+        /* .fuel-wrapper span {
           text-shadow: 1px 1px 2px #000000;
           font-weight: 500;
-        }
+        } */
         .fuel-wrapper span.energy-inside {
           z-index: 3;
           position: absolute;

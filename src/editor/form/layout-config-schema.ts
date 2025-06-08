@@ -24,6 +24,13 @@ export const BUTTON_GRID_SCHEMA = [
     ],
   },
   {
+    name: 'transparent',
+    label: 'Transparent background',
+    type: 'boolean',
+    default: false,
+    helper: 'Use this option to make the button background transparent.',
+  },
+  {
     name: 'button_layout',
     label: 'Button layout',
     required: true,

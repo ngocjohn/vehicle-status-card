@@ -50,7 +50,6 @@ export class VscIndicators extends LitElement {
   protected shouldUpdate(changedProperties: PropertyValues): boolean {
     if (changedProperties.has('hass') || changedProperties.has('config')) {
       this._tryConnect();
-      this._checkVisibleSingle();
     }
     return true;
   }
@@ -59,7 +58,7 @@ export class VscIndicators extends LitElement {
     super.updated(changedProperties);
     if (changedProperties.has('_activeGroupIndicator') && this._activeGroupIndicator !== null) {
       setTimeout(() => {
-        this._addEventListeners();
+        // this._addEventListeners();
       }, 0);
     }
   }
@@ -73,20 +72,6 @@ export class VscIndicators extends LitElement {
       const actionConfig = groupIndicator.item.action_config;
       if (!actionConfig) return;
       groupIndicator._setEventListeners();
-    });
-  }
-
-  private _checkVisibleSingle(): void {
-    const singleIndicators = this.shadowRoot?.querySelectorAll('vsc-indicator-single') as any;
-    if (!singleIndicators || singleIndicators.length === 0) return;
-    // console.log(singleIndicators);
-    singleIndicators.forEach((single) => {
-      // console.log(single);
-      if (single._visibility === false) {
-        single.style.display = 'none';
-      } else {
-        single.style.display = '';
-      }
     });
   }
 
