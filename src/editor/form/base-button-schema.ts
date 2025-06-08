@@ -99,6 +99,15 @@ export const BASE_BUTTON_APPEARANCE_SCHEMA = memoizeOne(
             title: 'Advanced Options',
             schema: [
               {
+                name: 'state_color',
+                label: 'State color',
+                type: 'boolean',
+                default: false,
+                disabled: secondEntity === undefined || secondEntity === '',
+                helper:
+                  'Set to true to have icon colored when entity is active, or to show entity picture instead of icon. (entity required)',
+              },
+              {
                 name: 'color',
                 label: 'Color icon template',
                 helper: 'Template for the icon color',

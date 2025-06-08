@@ -78,12 +78,13 @@ export class VehicleButtonsGrid extends LitElement {
     requestAnimationFrame(() => runAnimation());
   }
 
-  private get gridConfig(): LayoutConfig['button_grid'] {
+  public get gridConfig(): LayoutConfig['button_grid'] {
     return {
-      rows: this.config.layout_config?.button_grid?.rows || 2,
-      columns: this.config.layout_config?.button_grid?.columns || 2,
-      button_layout: this.config.layout_config?.button_grid?.button_layout || 'horizontal',
-      swipe: this.config.layout_config?.button_grid?.swipe || false,
+      rows: this.config.layout_config?.button_grid?.rows ?? 2,
+      columns: this.config.layout_config?.button_grid?.columns ?? 2,
+      button_layout: this.config.layout_config?.button_grid?.button_layout ?? 'horizontal',
+      swipe: this.config.layout_config?.button_grid?.swipe ?? false,
+      transparent: this.config.layout_config?.button_grid?.transparent ?? false,
     };
   }
 
@@ -120,7 +121,7 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   private _renderSwiper(): TemplateResult {
-    const total = this.gridConfig.rows * this.gridConfig.columns;
+    const total = this.gridConfig.rows! * this.gridConfig.columns!;
     const buttons = [...this.buttons];
     const newButtons = buttons.map((button, index) => {
       return { ...button, index };
