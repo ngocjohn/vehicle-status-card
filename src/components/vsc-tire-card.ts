@@ -8,7 +8,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { TIRE_BG } from '../const/img-const';
 // styles
 import cardstyles from '../css/card.css';
-import { HomeAssistant, TireEntity } from '../types';
+import { HomeAssistant, Orientation, TireEntity } from '../types';
 import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../types/ha-frontend/data/ws-templates';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
@@ -258,7 +258,7 @@ export class VehicleTireCard extends LitElement {
     const tireConfig = this.tireConfig;
 
     const background = tireConfig.background || TIRE_BG;
-    const isHorizontal = tireConfig.horizontal || false;
+    const isHorizontal = tireConfig.orientation == Orientation.HORIZONTAL || false;
     const tireCardTitle = tireConfig.title || '';
     const tireCardSize = tireConfig.image_size || 100;
     const tireValueSize = tireConfig.value_size || 100;

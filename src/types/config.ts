@@ -133,6 +133,11 @@ type SecondaryInfoConfig = {
   state_template: string;
 };
 
+export enum Orientation {
+  HORIZONTAL = 'horizontal',
+  VERTICAL = 'vertical',
+}
+
 export interface ButtonConfig {
   icon: string;
   notify?: string;
@@ -176,7 +181,7 @@ export interface TireTemplateConfig {
   title?: string;
   background: string;
   background_entity?: string;
-  horizontal: boolean;
+  orientation: Orientation;
   image_size: number;
   value_size: number;
   top: number;
@@ -218,7 +223,7 @@ export type TireEntity = {
       color: string;
     };
   };
-  horizontal: boolean;
+  orientation: Orientation;
   hide_rotation_button?: boolean;
 };
 

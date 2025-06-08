@@ -1,6 +1,6 @@
 import memoizeOne from 'memoize-one';
 
-import { TireEntityConfig, TireTemplateConfig } from '../../types';
+import { Orientation, TireEntityConfig, TireTemplateConfig } from '../../types';
 
 const DEFAULT_TIRE_ENTITY: TireEntityConfig = {
   entity: '',
@@ -9,7 +9,7 @@ const DEFAULT_TIRE_ENTITY: TireEntityConfig = {
 export const DEFAULT_TIRE_CONFIG: TireTemplateConfig = {
   title: '',
   background: '',
-  horizontal: false,
+  orientation: Orientation.HORIZONTAL,
   hide_rotation_button: false,
   image_size: 100,
   value_size: 100,
@@ -22,7 +22,7 @@ export const DEFAULT_TIRE_CONFIG: TireTemplateConfig = {
 };
 
 export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
-  (isHorizontalOrientation: boolean) =>
+  (orientation: Orientation) =>
     [
       {
         name: 'title',
@@ -48,13 +48,13 @@ export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
           },
           {
             name: 'top',
-            label: `${isHorizontalOrientation ? 'Horizontal' : 'Vertical'} position`,
+            label: `${orientation} position`,
             default: 50,
             selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
           },
           {
             name: 'left',
-            label: `${isHorizontalOrientation ? 'Vertical' : 'Horizontal'} position`,
+            label: `${orientation == Orientation.HORIZONTAL ? Orientation.VERTICAL : Orientation.HORIZONTAL} position`,
             default: 50,
             selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
           },

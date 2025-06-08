@@ -18,6 +18,7 @@ import {
   MiniMapConfig,
   PREVIEW_TYPE,
   ButtonActionConfig,
+  Orientation,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
@@ -134,7 +135,7 @@ export async function getTireCard(
       rear_left: { state: rearLeftState, name: rearLeftName, color: rearLeftColor },
       rear_right: { state: rearRightState, name: rearRightName, color: rearRightColor },
     },
-    horizontal: tireCard.horizontal || false,
+    orientation: tireCard.orientation || Orientation.HORIZONTAL,
     hide_rotation_button: tireCard.hide_rotation_button || false,
   };
 
