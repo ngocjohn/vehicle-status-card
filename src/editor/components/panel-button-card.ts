@@ -296,7 +296,7 @@ export class PanelButtonCard extends LitElement {
   private _handleYamlChange(ev: CustomEvent): void {
     ev.stopPropagation();
     const { isValid, value, index } = ev.detail;
-    if (!isValid || !this.config) {
+    if (!isValid) {
       return;
     }
 
@@ -304,7 +304,7 @@ export class PanelButtonCard extends LitElement {
     let buttonCardConfig = [...(this.config.button_card || [])];
     let buttonConfig = { ...buttonCardConfig[index] };
     console.log('buttonConfig', buttonConfig);
-    buttonConfig = { ...buttonConfig, ...newConfig };
+    buttonConfig = newConfig;
     console.log('newConfig', newConfig);
     buttonCardConfig[index] = buttonConfig;
     console.log('buttonCardConfig', buttonCardConfig);
@@ -923,7 +923,6 @@ export class PanelButtonCard extends LitElement {
       // fireEvent(this, 'config-changed', { config: this.config });
     } else {
       console.log('Not copied to preview');
-      return;
     }
     fireEvent(this, 'config-changed', { config: this.config });
   }

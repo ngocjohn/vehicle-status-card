@@ -11,7 +11,7 @@ import { DEFAULT_TIRE_CONFIG, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TI
 export class PanelTireConfig extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
-  @property({ attribute: false }) tireConfig!: TireTemplateConfig;
+  @property({ attribute: false }) tireConfig?: TireTemplateConfig;
 
   @state() public yamlMode: boolean = false;
 
@@ -54,7 +54,7 @@ export class PanelTireConfig extends LitElement {
     const content = html`
       ${bgForm}
       <div class="sub-content">
-        ${this.tireConfig.background
+        ${this.tireConfig?.background !== undefined && this.tireConfig?.background !== ''
           ? html`<ha-button @click=${this._handleAction('reset_background')} .label=${'Use Default'}></ha-button>`
           : nothing}
       </div>
@@ -67,7 +67,7 @@ export class PanelTireConfig extends LitElement {
   }
 
   private _renderAppearance(): TemplateResult {
-    const isHorizontal = this.tireConfig.horizontal ? true : false;
+    const isHorizontal = this.tireConfig?.horizontal ? true : false;
     const appearanceForm = this._createHaForm(TIRE_APPEARANCE_SCHEMA(isHorizontal));
     const content = html`
       ${appearanceForm}
@@ -87,7 +87,7 @@ export class PanelTireConfig extends LitElement {
 
   private _renderEntities(): TemplateResult {
     const _createEntityForm = (tirePosition: string) => {
-      const tireEntity = this.tireConfig[tirePosition].entity || '';
+      const tireEntity = this.tireConfig?.[tirePosition]?.entity || '';
       return this._createHaForm(TIRE_ENTITY_SCHEMA(tirePosition, tireEntity));
     };
 
@@ -159,20 +159,20 @@ export class PanelTireConfig extends LitElement {
     ev.stopPropagation();
     const { isValid, value } = ev.detail;
     if (!isValid) return;
+    console.log('YAML config changed:', value);
     this._dispatchConfigChange(value);
   }
   private _valueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    if (!this.tireConfig) return;
     const config = ev.detail.value;
-    // console.log('Tire config changed:', config);
+    console.log('Tire config changed:', config);
+    this.tireConfig = { ...this.tireConfig, ...config };
     this._dispatchConfigChange(config);
   }
 
   private _dispatchConfigChange(newConfig: TireTemplateConfig): void {
-    this.tireConfig = { ...this.tireConfig, ...newConfig };
     const event = new CustomEvent('tire-config-changed', {
-      detail: { config: this.tireConfig },
+      detail: { config: newConfig },
       bubbles: true,
       composed: true,
     });
