@@ -28,13 +28,24 @@ export class VscIndicatorSingle extends LitElement {
     return [
       cardcss,
       css`
-        .item {
+        /* .item {
           display: flex;
           gap: 0.4rem;
           align-items: flex-end;
+        } */
+        .item {
+          display: flex;
+          align-items: center;
+          gap: initial;
+          width: max-content;
+          height: 100%;
+          justify-content: space-between;
+          line-height: 100%;
         }
-        .item ha-icon {
-          margin-bottom: 3px;
+        .item state-badge {
+          margin-inline-end: 0.5em;
+          height: 24px;
+          width: 24px;
         }
       `,
     ];
@@ -155,18 +166,21 @@ export class VscIndicatorSingle extends LitElement {
       ? this.hass.formatEntityAttributeValue(this.hass.states[entity], indicator.attribute)
       : this.hass.formatEntityState(this.hass.states[entity]);
     const visibility = indicator.visibility ? this._singleTemplateResults.visibility?.result : true;
-    const color = indicator.color ? this._singleTemplateResults.color?.result : '';
+    const color = indicator.color
+      ? this._singleTemplateResults.color?.result || indicator.color
+      : 'var(--secondary-text-color)';
     this._visibility = Boolean(visibility);
-
+    const stateColor = indicator.state_color ? true : false;
     return html`
       <div class="item" ?hidden=${Boolean(visibility) === false} id="single-action">
-        <ha-state-icon
+        <state-badge
           .hass=${this.hass}
-          .stateObj=${entity ? this.hass.states[entity] : undefined}
-          .icon=${icon}
-          style=${color ? `color: ${color}` : ''}
-        ></ha-state-icon>
-        <div><span>${state}</span></div>
+          .stateObj=${this.hass.states[entity]}
+          .stateColor=${stateColor}
+          .overrideIcon=${icon}
+          style=${!stateColor ? `color: ${color}` : ''}
+        ></state-badge>
+        <span>${state}</span>
       </div>
     `;
   }

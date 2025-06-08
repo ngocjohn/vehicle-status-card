@@ -16,27 +16,17 @@ export interface IndicatorConfig {
   visibility?: string;
   color?: string;
   action_config?: ButtonActionConfig;
+  state_color?: boolean;
+  name?: string;
 }
 
 // IndicatorGroup configuration for a group of indicators
 export interface IndicatorGroupConfig {
   icon?: string;
-  items?: Array<IndicatorGroupItemConfig>; // Array of group items
+  items?: Array<IndicatorConfig>; // Array of group items
   name: string;
   visibility?: string;
   color?: string;
-}
-
-// Configuration for individual items in the indicatorGroup
-export interface IndicatorGroupItemConfig {
-  attribute?: string;
-  entity: string;
-  icon?: string;
-  icon_template?: string;
-  color?: string;
-  name?: string;
-  state_template?: string;
-  action_config?: ButtonActionConfig;
 }
 
 export interface IndicatorsConfig {
@@ -128,21 +118,22 @@ export interface MiniMapConfig {
 /* ------------------------- BUTTON AND CARD CONFIG ------------------------- */
 
 type SecondaryInfoConfig = {
-  attribute: string;
-  entity: string;
-  state_template: string;
+  attribute?: string;
+  entity?: string;
+  state_template?: string;
 };
 
-export interface ButtonConfig {
+export type ButtonConfig = {
   icon: string;
   notify?: string;
   notify_color?: string;
   notify_icon?: string;
   primary: string;
-  color: string;
+  color?: string;
+  state_color?: boolean;
   secondary: SecondaryInfoConfig;
   picture_template?: string;
-}
+};
 
 export interface DefaultCardConfig {
   collapsed_items: boolean;
@@ -224,8 +215,8 @@ export type TireEntity = {
 
 export interface ButtonCardConfig {
   button: ButtonConfig;
-  button_action: ButtonActionConfig;
-  button_type: BUTTON_TYPE;
+  button_action?: ButtonActionConfig;
+  button_type?: BUTTON_TYPE;
   card_type: CARD_TYPE;
   custom_card: LovelaceCardConfig[];
   default_card: Array<DefaultCardConfig>;
@@ -237,7 +228,7 @@ export type BaseButtonConfig = Omit<ButtonCardConfig, 'custom_card' | 'default_c
 
 export interface ButtonCardEntityItem {
   button: {
-    button_action: ButtonActionConfig;
+    button_action?: ButtonActionConfig;
     icon: string;
     notify: string;
     primary: string;
@@ -246,6 +237,7 @@ export interface ButtonCardEntityItem {
     picture_template: string;
     notify_color?: string;
     notify_icon?: string;
+    state_color?: boolean;
   };
   button_type: BUTTON_TYPE;
   card_type: CARD_TYPE;
@@ -271,34 +263,39 @@ export enum PREVIEW_TYPE {
 export type BUTTON_LAYOUT = 'horizontal' | 'vertical';
 
 /* ----------------------------- LAYOUT CONFIG ----------------------------- */
+type ImagesSwipeConfig = {
+  max_height?: number;
+  max_width?: number;
+  autoplay?: boolean;
+  loop?: boolean;
+  delay?: number;
+  speed?: number;
+  effect?: 'slide' | 'fade' | 'coverflow';
+  hide_pagination?: boolean;
+};
+type LayoutHideConfig = {
+  button_notify?: boolean;
+  buttons?: boolean;
+  images?: boolean;
+  indicators?: boolean;
+  mini_map?: boolean;
+  range_info?: boolean;
+  card_name?: boolean;
+  map_address?: boolean;
+};
+
+type LayoutButtonGridConfig = {
+  rows: number;
+  columns: number;
+  swipe: boolean;
+  button_layout?: BUTTON_LAYOUT;
+  transparent?: boolean;
+};
 export interface LayoutConfig {
-  button_grid: {
-    rows: number;
-    columns: number;
-    swipe: boolean;
-    button_layout?: BUTTON_LAYOUT;
-  };
-  images_swipe: {
-    max_height: number;
-    max_width: number;
-    autoplay: boolean;
-    loop: boolean;
-    delay: number;
-    speed: number;
-    effect: 'slide' | 'fade' | 'coverflow';
-    hide_pagination: boolean;
-  };
-  hide: {
-    button_notify: boolean;
-    buttons: boolean;
-    images: boolean;
-    indicators: boolean;
-    mini_map: boolean;
-    range_info: boolean;
-    card_name: boolean;
-    map_address?: boolean;
-  };
-  theme_config: {
+  button_grid: Partial<LayoutButtonGridConfig>;
+  images_swipe?: Partial<ImagesSwipeConfig>;
+  hide: Partial<LayoutHideConfig>;
+  theme_config?: {
     mode: THEME_MODE;
     theme?: string;
   };

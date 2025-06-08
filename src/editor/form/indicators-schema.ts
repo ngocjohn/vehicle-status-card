@@ -38,6 +38,13 @@ export const singleApparenceSchema = [
     title: 'Appearance',
     schema: [
       {
+        name: 'state_color',
+        label: 'State Color',
+        type: 'boolean',
+        default: false,
+        helper: 'Use the state color of the entity to color the indicator.',
+      },
+      {
         name: 'visibility',
         label: 'Visibility Template',
         selector: { template: {} },
@@ -139,6 +146,13 @@ export const subGroupItemSchema = memoizeOne(
         type: 'expandable',
         title: 'Extra templates',
         schema: [
+          {
+            name: 'state_color',
+            label: 'State Color',
+            type: 'boolean',
+            default: false,
+            helper: 'Use the state color of the entity to color the indicator.',
+          },
           {
             name: 'icon_template',
             label: 'Icon Template',

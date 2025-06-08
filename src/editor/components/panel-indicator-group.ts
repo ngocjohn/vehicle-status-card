@@ -4,7 +4,7 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { HomeAssistant, IndicatorGroupConfig, IndicatorGroupItemConfig, fireEvent } from '../../types';
+import { HomeAssistant, IndicatorGroupConfig, IndicatorConfig, fireEvent } from '../../types';
 import { showPromptDialog } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
 import { mainGroupSchema, groupApparenceSchema, subGroupItemSchema } from '../form/indicators-schema';
@@ -18,7 +18,7 @@ export class PanelIndicatorGroup extends LitElement {
   @state() private _yamlMode?: boolean = false;
   @state() private _selectedGroup: number | null = null;
   @state() private _selectedItem: number = 0;
-  @state() private groupItems?: IndicatorGroupItemConfig[];
+  @state() private groupItems?: IndicatorConfig[];
 
   private get _groupPreview(): boolean {
     return this.editor._config.hasOwnProperty('active_group');
@@ -347,7 +347,7 @@ export class PanelIndicatorGroup extends LitElement {
 
   private _addNewGroupItem(): void {
     const groupIndex = this._selectedGroup!;
-    const newItem: IndicatorGroupItemConfig = {
+    const newItem: IndicatorConfig = {
       entity: '',
     };
     const newGroupItems = [...(this.groupConfig![groupIndex].items || []), newItem];
@@ -364,7 +364,7 @@ export class PanelIndicatorGroup extends LitElement {
   private _groupItemValueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     const index = (ev.target as any).itemIndex;
-    let value = ev.detail.value as IndicatorGroupItemConfig;
+    let value = ev.detail.value as IndicatorConfig;
     if (index === undefined || value === undefined) return;
     console.log('Group item changed', index, value);
 
