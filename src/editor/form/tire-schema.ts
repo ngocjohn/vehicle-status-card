@@ -9,7 +9,7 @@ const DEFAULT_TIRE_ENTITY: TireEntityConfig = {
 export const DEFAULT_TIRE_CONFIG: TireTemplateConfig = {
   title: '',
   background: '',
-  orientation: Orientation.HORIZONTAL,
+  orientation: Orientation.VERTICAL,
   hide_rotation_button: false,
   image_size: 100,
   value_size: 100,
