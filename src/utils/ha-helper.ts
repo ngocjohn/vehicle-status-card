@@ -135,7 +135,7 @@ export async function getTireCard(
       rear_left: { state: rearLeftState, name: rearLeftName, color: rearLeftColor },
       rear_right: { state: rearRightState, name: rearRightName, color: rearRightColor },
     },
-    orientation: tireCard.orientation || Orientation.HORIZONTAL,
+    orientation: tireCard.orientation || Orientation.VERTICAL,
     hide_rotation_button: tireCard.hide_rotation_button || false,
   };
 
