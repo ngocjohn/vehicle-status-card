@@ -1,3 +1,32 @@
+<a id="v1.13.0"></a>
+# [v1.13.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.13.0) - 2025-06-09
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.13.0 -->
+
+## What's Changed
+This release adds new layout and configuration features for range info and buttons, along with important display fixes and improvements for optional config handling.
+
+### New Features 🎉
+* **Charging Template & Target Support**
+Add charging template and charge target support in the range info progress bar. [#133](https://github.com/ngocjohn/vehicle-status-card/pull/133)
+* **Range Info Layout Options**
+Add layout configuration for range info bars.[#140](https://github.com/ngocjohn/vehicle-status-card/pull/140)  
+![2025-06-09 22 13 27](https://github.com/user-attachments/assets/665c8577-9da0-4790-a4de-b5a8271e4881)
+
+* **Transparent Button Background & State Colors**
+Support transparent background and state-specific color styling for buttons. Enhances visual customization for dynamic or themed designs. [#142](https://github.com/ngocjohn/vehicle-status-card/pull/142)
+![2025-06-09 21 56 29](https://github.com/user-attachments/assets/3f13e867-3b62-4903-a821-3092eb25ec29)
+
+### Fixes 🐛
+* Fix: Adjust energy item display to include charging icon inside by [@ngocjohn](https://github.com/ngocjohn) in [#139](https://github.com/ngocjohn/vehicle-status-card/pull/139)
+* Update tireConfig handling to support optional properties by [@ngocjohn](https://github.com/ngocjohn) in [#143](https://github.com/ngocjohn/vehicle-status-card/pull/143)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.1...v1.13.0
+
+[Changes][v1.13.0]
+
+
 <a id="v1.12.1"></a>
 # [v1.12.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.12.1) - 2025-06-04
 
@@ -484,6 +513,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.13.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.1...v1.13.0
 [v1.12.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.0...v1.12.1
 [v1.12.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.3...v1.12.0
 [v1.11.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.2...v1.11.3
