@@ -56,6 +56,9 @@ export class VehicleDefaultCardItem extends LitElement {
 
         .data-icon {
           color: var(--secondary-text-color);
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
         }
         .data-row[last-item] {
           border-bottom: none;
@@ -189,13 +192,15 @@ export class VehicleDefaultCardItem extends LitElement {
     return html`
       <div class="data-row" ?last-item=${this.lastItem}>
         <div>
-          <ha-state-icon
+          <state-badge
             class="data-icon"
             @click=${() => this._card.toggleMoreInfo(entity)}
             .hass=${this.hass}
-            .icon=${icon}
             .stateObj=${this.hass.states[entity]}
-          ></ha-state-icon>
+            .overrideIcon=${icon}
+            .color=${'var(--secondary-text-color)'}
+          ></state-badge>
+
           <span>${name}</span>
         </div>
         <div class="data-value-unit" @click=${() => this._card.toggleMoreInfo(entity)}>

@@ -366,6 +366,7 @@ export class VehicleButtonSingle extends LitElement {
           flex-direction: column;
           min-width: 0;
           overflow: hidden;
+          width: 100%;
         }
 
         .grid-item .item-content .primary {
