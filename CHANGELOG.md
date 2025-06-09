@@ -1,3 +1,18 @@
+<a id="v1.13.1"></a>
+# [v1.13.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.13.1) - 2025-06-09
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.13.1 -->
+
+## What's Changed
+### Fixes 🐛
+* Set max-width to 100% for range energy level display by [@ngocjohn](https://github.com/ngocjohn) in [#146](https://github.com/ngocjohn/vehicle-status-card/pull/146)
+
+
+**Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.0...v1.13.1
+
+[Changes][v1.13.1]
+
+
 <a id="v1.13.0"></a>
 # [v1.13.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.13.0) - 2025-06-09
 
@@ -18,8 +33,8 @@ Support transparent background and state-specific color styling for buttons. Enh
 ![2025-06-09 21 56 29](https://github.com/user-attachments/assets/3f13e867-3b62-4903-a821-3092eb25ec29)
 
 ### Fixes 🐛
-* Fix: Adjust energy item display to include charging icon inside by [@ngocjohn](https://github.com/ngocjohn) in [#139](https://github.com/ngocjohn/vehicle-status-card/pull/139)
-* Update tireConfig handling to support optional properties by [@ngocjohn](https://github.com/ngocjohn) in [#143](https://github.com/ngocjohn/vehicle-status-card/pull/143)
+* Fix: Adjust energy item display to include charging icon inside [#139](https://github.com/ngocjohn/vehicle-status-card/pull/139)
+* Update tireConfig handling to support optional properties [#143](https://github.com/ngocjohn/vehicle-status-card/pull/143)
 
 
 **Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.1...v1.13.0
@@ -513,6 +528,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.13.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.0...v1.13.1
 [v1.13.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.1...v1.13.0
 [v1.12.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.0...v1.12.1
 [v1.12.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.11.3...v1.12.0
