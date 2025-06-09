@@ -71,6 +71,22 @@ or
 # Configuration
 <!--README-CONTENT-START-->
 
+# UI Editor
+
+## Example Configuration
+
+The **Vehicle Status Card** is fully configurable using Home Assistant's **UI card editor**, with no need to manually edit YAML.
+
+When adding a new card, the editor provides a **"Generate Example"** option that:
+
+- Selects random entities from your Home Assistant setup
+- Creates a complete sample configuration of the card
+- Provides a functional preview to help you get started quickly
+
+This feature makes it easy for both new and experienced users to explore the card's capabilities and layout options.
+
+![YAML-Config](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-example.gif)
+
 # Indicators Configuration
 
 ## Single Indicators
@@ -87,6 +103,44 @@ For instance, you could create a group indicator to monitor the lock status of a
 
 ![Indicators](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-indicators.gif)
 
+<details>
+<summary>Yaml Example</summary>
+
+```yaml
+indicators:
+  single:
+    - entity: lock.car_lock
+      action_config:
+        tap_action:
+          action: more-info
+    - entity: sensor.car_state_of_charge
+      action_config:
+        tap_action:
+          action: more-info
+  group:
+    - name: Tires
+      items:
+        - entity: sensor.car_tire_pressure_front_left
+          name: Front left
+        - entity: sensor.car_tire_pressure_front_left
+          name: Front right
+        - entity: sensor.car_tire_pressure_front_left
+          name: Rear left
+        - entity: sensor.car_tire_pressure_front_left
+          name: Rear right
+      icon: mdi:car-tire-alert
+    - name: Windows
+      items:
+        - entity: cover.living_room_window
+          name: Front Left
+          action_config: {}
+          icon: mdi:car-door
+        - entity: sensor.amg_window_rearright
+          action_config: {}
+          name: Rear Right
+      icon: mdi:car-door
+```
+</details>
 
 # Range Info Bars
 
@@ -94,14 +148,60 @@ Range info bars are used to display progress bars for entities that represent a 
 
 ### Key Features of Range Info Bars
 
-- **Energy Level**: Track the remaining battery or fuel levels of the vehicle. This can represent the percentage or the exact value, such as kilometers or liters remaining.
-- **Range Level**: Visualize how far the vehicle can travel with the remaining energy or fuel. This is particularly useful for electric vehicles or vehicles with long-range capabilities.
-- **Progress Color**: Customize the color of the progress bar to better indicate the status (e.g., green for sufficient range, red for low range).
+- **Energy Level**: Track the remaining battery or fuel levels of the vehicle. This can represent a percentage or exact value, such as kilometers or liters remaining.
 
-Range info bars help users keep track of their vehicle’s vital statistics in an intuitive and easy-to-read format, ensuring they always know when they need to refuel or recharge.
+- **Range Level**: Visualize how far the vehicle can travel with the remaining energy or fuel. This is particularly useful for electric vehicles or long-range configurations.
+
+- **Charging Status Entity**: Optionally display a dedicated charging entity to reflect whether the vehicle is currently charging. This allows for dynamic display behavior based on real-time charging state.
+
+- **Charge Target Line**: Visually show a line representing the vehicle's target charge level (e.g., 80%). This helps users understand how close the current charge is to the desired target, and plan accordingly.
+
+- **Progress Color**: Customize the color of the progress bar to better reflect energy status (e.g., green for full, yellow for moderate, red for low).
+
+Range info bars help users keep track of their vehicle’s vital statistics in an intuitive and readable format, ensuring they always know when they need to recharge or refuel — and how close they are to their target.
 
 ![Range info bars](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-range-info.gif)
 
+### Multiple Bars Support
+You can configure multiple range info bars to monitor different metrics side by side—such as main battery level, auxiliary battery, fuel tank, or estimated range.
+- **Layout Options**: Choose between **row** or **column** layout to display the progress bars horizontally or vertically, depending on your design preferences or screen space.
+
+![Range info bars layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-multibars-layout.gif)
+
+<details>
+<summary>Yaml Example</summary>
+
+```yaml
+range_info:
+  - energy_level:
+      entity: sensor.max_state_of_charge
+      icon: mdi:battery
+      tap_action:
+        action: more-info
+      value_position: inside
+    range_level:
+      entity: sensor.car_distancezereset
+      value_position: inside
+    charging_entity: binary_sensor.vehicle_status_charging
+    progress_color: "#2196f3"
+    bar_height: 16
+    bar_radius: 8
+  - energy_level:
+      entity: sensor.car_state_of_charge
+      icon: mdi:battery
+      tap_action:
+        action: more-info
+    range_level:
+      entity: sensor.car_rangeelectrickm
+    charging_entity: binary_sensor.vehicle_status_charging
+    progress_color: "#4caf50"
+    bar_height: 16
+    bar_radius: 8
+layout_config:
+  range_info_config:
+    layout: row
+```
+</details>
 
 # Images slides
 
@@ -109,9 +209,12 @@ Image slides allow you to upload or link images that will be displayed in a rota
 
 ### Key Features
 
-- **Image Upload**: You can upload images directly or link to external image URLs.
-- **Slideshow**: The images can automatically cycle through at set intervals, offering a dynamic visual experience.
-- **Customization**: Control the dimensions of the images, the transition effects between slides, and various other options to customize the slideshow to your liking.
+- **Image Upload & Linking**: You can upload images directly from your device or link to external image URLs (e.g., snapshots, maps, rendered dashboards).
+- **Slideshow**: The images cycle through automatically at defined intervals, offering a dynamic visual display.
+- **Customization**: Fine-tune the appearance with options like max width/height, transition speed, slideshow effects, and more.
+- **Editor Preview**: When adding images in the UI editor, a live preview of each image is shown—helping you see exactly how your card will look.
+- **Drag-and-Drop Reordering**: Easily rearrange the order of your images directly in the editor using drag-and-drop. No need to manually adjust the configuration.
+
 
 ### New Swiper Configuration Options
 
@@ -133,6 +236,30 @@ The latest release introduces advanced swiper configuration options, allowing fo
 
 ![Images slides](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-images.gif)
 
+<details>
+<summary>Yaml Example</summary>
+
+```yaml
+images:
+  - title: sample-car-3.png
+    url: >-
+      https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/refs/heads/main/assets/sample-images/sample-car-3.png
+  - title: sample-car-2.png
+    url: >-
+      https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/refs/heads/main/assets/sample-images/sample-car-2.png
+  - title: sample-car-1.png
+    url: >-
+      https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/refs/heads/main/assets/sample-images/sample-car-1.png
+  images_swipe:
+    max_height: 150
+    delay: 5000
+    max_width: 450
+    autoplay: true
+    loop: true
+    hide_pagination: true
+    effect: slide
+```
+</details>
 
 # Mini map
 
@@ -140,11 +267,19 @@ The mini map feature displays a real-time map within the card, tracking the loca
 
 ### Key Features
 
-- **Real-Time Tracking**: Display the live location of your vehicle using any `device_tracker` entity.
-- **Custom Zoom Level**: Adjust the default zoom level to focus on the area around the tracked device.
-- **Theming**: Customize the map’s appearance by setting a light, dark, or automatic theme based on time or user preference.
+- **Real-Time Tracking**: Show live location updates using any `device_tracker` entity.
+- **Multiple Entities Support**: Track more than one device on the same map. Useful for multi-vehicle households, family members, or mixed fleet tracking.
+- **Custom Zoom Level**: Set the default zoom level to focus on the area around the tracked device(s).
+- **Theming Support**: Automatically adjust the map’s appearance to match your dashboard theme (light, dark, or auto based on time).
 
-The mini map provides an easy way to keep track of where your vehicle is at all times, directly on the card.
+![Config mini map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-mini-map.gif)
+
+- **MapTiler Integration**: Use your own **MapTiler API key** to unlock high-quality map tiles, including:
+  - Rich theming options (e.g., streets, satellite, outdoors).
+  - Smooth rendering and performance improvements.
+  - Customizable map style support.
+
+- **Standalone Mode**: With a MapTiler key provided, you can now configure the map as a **standalone card** — useful for displaying a larger tracking view or building a separate map-focused dashboard.
 
 ### Maptiler Popup
 <details>
@@ -162,7 +297,8 @@ For detailed maps popup, get a MapTiler API Key by following these steps:
 
 </details>
 
-![Config mini map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-mini-map.gif)
+![Config Maptiler map](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-maptiler-map.png)
+
 
 
 # Button card
@@ -262,17 +398,61 @@ The layout configuration controls how elements within the vehicle status card ar
 
 ### Key Features
 
-- **Theme Configuration**: Customize the card’s appearance with a chosen theme (`auto`, `light`, or `dark` mode), allowing you to match it with your Home Assistant interface or personal preference.
-- **Button Grid Layout**: Control the layout of the buttons by specifying the number of rows (`rows`) and whether swipe gestures (`swipe`) are enabled for easier navigation, especially on mobile devices.
-- **Visibility Controls**: Choose which elements to show or hide on the card, including:
-  - **Button Notify**: Show or hide notification indicators on buttons.
-  - **Mini Map**: Toggle the visibility of the mini map.
-  - **Buttons, Indicators, Range Info, and Images**: Control the visibility of each major card component, making it easy to declutter the interface based on user preference.
+- **Theme Configuration**: Customize the card’s overall appearance using a theme mode:
+  - `auto`: Automatically switches based on your system or dashboard theme.
+  - `light`: Use a light background and styling.
+  - `dark`: Use a dark theme optimized for low-light environments.
 
-This configuration gives you full flexibility to design the card’s layout and optimize it for different devices or user preferences.
+  ![Config layout theme](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout-theme.gif)
 
-![Config layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout.gif)
+- **Button Grid Layout**:
+  - Set the number of **rows** for displaying buttons.
+  - Enable **swipe gestures** for smooth scrolling on mobile devices.
+  - Choose between **vertical or horizontal layout** for each button using the new `layout` option.
+  - Apply a **transparent background** to buttons for a cleaner, more integrated visual style.
 
+  ![Config layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout-buttons.gif)
+
+- **Visibility Controls**: Toggle the display of individual card sections to match your needs:
+  - **Card Name**
+  - **Mini Map**
+  - **Buttons**
+  - **Indicators**
+  - **Range Info**
+  - **Images**
+  - **Button Notifications**
+
+- **Section Reordering**: Easily **rearrange the order** in which the main sections appear on the card. This lets you prioritize the content most relevant to your use case, whether that's vehicle status, location, or custom buttons.
+
+  This configuration gives you full flexibility to design the card’s layout and optimize it for different devices or user preferences.
+
+  ![Config layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout-hide-order.gif)
+
+<details>
+<summary>Yaml Example</summary>
+
+```yaml
+layout_config:
+  button_grid:
+    rows: 2
+    columns: 2
+    swipe: true
+    button_layout: horizontal
+    transparent: false
+  hide:
+    button_notify: false
+    buttons: false
+    images: true
+    indicators: false
+    range_info: true
+    mini_map: true
+    card_name: false
+    map_address: false
+  section_order:
+    - header_info
+    - buttons
+```
+</details>
 
 <!--README-CONTENT-END-->
 ---
