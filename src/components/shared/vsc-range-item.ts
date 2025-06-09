@@ -60,6 +60,7 @@ export class VscRangeItem extends LitElement {
           padding-inline: var(--vic-card-padding);
           box-sizing: border-box;
           min-width: fit-content;
+          max-width: 100% !important;
         }
         .fuel-level-bar[charging] {
           justify-content: space-between;
