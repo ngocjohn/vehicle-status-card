@@ -63,18 +63,6 @@ export class VscIndicators extends LitElement {
     }
   }
 
-  private async _addEventListeners(): Promise<void> {
-    const groupIndicators = this.shadowRoot?.querySelectorAll(
-      'vsc-indicator-group-item'
-    ) as NodeListOf<VscIndicatorGroupItem>;
-    if (!groupIndicators || groupIndicators.length === 0) return;
-    groupIndicators.forEach((groupIndicator: VscIndicatorGroupItem) => {
-      const actionConfig = groupIndicator.item.action_config;
-      if (!actionConfig) return;
-      groupIndicator._setEventListeners();
-    });
-  }
-
   private async _tryConnect(): Promise<void> {
     if (!this.config.indicators.group?.length) {
       return;
@@ -223,8 +211,8 @@ export class VscIndicators extends LitElement {
             ?active=${active}
             ?hidden=${!visibility}
           >
-            <ha-icon icon=${icon}></ha-icon>
-            <div class="added-item-arrow">
+            <ha-icon .icon=${icon} ?hidden=${!icon}></ha-icon>
+            <div>
               <span>${name}</span>
               <div class="subcard-icon" ?active=${active} style="margin-bottom: 2px">
                 <ha-icon icon="mdi:chevron-down"></ha-icon>

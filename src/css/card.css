@@ -176,17 +176,19 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 4px !important;
+  line-height: 100%;
 }
 
 .info-box .item {
   display: flex;
   gap: 0.4rem;
-  align-items: flex-end;
+  /* align-items: flex-end; */
+  line-height: 100%;
 }
 
-.info-box .item ha-icon {
+/* .info-box .item ha-icon {
   margin-bottom: 3px;
-}
+} */
 
 .combined-info-box>.info-box:nth-last-child(1):nth-child(odd) {
   grid-column: span 2;
@@ -206,10 +208,6 @@ header h1 {
   .info-box .item .base-menu {
     font-size: 0.8rem;
   }
-}
-
-.added-item-arrow {
-  display: flex;
 }
 
 .item.active-btn {
