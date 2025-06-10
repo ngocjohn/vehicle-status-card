@@ -35,7 +35,7 @@ export interface IndicatorsConfig {
 }
 
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
-
+export type Threshold = { value: number; color: string };
 export interface RangeInfoConfig {
   energy_level: RangeItemConfig;
   progress_color: string;
@@ -47,6 +47,7 @@ export interface RangeInfoConfig {
   charge_target_visibility?: string;
   charge_target_tooltip?: boolean;
   color_template?: string;
+  color_thresholds?: Threshold[];
   bar_height?: number;
   bar_width?: number;
   bar_radius?: number;

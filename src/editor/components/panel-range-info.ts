@@ -8,7 +8,14 @@ import tinycolor from 'tinycolor2';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { HomeAssistant, VehicleStatusCardConfig, RangeInfoConfig, RangeItemConfig, fireEvent } from '../../types';
+import {
+  HomeAssistant,
+  VehicleStatusCardConfig,
+  RangeInfoConfig,
+  RangeItemConfig,
+  fireEvent,
+  Threshold,
+} from '../../types';
 import * as Create from '../../utils/create';
 import './sub-panel-yaml';
 import { VehicleStatusCardEditor } from '../editor';
@@ -28,6 +35,7 @@ export class PanelRangeInfo extends LitElement {
   @state() private _yamlEditorActive = false;
   @state() private _yamlItemEditorActive = false;
   @state() _colorChangeTimeout?: number = undefined;
+  @state() private _colorThresholds?: Threshold[];
 
   private _tinycolor = tinycolor;
 
@@ -250,6 +258,7 @@ export class PanelRangeInfo extends LitElement {
     const chargeTargetEntity = (index: number) => this._renderChargeTargetEntityConfig(index);
     const colorTemplate = (index: number) => this._renderColorTemplate(index);
     const barHeightWidth = (index: number) => this._renderBarDimensions(index);
+    const colorThresholds = (index: number) => this._renderColorThresholds(index);
     const colorPicker = (index: number) => this._colorPicker(index);
     const configContent = {
       energy_level: {
@@ -291,6 +300,11 @@ export class PanelRangeInfo extends LitElement {
       color_template: {
         title: '',
         config: colorTemplate,
+      },
+      color_thresholds: {
+        title: 'Color Thresholds',
+        helper: 'Define color thresholds for the progress bar',
+        config: colorThresholds,
       },
     };
 
@@ -566,6 +580,145 @@ export class PanelRangeInfo extends LitElement {
     };
 
     return this._createHaForm(DATA, PROGRESS_BAR_SCHEMA);
+  }
+
+  private _parseHexColorToRbg(color: string): [number, number, number] {
+    const parsedColor = this._tinycolor(color);
+    if (!parsedColor.isValid()) {
+      console.warn('Invalid color:', color);
+      return [0, 0, 0]; // Default to black if the color is invalid
+    }
+    const rbgColor = parsedColor.toRgb();
+    return [rbgColor.r, rbgColor.g, rbgColor.b];
+  }
+  private _renderColorThresholds(index: number): TemplateResult {
+    const rangeItem = this.config.range_info[index];
+    this._colorThresholds = rangeItem.color_thresholds || [];
+    return html`<div class="indicator-list">
+      ${!this._colorThresholds || this._colorThresholds.length === 0
+        ? html`<div class="empty-list">No color thresholds added yet.</div>`
+        : repeat(
+            this._colorThresholds || [],
+            (threshold: Threshold) => threshold.value,
+            (threshold: Threshold, index: number) => html`
+                <div class="item-config-row color-threshold" data-index=${index}>
+                    <ha-selector
+                      .hass=${this.hass}
+                      .label=${'Value'}
+                      .value=${threshold.value}
+                      .selector=${{ number: { min: 0, max: 100, mode: 'box' } }}
+                      @value-changed=${this._colorThreholdChanged}
+                      .configValue=${'value'}
+                      .index=${index}
+                      .required=${false}
+                    ></ha-selector>
+                    <ha-selector
+                      .hass=${this.hass}
+                      .label=${'Color'}
+                      .value=${threshold.color ? this._parseHexColorToRbg(threshold.color) : ''}
+                      .selector=${{ color_rgb: {} }}
+                      @value-changed=${this._colorThreholdChanged}
+                      .configValue=${'color'}
+                      .index=${index}
+                      .required=${false}
+
+                    ></ha-selector>
+                    <div class="item-actions">
+                      <ha-icon-button
+                        class="action-icon"
+                        .path=${ICON.DELETE}
+                        @click=${(ev: Event) => this._removeColorThreshold(ev, index)}
+                      ></ha-icon-button>
+                    </div>
+                  </div>
+                </div>
+              `
+          )}
+      <div class="item-config-row">
+        <ha-button .label=${'Add Threshold'} .outlined=${true} @click=${() => this._addColorThreshold()}></ha-button>
+      </div>
+    </div> `;
+  }
+
+  private _colorThreholdChanged(ev: any): void {
+    ev.stopPropagation();
+    const target = ev.target;
+    const index = target.index;
+    const configType = target.configType; // E.g., 'color_thresholds'
+    const configValue = target.configValue; // E.g., 'value', 'color'
+    const newValue = ev.detail.value;
+    console.log('Color threshold changed', index, configType, configValue, newValue);
+
+    let currentThresholds = [...(this._colorThresholds || [])];
+    const currentThreshold = { ...currentThresholds[index] }; // Clone the item at the specific index
+    if (configValue === 'value') {
+      // Ensure the value is a number
+      const numericValue = parseFloat(newValue);
+      currentThreshold.value = isNaN(numericValue) ? 0 : numericValue; // Default to 0 if NaN
+    } else {
+      // Ensure the color is a valid hex color
+      if (typeof newValue === 'string' && this._tinycolor(newValue).isValid()) {
+        currentThreshold.color = this._tinycolor(newValue).toHexString(); // Convert to hex string
+      } else if (Array.isArray(newValue) && newValue.length === 3) {
+        // If the color is an RGB array, convert it to hex
+        const rgbColor = `rgb(${newValue[0]}, ${newValue[1]}, ${newValue[2]})`;
+        currentThreshold.color = this._tinycolor(rgbColor).toHexString();
+      }
+    }
+    currentThresholds[index] = currentThreshold; // Replace the modified item in the color_thresholds array
+    this._colorThresholds = currentThresholds; // Update the state with the modified thresholds
+    const currentRangeInfo = [...(this.config.range_info || [])];
+    const currentRangeItem = { ...currentRangeInfo[this._activeIndexItem!] }; // Clone the item at the active index
+    currentRangeItem.color_thresholds = currentThresholds;
+    currentRangeInfo[this._activeIndexItem!] = currentRangeItem; // Replace the modified item in the range_info array
+    this.config = { ...this.config, range_info: currentRangeInfo }; // Update the config with the modified range_info
+    fireEvent(this, 'config-changed', { config: this.config });
+  }
+
+  private _addColorThreshold(): void {
+    const progressColor =
+      this.config.range_info[this._activeIndexItem!].progress_color || tinycolor.random().toHexString();
+    if (!this._colorThresholds || this._colorThresholds.length === 0) {
+      const newThreshold: Threshold = {
+        value: 0,
+        color: progressColor,
+      };
+      this._colorThresholds = [newThreshold];
+      this.config.range_info[this._activeIndexItem!].color_thresholds = this._colorThresholds;
+      fireEvent(this, 'config-changed', { config: this.config });
+    } else {
+      let latestIndex = this._colorThresholds.length - 1;
+      let latestValue = this._colorThresholds[latestIndex].value || 0;
+      if (latestValue === 100) {
+        latestIndex = this._colorThresholds.length - 2;
+        latestValue = this._colorThresholds[latestIndex].value || 0;
+      }
+      const newThreshold: Threshold = {
+        value: latestValue + 5,
+        color: progressColor,
+      };
+      if (newThreshold.value > 100) {
+        console.warn('Cannot add a color threshold with value greater than 100');
+        return;
+      }
+      // Add the new threshold to the existing array before latest index
+      this._colorThresholds.splice(latestIndex + 1, 0, newThreshold);
+      this.config.range_info[this._activeIndexItem!].color_thresholds = this._colorThresholds;
+      fireEvent(this, 'config-changed', { config: this.config });
+    }
+    this.requestUpdate();
+  }
+
+  private _removeColorThreshold(ev: Event, index: number): void {
+    ev.stopPropagation();
+    if (!this._colorThresholds || index < 0 || index >= this._colorThresholds.length) {
+      console.warn('Invalid index for color threshold removal:', index);
+      return;
+    }
+    this._colorThresholds.splice(index, 1);
+    this.config.range_info[this._activeIndexItem!].color_thresholds = this._colorThresholds;
+    fireEvent(this, 'config-changed', { config: this.config });
+    this.requestUpdate();
   }
 
   private _colorPicker(index: number): TemplateResult {

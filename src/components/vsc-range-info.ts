@@ -24,7 +24,7 @@ export class VscRangeInfo extends LitElement {
           display: grid;
           width: 100%;
           grid-template-columns: repeat(auto-fill, minmax(49%, 1fr));
-          column-gap: 0.5rem;
+          gap: var(--vic-gutter-gap);
           opacity: 1;
           transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
           max-height: 1000px;
