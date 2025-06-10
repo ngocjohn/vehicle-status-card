@@ -29,7 +29,7 @@ export const DEFAULT_ZOOM = 14;
 @customElement('mini-map-box')
 export class MiniMapBox extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) mapData!: MapData;
+  @property({ attribute: false }) mapData?: MapData;
   @property({ attribute: false }) card!: VehicleStatusCard;
   @property({ type: Boolean }) isDark: boolean = false;
   @property({ type: Boolean }) open!: boolean;
@@ -166,7 +166,7 @@ export class MiniMapBox extends LitElement {
 
   protected willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
-    if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map) {
+    if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map && this.mapData) {
       // console.log('Map initialized, setting view...');
       this.latLon = this._getTargetLatLng(this.map);
       this.map.invalidateSize();
@@ -187,7 +187,7 @@ export class MiniMapBox extends LitElement {
   protected shouldUpdate(changedProperties: PropertyValues): boolean {
     super.shouldUpdate(changedProperties);
 
-    if (changedProperties.has('hass') && this.hass && this.map) {
+    if (changedProperties.has('hass') && this.hass && this.map && this.mapData) {
       const { lat, lon } = this.mapData;
       const stateObj = this.hass.states[this.card._config.mini_map.device_tracker];
       if (stateObj) {
@@ -240,12 +240,12 @@ export class MiniMapBox extends LitElement {
   }
 
   private async _getAddress(): Promise<void> {
-    const { lat, lon } = this.mapData;
+    const { lat, lon } = this.mapData!;
     // console.log('Getting adress...');
     const address = await _getMapAddress(this.card, lat, lon);
     if (address) {
       this._address = address;
-      this.mapData.address = address;
+      this.mapData!.address = address;
       this._addressReady = true;
     } else if (!this._address) {
       this._addressReady = true;
@@ -255,7 +255,7 @@ export class MiniMapBox extends LitElement {
   private initMap(): void {
     if (this._mapInitialized || this.map) return;
     // console.log('Initializing map...');
-    const { lat, lon } = this.mapData;
+    const { lat, lon } = this.mapData!;
     const defaultZoom = this.zoom;
     const mapOptions = {
       dragging: true,
@@ -285,7 +285,7 @@ export class MiniMapBox extends LitElement {
   }
 
   private _getTargetLatLng(map: L.Map): L.LatLng {
-    const { lat, lon } = this.mapData;
+    const { lat, lon } = this.mapData!;
     const mapSizeSplit = map.getSize().x;
     const targetPoint = map.project([lat, lon], this.zoom).subtract([mapSizeSplit / 5, 3]);
     const targetLatLng = map.unproject(targetPoint, this.zoom);
@@ -303,7 +303,7 @@ export class MiniMapBox extends LitElement {
   }
 
   private _createMarker(map: L.Map): L.Marker {
-    const { lat, lon } = this.mapData;
+    const { lat, lon } = this.mapData!;
     const customIcon = L.divIcon({
       html: `<div class="marker">
             </div>`,
@@ -384,7 +384,7 @@ export class MiniMapBox extends LitElement {
         ${MAPTILER_DIALOG_STYLES}
         <vsc-maptiler-popup
           .hass=${this.card._hass}
-          .mapData=${this.mapData}
+          .mapData=${this.mapData!}
           .card=${this.card}
           ._paths=${this._historyPoints}
           ._sizes=${this.getResponsivePopupSize(this.card._config.mini_map?.aspect_ratio || '1.3')}
