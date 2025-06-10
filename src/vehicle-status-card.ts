@@ -187,8 +187,9 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       return html`${mapCard}`;
     }
     const headerHidden = this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '';
+    const sectionOrder = this._config.layout_config?.section_order || [...SECTION_ORDER];
     return html`
-      <ha-card class=${this._computeClasses()} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>
+      <ha-card class=${this._computeClasses(sectionOrder)} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>
         <header id="name" ?hidden=${headerHidden}>
           <h1>${this._config.name}</h1>
         </header>
@@ -418,9 +419,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     }
   }
 
-  private _computeClasses() {
-    if (!this._config) return;
-    const section_order = this._config.layout_config?.section_order || [...SECTION_ORDER];
+  private _computeClasses(section_order: string[]) {
     const lastItem = section_order[section_order.length - 1];
     const firstItem = section_order[0];
     const mapSingle = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
