@@ -1,21 +1,14 @@
-name: Bug report
-description: File a bug report. 🐞
-title: "[Bug] "
+name:  🐞 Bug report
+description: File a bug report.
+title: "[Bug]: "
 labels: ["bug"]
 assignees: ['ngocjohn']
 
 body:
-  - type: markdown
+  - type: textarea
     attributes:
-      value: |
-        Thanks for taking the time to fill out this bug report! 🛠️ Please provide the details below to help us address the issue.
-
-  - type: input
-    id: summary
-    attributes:
-      label: Short summary 📝
-      description: A short summary of the bug
-      placeholder: "e.g., The application crashes when I click on 'Submit'"
+      label: Current Behavior
+      description: A concise description of what you're experiencing.
     validations:
       required: true
 
@@ -24,7 +17,7 @@ body:
     attributes:
       label: Detailed description 📋
       description: A detailed description of the bug
-      placeholder: "Describe the bug in detail, including steps to reproduce, expected behavior, and actual behavior."
+      placeholder: "Describe the bug in detail, including steps to reproduce, expected behavior."
     validations:
       required: true
 
@@ -84,3 +77,7 @@ body:
       placeholder: "Paste logs or upload screenshots"
     validations:
       required: false
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! 🛠️

@@ -1,21 +1,15 @@
-name: Feature request
-description: Suggest a new feature or enhancement. ✨
-title: "[Feature] "
+name:  ✨ Feature request
+description: Suggest a new feature or enhancement.
+title: "[Feature]: "
 labels: ["enhancement"]
 assignees: ['ngocjohn']
 
 body:
-  - type: markdown
+  - type: textarea
     attributes:
-      value: |
-        Thanks for suggesting a new feature! 🚀 Please fill out the details below to help us understand your request.
-
-  - type: input
-    id: title
-    attributes:
-      label: Short summary
-      description: A short summary of the feature request 📝
-      placeholder: "e.g., Add dark mode to the application"
+      label: Is your feature request related to a problem?
+      description: >
+        A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
     validations:
       required: true
 
@@ -23,13 +17,11 @@ body:
     id: description
     attributes:
       label: Detailed description
-      description: A detailed description of the feature request 📋
-      placeholder: "Describe the feature in detail, including the problem it solves, the benefits it provides, and any additional context."
+      description: A detailed description of the feature request.
     validations:
       required: true
 
-  - type: input
-    id: examples
+  - type: textarea
     attributes:
       label: Examples 🖼️
       description: Any examples or mockups to help illustrate the feature
@@ -37,11 +29,15 @@ body:
     validations:
       required: false
 
-  - type: input
-    id: additional_context
+  - type: textarea
     attributes:
       label: Additional context 🗒️
       description: Any other context or information you want to provide
       placeholder: "e.g., Why is this feature important to you?"
     validations:
       required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! 🚀
