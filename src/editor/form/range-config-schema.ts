@@ -4,10 +4,10 @@ import { computeOptionalActionSchema } from './actions-config';
 
 const POSTIONS = ['outside', 'inside', 'off'] as const;
 export const RANGE_ITEM_SCHEMA = memoizeOne(
-  (entityId: string, required: boolean = false) =>
+  (name: string, entityId: string, required: boolean = false) =>
     [
       {
-        name: '',
+        name,
         type: 'grid',
         flatten: true,
         schema: [
@@ -47,10 +47,11 @@ export const RANGE_ITEM_SCHEMA = memoizeOne(
         ],
       },
       {
-        name: '',
+        name,
         type: 'expandable',
         title: 'Interaction Options',
         icon: 'mdi:gesture-tap-button',
+        flatten: true,
         schema: [...computeOptionalActionSchema()],
       },
     ] as const

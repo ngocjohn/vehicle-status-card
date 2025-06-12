@@ -390,7 +390,7 @@ span.info-alert {
 
 .item-config-row.color-threshold {
 	display: grid;
-	grid-template-columns: 1fr 1fr fit-content(100%);
+	grid-template-columns: min-content 1fr 1fr fit-content(100%);
 	grid-gap: var(--vic-gutter-gap);
 	align-items: center;
 }
