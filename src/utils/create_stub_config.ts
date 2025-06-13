@@ -1,3 +1,5 @@
+import tinycolor from 'tinycolor2';
+
 import { HomeAssistant } from '../types';
 import {
   ButtonCardConfig,
@@ -9,6 +11,7 @@ import {
   RangeInfoConfig,
   VehicleStatusCardConfig,
 } from '../types/config';
+import { createRandomPallete } from './colors';
 import {
   computeEntityName,
   findBatteryChargingEntity,
@@ -202,7 +205,7 @@ export const DEFAULT_CONFIG: Partial<VehicleStatusCardConfig> = {
   type: 'custom:vehicle-status-card',
 };
 
-const findEntities = (hass: HomeAssistant, maxEntities: number, domain: string[]): string[] => {
+export const findEntitiesByDomain = (hass: HomeAssistant, maxEntities: number, domain: string[]): string[] => {
   const entityIds: string[] = [];
 
   const getEntities = (domain: string): string[] => {
@@ -217,7 +220,10 @@ const findEntities = (hass: HomeAssistant, maxEntities: number, domain: string[]
         return hasLocation(hass.states[entity]);
       });
     }
-
+    entities = entities.filter((entity) => {
+      const stateObj = hass.states[entity];
+      return stateObj && stateObj.state !== undefined && stateObj.state !== '';
+    });
     return entities.slice(0, maxEntities);
   };
 
@@ -233,8 +239,8 @@ const entitiesWithEntityPicture = ['person', 'device_tracker', 'media_player'] a
 
 const getDefaultButtonCards = (hass: HomeAssistant): ButtonCardConfig[] => {
   const entities = [
-    ...findEntities(hass, 1, [...entitiesWithEntityPicture]),
-    ...findEntities(hass, 2, ['light', 'binary_sensor']),
+    ...findEntitiesByDomain(hass, 1, [...entitiesWithEntityPicture]),
+    ...findEntitiesByDomain(hass, 2, ['light', 'binary_sensor']),
   ];
   console.log('entities:', entities.length, entities);
   const buttonCards: ButtonCardConfig[] = [];
@@ -293,47 +299,66 @@ const getRangeInfo = (hass: HomeAssistant): RangeInfoConfig[] | void => {
       icon: hass.states[batteryOrPowerEntity[energyIdx]?.entity_id]?.attributes?.icon || 'mdi:battery',
       tap_action: { action: 'more-info' },
       value_position: options.energy_level?.value_position,
+      value_alignment: options.energy_level?.value_alignment,
     },
     range_level: {
       entity: distanceEntities?.[distanceIdx]?.entity_id || '',
       value_position: options.range_level?.value_position,
     },
     charging_entity: chargingBatteryEntity?.entity_id || '',
-    progress_color: options.progress_color || '#4caf50',
-    bar_height: 16,
-    bar_radius: 8,
+    progress_color: tinycolor.random().toHexString(),
     charging_template: '{{ true }}',
+    color_thresholds: options.color_thresholds || [],
+    color_blocks: options.color_blocks || false,
   });
 
+  const defaultColorThresholds = createRandomPallete(tinycolor.random().toHexString(), 100);
+  // Default range info with no specific configuration
   const defaultRangeInfo = createRangeInfo(0, 0);
 
   const insideValueRangeInfo = createRangeInfo(1, 1, {
     energy_level: { value_position: 'inside' },
     range_level: { value_position: 'inside' },
-    progress_color: '#2196f3',
   });
-
   // Remove charging_template from second range info
   delete insideValueRangeInfo.charging_template;
 
-  return [defaultRangeInfo, insideValueRangeInfo];
+  // get the index of the battery or power entity has higher state
+  const maxEnergyIndex = batteryOrPowerEntity.reduce((maxIdx, entity, idx) => {
+    const stateValue = hass.states[entity.entity_id]?.state;
+    return stateValue && parseFloat(stateValue) > parseFloat(hass.states[batteryOrPowerEntity[maxIdx].entity_id]?.state)
+      ? idx
+      : maxIdx;
+  }, 0);
+
+  const colorRangeInfo = createRangeInfo(maxEnergyIndex, 0, {
+    energy_level: { value_position: 'inside', value_alignment: 'end' },
+    range_level: { value_position: 'off' },
+    color_thresholds: defaultColorThresholds,
+    color_blocks: true,
+  });
+  // Remove charging_template from color range info
+  delete colorRangeInfo.charging_template;
+
+  return [defaultRangeInfo, insideValueRangeInfo, colorRangeInfo];
 };
 
 const getIndicators = (hass: HomeAssistant): Partial<IndicatorsConfig> | void => {
-  const singleIndicators = [...findEntities(hass, 1, ['sensor', 'binary_sensor', 'switch'])];
+  const singleIndicators = [...findEntitiesByDomain(hass, 1, ['sensor', 'binary_sensor', 'switch'])];
   console.log('singleIndicators:', singleIndicators.length, singleIndicators);
   if (!singleIndicators.length) return;
   const single: IndicatorConfig[] = singleIndicators.map((entity) => {
     return { entity: entity, action_config: { tap_action: { action: 'more-info' } } };
   });
   // Add single indicator
-  const lights = findEntities(hass, 4, ['light']);
+  const lights = findEntitiesByDomain(hass, 4, ['light']);
   const motions = [
     ...(findEntitiesByClass(hass, Object.values(hass.states), 'motion', 4)?.map((entity) => entity.entity_id) || []),
   ];
 
-  const createGroupIndicator = (name: string, entities: string[]): IndicatorGroupConfig => ({
+  const createGroupIndicator = (name: string, icon: string, entities: string[]): IndicatorGroupConfig => ({
     name: name,
+    icon,
     items: entities.map((entity) => ({
       entity: entity,
       name:
@@ -345,11 +370,11 @@ const getIndicators = (hass: HomeAssistant): Partial<IndicatorsConfig> | void =>
 
   const groups: IndicatorGroupConfig[] = [];
   if (lights.length) {
-    const lightGroup: IndicatorGroupConfig = createGroupIndicator('Lights', lights);
+    const lightGroup: IndicatorGroupConfig = createGroupIndicator('Lights', 'mdi:lightbulb-group', lights);
     groups.push(lightGroup);
   }
   if (motions.length) {
-    const motionGroup: IndicatorGroupConfig = createGroupIndicator('Motions', motions);
+    const motionGroup: IndicatorGroupConfig = createGroupIndicator('Motions', 'mdi:motion-sensor', motions);
     groups.push(motionGroup);
   }
   console.log('groups:', groups.length, groups);
@@ -360,7 +385,7 @@ const getIndicators = (hass: HomeAssistant): Partial<IndicatorsConfig> | void =>
 };
 
 export const getDefaultConfig = async (hass: HomeAssistant) => {
-  const deviceTracker = findEntities(hass, 1, ['device_tracker']);
+  const deviceTracker = findEntitiesByDomain(hass, 1, ['device_tracker']);
   const buttonCards: ButtonCardConfig[] = getDefaultButtonCards(hass);
   const rangeInfo = getRangeInfo(hass);
   const indicators = getIndicators(hass);
