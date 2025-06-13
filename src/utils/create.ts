@@ -246,7 +246,7 @@ export const ExpansionPanel = ({
   content,
   options,
 }: {
-  content: TemplateResult;
+  content: TemplateResult[] | TemplateResult;
   options: {
     expanded?: boolean;
     header: string;

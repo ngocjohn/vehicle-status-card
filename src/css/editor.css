@@ -279,8 +279,13 @@
 }
 
 
-.item-actions .action-icon:hover {
+.item-actions *:hover {
 	color: var(--primary-color);
+	box-shadow: 0 0 8px 0 rgba(3, 11, 115, 0.3);
+}
+
+.item-actions .delete:hover {
+	color: var(--error-color) !important;
 	box-shadow: 0 0 8px 0 rgba(3, 11, 115, 0.3);
 }
 

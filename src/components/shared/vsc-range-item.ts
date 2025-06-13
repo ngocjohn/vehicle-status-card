@@ -12,7 +12,14 @@ import {
   RenderTemplateResult,
   subscribeRenderTemplate,
 } from '../../types';
-import { addActions, generateColorBlocks, generateGradient, hasTemplate } from '../../utils';
+import {
+  addActions,
+  generateColorBlocks,
+  generateGradient,
+  getNormalizedValue,
+  hasPercent,
+  hasTemplate,
+} from '../../utils';
 import { hasActions } from '../../utils/ha-helper';
 
 const TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
@@ -49,6 +56,24 @@ export class VscRangeItem extends LitElement {
           align-items: center;
         }
 
+        .fuel-level-background {
+          position: absolute;
+          width: var(--vsc-bar-level);
+          background: var(--vsc-range-gradient-color);
+          border-radius: var(--vsc-bar-radius);
+          max-width: 100% !important;
+          transition: width 0.4s ease-in-out;
+          top: 0;
+          bottom: 0;
+          z-index: 4;
+          margin: 2px 0;
+        }
+
+        .fuel-container[itemsInside] .fuel-wrapper {
+          height: 100%;
+          min-height: var(--vsc-bar-min-height);
+        }
+
         .fuel-level-bar {
           position: absolute;
           background-color: transparent;
@@ -63,34 +88,31 @@ export class VscRangeItem extends LitElement {
           bottom: 0;
           min-width: fit-content;
           /* color: black; */
-          justify-content: flex-end;
+          gap: var(--vic-gutter-gap);
           align-items: center;
         }
 
-        .fuel-level-background {
-          position: absolute;
-          width: var(--vsc-bar-level);
-          background: var(--vsc-range-gradient-color);
-          border-radius: var(--vsc-bar-radius);
-          max-width: 100% !important;
-          transition: width 0.4s ease-in-out;
-          top: 0;
-          bottom: 0;
-          z-index: 4;
+        .fuel-level-bar[align='start'] {
+          justify-content: flex-start;
         }
 
-        .fuel-container[itemsInside] > .fuel-level-bar {
-          height: 100%;
+        .fuel-level-bar:not([charging])[align='end'] {
+          justify-content: flex-end;
         }
+
+        .fuel-level-bar[charging][align='end'] {
+          justify-content: space-between;
+        }
+
         .energy-inside {
           text-shadow: 1px 1px 2px var(--card-background-color);
-          /* backdrop-filter: blur(2px); */
+          /* flex: 1 0 0; */
         }
 
-        .fuel-level-bar[charging] {
+        /* .fuel-level-bar[charging] {
           justify-content: space-between;
-          gap: var(--vic-gutter-gap);
-        }
+        } */
+
         /* .fuel-wrapper span {
           text-shadow: 1px 1px 2px #000000;
           font-weight: 500;
@@ -292,6 +314,12 @@ export class VscRangeItem extends LitElement {
       double_tap_action: config?.double_tap_action,
     });
 
+    const entityMax = r.energy_level?.entity
+      ? hass.states[r.energy_level.entity]?.attributes?.max
+      : hasPercent(hass.states[r.energy_level?.entity || ''])
+      ? 100
+      : undefined;
+
     switch (key) {
       case 'icon':
         return r.energy_level?.icon ?? '';
@@ -315,13 +343,13 @@ export class VscRangeItem extends LitElement {
         return r.bar_background || 'var(--secondary-background-color, #90909040)';
 
       case 'gradient':
-        if (r.color_blocks && r.color_thresholds?.length) {
-          return generateColorBlocks(r.color_thresholds);
-        } else if (r.color_thresholds && r.color_thresholds.length > 0) {
-          return generateGradient(r.color_thresholds, this.getValue('level'));
-        } else {
+        if (!r.color_thresholds || r.color_thresholds.length === 0) {
           return this.getValue('barColor');
         }
+        const background = r.color_blocks
+          ? generateColorBlocks(r.color_thresholds, this.getValue('level'))
+          : generateGradient(r.color_thresholds, this.getValue('level'));
+        return background;
 
       case 'chargingState': {
         if (r.charging_template) {
@@ -351,13 +379,13 @@ export class VscRangeItem extends LitElement {
         return r.charge_target_tooltip || false;
 
       case 'barHeight':
-        return r.bar_height || 5;
+        return r.bar_height || 14;
 
       case 'barWidth':
         return r.bar_width || 100;
 
       case 'barRadius':
-        return r.bar_radius || 4;
+        return r.bar_radius || 5;
 
       case 'energyActions':
         return getActions(r.energy_level);
@@ -369,19 +397,26 @@ export class VscRangeItem extends LitElement {
         return r.energy_level?.value_position || 'outside';
       case 'rangePosition':
         return r.range_level?.value_position || 'outside';
+      case 'energyAlignment':
+        return r.energy_level?.value_alignment || 'start';
+
+      case 'normalizedWidth':
+        return getNormalizedValue(r.color_thresholds || [], this.getValue('level'), entityMax);
+
       default:
         return undefined;
     }
   }
   protected render(): TemplateResult {
     const get = (key: string) => this.getValue(key);
-
-    const level = get('level');
+    const itemsInside = get('energyPosition') === 'inside' || get('rangePosition') === 'inside';
+    const minHeight = get('barHeight') > 20 ? get('barHeight') : 20; // Ensure minimum height for the bar
     const styles = {
       '--vsc-bar-height': `${get('barHeight')}px`,
+      '--vsc-bar-min-height': `${minHeight}px`,
       '--vsc-bar-width': `${get('barWidth') || 100}%`,
       '--vsc-bar-radius': `${get('barRadius')}px`,
-      '--vsc-bar-level': `${level}%`,
+      '--vsc-bar-level': `${get('normalizedWidth')}%`,
       '--vsc-bar-color': get('barColor'),
       '--vsc-range-gradient-color': get('gradient'),
       '--vsc-bar-charge-target': `${get('targetChargeState')}%`,
@@ -391,8 +426,6 @@ export class VscRangeItem extends LitElement {
       '--vsc-range-state': `${get('rangeState')}`,
       '--vsc-bar-background': get('barBackground'),
     };
-
-    const itemsInside = get('energyPosition') === 'inside' || get('rangePosition') === 'inside';
 
     const chargingIcon = html`
       <ha-icon
@@ -449,7 +482,9 @@ export class VscRangeItem extends LitElement {
           </ha-tooltip>
           <div class="fuel-wrapper">
             <div class="fuel-level-background"></div>
-            <div class="fuel-level-bar" ?charging=${get('chargingState')}>${insideEnergy}</div>
+            <div class="fuel-level-bar" ?charging=${get('chargingState')} align=${get('energyAlignment')}>
+              ${insideEnergy}
+            </div>
             ${insideRange}
           </div>
         </div>

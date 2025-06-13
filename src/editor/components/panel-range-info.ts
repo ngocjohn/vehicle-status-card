@@ -1,6 +1,5 @@
-import iro from '@jaames/iro';
-import { mdiRestart } from '@mdi/js';
-import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css } from 'lit';
+import { getColorByIndex } from 'extra-map-card';
+import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -19,11 +18,28 @@ import {
   fireEvent,
   Threshold,
 } from '../../types';
-import { generateColorBlocks, generateGradient, hasPercent } from '../../utils';
+import {
+  colorToRgb,
+  createRandomPallete,
+  findBatteryChargingEntity,
+  findEntitiesByDomain,
+  findPowerEntities,
+  generateColorBlocks,
+  generateGradient,
+  getNormalizedValue,
+  hasPercent,
+} from '../../utils';
 import * as Create from '../../utils/create';
 import { VehicleStatusCardEditor } from '../editor';
 import { RANGE_ACTIONS } from '../editor-const';
-import { CHARGE_TARGET_SCHEMA, CHARGING_STATE_SCHEMA, PROGRESS_BAR_SCHEMA, RANGE_ITEM_SCHEMA } from '../form';
+import {
+  CHARGE_TARGET_KEYS,
+  CHARGE_TARGET_SCHEMA,
+  CHARGING_STATE_SCHEMA,
+  DIMENSION_KEYS,
+  PROGRESS_BAR_SCHEMA,
+  RANGE_ITEM_SCHEMA,
+} from '../form';
 
 const COLOR_STYLES = ['basic', 'color_thresholds'] as const;
 type ColorStyle = (typeof COLOR_STYLES)[number];
@@ -37,11 +53,9 @@ export class PanelRangeInfo extends LitElement {
   @state() private _activeIndexItem: number | null = null;
   @state() private _colorTestValue?: number | undefined = undefined;
   @state() private _selectedStyle: ColorStyle = 'basic';
-  @state() private _picker!: iro.ColorPicker;
 
   @state() private _yamlEditorActive = false;
   @state() private _yamlItemEditorActive = false;
-  @state() _colorChangeTimeout?: number = undefined;
   @state() private _rangeItemConfig?: RangeInfoConfig;
   @state() private _colorThresholds?: Threshold[];
 
@@ -50,7 +64,7 @@ export class PanelRangeInfo extends LitElement {
   static get styles(): CSSResultGroup {
     return [
       css`
-        ha-icon-button[hidden] {
+        *[hidden] {
           display: none;
         }
         ha-icon.tooltip-icon {
@@ -119,7 +133,11 @@ export class PanelRangeInfo extends LitElement {
           background-color: var(--card-background-color);
           border-radius: var(--ha-card-border-radius, 8px);
           border: 1px solid var(--divider-color);
+          gap: var(--vic-card-padding);
+          padding: var(--vic-card-padding);
+          margin-bottom: 0.5rem;
         }
+
         .warning {
           --mdc-theme-primary: var(--accent-color, var(--warning-color));
         }
@@ -131,9 +149,14 @@ export class PanelRangeInfo extends LitElement {
     ];
   }
 
-  // Initialize the color picker in the `firstUpdated` method
-  protected firstUpdated(changedProps: Map<string | number | symbol, unknown>): void {
-    super.firstUpdated(changedProps);
+  protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
+    if (
+      _changedProperties.has('_activeIndexItem') &&
+      _changedProperties.get('_activeIndexItem') !== this._activeIndexItem
+    ) {
+      this._selectedStyle = 'basic'; // Reset to basic style when changing item
+    }
   }
 
   protected render(): TemplateResult {
@@ -154,19 +177,40 @@ export class PanelRangeInfo extends LitElement {
     };
     switch (action) {
       case 'add':
-        const randomHex = tinycolor.random().toHexString();
-        console.log('Random hex color', randomHex);
+        const entities = Object.values(this.hass.states);
+
+        const energyEntity = [
+          ...(findEntitiesByDomain(this.hass, 50, ['number']) || []),
+          ...(findPowerEntities(this.hass, entities) || []),
+        ].map((entity) => {
+          if (typeof entity === 'object') {
+            return entity.entity_id;
+          }
+          return entity;
+        });
+
+        const batteryChargingEntity = findBatteryChargingEntity(this.hass, entities);
+
         let rangeInfo = [...(this.config.range_info || [])];
+        // select entity that is not already in range_info
+        const uniqueEntity = (energyEntity || []).find(
+          (entity) => !rangeInfo.some((item) => item.energy_level.entity === entity)
+        );
+        console.log('Unique energy entity', uniqueEntity);
+
+        const randomHex = getColorByIndex(rangeInfo.length + 1 || 0);
+        console.log('Random color by index', rangeInfo.length, randomHex);
         const newRangeInfo = {
           energy_level: {
-            entity: '',
-            icon: 'mdi:gas-station',
+            entity: uniqueEntity || '',
           },
+          charging_entity: batteryChargingEntity?.entity_id || '',
           progress_color: randomHex,
         };
-        rangeInfo = [...rangeInfo, newRangeInfo];
+        rangeInfo.push(newRangeInfo);
         updateChanged(rangeInfo);
         break;
+
       case 'delete-item':
         if (index !== undefined) {
           const rangeInfo = [...(this.config.range_info || [])];
@@ -213,6 +257,7 @@ export class PanelRangeInfo extends LitElement {
         }))}
         .value=${selectedStyle}
         @value-changed=${(ev: CustomEvent) => {
+          ev.stopPropagation();
           this._selectedStyle = ev.detail.value;
         }}
       ></ha-control-select>
@@ -259,7 +304,11 @@ export class PanelRangeInfo extends LitElement {
             progress_color: {
               title: 'Progress Color',
               helper: 'Color to display the progress bar',
-              config: this._colorPicker(rangeItem),
+              config: this._renderBasicColors(rangeItem),
+            },
+            bar_background: {
+              title: '',
+              config: this._renderBarBackground(rangeItem),
             },
             color_template: {
               title: '',
@@ -267,6 +316,10 @@ export class PanelRangeInfo extends LitElement {
             },
           })
         : createSection({
+            progress_color: {
+              title: '',
+              config: this._renderBasicColors(rangeItem),
+            },
             color_thresholds: {
               title: 'Color Thresholds',
               helper: 'Define color thresholds for the progress bar',
@@ -305,17 +358,17 @@ export class PanelRangeInfo extends LitElement {
           `
         : html`
             <div class="sub-panel-config" data-index=${index}>
-              ${Create.ExpansionPanel({ content: html`${energyLevelSection}`, options: { header: 'Energy level' } })}
+              ${Create.ExpansionPanel({ content: energyLevelSection, options: { header: 'Energy level' } })}
               ${Create.ExpansionPanel({
-                content: html`${rangeLevelSection}`,
+                content: rangeLevelSection,
                 options: { header: 'Range level (Optional)' },
               })}
               ${Create.ExpansionPanel({
-                content: html`${chargingEntitiesSection}`,
+                content: chargingEntitiesSection,
                 options: { header: 'Charging entities (Optional)' },
               })}
               ${Create.ExpansionPanel({
-                content: html`${customizationSection}`,
+                content: customizationSection,
                 options: { header: 'Progress Bar Customization' },
               })}
             </div>
@@ -323,22 +376,24 @@ export class PanelRangeInfo extends LitElement {
     `;
   }
 
-  private _createSection = (section: any) =>
-    Object.keys(section).map(
-      (key: string) => html` <div class="sub-panel section">
+  private _createSection(section: any): TemplateResult[] | TemplateResult {
+    return Object.keys(section).map((key: string) => {
+      const { title, helper, config } = section[key];
+      return html` <div class="sub-panel section">
         <div class="sub-header">
-          <span>${section[key].title}</span>
-          ${section[key].helper
+          <span>${title}</span>
+          ${helper
             ? html`
-                <ha-tooltip content=${section[key].helper}>
+                <ha-tooltip content=${helper}>
                   <ha-icon class="tooltip-icon" icon="mdi:help-circle"></ha-icon>
                 </ha-tooltip>
               `
             : nothing}
         </div>
-        ${section[key].config}
-      </div>`
-    ) as TemplateResult[];
+        ${config}
+      </div>`;
+    });
+  }
 
   private _renderRangeConfigList(): TemplateResult {
     const actionMap = [
@@ -352,6 +407,7 @@ export class PanelRangeInfo extends LitElement {
         icon: ICON.DELETE,
         action: (index: number) => this._toggleAction(RANGE_ACTIONS.DELETE_ITEM, index),
         color: 'var(--error-color)',
+        class: 'delete',
       },
     ];
     return html`${!this._yamlEditorActive && this.config.range_info
@@ -385,10 +441,10 @@ export class PanelRangeInfo extends LitElement {
                           ${actionMap.map(
                             (action) => html`
                               <ha-icon-button
-                                class="action-icon"
+                                class=${action.class || ''}
                                 .path=${action.icon}
                                 @click=${() => action.action(index)}
-                                style="${action.color ? `color: ${action.color}` : ''}"
+                                .label=${action.title}
                               ></ha-icon-button>
                             `
                           )}
@@ -466,13 +522,14 @@ export class PanelRangeInfo extends LitElement {
 
   private _renderEnergyLevelConfig(config: RangeInfoConfig): TemplateResult {
     const DATA = { ...config.energy_level } as RangeItemConfig;
-
-    return this._createHaForm(DATA, RANGE_ITEM_SCHEMA('energy_level', DATA.entity || '', true), 'energy_level');
+    const ENERGY_SCHEMA = RANGE_ITEM_SCHEMA(DATA.entity || '', true, DATA?.value_position === 'inside');
+    // console.log('Energy schema', ENERGY_SCHEMA);
+    return this._createHaForm(DATA, ENERGY_SCHEMA, 'energy_level');
   }
 
   private _renderRangeLevelConfig(config: RangeInfoConfig): TemplateResult {
     const DATA = { ...config.range_level } as RangeItemConfig;
-    return this._createHaForm(DATA, RANGE_ITEM_SCHEMA('range_level', DATA.entity || ''), 'range_level');
+    return this._createHaForm(DATA, RANGE_ITEM_SCHEMA(DATA.entity || ''), 'range_level');
   }
 
   private _renderChargingEntityConfig(config: RangeInfoConfig): TemplateResult {
@@ -485,21 +542,41 @@ export class PanelRangeInfo extends LitElement {
   }
 
   private _renderChargeTargetEntityConfig(config: RangeInfoConfig): TemplateResult {
-    const targetConfigKey = [
-      'charge_target_entity',
-      'charge_target_color',
-      'charge_target_visibility',
-      'charge_target_tooltip',
-    ] as const;
-
-    const DATA = {
-      ...targetConfigKey.reduce((acc, key) => {
-        acc[key] = config[key] ? (key === 'charge_target_tooltip' ? Boolean(config[key]) : config[key]) : '';
-        return acc;
-      }, {} as Record<(typeof targetConfigKey)[number], string | boolean>),
-    };
+    const DATA = CHARGE_TARGET_KEYS.reduce((acc, key) => {
+      acc[key] = config[key];
+      return acc;
+    }, {} as RangeInfoConfig);
 
     return this._createHaForm(DATA, CHARGE_TARGET_SCHEMA);
+  }
+
+  private _renderBarBackground(config: RangeInfoConfig): TemplateResult {
+    const backgroundColor = config.bar_background || '';
+    const backgroundSchema = [
+      {
+        name: 'bar_background',
+        label: 'Bar Background Color',
+        helper: 'Color to display the background of the progress bar',
+        type: 'string',
+      },
+    ];
+    const backgroundData = {
+      bar_background: backgroundColor,
+    } as RangeInfoConfig;
+
+    return html`
+      <div class="item-content">
+        <div class="item-config-row">
+          <div style="flex: 1; width: 100%;">${this._createHaForm(backgroundData, backgroundSchema)}</div>
+          <ha-icon-button
+            ?hidden=${!backgroundColor || backgroundColor === ''}
+            .path=${ICON.RESTART}
+            @click=${this._resetBackgroundColor}
+            .label=${'Reset Background Color'}
+          ></ha-icon-button>
+        </div>
+      </div>
+    `;
   }
 
   private _renderColorTemplate(config: RangeInfoConfig): TemplateResult {
@@ -518,11 +595,10 @@ export class PanelRangeInfo extends LitElement {
   }
 
   private _renderBarDimensions(config: RangeInfoConfig): TemplateResult {
-    const DATA = {
-      bar_height: config.bar_height || 5,
-      bar_width: config.bar_width || 100, // Default to 100% width
-      bar_radius: config.bar_radius || 5,
-    };
+    const DATA = DIMENSION_KEYS.reduce((acc, key) => {
+      acc[key] = config[key];
+      return acc;
+    }, {} as RangeInfoConfig);
 
     return this._createHaForm(DATA, PROGRESS_BAR_SCHEMA);
   }
@@ -530,9 +606,16 @@ export class PanelRangeInfo extends LitElement {
   private _renderColorThresholds(config: RangeInfoConfig): TemplateResult {
     this._colorThresholds = config.color_thresholds || [];
     const noColors = this._colorThresholds.length === 0;
+    const noEntity = !config.energy_level?.entity;
+
+    // check if color thresholds are sorted
+    const isSorted = this._colorThresholds.every(
+      (threshold, index, arr) => index === 0 || threshold.value >= arr[index - 1].value
+    );
+
     const COLOR_BLOCK_DATA = {
       color_blocks: config.color_blocks,
-    } as RangeItemConfig;
+    } as RangeInfoConfig;
     const COLOR_BLOCK_SCHEMA = [
       {
         name: 'color_blocks',
@@ -542,6 +625,7 @@ export class PanelRangeInfo extends LitElement {
         type: 'boolean',
       },
     ] as const;
+
     const colorBlocksForm = this._createHaForm(COLOR_BLOCK_DATA, COLOR_BLOCK_SCHEMA);
     const gradienPreview = this._renderPreviewColor();
 
@@ -569,18 +653,17 @@ export class PanelRangeInfo extends LitElement {
                       ></ha-textfield>
                     <ha-selector
                       .hass=${this.hass}
-                      .label=${'Color'}
-                      .value=${threshold.color ? this._parseHexColorToRbg(threshold.color) : ''}
+                      .label=${`Color ${threshold.color}`}
+                      .value=${threshold.color ? colorToRgb(threshold.color) : ''}
                       .selector=${{ color_rgb: {} }}
                       @value-changed=${this._colorThreholdChanged}
                       .configValue=${'color'}
                       .index=${index}
                       .required=${false}
-
                     ></ha-selector>
                     <div class="item-actions">
                       <ha-icon-button
-                        class="action-icon"
+                        class="delete"
                         .path=${ICON.DELETE}
                         @click=${() => this._removeColorThreshold(index)}
                       ></ha-icon-button>
@@ -595,7 +678,12 @@ export class PanelRangeInfo extends LitElement {
         <div class="item-config-row">
           ${!noColors
             ? html`
-                <ha-button class="warning" .label=${'Sort'} @click=${() => this._sortColorArr()}></ha-button>
+                <ha-button
+                  class="warning"
+                  .label=${'Sort'}
+                  ?hidden=${isSorted}
+                  @click=${() => this._sortColorArr()}
+                ></ha-button>
                 <ha-button
                   class="error"
                   .label=${'Remove all'}
@@ -603,10 +691,16 @@ export class PanelRangeInfo extends LitElement {
                 ></ha-button>
               `
             : html`<ha-button
+                ?hidden=${noEntity}
                 .label=${'Random color pallete'}
                 @click=${() => this._createRandomPallete()}
               ></ha-button>`}
-          <ha-button .label=${'Add'} .outlined=${true} @click=${() => this._addColorThreshold()}></ha-button>
+          <ha-button
+            ?hidden=${noEntity}
+            .label=${'Add'}
+            .outlined=${true}
+            @click=${() => this._addColorThreshold()}
+          ></ha-button>
         </div>
       </div>
     `;
@@ -622,97 +716,111 @@ export class PanelRangeInfo extends LitElement {
   }
 
   private _createRandomPallete = () => {
-    const progressColor = this._rangeItemConfig?.progress_color || tinycolor.random().toHexString();
+    const rangeItem = this._rangeItemConfig;
+    const energyEntity = rangeItem?.energy_level?.entity || '';
+    const state = this.hass.states[energyEntity];
 
-    // create a random color palette with 5 colors by 20% increments starting from 0
+    if (!state) return;
 
-    const randomPalette: Threshold[] = [];
-    for (let i = 0; i < 6; i++) {
-      const value = i * 20;
-      // if dark color, lighten it, otherwise darken it
-      const color = tinycolor(progressColor).isDark()
-        ? tinycolor(progressColor)
-            .lighten(i * 10)
-            .toHexString()
-        : tinycolor(progressColor)
-            .darken(i * 10)
-            .toHexString();
+    const baseColor = rangeItem?.progress_color || tinycolor.random().toHexString();
+    const isPercent = hasPercent(state);
+    const rawMax = state.attributes?.max;
+    const maxValue = rawMax ?? (isPercent ? 100 : undefined) ?? 100;
 
-      randomPalette.push({ value, color });
-    }
+    const palette = createRandomPallete(baseColor, maxValue);
 
-    this._colorThresholds = randomPalette;
-    this._rangeColorThresholdsChanged(randomPalette);
+    this._colorThresholds = palette;
+    this._colorTestValue = maxValue;
+    this._rangeColorThresholdsChanged(palette);
+
+    console.log('Generated random palette:', palette);
   };
 
   private _renderPreviewColor(): TemplateResult | typeof nothing {
-    if (!this._colorThresholds || this._colorThresholds.length === 0) {
-      return nothing;
-    }
+    if (!this._colorThresholds?.length) return nothing;
+
     const config = this._rangeItemConfig!;
-    let testValue: number | undefined = this._colorTestValue;
     const energyState = this.hass.states[config.energy_level?.entity || ''];
-    const isPercentageEntity = hasPercent(energyState);
-    const unit_of_measurement = isPercentageEntity ? '%' : energyState.attributes?.unit_of_measurement || '';
-    const maxValue = energyState.attributes?.max ? energyState.attributes.max : isPercentageEntity ? 100 : 5000;
+    const isPercent = hasPercent(energyState);
+    const unit = isPercent ? '%' : energyState.attributes?.unit_of_measurement || '';
+    const max = energyState.attributes?.max ?? (isPercent ? 100 : 5000);
+    const testValue = this._colorTestValue ?? max;
+
+    const background = config.color_blocks
+      ? generateColorBlocks(this._colorThresholds, testValue)
+      : generateGradient(this._colorThresholds, testValue);
+
+    const normalizedWidth = getNormalizedValue(this._colorThresholds, testValue, energyState.attributes?.max);
+    const itemInside = config.energy_level?.value_position === 'inside' || false;
+    const valueAlign = config.energy_level?.value_alignment || 'start';
+    const radius = `${config.bar_radius ?? 5}px`;
+    const height = `${config.bar_height ?? 14}px`;
+    const minHeight = height > '20px' ? height : '20px';
 
     const barPreviewStyle = {
       display: 'block',
       position: 'relative',
-      'border-radius': `${config.bar_radius || 5}px`,
-      height: `${config.bar_height || 5}px`,
       width: '100%',
-      'background-color': `${config.bar_background || 'var(--secondary-background-color, #90909040)'}`,
+      height: height,
+      'min-height': !itemInside ? 'unset' : minHeight,
+      'border-radius': radius,
+      'background-color': config.bar_background || 'var(--secondary-background-color, #90909040)',
       'align-items': 'center',
     };
-    const gradientStops = config.color_blocks
-      ? generateColorBlocks(this._colorThresholds)
-      : generateGradient(this._colorThresholds);
 
-    const gradientStyle = {
-      background: gradientStops,
-      'border-radius': `${config.bar_radius || 5}px`,
-      height: `${config.bar_height || 5}px`,
-      width: `${testValue || 100}%`,
+    const fillStyle = {
+      background,
+      width: `${normalizedWidth}%`,
+      position: 'absolute',
+      'border-radius': radius,
+      transition: 'width 0.4s ease-in-out',
+      top: '0',
+      left: '0',
+      bottom: '0',
+      'box-sizing': 'border-box',
       'max-width': '100%',
+    };
+
+    const valueStyle = {
       position: 'absolute',
       top: '0',
       left: '0',
       bottom: '0',
       'box-sizing': 'border-box',
+      width: `${normalizedWidth}%`,
+      display: 'flex',
+      'justify-content': `flex-${valueAlign}`,
+      'padding-inline': '1em',
+      'align-items': 'center',
+      'min-width': 'fit-content',
       transition: 'width 0.4s ease-in-out',
     };
 
     return html`
       <div class="item-content gradient-preview">
+        <ha-selector
+          .hass=${this.hass}
+          .label=${'Test value'}
+          .helper=${'Set a test value to see the color preview'}
+          .value=${testValue}
+          .selector=${{
+            number: { min: 0, max, step: 1, mode: 'slider', unit_of_measurement: unit },
+          }}
+          @value-changed=${(ev: CustomEvent) => {
+            this._colorTestValue = ev.detail.value;
+          }}
+          .required=${false}
+        ></ha-selector>
         <div style=${styleMap(barPreviewStyle)}>
-          <div style=${styleMap(gradientStyle)}></div>
-        </div>
-        <div style="margin-top: 0.5rem; padding: 0.5rem;">
-          <ha-selector
-            .hass=${this.hass}
-            .label=${'Test value'}
-            .helper=${'Set a test value to see the color preview'}
-            .value=${testValue}
-            .selector=${{ number: { min: 0, max: maxValue, step: 1, mode: 'slider', unit_of_measurement } }}
-            @value-changed=${(ev: CustomEvent) => {
-              this._colorTestValue = ev.detail.value;
-            }}
-            .required=${false}
-          ></ha-selector>
+          <div style=${styleMap(fillStyle)}></div>
+          <div style=${styleMap(valueStyle)}>
+            <span ?hidden=${!itemInside} style="text-shadow: 1px 1px 2px var(--card-background-color);">
+            ${testValue} ${unit}</span>
+            </div>
+          </div>
         </div>
       </div>
     `;
-  }
-
-  private _parseHexColorToRbg(color: string): [number, number, number] {
-    const parsedColor = this._tinycolor(color);
-    if (!parsedColor.isValid()) {
-      console.warn('Invalid color:', color);
-      return [0, 0, 0]; // Default to black if the color is invalid
-    }
-    const rbgColor = parsedColor.toRgb();
-    return [rbgColor.r, rbgColor.g, rbgColor.b];
   }
 
   private _colorThreholdChanged(ev: any): void {
@@ -747,6 +855,7 @@ export class PanelRangeInfo extends LitElement {
   private _addColorThreshold(): void {
     const _colorThresholds = this._colorThresholds || [];
     const randomColor = tinycolor.random().toHexString();
+
     const getNewColor = (color: string) => {
       const parsedColor = tinycolor(color);
       // if the color is dark, lighten it, otherwise darken it
@@ -810,8 +919,7 @@ export class PanelRangeInfo extends LitElement {
     this.requestUpdate();
   }
 
-  private _colorPicker(config: RangeInfoConfig): TemplateResult {
-    const index = this._activeIndexItem!;
+  private _renderBasicColors(config: RangeInfoConfig): TemplateResult {
     const progressColor = config.progress_color;
     const colorFieldSchema = [
       {
@@ -821,50 +929,23 @@ export class PanelRangeInfo extends LitElement {
         type: 'string',
       },
     ] as const;
-    const DATA = { progress_color: progressColor } as RangeItemConfig;
-    const defaultContent = html`
-      <div class="sub-content">
-        ${this._createHaForm(DATA, colorFieldSchema)}
-        <ha-selector
-          .hass=${this.hass}
-          .label=${'Progress Color'}
-          .value=${progressColor ? this._parseHexColorToRbg(progressColor) : ''}
-          .selector=${{ color_rgb: {} }}
-          @value-changed=${this._progressColorChanged}
-          .configValue=${'progress_color'}
-          .index=${index}
-          .required=${false}
-        ></ha-selector>
+    const DATA = { progress_color: progressColor } as RangeInfoConfig;
+    return html`
+      <div class="item-content">
+        <div class="sub-content">
+          ${this._createHaForm(DATA, colorFieldSchema)}
+          <ha-selector
+            .hass=${this.hass}
+            .label=${'Progress Color'}
+            .value=${progressColor ? colorToRgb(progressColor) : ''}
+            .selector=${{ color_rgb: {} }}
+            @value-changed=${this._progressColorChanged}
+            .configValue=${'progress_color'}
+            .required=${false}
+          ></ha-selector>
+        </div>
       </div>
     `;
-
-    const backgroundColor = config.bar_background || '';
-    const backgroundSchema = [
-      {
-        name: 'bar_background',
-        label: 'Bar Background Color',
-        helper: 'Color to display the background of the progress bar',
-        type: 'string',
-      },
-    ];
-    const backgroundData = {
-      bar_background: backgroundColor,
-    } as RangeItemConfig;
-
-    const backgroundContent = html`
-      <div class="item-config-row">
-        <div style="flex: 1; width: 100%;">${this._createHaForm(backgroundData, backgroundSchema)}</div>
-        <ha-icon-button
-          ?hidden=${!backgroundColor || backgroundColor === ''}
-          class="action-icon"
-          .path=${mdiRestart}
-          @click=${this._resetBackgroundColor}
-          .label=${'Reset Background Color'}
-        ></ha-icon-button>
-      </div>
-    `;
-
-    return html` <div class="item-content">${defaultContent} ${backgroundContent}</div> `;
   }
 
   private _resetBackgroundColor(): void {
@@ -973,7 +1054,7 @@ export class PanelRangeInfo extends LitElement {
     rangeInfo[activeIndex!] = rangeItem; // Replace the modified item in the range_info array
     this.config = { ...this.config, range_info: rangeInfo }; // Update the config with the modified range_info
     fireEvent(this, 'config-changed', { config: this.config });
-    console.log('Range item changed', rangeItem);
+    // console.log('Range item changed', rangeItem);
     this.requestUpdate();
   }
 }

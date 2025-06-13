@@ -73,5 +73,5 @@ export const hasLocation = (stateObj: HassEntity) =>
 
 export const hasPercent = (stateObj: HassEntity) =>
   stateObj.attributes.unit_of_measurement === '%' ||
-  stateObj.attributes.unit === 'percent' ||
-  stateObj.attributes.unit === 'percentage';
+  stateObj.attributes.unit === 'PERCENT' ||
+  stateObj.attributes.unit === 'PERCENTAGE';

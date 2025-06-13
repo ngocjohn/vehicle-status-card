@@ -13,6 +13,7 @@ import {
   mdiChevronLeft,
   mdiCodeJson,
   mdiThemeLightDark,
+  mdiRestart,
 } from '@mdi/js';
 
 import { version } from '../../package.json';
@@ -36,6 +37,7 @@ export const ICON = {
   CHEVRON_LEFT: mdiChevronLeft,
   CODE_JSON: mdiCodeJson,
   THEME_LIGHT_DARK: mdiThemeLightDark,
+  RESTART: mdiRestart,
 };
 
 export const enum SECTION {
