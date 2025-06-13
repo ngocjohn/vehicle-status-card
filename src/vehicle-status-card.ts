@@ -388,6 +388,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
               .key=${item.entity}
               .hass=${this._hass}
               .defaultCardItem=${item}
+              .stateColor=${data?.state_color || false}
               ._card=${this as any}
             ></vsc-default-card-item>`;
           })}

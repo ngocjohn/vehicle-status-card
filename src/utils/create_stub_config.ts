@@ -36,6 +36,7 @@ const computeCards = (entities: string[]) => {
   const defaultCard = [
     {
       collapsed_items: false,
+      state_color: true,
       items: [
         {
           entity: 'sun.sun',

@@ -146,6 +146,7 @@ export interface DefaultCardConfig {
   collapsed_items: boolean;
   items: Array<CardItemConfig>;
   title: string;
+  state_color?: boolean;
 }
 
 export interface CardItemConfig {

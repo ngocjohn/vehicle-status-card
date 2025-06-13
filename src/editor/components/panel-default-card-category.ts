@@ -11,18 +11,25 @@ import { processCardItemEntities } from '../../utils/process-editor-entities';
 
 export const defaultCardSchema = [
   {
+    name: 'title',
+    label: 'Category Title',
+    type: 'string',
+  },
+  {
     name: '',
     type: 'grid',
     schema: [
       {
-        name: 'title',
-        label: 'Category Title',
-        selector: { text: { type: 'text' } },
-      },
-      {
         name: 'collapsed_items',
         label: 'Collapsed Items',
-        selector: { boolean: {} },
+        type: 'boolean',
+        default: false,
+      },
+      {
+        name: 'state_color',
+        label: 'State Color',
+        type: 'boolean',
+        default: false,
       },
     ],
   },
@@ -143,7 +150,6 @@ export class PanelDefaultCard extends LitElement {
                   ${actionMap.map(
                     (action) => html`
                       <ha-icon-button
-                        class="action-icon"
                         .label=${action.title}
                         .path=${action.icon}
                         @click=${() => action.action(index)}
