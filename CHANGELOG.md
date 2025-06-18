@@ -1,3 +1,24 @@
+<a id="v1.14.0"></a>
+# [v1.14.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.14.0) - 2025-06-18
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.14.0 -->
+
+## What's Changed
+### New Features 🎉
+- **Add configurable color thresholds and visual styles to range info bars**  
+  This update introduces support for custom color thresholds that dynamically change the progress bar's appearance. You can now choose between smooth gradients or segmented color blocks to represent energy levels visually.  [#149](https://github.com/ngocjohn/vehicle-status-card/pull/149) [#151](https://github.com/ngocjohn/vehicle-status-card/pull/151)
+![colorthresholds](https://github.com/user-attachments/assets/48a03327-b0f0-4311-a4fa-304d73665654)
+
+### Other Changes
+- **Update README with new feature examples and assets**  
+  Documentation now includes usage examples and screenshots of the new color features.  [#147](https://github.com/ngocjohn/vehicle-status-card/pull/147)
+
+
+ **Full Changelog**: [v1.13.1...v1.14.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.1...v1.14.0)
+
+[Changes][v1.14.0]
+
+
 <a id="v1.13.1"></a>
 # [v1.13.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.13.1) - 2025-06-09
 
@@ -528,6 +549,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.14.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.1...v1.14.0
 [v1.13.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.0...v1.13.1
 [v1.13.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.1...v1.13.0
 [v1.12.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.0...v1.12.1
