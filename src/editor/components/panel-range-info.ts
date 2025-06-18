@@ -759,7 +759,9 @@ export class PanelRangeInfo extends LitElement {
     const energyState = this.hass.states[config.energy_level?.entity || ''];
     const isPercent = hasPercent(energyState);
     const unit = isPercent ? '%' : energyState.attributes?.unit_of_measurement || '';
-    const max = energyState.attributes?.max ?? (isPercent ? 100 : 5000);
+    const max = config.energy_level?.max_value
+      ? config.energy_level.max_value
+      : energyState.attributes?.max ?? (isPercent ? 100 : 5000);
     this._overValueMax = max;
     const testValue = this._colorTestValue ?? max;
 
