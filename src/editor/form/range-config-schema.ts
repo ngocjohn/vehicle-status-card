@@ -80,7 +80,20 @@ export const RANGE_ITEM_SCHEMA = memoizeOne((entityId: string, required: boolean
     name: '',
     type: 'grid',
     flatten: true,
-    schema: [...RANGE_ITEM_BASE_SCHEMA(entityId), ...(valueAligment ? VALUE_ALIGNMENT_SCHEMA(valueAligment) : [])],
+    schema: [
+      ...RANGE_ITEM_BASE_SCHEMA(entityId),
+      ...(valueAligment ? VALUE_ALIGNMENT_SCHEMA(valueAligment) : []),
+      ...(required === true
+        ? [
+            {
+              name: 'max_value',
+              label: 'Max Value',
+              type: 'integer',
+              valueMin: 0,
+            },
+          ]
+        : []),
+    ],
   },
   {
     name: '',

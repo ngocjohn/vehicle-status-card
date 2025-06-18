@@ -314,11 +314,14 @@ export class VscRangeItem extends LitElement {
       double_tap_action: config?.double_tap_action,
     });
 
-    const entityMax = r.energy_level?.entity
-      ? hass.states[r.energy_level.entity]?.attributes?.max
-      : hasPercent(hass.states[r.energy_level?.entity || ''])
-      ? 100
-      : undefined;
+    const entityMax =
+      r.energy_level?.max_value !== undefined
+        ? r.energy_level.max_value
+        : r.energy_level?.entity && hass.states[r.energy_level.entity]
+        ? hass.states[r.energy_level.entity]?.attributes?.max
+        : hasPercent(hass.states[r.energy_level?.entity || ''])
+        ? 100
+        : undefined;
 
     switch (key) {
       case 'icon':
@@ -402,6 +405,9 @@ export class VscRangeItem extends LitElement {
 
       case 'normalizedWidth':
         return getNormalizedValue(r.color_thresholds || [], this.getValue('level'), entityMax);
+
+      case 'energyMax':
+        return entityMax;
 
       default:
         return undefined;
