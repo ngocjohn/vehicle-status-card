@@ -2,59 +2,95 @@ import memoizeOne from 'memoize-one';
 
 import { computeOptionalActionSchema } from './actions-config';
 
+const DIMENSION_KEYS = ['bar_height', 'bar_width', 'bar_radius'];
+
+const CHARGE_TARGET_KEYS = [
+  'charge_target_entity',
+  'charge_target_color',
+  'charge_target_visibility',
+  'charge_target_tooltip',
+];
+
+const CHARGING_KEYS = ['charging_entity', 'charging_template'];
+
+export { DIMENSION_KEYS, CHARGE_TARGET_KEYS, CHARGING_KEYS };
+
 const POSTIONS = ['outside', 'inside', 'off'] as const;
-export const RANGE_ITEM_SCHEMA = memoizeOne(
-  (entityId: string, required: boolean = false) =>
-    [
-      {
-        name: '',
-        type: 'grid',
-        flatten: true,
-        schema: [
-          {
-            name: 'entity',
-            required: required,
-            selector: { entity: {} },
-          },
-          {
-            name: 'attribute',
-            label: 'Attribute',
-            selector: {
-              attribute: {
-                entity_id: entityId,
-              },
-            },
-          },
-          {
-            name: 'icon',
-            label: 'Icon',
-            selector: { icon: {} },
-          },
-          {
-            name: 'value_position',
-            label: 'Value Position',
-            default: 'outside',
-            selector: {
-              select: {
-                mode: 'dropdown',
-                options: POSTIONS.map((position) => ({
-                  value: position,
-                  label: position.charAt(0).toUpperCase() + position.slice(1),
-                })),
-              },
-            },
-          },
-        ],
+const ALIGNMENTS = ['start', 'end'] as const;
+
+export const VALUE_ALIGNMENT_SCHEMA = (disabled: boolean) => {
+  return [
+    {
+      name: 'value_alignment',
+      label: 'Value Alignment',
+      default: 'end',
+      selector: {
+        select: {
+          mode: 'dropdown',
+          options: ALIGNMENTS.map((alignment) => ({
+            value: alignment,
+            label: alignment.charAt(0).toUpperCase() + alignment.slice(1),
+          })),
+        },
       },
-      {
-        name: '',
-        type: 'expandable',
-        title: 'Interaction Options',
-        icon: 'mdi:gesture-tap-button',
-        schema: [...computeOptionalActionSchema()],
+      disabled: !disabled,
+    },
+  ] as const;
+};
+
+export const RANGE_ITEM_BASE_SCHEMA = (entityId: string) =>
+  [
+    {
+      name: 'attribute',
+      label: 'Attribute',
+      selector: {
+        attribute: {
+          entity_id: entityId,
+        },
       },
-    ] as const
-);
+    },
+    {
+      name: 'icon',
+      label: 'Icon',
+      selector: { icon: {} },
+    },
+    {
+      name: 'value_position',
+      label: 'Value Position',
+      default: 'outside',
+      selector: {
+        select: {
+          mode: 'dropdown',
+          options: POSTIONS.map((position) => ({
+            value: position,
+            label: position.charAt(0).toUpperCase() + position.slice(1),
+          })),
+        },
+      },
+    },
+  ] as const;
+
+export const RANGE_ITEM_SCHEMA = memoizeOne((entityId: string, required: boolean = false, valueAligment?: boolean) => [
+  {
+    name: 'entity',
+    required: required,
+    selector: { entity: {} },
+  },
+  {
+    name: '',
+    type: 'grid',
+    flatten: true,
+    schema: [...RANGE_ITEM_BASE_SCHEMA(entityId), ...(valueAligment ? VALUE_ALIGNMENT_SCHEMA(valueAligment) : [])],
+  },
+  {
+    name: '',
+    type: 'expandable',
+    title: 'Interaction Options',
+    icon: 'mdi:gesture-tap-button',
+    flatten: true,
+    schema: [...computeOptionalActionSchema()],
+  },
+]);
 
 export const PROGRESS_BAR_SCHEMA = [
   {
@@ -65,33 +101,20 @@ export const PROGRESS_BAR_SCHEMA = [
       {
         name: 'bar_height',
         label: 'Bar Height (px)',
-        default: 5,
-        selector: {
-          number: {
-            mode: 'box',
-          },
-        },
+        type: 'integer',
+        valueMin: 1,
       },
       {
         name: 'bar_width',
         label: 'Bar Width (%)',
-        default: 100,
-        selector: {
-          number: {
-            max: 100,
-            mode: 'box',
-          },
-        },
+        type: 'integer',
+        valueMax: 100,
       },
       {
         name: 'bar_radius',
         label: 'Bar Radius (px)',
-        default: 5,
-        selector: {
-          number: {
-            mode: 'box',
-          },
-        },
+        type: 'integer',
+        valueMin: 0,
       },
     ],
   },
@@ -111,6 +134,7 @@ export const CHARGING_STATE_SCHEMA = [
     selector: { template: {} },
   },
 ] as const;
+
 export const CHARGE_TARGET_SCHEMA = [
   {
     name: '',
@@ -147,7 +171,7 @@ export const CHARGE_TARGET_SCHEMA = [
     helper: 'Template to set the visibility of the charge target line, defaults true if charge_target_entity is set',
     selector: { template: {} },
   },
-];
+] as const;
 
 const RANGE_LAYOUTS = ['column', 'row'] as const;
 export const RANGE_LAYOUT_SCHEMA = [

@@ -70,3 +70,8 @@ export const hasEntityPicture = (stateObj: HassEntity) =>
 
 export const hasLocation = (stateObj: HassEntity) =>
   'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes;
+
+export const hasPercent = (stateObj: HassEntity) =>
+  stateObj.attributes.unit_of_measurement === '%' ||
+  stateObj.attributes.unit === 'PERCENT' ||
+  stateObj.attributes.unit === 'PERCENTAGE';

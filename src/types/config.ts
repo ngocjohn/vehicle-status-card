@@ -36,9 +36,9 @@ export interface IndicatorsConfig {
 
 /* ----------------------- RANGE INFO CONFIG INTERFACE ---------------------- */
 export type Threshold = { value: number; color: string };
+
 export interface RangeInfoConfig {
   energy_level: RangeItemConfig;
-  progress_color: string;
   range_level?: RangeItemConfig;
   charging_entity?: string;
   charging_template?: string;
@@ -46,18 +46,24 @@ export interface RangeInfoConfig {
   charge_target_color?: string;
   charge_target_visibility?: string;
   charge_target_tooltip?: boolean;
+  progress_color?: string;
   color_template?: string;
+  bar_background?: string;
+  color_blocks?: boolean;
   color_thresholds?: Threshold[];
   bar_height?: number;
   bar_width?: number;
   bar_radius?: number;
 }
 export type RangeValuePosition = 'outside' | 'inside' | 'off';
+export type RangeValueAlignment = 'start' | 'end';
+
 export type RangeItemConfig = {
   attribute?: string;
   entity?: string;
   icon?: string;
   value_position?: RangeValuePosition;
+  value_alignment?: RangeValueAlignment;
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;
   double_tap_action?: ActionConfig;
@@ -140,6 +146,7 @@ export interface DefaultCardConfig {
   collapsed_items: boolean;
   items: Array<CardItemConfig>;
   title: string;
+  state_color?: boolean;
 }
 
 export interface CardItemConfig {

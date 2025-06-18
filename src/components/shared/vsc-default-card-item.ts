@@ -19,6 +19,7 @@ export class VehicleDefaultCardItem extends LitElement {
   @property({ attribute: false }) public _card!: VehicleStatusCard;
   @property({ attribute: false }) public defaultCardItem!: CardItemConfig;
   @property({ type: Boolean }) lastItem = false;
+  @property({ type: Boolean }) stateColor = false;
 
   @state() private _defaultCardItemsTemplate: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
   @state() private _unsubRenderTemplate: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
@@ -194,11 +195,12 @@ export class VehicleDefaultCardItem extends LitElement {
         <div>
           <state-badge
             class="data-icon"
-            @click=${() => this._card.toggleMoreInfo(entity)}
             .hass=${this.hass}
+            @click=${() => this._card.toggleMoreInfo(entity)}
             .stateObj=${this.hass.states[entity]}
             .overrideIcon=${icon}
-            .color=${'var(--secondary-text-color)'}
+            .stateColor=${this.stateColor}
+            style=${!this.stateColor ? `color: var(--secondary-text-color);` : ''}
           ></state-badge>
 
           <span>${name}</span>

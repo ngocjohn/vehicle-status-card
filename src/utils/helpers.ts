@@ -3,7 +3,7 @@ import memoizeOne from 'memoize-one';
 import tinycolor from 'tinycolor2';
 
 import { HistoryStates } from '../types';
-import { MiniMapConfig, Threshold } from '../types/config';
+import { MiniMapConfig } from '../types/config';
 import { FrontendLocaleData } from '../types/ha-frontend/data/frontend-local-data';
 
 export function isEmpty(input: any): boolean {
@@ -158,31 +158,4 @@ export const getInitials = (name: string): string => {
 
 export const getFormatedDateTime = (dateObj: Date, locale: FrontendLocaleData): string => {
   return `${formatDateNumeric(dateObj, locale)} ${formatTime(dateObj, locale)}`;
-};
-
-export const generateGradient = (thresholds: Threshold[], currentLevel: number): string => {
-  const level = Math.min(currentLevel, 100);
-
-  const sorted = [...thresholds].sort((a, b) => a.value - b.value);
-
-  const stops: string[] = [];
-
-  // Track the last color that should be used at the current level
-  let lastColor = sorted[0]?.color ?? 'gray';
-
-  for (let i = 0; i < sorted.length; i++) {
-    const { value, color } = sorted[i];
-
-    if (value <= level) {
-      stops.push(`${color} ${value}%`);
-      lastColor = color;
-    } else {
-      break;
-    }
-  }
-
-  // Add the current level stop with the last applicable color
-  stops.push(`${lastColor} ${level}%`);
-
-  return `linear-gradient(to right, ${stops.join(', ')})`;
 };

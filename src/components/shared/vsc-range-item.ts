@@ -12,7 +12,14 @@ import {
   RenderTemplateResult,
   subscribeRenderTemplate,
 } from '../../types';
-import { addActions, generateGradient, hasTemplate } from '../../utils';
+import {
+  addActions,
+  generateColorBlocks,
+  generateGradient,
+  getNormalizedValue,
+  hasPercent,
+  hasTemplate,
+} from '../../utils';
 import { hasActions } from '../../utils/ha-helper';
 
 const TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
@@ -38,58 +45,88 @@ export class VscRangeItem extends LitElement {
           width: var(--vsc-bar-width);
           position: relative;
         }
+        .fuel-container[itemsInside] {
+          min-height: fit-content !important;
+        }
         .fuel-wrapper {
           width: 100%;
           height: var(--vsc-bar-height);
           border-radius: var(--vsc-bar-radius);
-          background-color: #90909040;
+          background-color: var(--vsc-bar-background);
           align-items: center;
+        }
+
+        .fuel-level-background {
+          position: absolute;
+          width: calc(var(--vsc-bar-level) - 1px);
+          background: var(--vsc-range-gradient-color);
+          border-radius: var(--vsc-bar-radius);
+          max-width: 100% !important;
+          transition: width 0.4s ease-in-out;
+          top: 0;
+          bottom: 0;
+          z-index: 4;
+          margin: 2px 0;
+        }
+
+        .fuel-container[itemsInside] .fuel-wrapper {
+          height: 100%;
+          min-height: var(--vsc-bar-min-height);
         }
 
         .fuel-level-bar {
           position: absolute;
           background-color: transparent;
-          border-radius: var(--vsc-bar-radius);
-          height: 100%;
-          width: var(--vic-range-width);
+          width: var(--vsc-bar-level);
           display: inline-flex;
-          justify-content: flex-end;
-          align-items: center;
           z-index: 4;
           padding-inline: var(--vic-card-padding);
           box-sizing: border-box;
-          min-width: fit-content;
           max-width: 100% !important;
-          transition: all 0.4s ease-in-out;
-        }
-        .fuel-level-bar[charging] {
-          justify-content: space-between;
+          transition: width 0.4s ease-in-out;
+          top: 0;
+          bottom: 0;
+          min-width: fit-content;
+          /* color: black; */
           gap: var(--vic-gutter-gap);
+          align-items: center;
         }
+
+        .fuel-level-bar[align='start'] {
+          justify-content: flex-start;
+        }
+
+        .fuel-level-bar:not([charging])[align='end'] {
+          justify-content: flex-end;
+        }
+
+        .fuel-level-bar[charging][align='end'] {
+          justify-content: space-between;
+        }
+
+        .energy-inside {
+          text-shadow: 1px 1px 2px var(--card-background-color);
+          /* flex: 1 0 0; */
+        }
+
+        /* .fuel-level-bar[charging] {
+          justify-content: space-between;
+        } */
+
         /* .fuel-wrapper span {
           text-shadow: 1px 1px 2px #000000;
           font-weight: 500;
         } */
-        .fuel-wrapper span.energy-inside {
+        .fuel-wrapper span.range-inside {
           z-index: 3;
           position: absolute;
           top: 50%;
-          right: 0;
+          right: 0.5em;
           opacity: 0.8;
           transform: translateY(-50%);
-          padding-inline-end: var(--vic-card-padding);
+          /* padding-inline-end: var(--vic-card-padding); */
         }
-        .fuel-background-bar {
-          position: absolute;
-          inset: 0;
-          z-index: 0;
-          border-radius: var(--vsc-bar-radius);
-          top: 0;
-          left: 0;
-          height: 100%;
-          max-width: 100%;
-          transition: all 0.4s ease-in-out;
-        }
+
         .charging-icon {
           --mdc-icon-size: inherit;
           position: relative;
@@ -277,12 +314,19 @@ export class VscRangeItem extends LitElement {
       double_tap_action: config?.double_tap_action,
     });
 
+    const entityMax = r.energy_level?.entity
+      ? hass.states[r.energy_level.entity]?.attributes?.max
+      : hasPercent(hass.states[r.energy_level?.entity || ''])
+      ? 100
+      : undefined;
+
     switch (key) {
       case 'icon':
         return r.energy_level?.icon ?? '';
 
       case 'rangeIcon':
         return r.range_level?.icon ?? '';
+
       case 'energyState':
         return getEntityState(r.energy_level?.entity, r.energy_level?.attribute);
 
@@ -295,11 +339,17 @@ export class VscRangeItem extends LitElement {
       case 'barColor':
         return this._templateResults['color_template']?.result ?? r.progress_color;
 
+      case 'barBackground':
+        return r.bar_background || 'var(--secondary-background-color, #90909040)';
+
       case 'gradient':
-        if (r.color_thresholds) {
-          return generateGradient(r.color_thresholds, this.getValue('level'));
+        if (!r.color_thresholds || r.color_thresholds.length === 0) {
+          return this.getValue('barColor');
         }
-        return this.getValue('barColor');
+        const background = r.color_blocks
+          ? generateColorBlocks(r.color_thresholds, this.getValue('level'))
+          : generateGradient(r.color_thresholds, this.getValue('level'));
+        return background;
 
       case 'chargingState': {
         if (r.charging_template) {
@@ -329,13 +379,13 @@ export class VscRangeItem extends LitElement {
         return r.charge_target_tooltip || false;
 
       case 'barHeight':
-        return r.bar_height || 5;
+        return r.bar_height || 14;
 
       case 'barWidth':
         return r.bar_width || 100;
 
       case 'barRadius':
-        return r.bar_radius || 4;
+        return r.bar_radius || 5;
 
       case 'energyActions':
         return getActions(r.energy_level);
@@ -347,26 +397,34 @@ export class VscRangeItem extends LitElement {
         return r.energy_level?.value_position || 'outside';
       case 'rangePosition':
         return r.range_level?.value_position || 'outside';
+      case 'energyAlignment':
+        return r.energy_level?.value_alignment || 'start';
+
+      case 'normalizedWidth':
+        return getNormalizedValue(r.color_thresholds || [], this.getValue('level'), entityMax);
+
       default:
         return undefined;
     }
   }
   protected render(): TemplateResult {
     const get = (key: string) => this.getValue(key);
-
-    const level = get('level');
+    const itemsInside = get('energyPosition') === 'inside' || get('rangePosition') === 'inside';
+    const minHeight = get('barHeight') > 20 ? get('barHeight') : 20; // Ensure minimum height for the bar
     const styles = {
       '--vsc-bar-height': `${get('barHeight')}px`,
+      '--vsc-bar-min-height': `${minHeight}px`,
       '--vsc-bar-width': `${get('barWidth') || 100}%`,
       '--vsc-bar-radius': `${get('barRadius')}px`,
-      '--vsc-bar-level': `${level}%`,
+      '--vsc-bar-level': `${get('normalizedWidth')}%`,
       '--vsc-bar-color': get('barColor'),
-      '--vsc-range-bar-color': get('barColor'),
+      '--vsc-range-gradient-color': get('gradient'),
       '--vsc-bar-charge-target': `${get('targetChargeState')}%`,
       '--vsc-bar-target-display': get('targetChargeVisibility') ? 'block' : 'none',
       '--vsc-bar-target-color': `var(--${get('targetChargeColor')}-color)`,
       '--vsc-energy-state': `${get('energyState')}`,
       '--vsc-range-state': `${get('rangeState')}`,
+      '--vsc-bar-background': get('barBackground'),
     };
 
     const chargingIcon = html`
@@ -392,12 +450,12 @@ export class VscRangeItem extends LitElement {
 
     const insideEnergy =
       get('energyPosition') === 'inside'
-        ? html`${chargingIcon}<span id="energy-item">${get('energyState')}</span>`
+        ? html`${chargingIcon}<span id="energy-item" class="energy-inside">${get('energyState')}</span>`
         : nothing;
 
     const insideRange =
       get('rangePosition') === 'inside'
-        ? html`<span class="energy-inside" id="range-item">${get('rangeState')}</span>`
+        ? html`<span class="range-inside" id="range-item">${get('rangeState')}</span>`
         : nothing;
 
     const outsideRange =
@@ -413,7 +471,7 @@ export class VscRangeItem extends LitElement {
     return html`
       <div class="info-box range" style=${styleMap(styles)}>
         ${energyItem}
-        <div class="fuel-container">
+        <div class="fuel-container" ?itemsInside=${itemsInside}>
           <ha-tooltip
             content="Target: ${get('targetEntityState')}"
             placement="right"
@@ -423,12 +481,8 @@ export class VscRangeItem extends LitElement {
             <div class="charge-target"></div>
           </ha-tooltip>
           <div class="fuel-wrapper">
-            <div class="fuel-background-bar" style="width: ${level}%"></div>
-            <div
-              class="fuel-level-bar"
-              style="width: ${level}%; background: ${get('gradient')};"
-              ?charging=${get('chargingState')}
-            >
+            <div class="fuel-level-background"></div>
+            <div class="fuel-level-bar" ?charging=${get('chargingState')} align=${get('energyAlignment')}>
               ${insideEnergy}
             </div>
             ${insideRange}
@@ -438,96 +492,6 @@ export class VscRangeItem extends LitElement {
       </div>
     `;
   }
-  // protected render(): TemplateResult {
-  //   const icon = this.getValue('icon');
-  //   const energyState = this.getValue('energyState');
-  //   const rangeState = this.getValue('rangeState');
-  //   const rangeIcon = this.getValue('rangeIcon');
-  //   const level = this.getValue('level');
-  //   const barColor = this.getValue('barColor');
-  //   const booleanChargingState = this.getValue('chargingState');
-  //   const barHeight = this.getValue('barHeight');
-  //   const barWidth = this.getValue('barWidth') || 100; // Default to 100% width
-  //   const barRadius = this.getValue('barRadius');
-  //   const targetEntityState = this.getValue('targetEntityState');
-  //   const targetChargeState = this.getValue('targetChargeState');
-  //   const targetChargeColor = this.getValue('targetChargeColor');
-  //   const targetChargeVisibility = this.getValue('targetChargeVisibility');
-  //   const targetTooltip = this.getValue('targetTooltip');
-  //   const energyPosition = this.getValue('energyPosition');
-  //   const rangePosition = this.getValue('rangePosition');
-  //   const gradient = this.getValue('gradient');
-
-  //   const styles = {
-  //     '--vsc-bar-height': `${barHeight}px`,
-  //     '--vsc-bar-width': `${barWidth}%`,
-  //     '--vsc-bar-radius': `${barRadius}px`,
-  //     '--vsc-bar-level': `${level}%`,
-  //     '--vsc-bar-color': barColor,
-  //     '--vsc-range-bar-color': barColor,
-  //     '--vsc-bar-charge-target': `${targetChargeState}%`,
-  //     '--vsc-bar-target-display': targetChargeVisibility ? 'block' : 'none',
-  //     '--vsc-bar-target-color': `var(--${targetChargeColor}-color)`,
-  //     '--vsc-energy-state': `${energyState}`,
-  //     '--vsc-range-state': `${rangeState}`,
-  //   };
-
-  //   const chargingIcon = html`<ha-icon
-  //     icon="mdi:battery-high"
-  //     class="charging-icon"
-  //     ?hidden="${!booleanChargingState}"
-  //     style="--range-bar-color: ${barColor};"
-  //     title="Charging"
-  //   ></ha-icon>`;
-
-  //   const energyItem =
-  //     !energyState || energyPosition !== 'outside' || energyPosition === 'off'
-  //       ? nothing
-  //       : html` <div
-  //           class="item"
-  //           ?hidden="${!energyState || energyPosition !== 'outside' || energyPosition === 'off'}"
-  //           id="energy-item"
-  //         >
-  //           <ha-icon icon="${icon}"></ha-icon>
-  //           <span>${energyState}</span>
-  //           ${chargingIcon}
-  //         </div>`;
-  //   return html` <div class="info-box range" style="${styleMap(styles)}">
-  //     ${energyItem}
-  //     </ha-icon>
-  //     <div class="fuel-container">
-  //       <ha-tooltip
-  //         content=${`Target: ${targetEntityState}`}
-  //         placement="right"
-  //         distance="10"
-  //         ?disabled="${!targetTooltip}"
-  //       >
-  //         <div class="charge-target"></div>
-  //       </ha-tooltip>
-  //       <div class="fuel-wrapper">
-  //         <div class="fuel-background-bar" style="width: ${level}%; "></div>
-  //         <div class="fuel-level-bar" style="width: ${level}%; background: ${gradient};" ?charging="${booleanChargingState}">
-  //           ${energyPosition === 'inside' ? html`${chargingIcon}<span id="energy-item">${energyState}</span>` : nothing}
-  //         </div>
-  //         ${
-  //           rangePosition === 'inside'
-  //             ? html`<span class="energy-inside" id="range-item">${rangeState}</span>`
-  //             : nothing
-  //         }
-  //       </div>
-  //     </div>
-  //     ${
-  //       rangePosition === 'off'
-  //         ? nothing
-  //         : html`
-  //             <div class="item" ?hidden="${!rangeState || rangePosition !== 'outside'}" id="range-item">
-  //               <ha-icon icon="${rangeIcon}"></ha-icon>
-  //               <span>${rangeState}</span>
-  //             </div>
-  //           `
-  //     }
-  //   </div>`;
-  // }
 }
 
 declare global {
