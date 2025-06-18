@@ -59,6 +59,10 @@ export class PanelRangeInfo extends LitElement {
   @state() private _rangeItemConfig?: RangeInfoConfig;
   @state() private _colorThresholds?: Threshold[];
 
+  @state() private _overValueMax?: number;
+  @state() private _overValue?: number;
+  @state() private _overValueTimeout?: number;
+
   private _tinycolor = tinycolor;
 
   static get styles(): CSSResultGroup {
@@ -78,51 +82,6 @@ export class PanelRangeInfo extends LitElement {
         .sub-panel.section {
           margin-block: var(--vic-card-padding);
         }
-        .item-content.color-preview {
-          height: fit-content;
-          justify-content: end;
-          align-items: center;
-          cursor: pointer;
-          opacity: 0.8;
-          text-align: center;
-          background-color: var(--vsc-progress-color, var(--disabled-color));
-          transition: all 0.3s ease-in-out;
-        }
-
-        .item-content.color-preview:hover {
-          opacity: 1;
-          color: var(--vsc-progress-color, var(--primary-text-color));
-          background-color: var(--secondary-background-color, var(--primary-background-color));
-        }
-
-        .item-content.color-picker {
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          flex-direction: column;
-          height: 100%;
-          gap: var(--vic-gutter-gap);
-        }
-
-        .item-content.color-picker #values {
-          font-family: system-ui;
-          line-height: 150%;
-        }
-
-        .item-content.color-picker input#hexInput {
-          padding: var(--vic-card-padding);
-          font-family: monospace;
-          letter-spacing: 1px;
-        }
-        input#hexInput:focus {
-          outline: auto;
-        }
-
-        .picker-wrapper {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
 
         .item-content.gradient-preview {
           padding: var(--vic-card-padding) var(--vic-gutter-gap);
@@ -136,6 +95,15 @@ export class PanelRangeInfo extends LitElement {
           gap: var(--vic-card-padding);
           padding: var(--vic-card-padding);
           margin-bottom: 0.5rem;
+        }
+        .item-content.gradient-preview .on-hover-value {
+          position: relative;
+          width: 100%;
+          height: 1em;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
         }
 
         .warning {
@@ -156,6 +124,54 @@ export class PanelRangeInfo extends LitElement {
       _changedProperties.get('_activeIndexItem') !== this._activeIndexItem
     ) {
       this._selectedStyle = 'basic'; // Reset to basic style when changing item
+    }
+    if (
+      (_changedProperties.has('_selectedStyle') && this._selectedStyle === 'color_thresholds') ||
+      (_changedProperties.has('_colorThresholds') &&
+        _changedProperties.get('_colorThresholds') !== this._colorThresholds)
+    ) {
+      setTimeout(() => {
+        const gradientEl = this.shadowRoot?.getElementById('gradient-bg') as HTMLDivElement;
+        if (gradientEl) {
+          console.log('Adding mouseover event listener to gradient element');
+          gradientEl.addEventListener('click', this._onGradientClick.bind(this));
+          gradientEl.addEventListener('mousemove', this._onGradientClick.bind(this));
+          gradientEl.addEventListener('mouseleave', () => {
+            console.log('Mouse left gradient element');
+            this._overValue = undefined; // Reset on mouse leave
+            if (this._overValueTimeout) {
+              clearTimeout(this._overValueTimeout);
+              this._overValueTimeout = undefined;
+            }
+          });
+        }
+      }, 0);
+    }
+  }
+
+  private _onGradientClick(event: MouseEvent): void {
+    event.stopPropagation();
+    const target = event.target as HTMLDivElement;
+    const width = target.clientWidth;
+
+    const offsetX = event.offsetX;
+
+    const percentage = Math.round((offsetX / width) * 100);
+
+    const eventType = event.type;
+
+    if (eventType === 'mousemove') {
+      if (this._overValueTimeout) {
+        clearTimeout(this._overValueTimeout);
+      }
+
+      this._overValueTimeout = window.setTimeout(() => {
+        this._overValue = percentage;
+      }, 300);
+    } else if (eventType === 'click') {
+      const valueNormalizer = Math.round((percentage / 100) * (this._overValueMax || 100));
+
+      this._addColorThreshold(valueNormalizer);
     }
   }
 
@@ -744,6 +760,7 @@ export class PanelRangeInfo extends LitElement {
     const isPercent = hasPercent(energyState);
     const unit = isPercent ? '%' : energyState.attributes?.unit_of_measurement || '';
     const max = energyState.attributes?.max ?? (isPercent ? 100 : 5000);
+    this._overValueMax = max;
     const testValue = this._colorTestValue ?? max;
 
     const background = config.color_blocks
@@ -756,6 +773,8 @@ export class PanelRangeInfo extends LitElement {
     const radius = `${config.bar_radius ?? 5}px`;
     const height = `${config.bar_height ?? 14}px`;
     const minHeight = height > '20px' ? height : '20px';
+    const overValuePer = this._overValue !== undefined ? this._overValue : 0;
+    const overValueNormalized = overValuePer !== 0 ? Math.round((overValuePer / 100) * max) : '';
 
     const barPreviewStyle = {
       display: 'block',
@@ -766,6 +785,20 @@ export class PanelRangeInfo extends LitElement {
       'border-radius': radius,
       'background-color': config.bar_background || 'var(--secondary-background-color, #90909040)',
       'align-items': 'center',
+      cursor: 'copy',
+      'box-sizing': 'border-box',
+      overflow: 'hidden',
+    };
+    const overValue = {
+      position: 'absolute',
+      top: '0',
+      left: `${overValuePer}%`,
+      bottom: '0',
+      width: 'fit-content',
+      display: 'inline-flex',
+      'justify-content': 'center',
+      'align-items': 'center',
+      color: 'var(--primary-text-color)',
     };
 
     const fillStyle = {
@@ -811,14 +844,18 @@ export class PanelRangeInfo extends LitElement {
           }}
           .required=${false}
         ></ha-selector>
-        <div style=${styleMap(barPreviewStyle)}>
-          <div style=${styleMap(fillStyle)}></div>
+        <div class="on-hover-value">
+          <div style=${styleMap(overValue)} ?hidden=${!this._overValue}>${overValueNormalized}</div>
+        </div>
+        <div style=${styleMap(barPreviewStyle)} id="gradient-bg">
+          <div style=${styleMap(fillStyle)}</div>
           <div style=${styleMap(valueStyle)}>
             <span ?hidden=${!itemInside} style="text-shadow: 1px 1px 2px var(--card-background-color);">
             ${testValue} ${unit}</span>
             </div>
           </div>
         </div>
+
       </div>
     `;
   }
@@ -852,7 +889,7 @@ export class PanelRangeInfo extends LitElement {
     this._rangeColorThresholdsChanged(this._colorThresholds);
   }
 
-  private _addColorThreshold(): void {
+  private _addColorThreshold(clickValue?: number): void {
     const _colorThresholds = this._colorThresholds || [];
     const randomColor = tinycolor.random().toHexString();
 
@@ -863,31 +900,56 @@ export class PanelRangeInfo extends LitElement {
     };
 
     const progressColor = this._rangeItemConfig?.progress_color || randomColor;
-
-    if (_colorThresholds.length === 0) {
-      const newThreshold: Threshold[] = [
-        {
-          value: Number(0),
-          color: progressColor,
-        },
-        {
-          value: Number(5),
-          color: getNewColor(progressColor),
-        },
-      ];
-
-      _colorThresholds.push(...newThreshold);
+    if (clickValue !== undefined) {
+      // check if the click value exists in the thresholds
+      const existingThreshold = _colorThresholds.find((threshold) => threshold.value === clickValue);
+      if (!existingThreshold) {
+        // find the index of the last threshold that is less than the click value
+        const lastIndex = _colorThresholds.findIndex((threshold) => threshold.value > clickValue);
+        if (lastIndex === -1) {
+          const newColor = {
+            value: clickValue,
+            color: getNewColor(progressColor),
+          };
+          _colorThresholds.push(newColor);
+        } else {
+          // If a threshold is found, insert the new threshold before it
+          const newColor = {
+            value: clickValue,
+            color: getNewColor(_colorThresholds[lastIndex - 1]?.color || progressColor),
+          };
+          // Insert the new threshold before the found index
+          _colorThresholds.splice(lastIndex, 0, newColor);
+        }
+        this._rangeColorThresholdsChanged(_colorThresholds);
+        return;
+      }
     } else {
-      const latestColorItem = _colorThresholds[_colorThresholds.length - 1];
-      const newColor = getNewColor(latestColorItem.color || progressColor);
-      const newThreshold: Threshold = {
-        value: latestColorItem.value + 5,
-        color: newColor,
-      };
-      // Add the new threshold to the existing array before latest index
-      _colorThresholds.push(newThreshold);
+      if (_colorThresholds.length === 0) {
+        const newThreshold: Threshold[] = [
+          {
+            value: Number(0),
+            color: progressColor,
+          },
+          {
+            value: Number(5),
+            color: getNewColor(progressColor),
+          },
+        ];
+
+        _colorThresholds.push(...newThreshold);
+      } else {
+        const latestColorItem = _colorThresholds[_colorThresholds.length - 1];
+        const newColor = getNewColor(latestColorItem.color || progressColor);
+        const newThreshold: Threshold = {
+          value: latestColorItem.value + 5,
+          color: newColor,
+        };
+        // Add the new threshold to the existing array before latest index
+        _colorThresholds.push(newThreshold);
+      }
+      this._rangeColorThresholdsChanged(_colorThresholds);
     }
-    this._rangeColorThresholdsChanged(_colorThresholds);
   }
 
   private _sortColorArr(): void {

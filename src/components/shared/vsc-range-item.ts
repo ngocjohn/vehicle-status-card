@@ -58,7 +58,7 @@ export class VscRangeItem extends LitElement {
 
         .fuel-level-background {
           position: absolute;
-          width: var(--vsc-bar-level);
+          width: calc(var(--vsc-bar-level) - 1px);
           background: var(--vsc-range-gradient-color);
           border-radius: var(--vsc-bar-radius);
           max-width: 100% !important;
