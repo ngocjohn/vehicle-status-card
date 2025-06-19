@@ -8,8 +8,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 import tinycolor from 'tinycolor2';
 
 import { ICON } from '../../const/const';
-import editorcss from '../../css/editor.css';
 import './sub-panel-yaml';
+import editorcss from '../../css/editor.css';
 import {
   HomeAssistant,
   VehicleStatusCardConfig,
@@ -26,6 +26,8 @@ import {
   findPowerEntities,
   generateColorBlocks,
   generateGradient,
+  getColorForLevel,
+  getMostReadableColor,
   getNormalizedValue,
   hasPercent,
 } from '../../utils';
@@ -59,7 +61,7 @@ export class PanelRangeInfo extends LitElement {
   @state() private _rangeItemConfig?: RangeInfoConfig;
   @state() private _colorThresholds?: Threshold[];
 
-  @state() private _overValueMax?: number;
+  @state() private _maxValue?: number;
   @state() private _overValue?: number;
   @state() private _overValueTimeout?: number;
 
@@ -82,6 +84,23 @@ export class PanelRangeInfo extends LitElement {
         .sub-panel.section {
           margin-block: var(--vic-card-padding);
         }
+        @keyframes glowBorder {
+          0% {
+            box-shadow: 0 0 5px var(--primary-color, #03a9f4);
+          }
+          50% {
+            box-shadow: 0 0 15px var(--primary-color, #03a9f4);
+          }
+          100% {
+            box-shadow: 0 0 5px var(--primary-color, #03a9f4);
+          }
+        }
+
+        .animation-glow {
+          animation: glowBorder 1.5s ease-in-out;
+          animation-iteration-count: 1;
+          animation-fill-mode: forwards;
+        }
 
         .item-content.gradient-preview {
           padding: var(--vic-card-padding) var(--vic-gutter-gap);
@@ -96,14 +115,57 @@ export class PanelRangeInfo extends LitElement {
           padding: var(--vic-card-padding);
           margin-bottom: 0.5rem;
         }
+
         .item-content.gradient-preview .on-hover-value {
           position: relative;
           width: 100%;
-          height: 1em;
+          height: 1.5rem;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
+        }
+        .threshold-dot-container {
+          position: relative;
+          height: 1.5em;
+          margin-top: 0.3em;
+          width: 100%;
+          opacity: 0.6;
+        }
+        .threshold-dot-container:hover {
+          opacity: 1;
+        }
+        .threshold-dot {
+          position: absolute;
+          top: 0;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+          cursor: pointer;
+          transition: transform 200ms ease-in-out, opacity 200ms ease-in-out;
+          opacity: 0.8;
+        }
+
+        .threshold-dot:hover {
+          transform: translate(-50%, -50%) scale(1.3) !important;
+          opacity: 1 !important;
+          border: 1px solid var(--white-color, #ffffff);
+        }
+        .threshold-dot:hover::after {
+          content: attr(title);
+          position: absolute;
+          top: -2.5em;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: var(--primary-text-color, #000000);
+          color: var(--card-background-color, #ffffff);
+          padding: 0.2em 0.5em;
+          border-radius: 4px;
+          font-size: 0.8em;
+          white-space: nowrap;
+          z-index: 10;
+          box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
         }
 
         .warning {
@@ -133,11 +195,9 @@ export class PanelRangeInfo extends LitElement {
       setTimeout(() => {
         const gradientEl = this.shadowRoot?.getElementById('gradient-bg') as HTMLDivElement;
         if (gradientEl) {
-          console.log('Adding mouseover event listener to gradient element');
-          gradientEl.addEventListener('click', this._onGradientClick.bind(this));
-          gradientEl.addEventListener('mousemove', this._onGradientClick.bind(this));
+          gradientEl.addEventListener('click', this._manageGradientEvent.bind(this));
+          gradientEl.addEventListener('mousemove', this._manageGradientEvent.bind(this));
           gradientEl.addEventListener('mouseleave', () => {
-            console.log('Mouse left gradient element');
             this._overValue = undefined; // Reset on mouse leave
             if (this._overValueTimeout) {
               clearTimeout(this._overValueTimeout);
@@ -149,7 +209,7 @@ export class PanelRangeInfo extends LitElement {
     }
   }
 
-  private _onGradientClick(event: MouseEvent): void {
+  private _manageGradientEvent(event: MouseEvent): void {
     event.stopPropagation();
     const target = event.target as HTMLDivElement;
     const width = target.clientWidth;
@@ -167,10 +227,9 @@ export class PanelRangeInfo extends LitElement {
 
       this._overValueTimeout = window.setTimeout(() => {
         this._overValue = percentage;
-      }, 300);
+      }, 250);
     } else if (eventType === 'click') {
-      const valueNormalizer = Math.round((percentage / 100) * (this._overValueMax || 100));
-
+      const valueNormalizer = Math.round((percentage / 100) * (this._maxValue || 100));
       this._addColorThreshold(valueNormalizer);
     }
   }
@@ -680,7 +739,7 @@ export class PanelRangeInfo extends LitElement {
                     <div class="item-actions">
                       <ha-icon-button
                         class="delete"
-                        .path=${ICON.DELETE}
+                        .path=${ICON.CLOSE}
                         @click=${() => this._removeColorThreshold(index)}
                       ></ha-icon-button>
                     </div>
@@ -691,7 +750,7 @@ export class PanelRangeInfo extends LitElement {
             </div>
           </ha-sortable>`}
       <div class="indicator-list">
-        <div class="item-config-row">
+        <div class="item-config-row" style="flex-direction: row-reverse; align-items: center;">
           ${!noColors
             ? html`
                 <ha-button
@@ -762,21 +821,25 @@ export class PanelRangeInfo extends LitElement {
     const max = config.energy_level?.max_value
       ? config.energy_level.max_value
       : energyState.attributes?.max ?? (isPercent ? 100 : 5000);
-    this._overValueMax = max;
+    this._maxValue = max;
     const testValue = this._colorTestValue ?? max;
 
     const background = config.color_blocks
-      ? generateColorBlocks(this._colorThresholds, testValue)
-      : generateGradient(this._colorThresholds, testValue);
+      ? generateColorBlocks(this._colorThresholds, testValue, max)
+      : generateGradient(this._colorThresholds, testValue, max);
 
-    const normalizedWidth = getNormalizedValue(this._colorThresholds, testValue, energyState.attributes?.max);
+    const currentColor = getColorForLevel(this._colorThresholds, testValue, max);
+    const readableColor = getMostReadableColor(currentColor);
+
+    const normalizedWidth = getNormalizedValue(this._colorThresholds, testValue, max);
+
     const itemInside = config.energy_level?.value_position === 'inside' || false;
     const valueAlign = config.energy_level?.value_alignment || 'start';
     const radius = `${config.bar_radius ?? 5}px`;
     const height = `${config.bar_height ?? 14}px`;
     const minHeight = height > '20px' ? height : '20px';
-    const overValuePer = this._overValue !== undefined ? this._overValue : 0;
-    const overValueNormalized = overValuePer !== 0 ? Math.round((overValuePer / 100) * max) : '';
+    const overValuePer = this._overValue !== undefined ? this._overValue : undefined;
+    const overValueNormalized = overValuePer !== undefined ? Math.round((overValuePer / 100) * max) : undefined;
 
     const barPreviewStyle = {
       display: 'block',
@@ -787,33 +850,40 @@ export class PanelRangeInfo extends LitElement {
       'border-radius': radius,
       'background-color': config.bar_background || 'var(--secondary-background-color, #90909040)',
       'align-items': 'center',
-      cursor: 'copy',
       'box-sizing': 'border-box',
       overflow: 'hidden',
+      cursor: 'copy',
     };
     const overValue = {
+      left: `${overValuePer}%`,
+      transform: `translateX(-${overValuePer}%)`,
+      display: overValuePer !== undefined ? 'flex' : 'none',
       position: 'absolute',
       top: '0',
-      left: `${overValuePer}%`,
       bottom: '0',
       width: 'fit-content',
-      display: 'inline-flex',
       'justify-content': 'center',
       'align-items': 'center',
       color: 'var(--primary-text-color)',
+      'background-color': 'var(--primary-color, #03a9f4)',
+      'border-radius': radius,
+      'box-shadow': '0 0 2px rgba(0, 0, 0, 0.2)',
+      'text-shadow': '1px 1px 2px var(--card-background-color)',
+      padding: '0 0.5rem',
     };
 
     const fillStyle = {
-      background,
+      background: `linear-gradient(to right, ${background})`,
       width: `${normalizedWidth}%`,
       position: 'absolute',
-      'border-radius': radius,
+      borderRadius: radius,
       transition: 'width 0.4s ease-in-out',
       top: '0',
       left: '0',
       bottom: '0',
-      'box-sizing': 'border-box',
-      'max-width': '100%',
+      boxSizing: 'border-box',
+      maxWidth: '100%',
+      pointerEvents: 'none',
     };
 
     const valueStyle = {
@@ -829,7 +899,26 @@ export class PanelRangeInfo extends LitElement {
       'align-items': 'center',
       'min-width': 'fit-content',
       transition: 'width 0.4s ease-in-out',
+      pointerEvents: 'none',
+      color: readableColor,
+      fontWeight: 500,
     };
+
+    const thresholdDots = this._colorThresholds.map((t) => {
+      const left = (t.value / max) * 100;
+      return html`
+        <div
+          class="threshold-dot"
+          title="Value: ${t.value}"
+          style=${styleMap({
+            left: `${left}%`,
+            transform: `translateX(-50%)`,
+            backgroundColor: t.color,
+          })}
+          @click=${() => this._editColorThreshold?.(t.value)}
+        ></div>
+      `;
+    });
 
     return html`
       <div class="item-content gradient-preview">
@@ -847,19 +936,40 @@ export class PanelRangeInfo extends LitElement {
           .required=${false}
         ></ha-selector>
         <div class="on-hover-value">
-          <div style=${styleMap(overValue)} ?hidden=${!this._overValue}>${overValueNormalized}</div>
+          <div style=${styleMap(overValue)}>${overValueNormalized}</div>
         </div>
         <div style=${styleMap(barPreviewStyle)} id="gradient-bg">
-          <div style=${styleMap(fillStyle)}</div>
+          <div style=${styleMap(fillStyle)}></div>
           <div style=${styleMap(valueStyle)}>
-            <span ?hidden=${!itemInside} style="text-shadow: 1px 1px 2px var(--card-background-color);">
-            ${testValue} ${unit}</span>
-            </div>
+            <span ?hidden=${!itemInside}> ${testValue} ${unit}</span>
           </div>
         </div>
-
+        <div class="threshold-dot-container">${thresholdDots}</div>
       </div>
     `;
+  }
+
+  private _editColorThreshold(value: number): void {
+    const sortEl = this.shadowRoot?.querySelector('.indicator-list');
+    if (!sortEl) return;
+
+    const index = this._colorThresholds?.findIndex((t) => t.value === value);
+    if (index === undefined || index < 0) return;
+
+    const target = sortEl.querySelector<HTMLElement>(`.item-config-row.color-threshold[data-index="${index}"]`);
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.classList.add('animation-glow');
+    target.addEventListener('animationend', () => target.classList.remove('animation-glow'), { once: true });
+
+    const input = target
+      .querySelector('ha-selector')
+      ?.shadowRoot?.querySelector('ha-selector-color_rgb')
+      ?.shadowRoot?.querySelector('ha-textfield')
+      ?.shadowRoot?.querySelector('input') as HTMLInputElement | null;
+
+    input?.click();
   }
 
   private _colorThreholdChanged(ev: any): void {
@@ -924,6 +1034,9 @@ export class PanelRangeInfo extends LitElement {
           _colorThresholds.splice(lastIndex, 0, newColor);
         }
         this._rangeColorThresholdsChanged(_colorThresholds);
+        setTimeout(() => {
+          this._editColorThreshold?.(clickValue);
+        }, 100); // Delay to allow the DOM to update
         return;
       }
     } else {
