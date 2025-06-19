@@ -6,57 +6,54 @@ import { Threshold } from '../types';
  * Generates a color based on the given thresholds and current level.
  * @param {Threshold[]} thresholds - Array of thresholds with value and color.
  * @param {number} [currentLevel] - The current level to determine the color.
+ * @param {number} [maxValue] - The maximum value to normalize the color.
  * @returns {string} - The color as a hex string.
  */
 
-export const generateGradient = (thresholds: Threshold[], currentLevel?: number): string => {
-  if (!thresholds || thresholds.length === 0) {
-    return '';
-  }
+export const generateGradient = (thresholds: Threshold[], currentLevel: number = 0, maxValue: number = 100): string => {
+  if (!thresholds || thresholds.length === 0) return '';
+
   const sorted = [...thresholds].sort((a, b) => a.value - b.value);
-  const maxThreshold = sorted[sorted.length - 1]?.value ?? 100;
-  const level = Math.min(currentLevel || maxThreshold, maxThreshold);
+  const level = Math.min(currentLevel, maxValue);
+  if (level === 0) return '';
 
   const stops: string[] = [];
-
   let lastColor = sorted[0]?.color ?? 'gray';
 
-  for (let i = 0; i < sorted.length; i++) {
-    const { value, color } = sorted[i];
-    const normalized = (value / maxThreshold) * 100;
+  for (const { value, color } of sorted) {
+    if (value > level) break;
 
-    if (value <= level) {
-      stops.push(`${color} ${normalized}%`);
-      lastColor = color;
-    } else {
-      break;
-    }
+    const normalized = (value / level) * 100;
+    stops.push(`${color} ${normalized}%`);
+    lastColor = color;
   }
 
-  // Normalize current level and conditionally add it
-  const normalizedLevel = (level / maxThreshold) * 100;
+  const normalizedLevel = 100;
   const lastStop = stops[stops.length - 1];
   if (!lastStop?.endsWith(`${normalizedLevel}%`)) {
     stops.push(`${lastColor} ${normalizedLevel}%`);
   }
-  const gradient = `linear-gradient(to right, ${stops.join(', ')})`;
-  return gradient;
+
+  return `${stops.join(', ')}`;
 };
 
 /**
  * Generates a linear gradient with solid color blocks up to the given level.
  * @param {Threshold[]} thresholds - Array of thresholds with value and color.
  * @param {number} [currentLevel] - Current level to determine where to stop.
+ * @param {number} [maxValue] - Maximum value to normalize the gradient.
  * @returns {string} - The linear gradient CSS string.
  */
 
-export const generateColorBlocks = (thresholds: Threshold[], currentLevel?: number): string => {
-  const sorted = [...thresholds].sort((a, b) => a.value - b.value);
-  if (sorted.length === 0) return '';
+export const generateColorBlocks = (
+  thresholds: Threshold[],
+  currentLevel: number = 0,
+  maxValue: number = 100
+): string => {
+  if (!thresholds || thresholds.length < 2) return '';
 
-  const max = sorted[sorted.length - 1].value;
-  const level = Math.min(currentLevel ?? max, max);
-  const levelPercent = (level / max) * 100;
+  const sorted = [...thresholds].sort((a, b) => a.value - b.value);
+  const cappedLevel = Math.min(currentLevel, maxValue);
 
   const stops: string[] = [];
 
@@ -64,26 +61,30 @@ export const generateColorBlocks = (thresholds: Threshold[], currentLevel?: numb
     const current = sorted[i];
     const next = sorted[i + 1];
 
-    const from = (current.value / max) * 100;
-    const to = (next.value / max) * 100;
+    if (current.value > cappedLevel) break;
 
-    if (levelPercent <= from) break;
+    const fromNorm = (current.value / cappedLevel) * 100;
+    const toNorm = (Math.min(next.value, cappedLevel) / cappedLevel) * 100;
 
-    const end = Math.min(to, levelPercent);
-    stops.push(`${current.color} ${from}%`, `${current.color} ${end}%`);
+    stops.push(`${current.color} ${fromNorm}%`, `${current.color} ${toNorm}%`);
 
-    if (levelPercent <= to) break;
+    if (next.value >= cappedLevel) break;
   }
 
-  // Handle last threshold if level is beyond last
-  const last = sorted[sorted.length - 1];
-  const lastStart = (last.value / max) * 100;
-
-  if (levelPercent > lastStart) {
-    stops.push(`${last.color} ${lastStart}%`, `${last.color} ${levelPercent}%`);
+  // Optional: extend last color to 100% if not at exact level
+  let lastThreshold: Threshold | undefined;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    if (sorted[i].value <= cappedLevel) {
+      lastThreshold = sorted[i];
+      break;
+    }
   }
-
-  return `linear-gradient(to right, ${stops.join(', ')})`;
+  if (lastThreshold && lastThreshold.value < cappedLevel) {
+    const start = (lastThreshold.value / cappedLevel) * 100;
+    stops.push(`${lastThreshold.color} ${start}%`, `${lastThreshold.color} 100%`);
+  }
+  return `${stops.join(', ')}`;
+  // return `linear-gradient(to right, ${stops.join(', ')})`;
 };
 
 export const getMaxThreshold = (thresholds: Threshold[]): number => {
@@ -139,10 +140,52 @@ export const createRandomPallete = (baseColor: string, maxValue: number): Thresh
 
     return isDark ? tc.lighten(intesity).toHexString() : tc.darken(intesity).toHexString();
   };
-  const palette: Threshold[] = Array.from({ length: steps + 1 }, (_, i) => ({
+  const palette: Threshold[] = Array.from({ length: steps }, (_, i) => ({
     value: Math.round(i * stepSize),
     color: getColor(baseColor, i),
   }));
 
   return palette;
+};
+
+/**
+ * Get color for current level based on thresholds.
+ * @param {Threshold[]} thresholds - Array of thresholds with value and color.
+ * @param {number} currentLevel - The current level to determine the color.
+ * @param {number} maxValue - The maximum value to normalize the color.
+ * @returns {string} - The color as a hex string.
+ */
+export const getColorForLevel = (thresholds: Threshold[], currentLevel: number = 0, maxValue: number = 100): string => {
+  if (!thresholds || thresholds.length === 0) return '';
+
+  const sorted = [...thresholds].sort((a, b) => a.value - b.value);
+  const level = Math.min(currentLevel, maxValue);
+
+  if (level <= 0) return '';
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i];
+    const next = sorted[i + 1];
+
+    if (current.value <= level && next.value > level) {
+      return current.color;
+    }
+  }
+  return sorted[sorted.length - 1].color; // Return last color if level exceeds all thresholds
+};
+
+/**
+ * Get most readable color based on background color.
+ * @param {string} backgroundColor - The background color to check against.
+ * @returns {string} - The most readable color (black or white).
+ * */
+
+export const getMostReadableColor = (backgroundColor: string): string => {
+  const allColors: string[] = [];
+  for (let i in tinycolor.names) {
+    allColors.push(tinycolor.names[i]);
+  }
+  const colors = ['#212121', '#e1e1e1']; // Default colors for readability
+  const readableColor = tinycolor.mostReadable(backgroundColor, colors);
+  return readableColor.isValid() ? readableColor.toHexString() : 'var(--primary-text-color)'; // Default to black if invalid
 };

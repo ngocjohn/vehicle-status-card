@@ -16,6 +16,8 @@ import {
   addActions,
   generateColorBlocks,
   generateGradient,
+  getColorForLevel,
+  getMostReadableColor,
   getNormalizedValue,
   hasPercent,
   hasTemplate,
@@ -59,7 +61,9 @@ export class VscRangeItem extends LitElement {
         .fuel-level-background {
           position: absolute;
           width: calc(var(--vsc-bar-level) - 1px);
-          background: var(--vsc-range-gradient-color);
+          background: -moz-linear-gradient(90deg, var(--vsc-range-gradient-color));
+          background: -webkit-linear-gradient(90deg, var(--vsc-range-gradient-color));
+          background: linear-gradient(90deg, var(--vsc-range-gradient-color));
           border-radius: var(--vsc-bar-radius);
           max-width: 100% !important;
           transition: width 0.4s ease-in-out;
@@ -105,7 +109,8 @@ export class VscRangeItem extends LitElement {
         }
 
         .energy-inside {
-          text-shadow: 1px 1px 2px var(--card-background-color);
+          /* text-shadow: 1px 1px 2px var(--card-background-color); */
+          color: var(--vsc-bar-energy-color, var(--primary-text-color));
           /* flex: 1 0 0; */
         }
 
@@ -350,8 +355,8 @@ export class VscRangeItem extends LitElement {
           return this.getValue('barColor');
         }
         const background = r.color_blocks
-          ? generateColorBlocks(r.color_thresholds, this.getValue('level'))
-          : generateGradient(r.color_thresholds, this.getValue('level'));
+          ? generateColorBlocks(r.color_thresholds, this.getValue('level'), entityMax)
+          : generateGradient(r.color_thresholds, this.getValue('level'), entityMax);
         return background;
 
       case 'chargingState': {
@@ -409,6 +414,13 @@ export class VscRangeItem extends LitElement {
       case 'energyMax':
         return entityMax;
 
+      case 'energyStateColor':
+        const currentColor = r.color_thresholds
+          ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax)
+          : r.progress_color;
+
+        return getMostReadableColor(currentColor);
+
       default:
         return undefined;
     }
@@ -431,6 +443,7 @@ export class VscRangeItem extends LitElement {
       '--vsc-energy-state': `${get('energyState')}`,
       '--vsc-range-state': `${get('rangeState')}`,
       '--vsc-bar-background': get('barBackground'),
+      '--vsc-bar-energy-color': get('energyStateColor'),
     };
 
     const chargingIcon = html`
