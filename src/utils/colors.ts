@@ -157,21 +157,18 @@ export const createRandomPallete = (baseColor: string, maxValue: number): Thresh
  */
 export const getColorForLevel = (thresholds: Threshold[], currentLevel: number = 0, maxValue: number = 100): string => {
   if (!thresholds || thresholds.length === 0) return '';
-
+  const offset = 3; // Offset to avoid very low levels
   const sorted = [...thresholds].sort((a, b) => a.value - b.value);
-  const level = Math.min(currentLevel, maxValue);
+  const level = Math.min(currentLevel - offset, maxValue);
 
-  if (level <= 0) return '';
+  if (level < 3) return '';
 
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const current = sorted[i];
-    const next = sorted[i + 1];
-
-    if (current.value <= level && next.value > level) {
-      return current.color;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    if (sorted[i].value <= level) {
+      return sorted[i].color;
     }
   }
-  return sorted[sorted.length - 1].color; // Return last color if level exceeds all thresholds
+  return sorted[0].color; // Return first color if level is below all thresholds
 };
 
 /**
