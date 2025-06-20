@@ -17,7 +17,6 @@ import {
   generateColorBlocks,
   generateGradient,
   getColorForLevel,
-  getMostReadableColor,
   getNormalizedValue,
   hasPercent,
   hasTemplate,
@@ -110,18 +109,13 @@ export class VscRangeItem extends LitElement {
 
         .energy-inside {
           /* text-shadow: 1px 1px 2px var(--card-background-color); */
-          color: var(--vsc-bar-energy-color, var(--primary-text-color));
-          /* flex: 1 0 0; */
+          color: var(--vsc-bar-energy-color);
+          filter: invert(1) grayscale(1) brightness(1.3) contrast(9000);
+          mix-blend-mode: luminosity;
+          opacity: 0.8;
+          font-weight: 500;
         }
 
-        /* .fuel-level-bar[charging] {
-          justify-content: space-between;
-        } */
-
-        /* .fuel-wrapper span {
-          text-shadow: 1px 1px 2px #000000;
-          font-weight: 500;
-        } */
         .fuel-wrapper span.range-inside {
           z-index: 3;
           position: absolute;
@@ -416,10 +410,12 @@ export class VscRangeItem extends LitElement {
 
       case 'energyStateColor':
         const currentColor = r.color_thresholds
-          ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax)
-          : r.progress_color;
+          ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax) || this.getValue('barBackground')
+          : this.getValue('level') > 2
+          ? r.progress_color
+          : this.getValue('barBackground');
 
-        return getMostReadableColor(currentColor);
+        return currentColor;
 
       default:
         return undefined;

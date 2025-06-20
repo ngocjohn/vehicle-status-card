@@ -164,7 +164,7 @@ header h1 {
 }
 
 .info-box.range {
-  --mdc-icon-size: 20px;
+  --mdc-icon-size: 17px;
   flex-wrap: nowrap !important;
   justify-content: center;
   text-wrap: nowrap;
