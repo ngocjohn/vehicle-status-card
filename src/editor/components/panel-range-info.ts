@@ -27,7 +27,6 @@ import {
   generateColorBlocks,
   generateGradient,
   getColorForLevel,
-  getMostReadableColor,
   getNormalizedValue,
   hasPercent,
 } from '../../utils';
@@ -116,7 +115,46 @@ export class PanelRangeInfo extends LitElement {
           margin-bottom: 0.5rem;
         }
 
-        .item-content.gradient-preview .on-hover-value {
+        .item-content.gradient-preview .range-bar-row {
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+          position: relative;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .range-bar-row .range-outside,
+        .range-bar-row .energy-outside {
+          display: flex;
+          width: fit-content;
+          margin-inline: 0.5rem;
+          align-items: center;
+          --mdc-icon-size: 17px;
+          gap: 4px;
+          line-height: 0;
+          height: max-content;
+        }
+        .range-bar-row .range-outside[hidden],
+        .range-bar-row .energy-outside[hidden] {
+          display: none !important;
+        }
+        .range-inside {
+          /* z-index: 3; */
+          position: absolute;
+          top: 50%;
+          right: 0.5em;
+          opacity: 0.8;
+          transform: translateY(-50%);
+        }
+        .range-bar-row .bar-wrapper {
+          display: flex;
+          flex: 1 1 0;
+          position: relative;
+          width: 100%;
+          flex-direction: column;
+        }
+
+        .on-hover-value {
           position: relative;
           width: 100%;
           height: 1.5rem;
@@ -125,12 +163,75 @@ export class PanelRangeInfo extends LitElement {
           justify-content: center;
           overflow: hidden;
         }
+        .on-hover-value .hover-value {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: fit-content;
+          justify-content: center;
+          align-items: center;
+          color: var(--primary-text-color);
+          background-color: var(--primary-color, #03a9f4);
+          box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+          text-shadow: 1px 1px 2px var(--card-background-color);
+          padding: 0 0.5rem;
+        }
+
+        .gradient-bg {
+          display: block;
+          position: relative;
+          width: 100%;
+          align-items: center;
+          box-sizing: border-box;
+          overflow: hidden;
+          cursor: copy;
+        }
+        .gradient-bg .fill-bg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+          transition: width 0.4s ease-in-out;
+          max-width: 100%;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .gradient-bg .energy-inside {
+          position: absolute;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          box-sizing: border-box;
+          padding-inline: 1em;
+          min-width: fit-content;
+          transition: width 0.4s ease-in-out;
+          pointer-events: none;
+          font-weight: 500;
+          z-index: 2;
+        }
+
+        .gradient-bg .energy-inside span {
+          filter: invert(1) grayscale(1) brightness(1.3) contrast(9000);
+          mix-blend-mode: luminosity;
+          opacity: 0.8;
+          color: currentcolor;
+        }
+        .bar-wrapper:hover .threshold-dot-container {
+          visibility: visible;
+        }
+
         .threshold-dot-container {
           position: relative;
           height: 1.5em;
           margin-top: 0.3em;
           width: 100%;
           opacity: 0.6;
+          visibility: hidden;
         }
         .threshold-dot-container:hover {
           opacity: 1;
@@ -799,7 +900,10 @@ export class PanelRangeInfo extends LitElement {
 
     const baseColor = rangeItem?.progress_color || tinycolor.random().toHexString();
     const isPercent = hasPercent(state);
-    const rawMax = state.attributes?.max;
+    const rawMax = rangeItem?.energy_level?.max_value
+      ? rangeItem.energy_level.max_value
+      : state.attributes?.max_value || state.attributes?.max || undefined;
+    // Default max value if not defined in config or state
     const maxValue = rawMax ?? (isPercent ? 100 : undefined) ?? 100;
 
     const palette = createRandomPallete(baseColor, maxValue);
@@ -813,14 +917,25 @@ export class PanelRangeInfo extends LitElement {
 
   private _renderPreviewColor(): TemplateResult | typeof nothing {
     if (!this._colorThresholds?.length) return nothing;
+    const hass = this.hass;
+    const getEntityState = (entity?: string, attr?: string) =>
+      entity && hass.states[entity]
+        ? attr
+          ? hass.formatEntityAttributeValue(hass.states[entity], attr)
+          : hass.formatEntityState(hass.states[entity])
+        : '';
 
     const config = this._rangeItemConfig!;
-    const energyState = this.hass.states[config.energy_level?.entity || ''];
+    const barBackground = config.bar_background || 'var(--secondary-background-color, #90909040)';
+    const energyConf = config.energy_level || {};
+    const rangeConf = config.range_level || {};
+
+    const icon = energyConf?.icon || '';
+    const energyState = this.hass.states[energyConf?.entity || ''];
     const isPercent = hasPercent(energyState);
     const unit = isPercent ? '%' : energyState.attributes?.unit_of_measurement || '';
-    const max = config.energy_level?.max_value
-      ? config.energy_level.max_value
-      : energyState.attributes?.max ?? (isPercent ? 100 : 5000);
+    const max = energyConf?.max_value ? energyConf.max_value : energyState.attributes?.max ?? (isPercent ? 100 : 5000);
+
     this._maxValue = max;
     const testValue = this._colorTestValue ?? max;
 
@@ -828,80 +943,48 @@ export class PanelRangeInfo extends LitElement {
       ? generateColorBlocks(this._colorThresholds, testValue, max)
       : generateGradient(this._colorThresholds, testValue, max);
 
-    const currentColor = getColorForLevel(this._colorThresholds, testValue, max);
-    const readableColor = getMostReadableColor(currentColor);
+    const currentColor = getColorForLevel(this._colorThresholds, testValue, max) || barBackground;
+    // const consoleStyle = `color: ${currentColor}; font-weight: bold; padding: 2px 4px; border-radius: 4px; `;
+    // console.log(`%cColor for test value: ${testValue} color: ${currentColor}`, consoleStyle);
 
     const normalizedWidth = getNormalizedValue(this._colorThresholds, testValue, max);
 
     const itemInside = config.energy_level?.value_position === 'inside' || false;
+    const itemOutside = config.energy_level?.value_position === 'outside' || false;
     const valueAlign = config.energy_level?.value_alignment || 'start';
+
     const radius = `${config.bar_radius ?? 5}px`;
     const height = `${config.bar_height ?? 14}px`;
     const minHeight = height > '20px' ? height : '20px';
     const overValuePer = this._overValue !== undefined ? this._overValue : undefined;
     const overValueNormalized = overValuePer !== undefined ? Math.round((overValuePer / 100) * max) : undefined;
 
+    const rangeState = rangeConf?.entity ? getEntityState(rangeConf.entity, rangeConf.attribute) : '';
+    const rangePosition = rangeConf?.value_position || 'outside';
+
     const barPreviewStyle = {
-      display: 'block',
-      position: 'relative',
-      width: '100%',
       height: height,
       'min-height': !itemInside ? 'unset' : minHeight,
       'border-radius': radius,
       'background-color': config.bar_background || 'var(--secondary-background-color, #90909040)',
-      'align-items': 'center',
-      'box-sizing': 'border-box',
-      overflow: 'hidden',
-      cursor: 'copy',
     };
     const overValue = {
       left: `${overValuePer}%`,
       transform: `translateX(-${overValuePer}%)`,
       display: overValuePer !== undefined ? 'flex' : 'none',
-      position: 'absolute',
-      top: '0',
-      bottom: '0',
-      width: 'fit-content',
-      'justify-content': 'center',
-      'align-items': 'center',
-      color: 'var(--primary-text-color)',
-      'background-color': 'var(--primary-color, #03a9f4)',
       'border-radius': radius,
-      'box-shadow': '0 0 2px rgba(0, 0, 0, 0.2)',
-      'text-shadow': '1px 1px 2px var(--card-background-color)',
-      padding: '0 0.5rem',
     };
 
     const fillStyle = {
       background: `linear-gradient(to right, ${background})`,
       width: `${normalizedWidth}%`,
-      position: 'absolute',
       borderRadius: radius,
-      transition: 'width 0.4s ease-in-out',
-      top: '0',
-      left: '0',
-      bottom: '0',
-      boxSizing: 'border-box',
-      maxWidth: '100%',
-      pointerEvents: 'none',
     };
 
     const valueStyle = {
-      position: 'absolute',
-      top: '0',
-      left: '0',
-      bottom: '0',
-      'box-sizing': 'border-box',
       width: `${normalizedWidth}%`,
-      display: 'flex',
       'justify-content': `flex-${valueAlign}`,
-      'padding-inline': '1em',
-      'align-items': 'center',
-      'min-width': 'fit-content',
-      transition: 'width 0.4s ease-in-out',
-      pointerEvents: 'none',
-      color: readableColor,
-      fontWeight: 500,
+      color: currentColor,
     };
 
     const thresholdDots = this._colorThresholds.map((t) => {
@@ -920,12 +1003,31 @@ export class PanelRangeInfo extends LitElement {
       `;
     });
 
+    const energyOutside = html`
+      <div class="energy-outside" ?hidden=${!itemOutside}>
+        <ha-icon icon=${icon}></ha-icon>
+        <span>${testValue} ${unit}</span>
+      </div>
+    `;
+
+    const rangeEl = rangeState
+      ? html`
+          <div class="range-outside" ?hidden=${!rangeState || rangePosition !== 'outside'}>
+            <ha-icon icon=${rangeConf?.icon || ''}></ha-icon>
+            <span>${rangeState}</span>
+          </div>
+        `
+      : nothing;
+
+    const rangeInside =
+      rangeState && rangePosition === 'inside' ? html` <span class="range-inside">${rangeState}</span> ` : nothing;
+
     return html`
       <div class="item-content gradient-preview">
         <ha-selector
           .hass=${this.hass}
-          .label=${'Test value'}
-          .helper=${'Set a test value to see the color preview'}
+          .label=${'Test value & Bar Preview'}
+          .helper=${'Click on the bar to add a color stop at the clicked value or click on dot to edit color on that value.'}
           .value=${testValue}
           .selector=${{
             number: { min: 0, max, step: 1, mode: 'slider', unit_of_measurement: unit },
@@ -935,16 +1037,23 @@ export class PanelRangeInfo extends LitElement {
           }}
           .required=${false}
         ></ha-selector>
-        <div class="on-hover-value">
-          <div style=${styleMap(overValue)}>${overValueNormalized}</div>
-        </div>
-        <div style=${styleMap(barPreviewStyle)} id="gradient-bg">
-          <div style=${styleMap(fillStyle)}></div>
-          <div style=${styleMap(valueStyle)}>
-            <span ?hidden=${!itemInside}> ${testValue} ${unit}</span>
+        <div class="range-bar-row">
+          ${energyOutside}
+          <div class="bar-wrapper">
+            <div class="on-hover-value">
+              <div style=${styleMap(overValue)} class="hover-value">${overValueNormalized}</div>
+            </div>
+            <div style=${styleMap(barPreviewStyle)} id="gradient-bg" class="gradient-bg">
+              <div style=${styleMap(fillStyle)} class="fill-bg"></div>
+              <div style=${styleMap(valueStyle)} class="energy-inside">
+                <span ?hidden=${!itemInside}> ${testValue} ${unit}</span>
+              </div>
+              ${rangeInside}
+            </div>
+            <div class="threshold-dot-container">${thresholdDots}</div>
           </div>
+          ${rangeEl}
         </div>
-        <div class="threshold-dot-container">${thresholdDots}</div>
       </div>
     `;
   }
