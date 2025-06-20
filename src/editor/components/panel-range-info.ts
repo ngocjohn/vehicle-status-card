@@ -145,6 +145,7 @@ export class PanelRangeInfo extends LitElement {
           right: 0.5em;
           opacity: 0.8;
           transform: translateY(-50%);
+          pointer-events: none;
         }
         .range-bar-row .bar-wrapper {
           display: flex;
@@ -213,6 +214,7 @@ export class PanelRangeInfo extends LitElement {
           pointer-events: none;
           font-weight: 500;
           z-index: 2;
+          pointer-events: none;
         }
 
         .gradient-bg .energy-inside span {
@@ -220,6 +222,7 @@ export class PanelRangeInfo extends LitElement {
           mix-blend-mode: luminosity;
           opacity: 0.8;
           color: currentcolor;
+          pointer-events: none;
         }
         .bar-wrapper:hover .threshold-dot-container {
           visibility: visible;
@@ -943,7 +946,12 @@ export class PanelRangeInfo extends LitElement {
       ? generateColorBlocks(this._colorThresholds, testValue, max)
       : generateGradient(this._colorThresholds, testValue, max);
 
-    const currentColor = getColorForLevel(this._colorThresholds, testValue, max) || barBackground;
+    const currentColor =
+      energyConf?.value_alignment === 'start'
+        ? testValue < 3
+          ? barBackground
+          : this._colorThresholds[0]?.color || barBackground
+        : getColorForLevel(this._colorThresholds, testValue, max) || barBackground;
     // const consoleStyle = `color: ${currentColor}; font-weight: bold; padding: 2px 4px; border-radius: 4px; `;
     // console.log(`%cColor for test value: ${testValue} color: ${currentColor}`, consoleStyle);
 
