@@ -409,11 +409,16 @@ export class VscRangeItem extends LitElement {
         return entityMax;
 
       case 'energyStateColor':
-        const currentColor = r.color_thresholds
-          ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax) || this.getValue('barBackground')
-          : this.getValue('level') > 2
-          ? r.progress_color
-          : this.getValue('barBackground');
+        const currentColor =
+          r.color_thresholds && r.energy_level?.value_alignment === 'start'
+            ? this.getValue('level') < 3
+              ? this.getValue('barBackground')
+              : r.color_thresholds[0].color || this.getValue('barBackground')
+            : r.color_thresholds && r.energy_level?.value_alignment === 'end'
+            ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax) || this.getValue('barBackground')
+            : this.getValue('level') > 2
+            ? r.progress_color
+            : this.getValue('barBackground');
 
         return currentColor;
 
