@@ -1,28 +1,17 @@
-import { mdiClose } from '@mdi/js';
 import 'leaflet-providers/leaflet-providers.js';
-import { LovelaceCardConfig } from 'custom-card-helpers';
 import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
-import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
-import { DEFAULT_HA_MAP_STYLES, MAPTILER_DIALOG_STYLES } from '../const/maptiler-const';
 import './shared/vsc-maptiler-popup';
-import {
-  Address,
-  HistoryStates,
-  HomeAssistant,
-  isComponentLoaded,
-  MapData,
-  subscribeHistoryStatesTimeWindow,
-} from '../types';
-import { _getHistoryPoints } from '../utils';
-import { _getMapAddress, _setMapPopup } from '../utils/ha-helper';
+import { Address, HomeAssistant, MapData } from '../types';
+import { _getMapAddress } from '../utils/ha-helper';
 import parseAspectRatio from '../utils/parse-aspect-ratio';
+import { showHaMapDialog } from '../utils/show-map-dialog';
 import { VehicleStatusCard } from '../vehicle-status-card';
-
 export const DEFAULT_HOURS_TO_SHOW = 0;
 export const DEFAULT_ZOOM = 14;
 
@@ -32,20 +21,14 @@ export class MiniMapBox extends LitElement {
   @property({ attribute: false }) mapData?: MapData;
   @property({ attribute: false }) card!: VehicleStatusCard;
   @property({ type: Boolean }) isDark: boolean = false;
-  @property({ type: Boolean }) open!: boolean;
 
   @state() private map: L.Map | null = null;
   private latLon: L.LatLng | null = null;
   private marker: L.Marker | null = null;
 
-  private mapCardPopup?: LovelaceCardConfig[];
   @state() private _addressReady = false;
   @state() private _locateIconVisible = false;
   private _address: Partial<Address> | null = null;
-
-  private _subscribed?: Promise<(() => Promise<void>) | undefined>;
-  private _stateHistory?: HistoryStates;
-  private _historyPoints?: any | undefined;
 
   @state() private _mapInitialized = false;
   private resizeObserver?: ResizeObserver;
@@ -85,83 +68,15 @@ export class MiniMapBox extends LitElement {
         this.resizeObserver!.observe(container);
       }
     });
-    if (this.hasUpdated && this.card._config.mini_map.device_tracker) {
-      this._subscribeHistory();
-    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.resizeObserver?.disconnect();
-    this._unsubscribeHistory();
-  }
-
-  private _subscribeHistory() {
-    const _config = this.card._config;
-    const hass = this.hass;
-    if (
-      !isComponentLoaded(hass!, 'history') ||
-      this._subscribed ||
-      (!_config.mini_map?.history_period && !_config.mini_map?.hours_to_show) ||
-      (!_config.mini_map?.history_period && _config.mini_map?.hours_to_show === 0)
-    ) {
-      // console.log(
-      //   'History not loaded or already subscribed',
-      //   this._subscribed,
-      //   !_config.mini_map?.history_period && !_config.mini_map?.hours_to_show
-      // );
-      console.log('History not loaded or already subscribed');
-      return;
-    }
-    console.log('Subscribing to history...');
-
-    const mapConfig = _config.mini_map!;
-    let hours_to_show: number = 0;
-    if (mapConfig.history_period !== undefined) {
-      const now = new Date();
-      if (mapConfig.history_period === 'today') {
-        hours_to_show = now.getHours();
-      } else if (mapConfig.history_period === 'yesterday') {
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
-        hours_to_show = yesterday.getHours() + 24;
-      }
-    } else {
-      hours_to_show = mapConfig.hours_to_show || 0;
-    }
-
-    this._subscribed = subscribeHistoryStatesTimeWindow(
-      hass!,
-      (combinedHistory) => {
-        if (!this._subscribed) {
-          // Message came in before we had a chance to unload
-          return;
-        }
-        this._stateHistory = combinedHistory;
-      },
-      hours_to_show,
-      [_config.mini_map!.device_tracker],
-      false,
-      false,
-      false
-    ).catch((err) => {
-      this._subscribed = undefined;
-      console.error('Error subscribing to history', err);
-      return undefined;
-    });
-  }
-  private _unsubscribeHistory() {
-    if (this._subscribed) {
-      this._subscribed.then((unsub) => unsub?.());
-      this._subscribed = undefined;
-    }
   }
 
   protected async firstUpdated(changedProperties: PropertyValues): Promise<void> {
     super.updated(changedProperties);
-    if (this.mapPopup && !this.useMapTiler && this.mapCardPopup === undefined) {
-      this.mapCardPopup = await _setMapPopup(this.card);
-    }
   }
 
   protected willUpdate(changedProperties: PropertyValues): void {
@@ -327,7 +242,6 @@ export class MiniMapBox extends LitElement {
   }
 
   protected render(): TemplateResult {
-    const maptilerKey = this.card._config.mini_map?.maptiler_api_key;
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     return html`
       <div class="map-wrapper" ?safari=${isSafari} style=${this._computeMapStyle()}>
@@ -339,7 +253,6 @@ export class MiniMapBox extends LitElement {
         </div>
         <div id="map"></div>
       </div>
-      ${maptilerKey ? this._renderMaptilerDialog() : this._renderMapDialog()}
     `;
   }
 
@@ -374,63 +287,17 @@ export class MiniMapBox extends LitElement {
       : html``;
   }
 
-  private _renderMaptilerDialog(): TemplateResult | typeof nothing {
-    if (!this.open || !this.useMapTiler) return nothing;
-    // const pathData = this._getHistoryPoints();
-    this._historyPoints = _getHistoryPoints(this.card._config.mini_map!, this._stateHistory);
-
-    return html`
-      <ha-dialog open @closed=${() => (this.open = false)} hideActions flexContent>
-        ${MAPTILER_DIALOG_STYLES}
-        <vsc-maptiler-popup
-          .hass=${this.card._hass}
-          .mapData=${this.mapData!}
-          .card=${this.card}
-          ._paths=${this._historyPoints}
-          ._sizes=${this.getResponsivePopupSize(this.card._config.mini_map?.aspect_ratio || '1.3')}
-          @close-dialog=${() => {
-            this.open = false;
-          }}
-        ></vsc-maptiler-popup>
-      </ha-dialog>
-    `;
-  }
-
-  private _renderMapDialog(): TemplateResult | typeof nothing {
-    if (!this.open) return nothing;
-    return html`
-      <ha-dialog open @closed=${() => (this.open = false)} hideActions=${true} flexContent=${true}>
-        <style>
-          ${DEFAULT_HA_MAP_STYLES.toString()} .close-button {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            z-index: 99999;
-            cursor: pointer;
-            opacity: 0.8;
-            border-radius: 50%;
-            background-color: var(--ha-card-background, var(--card-background-color));
-            &:hover {
-              opacity: 1;
-            }
-          }
-        </style>
-        <div id="hamap-wrapper" style="overflow: hidden;">
-          <ha-icon-button
-            .label=${this.card.hass?.localize('ui.dialogs.generic.close') ?? 'Close'}
-            .path=${mdiClose}
-            class="close-button"
-            @click=${() => (this.open = false)}
-          ></ha-icon-button>
-          ${this.mapCardPopup}
-        </div>
-      </ha-dialog>
-    `;
-  }
-
   private _toggleDialog(): void {
-    this.open = !this.open;
+    if (!this.mapPopup) return;
+    const params = {
+      map_config: this.card._config.mini_map,
+      use_map_tiler: this.useMapTiler,
+    };
+    showHaMapDialog(this, params);
   }
+  // private _toggleDialog(): void {
+  //   this.open = !this.open;
+  // }
 
   private _computeMapStyle() {
     // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
