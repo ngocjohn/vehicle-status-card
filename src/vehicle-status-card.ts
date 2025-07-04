@@ -1,10 +1,11 @@
 import { fireEvent, forwardHaptic } from 'custom-card-helpers';
-import { LovelaceGridOptions } from 'extra-map-card';
+import { EmcMap, ExtraMapCard, fetchResources, LovelaceGridOptions } from 'extra-map-card';
+import { getPromisableResult } from 'get-promisable-result';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
 
 import './components';
 
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
@@ -21,7 +22,7 @@ import {
   MapData,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
-import { HaHelp, isDarkColor, isEmpty, loadExtraMapCard, applyThemesOnElement, getDefaultConfig } from './utils';
+import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement, getDefaultConfig, addResource } from './utils';
 import { createSingleMapCard } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
@@ -61,13 +62,14 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @state() public _buttonReady = false;
 
   @state() _connected = false;
+  @state() _singleLoaded = false;
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
   @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
   @query('vsc-indicators') _indicators!: VscIndicators;
   @query('mini-map-box') _miniMap!: MiniMapBox;
-  @query('extra-map-card') _extraMapCard?: any;
+  @query('extra-map-card') _extraMapCard?: ExtraMapCard;
 
   set hass(hass: HomeAssistant) {
     this._hass = hass;
@@ -91,7 +93,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
-    loadExtraMapCard();
+    addResource(this._hass);
     if (this.isEditorPreview) {
       // console.log('Editor preview connected');
       document.addEventListener('editor-event', this._handleEditorEvent.bind(this));
@@ -102,6 +104,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   disconnectedCallback(): void {
     document.removeEventListener('editor-event', this._handleEditorEvent.bind(this));
     this._connected = false;
+
     super.disconnectedCallback();
   }
 
@@ -116,10 +119,11 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       this._config.mini_map?.device_tracker &&
       this._config.mini_map?.maptiler_api_key
     ) {
-      if (!this._singleMapCard.length) {
-        this.createSingleMapCard();
-      }
+      console.log('Creating single map card');
+      this._singleLoaded = false;
+      this.createSingleMapCard();
     }
+
     if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
       const oldTheme = changedProps.get('_config')?.layout_config?.theme_config?.theme;
       const newTheme = this._config.layout_config?.theme_config?.theme;
@@ -132,20 +136,78 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
     HaHelp._setUpPreview(this);
-    // await HaHelp.handleFirstUpdated(this);
   }
 
   private createSingleMapCard() {
+    const miniMapConfig = this._config.mini_map;
     setTimeout(async () => {
-      this._singleMapCard = (await createSingleMapCard(this)) as LovelaceCardConfig[];
+      this._singleMapCard = (await createSingleMapCard(miniMapConfig, this._hass)) as LovelaceCardConfig[];
+
       setTimeout(() => {
         // check if the map card is loaded
+        // console.log('Single map card created:', this._singleMapCard, this._extraMapCard);
         if (this._extraMapCard && this.layout === 'panel' && !this.isEditorPreview) {
-          const root = this._extraMapCard!.shadowRoot.getElementById('root') as HTMLElement;
-          root.style.paddingBottom = 'unset';
+          const root = this._extraMapCard.shadowRoot?.getElementById('root') as HTMLElement;
+          root.style.setProperty('height', '100%', 'important');
+          console.log('Extra map card:', this._extraMapCard, 'Root element:', root);
         }
       }, 0);
     }, 0);
+    setTimeout(() => {
+      if (this._singleMapCard && this._singleMapCard.length && this._extraMapCard && !this._singleLoaded) {
+        this._singleLoaded = true;
+        // console.log('Single map card loaded:', this._singleMapCard, this._extraMapCard);
+        this._updateSingleMapPaths();
+        return;
+      }
+    }, 200);
+  }
+
+  private _updateSingleMapPaths(): void {
+    if (this.isEditorPreview) {
+      console.log('Skipping path update in editor preview mode');
+      return;
+    }
+    this._getMapElements()
+      .then((element) => {
+        const mapEl = element[0] as any;
+        const _mapPaths = mapEl?._mapPaths;
+        const paths = mapEl?.paths;
+        if (!_mapPaths?.length && paths?.length) {
+          // console.log('Drawing paths on single map card:', paths);
+          mapEl._drawPaths();
+          return;
+        }
+        if (_mapPaths?.length) {
+          // console.log('Map paths already drawn on single map card:', _mapPaths);
+          return;
+        }
+      })
+      .catch((err: Error) => {
+        console.error('Error updating single map paths:', err);
+        return;
+      });
+  }
+
+  private async _getMapElements(): Promise<[mapEl: EmcMap]> {
+    const promisableResultOptions = {
+      retries: 50,
+      delay: 200,
+      shouldReject: false,
+    };
+
+    const extraCard = this.shadowRoot?.querySelector('extra-map-card');
+
+    const mapEl = await getPromisableResult<any>(
+      () => extraCard?._mapTiler,
+      (element): boolean => {
+        return element !== null && element !== undefined && element._loaded === true;
+      },
+      promisableResultOptions
+    );
+    console.log('Map element found:', mapEl);
+
+    return [mapEl];
   }
 
   protected async updated(changedProps: PropertyValues): Promise<void> {
@@ -186,6 +248,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       const mapCard = this._singleMapCard[0];
       return html`${mapCard}`;
     }
+
     const headerHidden = this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '';
     const sectionOrder = this._config.layout_config?.section_order || [...SECTION_ORDER];
     return html`
@@ -577,6 +640,12 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     const parentElementClassPreview = this.offsetParent?.classList.contains('element-preview');
     return parentElementClassPreview || false;
   }
+
+  private async _getResources() {
+    const resources = await fetchResources(this._hass.connection);
+    return resources;
+  }
+
   // https://lit.dev/docs/components/styles/
   public static get styles(): CSSResultGroup {
     return [cardcss];
