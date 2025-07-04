@@ -1,8 +1,9 @@
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 
 import { LovelaceConfig } from 'custom-card-helpers';
+import memoizeOne from 'memoize-one';
 
-import { VehicleStatusCardConfig } from '../types';
+import { createResource, fetchResources, HomeAssistant, updateResource, VehicleStatusCardConfig } from '../types';
 import { loadModule } from './load_resource';
 
 interface HuiRootElement extends HTMLElement {
@@ -190,14 +191,15 @@ export const loadExtraMapCard = async () => {
 
   const cardList = (window as any).customCards || [];
   const existingCard = cardList.find((card: any) => card.type === 'extra-map-card');
+  console.log('Existing extra-map-card:', existingCard);
 
   // Check if already loaded with latest version
   if (existingCard?.version === latestVersion) {
+    console.log(`emc is up-to-date with version ${latestVersion}`);
     return;
   }
 
   const latestUrl = `${EXTRA_MAP_CARD_BASE}${latestVersion}/dist/extra-map-card-bundle.min.js`;
-
   // Remove old <script> tags
   document.querySelectorAll(`script[src*="extra-map-card"]`).forEach((el) => el.remove());
 
@@ -206,7 +208,7 @@ export const loadExtraMapCard = async () => {
 
   try {
     await loadModule(latestUrl);
-    // console.log(`extra-map-card reloaded to version ${latestVersion}`);
+    console.log(`extra-map-card reloaded to version ${latestVersion}`);
   } catch (err) {
     console.error('Failed to load extra-map-card:', err);
   }
@@ -223,3 +225,56 @@ async function getLatestNpmVersion(): Promise<string | null> {
     return null;
   }
 }
+
+export const clearResourceCache = async () => {
+  const latestVersion = await getLatestNpmVersion();
+  if (!latestVersion) return;
+  const latestUrl = `${EXTRA_MAP_CARD_BASE}${latestVersion}/dist/extra-map-card-bundle.min.js`;
+  console.log(`Clearing resource cache for ${latestUrl}`);
+  const scriptElements = document.querySelectorAll(`script[src="${latestUrl}"]`);
+  scriptElements.forEach((el) => {
+    console.log(`Removing script element: ${el.outerHTML}`);
+    el.remove();
+  });
+  console.log(`Resource cache cleared for ${latestUrl}`);
+};
+
+const bundleName = 'extra-map-card-bundle.min.js';
+
+let _addResourcePromise: Promise<void> | null = null;
+
+export const addResource = async (hass: HomeAssistant): Promise<void> => {
+  if (_addResourcePromise) return _addResourcePromise;
+
+  _addResourcePromise = (async () => {
+    const latestVersion = await memoizeOne(getLatestNpmVersion)();
+    if (!latestVersion) return;
+
+    const latestUrl = `${EXTRA_MAP_CARD_BASE}${latestVersion}/dist/extra-map-card-bundle.min.js`;
+    const currentResources = await fetchResources(hass.connection);
+
+    const existingResource = currentResources.find((res) => res.url.endsWith(bundleName));
+    if (existingResource && existingResource.url === latestUrl) {
+      console.log(`Resource ${bundleName} already exists with the latest version: ${latestVersion}`);
+      return;
+    } else if (existingResource) {
+      console.log(`Updating outdated resource: ${existingResource.url}`);
+      await updateResource(hass, existingResource.id, {
+        res_type: 'module',
+        url: latestUrl,
+      });
+    } else {
+      console.log(`Adding new resource: ${latestUrl}`);
+      await createResource(hass, {
+        res_type: 'module',
+        url: latestUrl,
+      });
+    }
+  })();
+
+  return _addResourcePromise;
+};
+
+export const resetAddResource = () => {
+  _addResourcePromise = null;
+};

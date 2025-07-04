@@ -11,3 +11,5 @@ export * from './compute_entity_name';
 export * from './create_stub_config';
 export * from './find-entities';
 export * from './colors';
+export * from './show-map-dialog';
+export * from './ha-helper';
