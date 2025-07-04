@@ -1,6 +1,6 @@
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import Swiper from 'swiper';
 import { Autoplay, Pagination, EffectFade, EffectCoverflow } from 'swiper/modules';
 import swipercss from 'swiper/swiper-bundle.css';
@@ -263,5 +263,11 @@ export class ImagesSlide extends LitElement {
         }
       `,
     ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'images-slide': ImagesSlide;
   }
 }

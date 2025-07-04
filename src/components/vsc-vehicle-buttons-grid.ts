@@ -1,8 +1,8 @@
 // utils
 import { chunk } from 'es-toolkit';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 // swiper
 import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
@@ -281,5 +281,11 @@ export class VehicleButtonsGrid extends LitElement {
       `,
       cardstyles,
     ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'vehicle-buttons-grid': VehicleButtonsGrid;
   }
 }
