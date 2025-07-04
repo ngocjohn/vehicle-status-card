@@ -5,12 +5,19 @@ import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues } from
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
-import { VehicleStatusCardConfig, HomeAssistant, fireEvent, MiniMapConfig, LovelaceConfig } from '../../types';
+import {
+  VehicleStatusCardConfig,
+  HomeAssistant,
+  fireEvent,
+  MiniMapConfig,
+  LovelaceConfig,
+  LovelaceCardConfig,
+} from '../../types';
 import { Create } from '../../utils';
 import { _convertToExtraMapConfig } from '../../utils/ha-helper';
 import { VehicleStatusCardEditor } from '../editor';
 import { ALERT_INFO } from '../editor-const';
-import { baseMapConfigSchema, miniMapConfigSchema } from '../form';
+import { BASE_MAP_SCHEMA, MINI_MAP_LAYOUT_SCHEMA } from '../form';
 
 @customElement('panel-map-editor')
 export class PanelMapEditor extends LitElement {
@@ -23,6 +30,8 @@ export class PanelMapEditor extends LitElement {
   @state() _yamlMode: boolean = false;
   @state() _useSingleMapCard: boolean = false;
 
+  @state() private _tabIndex: number = 0;
+
   @state() private _tmpYamlConfig?: ExtraMapCardConfig;
   @query('hui-card-element-editor') private _mapCardEditor?: HTMLElement;
 
@@ -34,8 +43,12 @@ export class PanelMapEditor extends LitElement {
     return this._config?.mini_map || {};
   }
 
-  private get _extraMapCardConfig(): ExtraMapCardConfig {
-    const mapConfig = _convertToExtraMapConfig(this._mapConfig, this._mapEntitiesConfig);
+  private get _useMapTiler(): boolean {
+    return !!this._mapConfig?.maptiler_api_key;
+  }
+
+  private get _extraMapCardConfig(): ExtraMapCardConfig | LovelaceCardConfig {
+    const mapConfig = _convertToExtraMapConfig(this._mapConfig, this._mapEntitiesConfig, this._useMapTiler);
     return mapConfig;
   }
 
@@ -95,13 +108,13 @@ export class PanelMapEditor extends LitElement {
   protected updated(_changedProperties: PropertyValues): void {
     super.updated(_changedProperties);
 
-    if (
-      (_changedProperties.has('_useSingleMapCard') && this._useSingleMapCard) ||
-      _changedProperties.has('_yamlMode')
-    ) {
-      setTimeout(() => {
-        this._hideSelectors();
-      }, 0);
+    const needsUpdate =
+      _changedProperties.has('_useSingleMapCard') ||
+      _changedProperties.has('_yamlMode') ||
+      (_changedProperties.has('_tabIndex') && this._tabIndex !== 0);
+
+    if (needsUpdate) {
+      setTimeout(() => this._hideEditorElements(), 50);
     }
   }
 
@@ -111,33 +124,25 @@ export class PanelMapEditor extends LitElement {
     }
 
     const baseMapSection = this._renderBaseMapSection();
-
-    const useSingleMap = html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${this._mapConfig}
-        .schema=${[
-          {
-            name: 'single_map_card',
-            label: 'Mini Map as Single Card',
-            helper: '(MapTiler API Key is required)',
-            type: 'boolean',
-            default: false,
-            disabled: this._mapCardConfig?.maptiler_api_key ? false : true,
-          },
-        ]}
-        .computeLabel=${this._computeLabel}
-        .computeHelper=${this._computeHelper}
-        @value-changed=${this._valueChanged}
-      >
-      </ha-form>
-    `;
+    const singleCardSchema = [
+      {
+        name: 'single_map_card',
+        label: 'Mini Map as Single Card',
+        helper: '(MapTiler API Key is required)',
+        type: 'boolean',
+        default: false,
+        disabled: !this._useMapTiler,
+      },
+    ];
+    const useSingleMap = html`<div style="opacity: ${this._useMapTiler ? 1 : 0.5};">
+      ${this._createHaForm(singleCardSchema)}
+    </div>`;
 
     const content = this._yamlMode
       ? this._renderYamlEditor()
       : html` <div class="tip-content">
           ${baseMapSection} ${useSingleMap}
-          ${!this._useSingleMapCard ? this._renderDefaultMapConfig() : this._renderSingleMapConfig()}
+          ${!this._useSingleMapCard ? this._renderLayoutPopupTabs() : this._renderSingleMapConfig()}
         </div>`;
 
     return html`
@@ -153,30 +158,53 @@ export class PanelMapEditor extends LitElement {
     `;
   }
 
-  private _renderDefaultMapConfig() {
-    return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${this._mapConfig}
-        .schema=${miniMapConfigSchema(this._mapConfig.device_tracker, this._mapConfig.label_mode !== 'attribute')}
-        .computeLabel=${this._computeLabel}
-        .computeHelper=${this._computeHelper}
-        @value-changed=${this._valueChanged}
-      >
-      </ha-form>
-    `;
+  private _renderLayoutPopupTabs(): TemplateResult {
+    const miniMapLayout = this._createHaForm(MINI_MAP_LAYOUT_SCHEMA);
+    const popupContent = this._renderSingleMapConfig();
+
+    const tabsConfig = [
+      { label: 'Mini Map', content: miniMapLayout, key: 'mini-map' },
+      { label: 'Popup', content: popupContent, key: 'popup' },
+    ];
+
+    return Create.VicTab({
+      activeTabIndex: this._tabIndex || 0,
+      onTabChange: (index: number) => (this._tabIndex = index),
+      tabs: tabsConfig,
+    });
   }
 
-  private _hideSelectors() {
-    const formRoot = this._mapCardEditor?.shadowRoot
-      ?.querySelector('extra-map-editor')
-      ?.shadowRoot?.querySelector('ha-form')?.shadowRoot;
+  private _hideEditorElements(): void {
+    const editorRoot = this._mapCardEditor?.shadowRoot;
+    if (!editorRoot) return;
 
-    if (formRoot) {
+    if (this._useMapTiler) {
+      // Hide extra-map-editor selectors
+      const formRoot = editorRoot.querySelector('extra-map-editor')?.shadowRoot?.querySelector('ha-form')?.shadowRoot;
+
+      if (!formRoot) return;
+
       const selectors = formRoot.querySelectorAll('.root > ha-selector') as NodeListOf<HTMLElement>;
-      selectors.forEach((el: HTMLElement) => {
-        el.style.display = 'none'; // hide title and apikey formns
-      });
+      selectors.forEach((el) => (el.style.display = 'none'));
+    } else {
+      // Hide default map config selectors
+      const mapEditor = editorRoot.querySelector('hui-map-card-editor');
+      const shadow = mapEditor?.shadowRoot;
+      const formShadow = shadow?.querySelector('ha-form')?.shadowRoot;
+
+      const elementsToHide: (HTMLElement | null | undefined)[] = [
+        formShadow?.querySelector('ha-selector'),
+        shadow?.querySelector('ha-selector-select'),
+        shadow?.querySelector('h3'),
+      ];
+
+      const entitiesHeader = shadow?.querySelector('hui-entity-editor')?.shadowRoot?.querySelector('h3');
+
+      elementsToHide.forEach((el) => el?.style.setProperty('display', 'none'));
+
+      if (entitiesHeader) {
+        entitiesHeader.textContent = 'Extra Entities';
+      }
     }
   }
 
@@ -200,7 +228,7 @@ export class PanelMapEditor extends LitElement {
     });
   }
 
-  private _convertToBaseMapConfig(config: ExtraMapCardConfig): Partial<MiniMapConfig> {
+  private _convertToBaseMapConfig(config: ExtraMapCardConfig | LovelaceCardConfig): Partial<MiniMapConfig> {
     const map_styles = config.custom_styles;
     let extra_entities: MapEntityConfig[] = [];
     const entities = config.entities ? processConfigEntities<MapEntityConfig>(config.entities) : [];
@@ -314,7 +342,7 @@ export class PanelMapEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${this._mapConfig}
-        .schema=${baseMapConfigSchema()}
+        .schema=${BASE_MAP_SCHEMA}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._valueChanged}
@@ -336,6 +364,21 @@ export class PanelMapEditor extends LitElement {
       options: { header: 'Base Map Configuration' },
       content: baseContent,
     });
+  }
+
+  private _createHaForm(schema: any): TemplateResult {
+    const data = this._mapConfig;
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${data}
+        .schema=${schema}
+        .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
+        @value-changed=${this._valueChanged}
+      >
+      </ha-form>
+    `;
   }
 
   private _computeLabel = (schema: any) => {

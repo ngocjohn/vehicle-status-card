@@ -45,6 +45,11 @@
 	background-color: var(--secondary-background-color) !important;
 }
 
+.vic-tab-content {
+	display: flex;
+	flex-direction: column;
+}
+
 .range-info-list,
 .indicator-list,
 .button-list,
