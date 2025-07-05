@@ -61,6 +61,24 @@ export class PanelMapEditor extends LitElement {
     };
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener('go-back', () => {
+      setTimeout(() => this._hideEditorElements(), 50);
+    });
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener('go-back', () => {
+      setTimeout(() => this._hideEditorElements(), 50);
+    });
+  }
+
+  protected firstUpdated(_changedProperties: PropertyValues): void {
+    super.firstUpdated(_changedProperties);
+  }
+
   protected willUpdate(_changedProperties: PropertyValues): void {
     super.willUpdate(_changedProperties);
     if (_changedProperties.has('_config') && this._config.mini_map) {
