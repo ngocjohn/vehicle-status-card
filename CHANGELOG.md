@@ -1,3 +1,22 @@
+<a id="v1.15.1"></a>
+# [v1.15.1](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.15.1) - 2025-07-05
+
+
+
+## What's Changed
+This update introduces improved support for range calculations and enhances MapTiler popups with multi-entity support, making the Vehicle Status Card more flexible and informative.
+### 🚀 New Features
+- **Enhanced MapTiler popups**: Now supports displaying multiple entities in a single popup. [[#159](https://github.com/ngocjohn/vehicle-status-card/issues/159)] [#159](https://github.com/ngocjohn/vehicle-status-card/pull/159))
+  
+![map-popup](https://github.com/user-attachments/assets/bf2f2495-80ae-4670-8bd3-5d9611aeef7f)
+
+- **`max_value` support for range items**: Added `max_value` configuration for range-based items, improving precision in value calculations. [#153](https://github.com/ngocjohn/vehicle-status-card/pull/153)
+
+**Full Changelog**: [v1.15.0...v1.15.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.15.0...v1.15.1)
+
+[Changes][v1.15.1]
+
+
 <a id="v1.14.0"></a>
 # [v1.14.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.14.0) - 2025-06-18
 
@@ -549,6 +568,7 @@ v1.0.0
 [Changes][v1.0.0]
 
 
+[v1.15.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.14.0...v1.15.1
 [v1.14.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.1...v1.14.0
 [v1.13.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.0...v1.13.1
 [v1.13.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.12.1...v1.13.0
