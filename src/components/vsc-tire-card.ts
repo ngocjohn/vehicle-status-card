@@ -1,8 +1,8 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { CSSResultGroup, html, LitElement, TemplateResult, css, nothing } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 // local
 import { TIRE_BG } from '../const/img-const';
@@ -308,5 +308,11 @@ export class VehicleTireCard extends LitElement {
 
     const isHorizontal = tyreWrapper.getAttribute('rotated') === 'true';
     tyreWrapper.setAttribute('rotated', isHorizontal ? 'false' : 'true');
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'vsc-tire-card': VehicleTireCard;
   }
 }

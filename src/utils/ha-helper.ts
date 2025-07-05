@@ -387,14 +387,48 @@ export async function _setMapPopup(card: VehicleStatusCard): Promise<LovelaceCar
   return cardElement;
 }
 
-export async function createSingleMapCard(card: VehicleStatusCard): Promise<LovelaceCardConfig[] | void> {
-  if (!card._config?.mini_map.maptiler_api_key && !card._config?.mini_map.device_tracker) {
-    return;
-  }
-  const hass = card._hass as HomeAssistant;
-  const mapConfig = card._config.mini_map;
+export async function _createHaMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
+  const miniMap = config || {};
 
-  const extra_entities = mapConfig.extra_entities || [];
+  const cardConfig: LovelaceCardConfig[] = [
+    {
+      type: 'map',
+      default_zoom: miniMap.default_zoom || 14,
+      hours_to_show: miniMap.hours_to_show || 0,
+      theme_mode: miniMap.theme_mode || 'auto',
+      auto_fit: miniMap.auto_fit || false,
+      aspect_ratio: miniMap.aspect_ratio || '',
+      entities: [
+        {
+          entity: miniMap.device_tracker,
+          label_mode: miniMap?.label_mode,
+          attribute: miniMap?.attribute,
+        },
+      ],
+    },
+  ];
+  const cardElement = (await createCardElement(hass, cardConfig)) as LovelaceCardConfig[];
+
+  return cardElement;
+}
+
+export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
+  const useMaptiler = config?.maptiler_api_key && config?.maptiler_api_key !== '';
+  const mapConfig = config as MiniMapConfig;
+  const deviceTrackerEntity = mapConfig.device_tracker;
+  let extra_entities = mapConfig.extra_entities || [];
+  if (extra_entities?.length) {
+    // filter out the device tracker if it exists in extra_entities
+    extra_entities = extra_entities.filter((entity) => {
+      if (typeof entity === 'string') {
+        return entity !== deviceTrackerEntity;
+      } else if (typeof entity === 'object' && entity.entity) {
+        return entity.entity !== deviceTrackerEntity;
+      }
+      return true; // keep the entity if it's not a string or object with entity
+    });
+  }
+
   const deviceTracker = {
     entity: mapConfig.device_tracker,
     color: mapConfig.path_color || '',
@@ -403,10 +437,11 @@ export async function createSingleMapCard(card: VehicleStatusCard): Promise<Love
     focus: true,
   };
 
-  let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(mapConfig, [
-    ...(extra_entities as MapEntityConfig[]),
-    deviceTracker,
-  ]);
+  let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(
+    mapConfig,
+    [...(extra_entities as MapEntityConfig[]), deviceTracker],
+    Boolean(useMaptiler)
+  ) as ExtraMapCardConfig;
 
   if (!extraMapConfig.entities?.length || extraMapConfig.entities.length === 0) {
     extraMapConfig.entities = [deviceTracker];
@@ -415,28 +450,37 @@ export async function createSingleMapCard(card: VehicleStatusCard): Promise<Love
   const mapElement = (await createCardElement(hass, [extraMapConfig])) as LovelaceCardConfig[];
   if (!mapElement) {
     console.error('Failed to create map element');
-    return;
+    return [];
   }
   return mapElement;
 }
 export const _convertToExtraMapConfig = (
   config: MiniMapConfig,
-  entities: (MapEntityConfig | string)[] = []
-): ExtraMapCardConfig => {
-  return {
-    type: 'custom:extra-map-card',
-    api_key: config.maptiler_api_key,
-    entities,
-    custom_styles: config.map_styles,
+  entities: (MapEntityConfig | string)[] = [],
+  useMaptiler: boolean = false
+): ExtraMapCardConfig | LovelaceCardConfig => {
+  const sharedConfig = {
+    entities: entities,
     aspect_ratio: config.aspect_ratio,
     auto_fit: config.auto_fit,
     fit_zones: config.fit_zones,
     default_zoom: config.default_zoom,
     hours_to_show: config.hours_to_show,
     theme_mode: config.theme_mode,
+  };
+  const defaultMapConfig = {
+    type: 'map',
+    ...sharedConfig,
+  };
+  const maptilerConfig = {
+    type: 'custom:extra-map-card',
+    api_key: config.maptiler_api_key,
+    custom_styles: config.map_styles,
     history_period: config.history_period,
     use_more_info: config.use_more_info,
+    ...sharedConfig,
   };
+  return useMaptiler ? maptilerConfig : defaultMapConfig;
 };
 
 export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
@@ -490,7 +534,7 @@ export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: s
 }
 
 export async function getAddressFromOpenStreet(lat: number, lon: number): Promise<Address | null> {
-  console.log('Getting address from OpenStreetMap');
+  // console.log('Getting address from OpenStreetMap');
   try {
     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2`);
 
@@ -571,11 +615,19 @@ export const computeStateNameFromEntityAttributes = (entityId: string, attribute
 export const computeStateName = (stateObj: HassEntity): string =>
   computeStateNameFromEntityAttributes(stateObj.entity_id, stateObj.attributes);
 
-export const hasLocation = (stateObj: HassEntity) =>
-  'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes;
-
 export const hasActions = (config: ButtonActionConfig): boolean => {
   return Object.keys(config)
     .filter((key) => key !== 'entity')
     .some((action) => hasAction(config[action]));
+};
+
+export const waitUntil = async (condition: () => boolean, label: string, maxAttempts = 10): Promise<boolean> => {
+  const interval = 200;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (condition()) return true;
+    console.log(`Waiting for: ${label} (attempt ${attempt}/${maxAttempts})`);
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+  console.warn(`Timed out waiting for: ${label}`);
+  return false;
 };
