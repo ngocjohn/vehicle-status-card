@@ -415,37 +415,40 @@ export async function _createHaMapCard(config: MiniMapConfig, hass: HomeAssistan
 export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
   const useMaptiler = config?.maptiler_api_key && config?.maptiler_api_key !== '';
   const mapConfig = config as MiniMapConfig;
-  const deviceTrackerEntity = mapConfig.device_tracker;
   let extra_entities = mapConfig.extra_entities || [];
-  if (extra_entities?.length) {
-    // filter out the device tracker if it exists in extra_entities
-    extra_entities = extra_entities.filter((entity) => {
-      if (typeof entity === 'string') {
-        return entity !== deviceTrackerEntity;
-      } else if (typeof entity === 'object' && entity.entity) {
-        return entity.entity !== deviceTrackerEntity;
-      }
-      return true; // keep the entity if it's not a string or object with entity
-    });
-  }
+  // if (extra_entities?.length) {
+  //   // filter out the device tracker if it exists in extra_entities
+  //   extra_entities = extra_entities.filter((entity) => {
+  //     if (typeof entity === 'string') {
+  //       return entity !== deviceTrackerEntity;
+  //     } else if (typeof entity === 'object' && entity.entity) {
+  //       return entity.entity !== deviceTrackerEntity;
+  //     }
+  //     return true; // keep the entity if it's not a string or object with entity
+  //   });
+  // }
 
   const deviceTracker = {
     entity: mapConfig.device_tracker,
     color: mapConfig.path_color || '',
     label_mode: mapConfig.label_mode,
     attribute: mapConfig.attribute || '',
+    icon: '',
     focus: true,
   };
-
+  // Ensure deviceTracker is included in extra_entities if not already present
+  if (extra_entities.length === 0) {
+    extra_entities = [deviceTracker];
+  }
   let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(
     mapConfig,
-    [...(extra_entities as MapEntityConfig[]), deviceTracker],
+    [...(extra_entities as MapEntityConfig[])],
     Boolean(useMaptiler)
   ) as ExtraMapCardConfig;
 
-  if (!extraMapConfig.entities?.length || extraMapConfig.entities.length === 0) {
-    extraMapConfig.entities = [deviceTracker];
-  }
+  // if (!extraMapConfig.entities?.length || extraMapConfig.entities.length === 0) {
+  //   extraMapConfig.entities = [deviceTracker];
+  // }
 
   const mapElement = (await createCardElement(hass, [extraMapConfig])) as LovelaceCardConfig[];
   if (!mapElement) {

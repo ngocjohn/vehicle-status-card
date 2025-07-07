@@ -252,8 +252,6 @@ export class PanelMapEditor extends LitElement {
     const entities = config.entities ? processConfigEntities<MapEntityConfig>(config.entities) : [];
     if (entities.length === 0) {
       extra_entities = [this._deviceTrackerEntity];
-    } else if (entities.length > 0 && !entities.find((e) => e.entity === this._deviceTrackerEntity.entity)) {
-      extra_entities = [this._deviceTrackerEntity, ...entities];
     } else {
       extra_entities = entities;
     }
