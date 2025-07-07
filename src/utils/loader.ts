@@ -226,19 +226,6 @@ async function getLatestNpmVersion(): Promise<string | null> {
   }
 }
 
-export const clearResourceCache = async () => {
-  const latestVersion = await getLatestNpmVersion();
-  if (!latestVersion) return;
-  const latestUrl = `${EXTRA_MAP_CARD_BASE}${latestVersion}/dist/extra-map-card-bundle.min.js`;
-  console.log(`Clearing resource cache for ${latestUrl}`);
-  const scriptElements = document.querySelectorAll(`script[src="${latestUrl}"]`);
-  scriptElements.forEach((el) => {
-    console.log(`Removing script element: ${el.outerHTML}`);
-    el.remove();
-  });
-  console.log(`Resource cache cleared for ${latestUrl}`);
-};
-
 const bundleName = 'extra-map-card-bundle.min.js';
 
 let _addResourcePromise: Promise<void> | null = null;
