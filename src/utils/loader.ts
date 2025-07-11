@@ -261,7 +261,6 @@ export const addResource = async (hass: HomeAssistant): Promise<void> => {
 
   return _addResourcePromise;
 };
-
 export const resetAddResource = () => {
   _addResourcePromise = null;
 };

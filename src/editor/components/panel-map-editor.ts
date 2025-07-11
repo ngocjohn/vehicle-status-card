@@ -31,8 +31,8 @@ export class PanelMapEditor extends LitElement {
   @state() _useSingleMapCard: boolean = false;
 
   @state() private _tabIndex: number = 0;
-
   @state() private _tmpYamlConfig?: ExtraMapCardConfig;
+
   @query('hui-card-element-editor') private _mapCardEditor?: HTMLElement;
 
   static get styles(): CSSResultGroup {
@@ -123,13 +123,15 @@ export class PanelMapEditor extends LitElement {
       }
     }
   }
+
   protected updated(_changedProperties: PropertyValues): void {
     super.updated(_changedProperties);
 
     const needsUpdate =
       _changedProperties.has('_useSingleMapCard') ||
       _changedProperties.has('_yamlMode') ||
-      (_changedProperties.has('_tabIndex') && this._tabIndex !== 0);
+      (_changedProperties.has('_tabIndex') && this._tabIndex !== 0) ||
+      _changedProperties.has('_mapCardConfig');
 
     if (needsUpdate) {
       setTimeout(() => this._hideEditorElements(), 50);
@@ -294,7 +296,6 @@ export class PanelMapEditor extends LitElement {
       <hui-card-element-editor
         .hass=${this.hass}
         .value=${this._extraMapCardConfig}
-        .lovelace=${this.editor.lovelace}
         @config-changed=${this._mapCardConfigChanged}
       ></hui-card-element-editor>
     `;
