@@ -18,7 +18,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@maptiler/sdk": "^3.5.0",
     "@mdi/js": "^7.4.47",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-node-resolve": "^16.0.1",
@@ -32,9 +31,7 @@
     "@babel/core": "^7.28.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.1",
-    "@rollup/plugin-replace": "^6.0.2",
     "@rollup/plugin-terser": "^0.4.4",
-    "@turf/turf": "^7.2.0",
     "@types/leaflet": "^1.9.19",
     "@types/leaflet-providers": "^1.2.4",
     "@typescript-eslint/eslint-plugin": "^8.35.1",
@@ -45,10 +42,7 @@
     "eslint": "^9.30.1",
     "eslint-plugin-perfectionist": "^4.15.0",
     "eslint-plugin-unused-imports": "^4.1.4",
-    "extra-map-card": "^1.6.2",
-    "get-promisable-result": "^1.0.1",
     "husky": "^9.1.7",
-    "install": "^0.13.0",
     "leaflet": "^1.9.4",
     "leaflet-providers": "^2.0.0",
     "lint-staged": "^16.1.2",
@@ -68,7 +62,7 @@
     "crypto": false
   },
   "scripts": {
-    "dev": "npm run clean && rollup -c rollup.config.js --bundleConfigAsCjs --watch",
+    "dev": "rollup -c rollup.config.js --bundleConfigAsCjs --watch",
     "build": "npm run lint && npm run rollup",
     "lint": "eslint src/**/*.ts",
     "rollup": "rollup -c rollup.config.js --bundleConfigAsCjs",

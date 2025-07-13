@@ -186,3 +186,13 @@ export const getMostReadableColor = (backgroundColor: string): string => {
   const readableColor = tinycolor.mostReadable(backgroundColor, colors);
   return readableColor.isValid() ? readableColor.toHexString() : 'var(--primary-text-color)'; // Default to black if invalid
 };
+
+export const getRandomHexColor = (): string => {
+  return tinycolor.random().toHexString();
+};
+
+export const isDarkColor = (color: string): boolean => {
+  const colorObj = tinycolor(color);
+  // console.log('colorObj', colorObj);
+  return colorObj.isLight();
+};

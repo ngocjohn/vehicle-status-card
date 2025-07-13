@@ -94,6 +94,10 @@ export class PanelButtonCard extends LitElement {
     }
   }
 
+  private get _previewLabel(): string {
+    return this._activePreview !== null ? 'Close Preview' : 'Preview';
+  }
+
   protected render(): TemplateResult {
     const mainButtonCard = this._renderButtonList();
     const buttonConfig = this._renderButtonCardConfig();
@@ -171,7 +175,7 @@ export class PanelButtonCard extends LitElement {
     return html`
       <div class="item-config-row" data-index="${index}" ?hiddenoncard=${button.hide_button}>
         <div class=${!button.hide_button ? 'handle' : 'ignore'}>
-          <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+          <ha-icon-button .path=${ICON.DRAG}></ha-icon-button>
         </div>
         <div class="sub-content">
           <ha-selector
@@ -188,11 +192,7 @@ export class PanelButtonCard extends LitElement {
           ></ha-selector>
         </div>
         <div class="item-actions">
-          <ha-icon-button
-            class="action-icon"
-            @click="${this.toggleAction('edit-button', index)}"
-            .path=${ICON.PENCIL}
-          ></ha-icon-button>
+          <ha-icon-button @click="${this.toggleAction('edit-button', index)}" .path=${ICON.PENCIL}></ha-icon-button>
           <ha-button-menu
             .corner=${'TOP_LEFT'}
             .fixed=${true}
@@ -201,7 +201,7 @@ export class PanelButtonCard extends LitElement {
             .naturalMenuWidth=${true}
             @closed=${(ev: Event) => ev.stopPropagation()}
           >
-            <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+            <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
             ${actionMap.map(
               (action) =>
                 html`<ha-list-item
@@ -232,7 +232,7 @@ export class PanelButtonCard extends LitElement {
 
     const buttonCard = this.config.button_card[buttonIndex];
     const button = buttonCard.button;
-    const defaultCard = buttonCard.default_card;
+    const defaultCard = buttonCard.default_card || [];
     const configTabs = [
       {
         key: `button-${buttonIndex}`,
@@ -281,8 +281,6 @@ export class PanelButtonCard extends LitElement {
               })
             : html`<vsc-sub-panel-yaml
                 .hass=${this.hass}
-                .config=${this.config}
-                .cardEditor=${this.cardEditor}
                 .configIndex=${buttonIndex}
                 .configKey=${'button_card'}
                 .configDefault=${buttonCard}
@@ -351,7 +349,7 @@ export class PanelButtonCard extends LitElement {
       button: buttonCard.button,
       button_action: buttonCard.button_action,
       button_type: buttonCard.button_type || 'default',
-      card_type: buttonCard.card_type,
+      card_type: buttonCard.card_type || 'default',
       hide_button: buttonCard.hide_button,
     } as BaseButtonConfig;
 
@@ -363,7 +361,6 @@ export class PanelButtonCard extends LitElement {
         })}
         <vsc-panel-base-button
           .hass=${this.hass}
-          .cardEditor=${this.cardEditor}
           .buttonConfig=${baseBtnConfig}
           @button-config-changed=${this._handleButtonConfigChange}
         ></vsc-panel-base-button>
@@ -372,17 +369,14 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderTireCardConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
-    const header = this._renderSubHeader(
-      'Tire Card Configuration',
-      [],
-      false,
-      html` <ha-button .outlined=${true} @click=${() => this._togglePreview('tire', buttonIndex)}
-        >${this._activePreview !== null ? 'Close Preview' : 'Preview'}</ha-button
-      >`
-    );
-
+    const tireHeader = this._renderSubHeader('Tire Card Configuration', [
+      {
+        title: this._previewLabel,
+        action: () => this._togglePreview('tire', buttonIndex),
+      },
+    ]);
     const tireCard = buttonCard.tire_card || (DEFAULT_TIRE_CONFIG as TireTemplateConfig);
-    return html` ${header}
+    return html` ${tireHeader}
       <vsc-panel-tire-config
         .hass=${this.hass}
         .cardEditor=${this.cardEditor}
@@ -392,71 +386,74 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderDefaultCardList(defaultCard: DefaultCardConfig[], buttonIndex: number): TemplateResult {
+    const noCards = !defaultCard.length;
     const actions = [
       { title: 'Duplicate', action: ACTIONS.CATEGORY_DUPLICATE, icon: 'mdi:content-duplicate' },
       { title: 'Delete', action: ACTIONS.CATEGORY_DELETE, icon: 'mdi:delete', color: 'var(--error-color)' },
     ];
-    const defaultCardlist = html` <ha-sortable handle-selector=".handle" @item-moved=${this._defaultCardListMoved}>
-      <div class="default-card-list" id="default-card-list">
-        ${repeat(
-          defaultCard,
-          (card: DefaultCardConfig) => card.title,
-          (card: DefaultCardConfig, cardIndex: number) => html`
-            <div class="item-config-row" data-card-title=${card.title} data-index="${cardIndex}">
-              <div class="handle">
-                <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
-              </div>
-              <div class="item-content">
-                <ha-selector
-                  .hass=${this.hass}
-                  .value=${card.title}
-                  .configValue=${'title'}
-                  .configType=${'default_card'}
-                  .configIndex=${buttonIndex}
-                  .cardIndex=${cardIndex}
-                  .label=${`Category #${cardIndex + 1}`}
-                  .selector=${{ text: {} }}
-                  .required=${false}
-                  @value-changed=${this._handleTitlePrimaryChanged}
-                ></ha-selector>
-              </div>
-              <div class="item-actions">
-                <ha-icon-button
-                  class="action-icon"
-                  .path=${ICON.PENCIL}
-                  @click="${this.toggleAction('category-edit', buttonIndex, cardIndex)}"
-                ></ha-icon-button>
-                <ha-button-menu
-                  .corner=${'BOTTOM_START'}
-                  .fixed=${true}
-                  .menuCorner=${'START'}
-                  .activatable=${true}
-                  .naturalMenuWidth=${true}
-                  @closed=${(ev: Event) => ev.stopPropagation()}
-                >
-                  <ha-icon-button class="action-icon" .path=${ICON.DOTS_VERTICAL} slot="trigger"></ha-icon-button>
-                  ${actions.map(
-                    (action) =>
-                      html`<mwc-list-item
-                        @click=${this.toggleAction(action.action, buttonIndex, cardIndex)}
-                        .graphic=${'icon'}
-                        style="${action.color ? `color: ${action.color}` : ''}"
-                      >
-                        <ha-icon
-                          icon=${action.icon}
-                          slot="graphic"
-                          style="${action.color ? `color: ${action.color}` : ''}"
-                        ></ha-icon>
-                        ${action.title}
-                      </mwc-list-item>`
-                  )}
-                </ha-button-menu>
-              </div>
-            </div>
-          `
-        )}
-      </div></ha-sortable
-    >`;
+
+    const defaultCardlist = !noCards
+      ? html` <ha-sortable handle-selector=".handle" @item-moved=${this._defaultCardListMoved}>
+          <div class="default-card-list" id="default-card-list">
+            ${repeat(
+              defaultCard,
+              (card: DefaultCardConfig) => card.title,
+              (card: DefaultCardConfig, cardIndex: number) => html`
+                <div class="item-config-row" data-card-title=${card.title} data-index="${cardIndex}">
+                  <div class="handle">
+                    <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
+                  </div>
+                  <div class="item-content">
+                    <ha-selector
+                      .hass=${this.hass}
+                      .value=${card.title}
+                      .configValue=${'title'}
+                      .configType=${'default_card'}
+                      .configIndex=${buttonIndex}
+                      .cardIndex=${cardIndex}
+                      .label=${`Category #${cardIndex + 1}`}
+                      .selector=${{ text: {} }}
+                      .required=${false}
+                      @value-changed=${this._handleTitlePrimaryChanged}
+                    ></ha-selector>
+                  </div>
+                  <div class="item-actions">
+                    <ha-icon-button
+                      .path=${ICON.PENCIL}
+                      @click="${this.toggleAction('category-edit', buttonIndex, cardIndex)}"
+                    ></ha-icon-button>
+                    <ha-button-menu
+                      .corner=${'BOTTOM_START'}
+                      .fixed=${true}
+                      .menuCorner=${'START'}
+                      .activatable=${true}
+                      .naturalMenuWidth=${true}
+                      @closed=${(ev: Event) => ev.stopPropagation()}
+                    >
+                      <ha-icon-button .path=${ICON.DOTS_VERTICAL} slot="trigger"></ha-icon-button>
+                      ${actions.map(
+                        (action) =>
+                          html`<mwc-list-item
+                            @click=${this.toggleAction(action.action, buttonIndex, cardIndex)}
+                            .graphic=${'icon'}
+                            style="${action.color ? `color: ${action.color}` : ''}"
+                          >
+                            <ha-icon
+                              icon=${action.icon}
+                              slot="graphic"
+                              style="${action.color ? `color: ${action.color}` : ''}"
+                            ></ha-icon>
+                            ${action.title}
+                          </mwc-list-item>`
+                      )}
+                    </ha-button-menu>
+                  </div>
+                </div>
+              `
+            )}
+          </div></ha-sortable
+        >`
+      : nothing;
 
     const yamlDefaultEditor = html` <vsc-sub-panel-yaml
       .hass=${this.hass}
@@ -473,21 +470,21 @@ export class PanelButtonCard extends LitElement {
     </div>`;
 
     const cardInfo = CONFIG_TYPES.options.button_card.subpanels.default_cards.description;
+    const infoAlert = !noCards
+      ? Create.HaAlert({
+          message: cardInfo,
+        })
+      : nothing;
+
     return html`
-      ${this._renderSubHeader(
-        'Card Content',
-        [],
-        false,
-        html`<ha-button
-          .outlined=${true}
-          .label=${this._activePreview !== null ? 'Close Preview' : 'Preview'}
-          @click=${() => this._togglePreview('default', buttonIndex)}
-        ></ha-button>`
-      )}
-      ${Create.HaAlert({
-        message: cardInfo,
-      })}
-      ${this._yamlDefaultCardActive ? yamlDefaultEditor : html` ${defaultCardlist} ${footerActions} `}
+      ${this._renderSubHeader('Card Content', [
+        {
+          title: this._previewLabel,
+          action: () => this._togglePreview('default', buttonIndex),
+          disabled: noCards,
+        },
+      ])}
+      ${infoAlert} ${this._yamlDefaultCardActive ? yamlDefaultEditor : html`${defaultCardlist} ${footerActions}`}
     `;
   }
 
@@ -518,16 +515,23 @@ export class PanelButtonCard extends LitElement {
     if (this._cardIndex === null) return html``;
     const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex] as DefaultCardConfig;
 
+    const itemHeader = this._renderSubHeader(
+      `Category: ${baseCard.title}`,
+      [
+        {
+          action: this.toggleAction('category-back'),
+          icon: 'mdi:chevron-left',
+        },
+      ],
+      false,
+      html`<ha-button
+        .outlined=${true}
+        .label=${this._previewLabel}
+        @click=${() => this._togglePreview('default', buttonIndex)}
+      ></ha-button>`
+    );
     return html`
-      <div class="sub-header">
-        <div class="subcard-icon">
-          <ha-icon-button-prev @click=${this.toggleAction('category-back')}></ha-icon-button-prev>
-        </div>
-        <div>${baseCard.title}</div>
-        <ha-button .outlined=${true} @click=${() => this._togglePreview('default', buttonIndex)}
-          >${this._activePreview !== null ? 'Close Preview' : 'Preview'}</ha-button
-        >
-      </div>
+      ${itemHeader}
       <vsc-panel-default-card
         .hass=${this.hass}
         .defaultCardConfig=${baseCard}
@@ -563,7 +567,7 @@ export class PanelButtonCard extends LitElement {
 
   private _renderSubHeader(
     title: string,
-    actions?: Array<{ title?: string; action: (ev?: Event) => void; icon?: string }>,
+    actions?: Array<{ title?: string; action: (ev?: Event) => void; icon?: string; disabled?: boolean }>,
     use_icon: boolean = false,
     addedElement?: TemplateResult
   ): TemplateResult {
@@ -572,7 +576,13 @@ export class PanelButtonCard extends LitElement {
       ${actions?.map(
         (action) =>
           html` <div class="subcard-icon">
-            <ha-button @click=${(ev: Event) => action.action(ev)}> ${action.title} </ha-button>
+            <ha-button
+              .outlined=${true}
+              .label=${action?.title || ''}
+              .disabled="${action?.disabled || false}"
+              @click=${(ev: Event) => action.action(ev)}
+            >
+            </ha-button>
           </div>`
       )}
     </div>`;
@@ -591,7 +601,7 @@ export class PanelButtonCard extends LitElement {
         (action) =>
           html` <div class="subcard-icon" @click=${(ev: Event) => action.action(ev)}>
             <ha-icon icon=${ifDefined(action.icon)}></ha-icon>
-            <ha-button>${ifDefined(action.title)}</ha-button>
+            ${action.title ? html`<span>${action.title}</span>` : nothing}
           </div>`
       )}
       <div>${title}</div>
@@ -672,7 +682,7 @@ export class PanelButtonCard extends LitElement {
                 { ...buttonCardConfig[buttonIndex], default_card: [...defaultCards, newCard] },
                 ...buttonCardConfig.slice(buttonIndex + 1),
               ];
-              this._copyToPreview(buttonCardConfig[buttonIndex].default_card);
+              this._copyToPreview(buttonCardConfig[buttonIndex].default_card || []);
               updateChange(buttonCardConfig);
             }
             break;
@@ -862,6 +872,7 @@ export class PanelButtonCard extends LitElement {
   private _handleYamlDefaultCardChange(ev: CustomEvent): void {
     ev.stopPropagation();
     const { isValid, value, index } = ev.detail;
+    console.log('YAML Default Card Change', isValid, value, index);
     if (!isValid || !this.config) {
       return;
     }

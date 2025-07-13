@@ -1,4 +1,4 @@
-export enum NumberFormat {
+enum NumberFormat {
   language = 'language',
   system = 'system',
   comma_decimal = 'comma_decimal',
@@ -7,19 +7,19 @@ export enum NumberFormat {
   none = 'none',
 }
 
-export enum TimeFormat {
+enum TimeFormat {
   language = 'language',
   system = 'system',
   am_pm = '12',
   twenty_four = '24',
 }
 
-export enum TimeZone {
+enum TimeZone {
   local = 'local',
   server = 'server',
 }
 
-export enum DateFormat {
+enum DateFormat {
   language = 'language',
   system = 'system',
   DMY = 'DMY',
@@ -27,7 +27,7 @@ export enum DateFormat {
   YMD = 'YMD',
 }
 
-export enum FirstWeekday {
+enum FirstWeekday {
   language = 'language',
   monday = 'monday',
   tuesday = 'tuesday',

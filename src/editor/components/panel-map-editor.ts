@@ -1,6 +1,4 @@
 import { EntityConfig } from 'custom-card-helpers';
-import { processConfigEntities } from 'extra-map-card';
-import { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
@@ -13,7 +11,9 @@ import {
   LovelaceConfig,
   LovelaceCardConfig,
 } from '../../types';
+import { ExtraMapCardConfig, MapEntityConfig } from '../../types';
 import { Create } from '../../utils';
+import { processConfigEntities } from '../../utils';
 import { _convertToExtraMapConfig } from '../../utils/ha-helper';
 import { VehicleStatusCardEditor } from '../editor';
 import { ALERT_INFO } from '../editor-const';

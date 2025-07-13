@@ -1,4 +1,3 @@
-import { getColorByIndex } from 'extra-map-card';
 import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -28,6 +27,7 @@ import {
   generateGradient,
   getColorForLevel,
   getNormalizedValue,
+  getRandomHexColor,
   hasPercent,
 } from '../../utils';
 import * as Create from '../../utils/create';
@@ -377,7 +377,7 @@ export class PanelRangeInfo extends LitElement {
         );
         console.log('Unique energy entity', uniqueEntity);
 
-        const randomHex = getColorByIndex(rangeInfo.length + 1 || 0);
+        const randomHex = getRandomHexColor();
         console.log('Random color by index', rangeInfo.length, randomHex);
         const newRangeInfo = {
           energy_level: {

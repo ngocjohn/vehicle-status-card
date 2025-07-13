@@ -7,7 +7,7 @@ import editorcss from '../../css/editor.css';
 import { HomeAssistant, IndicatorGroupConfig, IndicatorConfig, fireEvent } from '../../types';
 import { showPromptDialog } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
-import { mainGroupSchema, groupApparenceSchema, subGroupItemSchema } from '../form/indicators-schema';
+import { mainGroupSchema, groupApparenceSchema, subGroupItemSchema } from '../form';
 
 @customElement('vsc-panel-indicator-group')
 export class PanelIndicatorGroup extends LitElement {
@@ -86,7 +86,7 @@ export class PanelIndicatorGroup extends LitElement {
                       .naturalMenuWidth=${true}
                       @closed=${(ev: Event) => ev.stopPropagation()}
                     >
-                      <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                      <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
                       ${actionMap.map(
                         (action) => html`
                           <mwc-list-item

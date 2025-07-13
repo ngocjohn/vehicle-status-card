@@ -6,10 +6,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { SECTION, SECTION_ORDER } from '../const/const';
-import './shared/vsc-maptiler-popup';
 import { Address, HomeAssistant, MapData } from '../types';
 import { _getMapAddress } from '../utils/ha-helper';
-import parseAspectRatio from '../utils/parse-aspect-ratio';
 import { showHaMapDialog } from '../utils/show-map-dialog';
 import { VehicleStatusCard } from '../vehicle-status-card';
 export const DEFAULT_HOURS_TO_SHOW = 0;
@@ -121,37 +119,6 @@ export class MiniMapBox extends LitElement {
     }
 
     return true;
-  }
-
-  private getResponsivePopupSize(aspectRatio: string): { width: string; height: string } {
-    const ratio = parseAspectRatio(aspectRatio);
-    const w = ratio?.w;
-    const h = ratio?.h;
-    if (!w || !h) return { width: '85vw', height: 'auto' };
-
-    const aspect = w / h;
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    const maxWidthPx = vw * 0.85;
-    const maxHeightPx = vh * 0.95;
-
-    let width = maxWidthPx;
-    let height = width / aspect;
-
-    if (height > maxHeightPx) {
-      height = maxHeightPx;
-      width = height * aspect;
-    }
-
-    const finalWidthVW = (width / vw) * 100;
-    const finalHeightVW = (height / vw) * 100;
-
-    return {
-      width: `${finalWidthVW.toFixed(2)}vw`,
-      height: `${finalHeightVW.toFixed(2)}vw`,
-    };
   }
 
   private async _getAddress(): Promise<void> {
@@ -295,9 +262,6 @@ export class MiniMapBox extends LitElement {
     };
     showHaMapDialog(this, params);
   }
-  // private _toggleDialog(): void {
-  //   this.open = !this.open;
-  // }
 
   private _computeMapStyle() {
     // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);

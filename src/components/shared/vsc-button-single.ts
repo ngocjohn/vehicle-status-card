@@ -9,8 +9,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 import cardstyles from '../../css/card.css';
 // local
 import { BUTTON_LAYOUT, ButtonCardEntityItem, HomeAssistant } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
-import { addActions, hasTemplate, strStartsWith } from '../../utils';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate } from '../../types';
+import { addActions, strStartsWith } from '../../utils';
 import { hasActions } from '../../utils/ha-helper';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 
