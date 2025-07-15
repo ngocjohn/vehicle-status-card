@@ -27,6 +27,8 @@ body:
       label: Version 📦
       description: The version of the application where the bug was found
       options:
+        - v1.15.2-beta.2
+        - v1.15.2-beta.1
         - v1.15.1
         - v1.15.0-beta.1
         - v1.14.0
@@ -35,28 +37,6 @@ body:
         - v1.12.1
         - v1.12.0
         - v1.11.3
-        - v1.11.3-beta.1
-        - v1.11.2
-        - v1.11.1-beta.1
-        - v1.11.0
-        - v1.10.0
-        - v1.9.1-beta.3
-        - v1.9.1-beta.1
-        - v1.9.0
-        - v1.8.2
-        - v1.8.1
-        - v1.8.0
-        - v1.7.0
-        - v1.6.0
-        - v1.6.0-beta.1
-        - v1.5.0
-        - v1.4.3
-        - v1.4.2
-        - v1.4.0
-        - v1.3.1
-        - v1.3.0
-        - v1.2.0
-        - v1.1.1
     validations:
       required: true
 
