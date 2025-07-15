@@ -36,7 +36,7 @@ const _load = (tag: 'link' | 'script' | 'img', url: string, type?: 'module') => 
 
     element[attr] = url;
     document[parent].appendChild(element);
-    console.log(element, `Loading ${tag} from`, url);
+    // console.log(element, `Loading ${tag} from`, url);
   });
 
   loadCache.set(url, promise);

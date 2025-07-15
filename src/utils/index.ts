@@ -14,3 +14,4 @@ export * from './show-map-dialog';
 export * from './ha-helper';
 export * from './process-config-entities';
 export * from './dom-helper';
+export * from './load-extra-map';
