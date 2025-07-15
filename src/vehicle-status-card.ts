@@ -20,7 +20,7 @@ import {
   MapData,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
-import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement, getDefaultConfig, addResource } from './utils';
+import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement, getDefaultConfig, loadAndCleanExtraMap } from './utils';
 import { createSingleMapCard } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
@@ -90,7 +90,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
-    addResource(this._hass);
     if (this.isEditorPreview) {
       // console.log('Editor preview connected');
       document.addEventListener('editor-event', this._handleEditorEvent.bind(this));
@@ -372,72 +371,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       </main>
     `;
   }
-  // private _renderSelectedCard(): TemplateResult {
-  //   if (this._activeCardIndex === null) return html``;
-  //   const index = this._activeCardIndex;
-  //   const selectedCard = this._buttonCards[index] as ButtonCardEntityItem;
-  //   const cardType = selectedCard?.card_type || 'default';
-  //   // const defaultCard = this._defaultItems.get(index as number);
-  //   const defaultCard = selectedCard.default_card;
-  //   const customCard = selectedCard.custom_card;
-  //   const tireCard = selectedCard.tire_card || null;
-
-  //   const cardHeaderBox = html` <div class="added-card-header">
-  //     <ha-icon-button
-  //       class="click-shrink headder-btn"
-  //       .label=${'Close'}
-  //       .path=${ICON.CLOSE}
-  //       @click="${() => (this._activeCardIndex = null)}"
-  //     >
-  //     </ha-icon-button>
-  //     <div class="card-toggle">
-  //       <ha-icon-button
-  //         class="click-shrink headder-btn"
-  //         @click=${() => this.toggleCard('prev')}
-  //         .label=${'Previous'}
-  //         .path=${ICON.CHEVRON_LEFT}
-  //       ></ha-icon-button>
-  //       <ha-icon-button
-  //         class="click-shrink headder-btn"
-  //         @click=${() => this.toggleCard('next')}
-  //         .label=${'Next'}
-  //         .path=${ICON.CHEVRON_RIGHT}
-  //       ></ha-icon-button>
-  //     </div>
-  //   </div>`;
-
-  //   let selectedContent: any = nothing;
-
-  //   switch (cardType) {
-  //     case 'default':
-  //       if (!defaultCard || !defaultCard.length) {
-  //         selectedContent = this._showWarning('Default card not found, configure it in the editor');
-  //       } else {
-  //         selectedContent = defaultCard?.map((card: DefaultCardConfig) => this._renderDefaultCardItems(card));
-  //       }
-  //       break;
-  //     case 'custom':
-  //       if (!isEmpty(customCard)) {
-  //         selectedContent = customCard.map((card: LovelaceCardConfig) => html`<div class="added-cutom">${card}</div>`);
-  //       } else {
-  //         selectedContent = this._showWarning('Custom card not found');
-  //       }
-  //       break;
-  //     case 'tire':
-  //       selectedContent = this._renderTireCard(tireCard);
-  //       break;
-  //   }
-
-  //   const content = html`
-  //     <main id="cards-wrapper">
-  //       ${cardHeaderBox}
-  //       <section class="card-element">
-  //         <div class="added-card">${selectedContent}</div>
-  //       </section>
-  //     </main>
-  //   `;
-  //   return content;
-  // }
 
   private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
     const title = data.title;
@@ -670,10 +603,10 @@ declare global {
   interface Window {
     VehicleCard: VehicleStatusCard;
   }
-  interface Window {
-    loadCardHelpers?: () => Promise<any>;
-  }
+
   interface HTMLElementTagNameMap {
     'vehicle-status-card': VehicleStatusCard;
   }
 }
+// Load and clean extra map resources
+loadAndCleanExtraMap().catch(console.error);
