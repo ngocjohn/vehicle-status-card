@@ -1,7 +1,3 @@
-import memoizeOne from 'memoize-one';
-
-import { createResource, fetchResources, HomeAssistant, updateResource } from '../types';
-
 // Hack to load ha-components needed for editor
 export const loadHaComponents = () => {
   if (!customElements.get('ha-form')) {
@@ -49,57 +45,4 @@ export const stickyPreview = () => {
     margin: 'auto',
     display: 'block',
   });
-};
-
-const EXTRA_MAP_CARD_BASE = 'https://cdn.jsdelivr.net/npm/extra-map-card@';
-
-async function getLatestNpmVersion(): Promise<string | null> {
-  try {
-    const res = await fetch(`https://registry.npmjs.org/extra-map-card`);
-    if (!res.ok) throw new Error('Package not found');
-    const data = await res.json();
-    return data['dist-tags']?.latest || null;
-  } catch (error) {
-    console.error('Failed to fetch version:', error);
-    return null;
-  }
-}
-
-const bundleName = 'extra-map-card-bundle.min.js';
-
-let _addResourcePromise: Promise<void> | null = null;
-
-export const addResource = async (hass: HomeAssistant): Promise<void> => {
-  if (_addResourcePromise) return _addResourcePromise;
-
-  _addResourcePromise = (async () => {
-    const latestVersion = await memoizeOne(getLatestNpmVersion)();
-    if (!latestVersion) return;
-
-    const latestUrl = `${EXTRA_MAP_CARD_BASE}${latestVersion}/dist/extra-map-card-bundle.min.js`;
-    const currentResources = await fetchResources(hass.connection);
-
-    const existingResource = currentResources.find((res) => res.url.endsWith(bundleName));
-    if (existingResource && existingResource.url === latestUrl) {
-      console.log(`Resource ${bundleName} already exists with the latest version: ${latestVersion}`);
-      return;
-    } else if (existingResource) {
-      console.log(`Updating outdated resource: ${existingResource.url}`);
-      await updateResource(hass, existingResource.id, {
-        res_type: 'module',
-        url: latestUrl,
-      });
-    } else {
-      console.log(`Adding new resource: ${latestUrl}`);
-      await createResource(hass, {
-        res_type: 'module',
-        url: latestUrl,
-      });
-    }
-  })();
-
-  return _addResourcePromise;
-};
-export const resetAddResource = () => {
-  _addResourcePromise = null;
 };
