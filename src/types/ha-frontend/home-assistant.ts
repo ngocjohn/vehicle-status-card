@@ -12,22 +12,22 @@ import {
 import { FrontendLocaleData } from './data/frontend-local-data';
 import { Themes, ThemeSettings } from './data/ws-themes';
 
-export interface Resources {
+interface Resources {
   [language: string]: Record<string, string>;
 }
 
-export interface Context {
+interface Context {
   id: string;
   parent_id?: string;
   user_id?: string | null;
 }
 
-export interface ServiceCallResponse {
+interface ServiceCallResponse {
   context: Context;
   response?: any;
 }
 
-export interface ServiceCallRequest {
+interface ServiceCallRequest {
   domain: string;
   service: string;
   serviceData?: Record<string, any>;
@@ -98,7 +98,3 @@ export interface HomeAssistant {
   formatEntityAttributeValue(stateObj: HassEntity, attribute: string, value?: any): string;
   formatEntityAttributeName(stateObj: HassEntity, attribute: string): string;
 }
-
-/** Return if a component is loaded. */
-export const isComponentLoaded = (hass: HomeAssistant, component: string): boolean =>
-  hass && hass.config.components.includes(component);

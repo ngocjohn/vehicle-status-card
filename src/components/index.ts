@@ -9,5 +9,4 @@ export * from './shared/vsc-default-card-item';
 export * from './shared/vsc-button-single';
 export * from './shared/vsc-indicator-group-item';
 export * from './shared/vsc-indicator-single';
-export * from './shared/vsc-maptiler-popup';
 export * from './shared/vsc-dialog-ha-map';

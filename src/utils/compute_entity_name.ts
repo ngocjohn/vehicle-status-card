@@ -1,4 +1,3 @@
-import { computeStateName } from 'extra-map-card';
 import { Connection } from 'home-assistant-js-websocket';
 import memoizeOne from 'memoize-one';
 
@@ -156,6 +155,17 @@ export const computeEntityName = (stateObj: HassEntity, hass: HomeAssistant): st
   }
   return computeEntityEntryName(entry, hass);
 };
+
+/** Compute the object ID of a state. */
+export const computeObjectId = (entityId: string): string => entityId.substr(entityId.indexOf('.') + 1);
+
+export const computeStateNameFromEntityAttributes = (entityId: string, attributes: Record<string, any>): string =>
+  attributes.friendly_name === undefined
+    ? computeObjectId(entityId).replace(/_/g, ' ')
+    : (attributes.friendly_name ?? '').toString();
+
+export const computeStateName = (stateObj: HassEntity): string =>
+  computeStateNameFromEntityAttributes(stateObj.entity_id, stateObj.attributes);
 
 export const computeEntityEntryName = (
   entry: EntityRegistryDisplayEntry | EntityRegistryEntry,

@@ -1,5 +1,4 @@
 import { fireEvent, forwardHaptic } from 'custom-card-helpers';
-import { getPromisableResult } from 'get-promisable-result';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 
 import './components';
@@ -21,7 +20,7 @@ import {
   MapData,
 } from './types';
 import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
-import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement, getDefaultConfig, addResource } from './utils';
+import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement, getDefaultConfig, loadAndCleanExtraMap } from './utils';
 import { createSingleMapCard } from './utils/ha-helper';
 
 @customElement('vehicle-status-card')
@@ -91,7 +90,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
-    addResource(this._hass);
     if (this.isEditorPreview) {
       // console.log('Editor preview connected');
       document.addEventListener('editor-event', this._handleEditorEvent.bind(this));
@@ -152,62 +150,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         }
       }, 0);
     }, 0);
-    setTimeout(() => {
-      const _extraMapCard = this.shadowRoot?.querySelector('extra-map-card') as any;
-      if (this._singleMapCard && this._singleMapCard.length && _extraMapCard && !this._singleLoaded) {
-        this._singleLoaded = true;
-        // console.log('Single map card loaded:', this._singleMapCard, this._extraMapCard);
-        this._updateSingleMapPaths();
-        return;
-      }
-    }, 200);
-  }
-
-  private _updateSingleMapPaths(): void {
-    if (this.isEditorPreview) {
-      console.log('Skipping path update in editor preview mode');
-      return;
-    }
-    this._getMapElements()
-      .then((element) => {
-        const mapEl = element[0] as any;
-        const _mapPaths = mapEl?._mapPaths;
-        const paths = mapEl?.paths;
-        if (!_mapPaths?.length && paths?.length) {
-          // console.log('Drawing paths on single map card:', paths);
-          mapEl._drawPaths();
-          return;
-        }
-        if (_mapPaths?.length) {
-          // console.log('Map paths already drawn on single map card:', _mapPaths);
-          return;
-        }
-      })
-      .catch((err: Error) => {
-        console.error('Error updating single map paths:', err);
-        return;
-      });
-  }
-
-  private async _getMapElements(): Promise<[mapEl: any]> {
-    const promisableResultOptions = {
-      retries: 50,
-      delay: 200,
-      shouldReject: false,
-    };
-
-    const extraCard = this.shadowRoot?.querySelector('extra-map-card');
-
-    const mapEl = await getPromisableResult<any>(
-      () => extraCard?._mapTiler,
-      (element): boolean => {
-        return element !== null && element !== undefined && element._loaded === true;
-      },
-      promisableResultOptions
-    );
-    console.log('Map element found:', mapEl);
-
-    return [mapEl];
   }
 
   protected async updated(changedProps: PropertyValues): Promise<void> {
@@ -376,57 +318,58 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   /* -------------------------- CUSTOM CARD RENDERING -------------------------- */
 
   private _renderSelectedCard(): TemplateResult {
-    if (this._activeCardIndex === null) return html``;
     const index = this._activeCardIndex;
-    const selectedCard = this._buttonCards[index] as ButtonCardEntityItem;
-    const cardType = selectedCard.card_type;
-    // const defaultCard = this._defaultItems.get(index as number);
-    const defaultCard = selectedCard.default_card;
-    const customCard = selectedCard.custom_card;
-    const tireCard = selectedCard.tire_card || null;
+    if (index === null) return html``;
 
-    const cardHeaderBox = html` <div class="added-card-header">
-      <ha-icon-button
-        class="click-shrink headder-btn"
-        .label=${'Close'}
-        .path=${ICON.CLOSE}
-        @click="${() => (this._activeCardIndex = null)}"
-      >
-      </ha-icon-button>
-      <div class="card-toggle">
+    const {
+      card_type: cardType = 'default',
+      default_card: defaultCard,
+      custom_card: customCard,
+      tire_card: tireCard = null,
+    } = this._buttonCards[index] as ButtonCardEntityItem;
+
+    const renderButton = (label: string, icon: string, action: () => void): TemplateResult => {
+      return html`
         <ha-icon-button
           class="click-shrink headder-btn"
-          @click=${() => this.toggleCard('prev')}
-          .label=${'Previous'}
-          .path=${ICON.CHEVRON_LEFT}
+          .label=${label}
+          .path=${icon}
+          @click=${action}
         ></ha-icon-button>
-        <ha-icon-button
-          class="click-shrink headder-btn"
-          @click=${() => this.toggleCard('next')}
-          .label=${'Next'}
-          .path=${ICON.CHEVRON_RIGHT}
-        ></ha-icon-button>
+      `;
+    };
+    const cardHeaderBox = html`
+      <div class="added-card-header">
+        ${renderButton('Close', ICON.CLOSE, () => (this._activeCardIndex = null))}
+        <div class="card-toggle">
+          ${renderButton('Previous', ICON.CHEVRON_LEFT, () => this.toggleCard('prev'))}
+          ${renderButton('Next', ICON.CHEVRON_RIGHT, () => this.toggleCard('next'))}
+        </div>
       </div>
-    </div>`;
+    `;
 
-    const selected_card =
-      cardType === 'default'
-        ? defaultCard!.map((card: DefaultCardConfig) => this._renderDefaultCardItems(card))
-        : cardType === 'tire'
-        ? this._renderTireCard(tireCard)
-        : !isEmpty(customCard)
-        ? customCard.map((card: LovelaceCardConfig) => html`<div class="added-cutom">${card}</div>`)
-        : this._showWarning('Card not found');
+    let selectedContent: unknown = nothing;
 
-    const content = html`
+    if (cardType === 'default') {
+      selectedContent = defaultCard?.length
+        ? defaultCard.map((card) => this._renderDefaultCardItems(card))
+        : this._showWarning('Default card not found, configure it in the editor');
+    } else if (cardType === 'custom') {
+      selectedContent = customCard?.length
+        ? customCard.map((card) => html`<div class="added-cutom">${card}</div>`)
+        : this._showWarning('Custom card not found');
+    } else if (cardType === 'tire') {
+      selectedContent = this._renderTireCard(tireCard);
+    }
+
+    return html`
       <main id="cards-wrapper">
         ${cardHeaderBox}
         <section class="card-element">
-          <div class="added-card">${selected_card}</div>
+          <div class="added-card">${selectedContent}</div>
         </section>
       </main>
     `;
-    return content;
   }
 
   private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
@@ -660,10 +603,10 @@ declare global {
   interface Window {
     VehicleCard: VehicleStatusCard;
   }
-  interface Window {
-    loadCardHelpers?: () => Promise<any>;
-  }
+
   interface HTMLElementTagNameMap {
     'vehicle-status-card': VehicleStatusCard;
   }
 }
+// Load and clean extra map resources
+loadAndCleanExtraMap().catch(console.error);

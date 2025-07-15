@@ -1,4 +1,4 @@
-export const loadCache = new Map<string, Promise<string>>();
+const loadCache = new Map<string, Promise<string>>();
 
 const _load = (tag: 'link' | 'script' | 'img', url: string, type?: 'module') => {
   if (loadCache.has(url)) return loadCache.get(url)!;
@@ -36,7 +36,7 @@ const _load = (tag: 'link' | 'script' | 'img', url: string, type?: 'module') => 
 
     element[attr] = url;
     document[parent].appendChild(element);
-    console.log(element, `Loading ${tag} from`, url);
+    // console.log(element, `Loading ${tag} from`, url);
   });
 
   loadCache.set(url, promise);

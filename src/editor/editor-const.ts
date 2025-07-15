@@ -67,32 +67,6 @@ export const CONFIG_TYPES = {
   },
 };
 
-const DETAIL_CONFIG_VALUES = [
-  'attribute',
-  'autoplay',
-  'button_type',
-  'card_type',
-  'collapsed_items',
-  'color',
-  'delay',
-  'effect',
-  'horizontal',
-  'icon_template',
-  'image_size',
-  'left',
-  'loop',
-  'max_height',
-  'max_width',
-  'notify',
-  'picture_template',
-  'speed',
-  'state_template',
-  'top',
-  'value_size',
-  'visibility',
-  'hide_pagination',
-];
-
 const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview', 'active_group'];
 
 type BUTTON_CARD_ACTIONS =
@@ -180,54 +154,6 @@ const CARD_TYPES = [
   { value: 'tire', label: 'Tire Card' },
 ];
 
-const ACTIONSELECTOR = [
-  {
-    name: 'tap_action',
-    label: 'Tap action',
-    defaultAction: 'more-info',
-  },
-  {
-    name: 'hold_action',
-    label: 'Hold action',
-    defaultAction: 'none',
-  },
-  {
-    name: 'double_tap_action',
-    label: 'Double tap action',
-    defaultAction: 'none',
-  },
-];
-
-export const ACTIONSELECTOR_ACTIONS = [
-  {
-    name: 'tap_action',
-    label: 'Tap action',
-    selector: {
-      ui_action: {
-        default_action: 'more-info',
-      },
-    },
-  },
-  {
-    name: 'hold_action',
-    label: 'Hold action',
-    selector: {
-      ui_action: {
-        default_action: 'none',
-      },
-    },
-  },
-  {
-    name: 'double_tap_action',
-    label: 'Double tap action',
-    selector: {
-      ui_action: {
-        default_action: 'none',
-      },
-    },
-  },
-];
-
 const NEW_BUTTON_CONFIG = {
   button: {
     primary: 'New Button',
@@ -258,9 +184,7 @@ enum ALERT_INFO {
 export {
   BUTTON_TYPE,
   CARD_TYPES,
-  ACTIONSELECTOR,
   BUTTON_CARD_ACTIONS,
-  DETAIL_CONFIG_VALUES as CONFIG_VALUES,
   PREVIEW_CONFIG_TYPES,
   NEW_BUTTON_CONFIG,
   IMAGE_CONFIG_ACTIONS,

@@ -3,6 +3,8 @@ import { hasAction, LovelaceCardConfig } from 'custom-card-helpers';
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import memoizeOne from 'memoize-one';
 
+import type { ExtraMapCardConfig, MapEntityConfig } from '../types';
+
 import { DEFAULT_TIRE_CONFIG } from '../editor/form';
 import {
   ButtonCardEntity,
@@ -19,9 +21,6 @@ import {
   ButtonActionConfig,
 } from '../types';
 import { VehicleStatusCard } from '../vehicle-status-card';
-
-import type { ExtraMapCardConfig, MapEntityConfig } from 'extra-map-card/dist/types/config';
-import type { HassEntity } from 'home-assistant-js-websocket';
 
 export function computeDarkMode(hass?: HomeAssistant): boolean {
   if (!hass) return false;
@@ -606,17 +605,6 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string): P
     return null;
   }
 }
-
-/** Compute the object ID of a state. */
-export const computeObjectId = (entityId: string): string => entityId.substr(entityId.indexOf('.') + 1);
-
-export const computeStateNameFromEntityAttributes = (entityId: string, attributes: Record<string, any>): string =>
-  attributes.friendly_name === undefined
-    ? computeObjectId(entityId).replace(/_/g, ' ')
-    : (attributes.friendly_name ?? '').toString();
-
-export const computeStateName = (stateObj: HassEntity): string =>
-  computeStateNameFromEntityAttributes(stateObj.entity_id, stateObj.attributes);
 
 export const hasActions = (config: ButtonActionConfig): boolean => {
   return Object.keys(config)

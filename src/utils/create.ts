@@ -1,7 +1,5 @@
-import { mdiClose } from '@mdi/js';
 import { html, TemplateResult } from 'lit';
 
-import { HomeAssistant } from '../types';
 import '../editor/components/vic-tab';
 import '../editor/components/vic-tab-bar';
 
@@ -54,8 +52,11 @@ export const HaAlert = ({
   };
 }): TemplateResult => {
   const dismisHandler = (ev: CustomEvent) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    // Remove the alert element from the DOM
     const alert = ev.target as HTMLElement;
-    alert.style.display = 'none';
+    alert.remove();
   };
 
   return html`
@@ -72,24 +73,6 @@ export const HaAlert = ({
           html` <mwc-button slot="action" @click=${action.callback} label=${action.label || 'More'}> </mwc-button>`
       )}
     </ha-alert>
-  `;
-};
-
-export const createCloseHeading = (hass: HomeAssistant | undefined, title: string | TemplateResult) => {
-  const headerStyle = `
-		display: flex;
-		align-items: center;
-		direction: var(--direction);
-		`;
-  return html`
-    <div style=${headerStyle}>
-      <ha-icon-button
-        .label=${hass?.localize('ui.dialogs.generic.close') ?? 'Close'}
-        .path=${mdiClose}
-        dialogAction="close"
-      ></ha-icon-button>
-      <span slot="heading" style="flex: 1; float: right; text-align: center;"> ${title} </span>
-    </div>
   `;
 };
 

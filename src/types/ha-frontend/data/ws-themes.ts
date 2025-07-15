@@ -1,5 +1,3 @@
-import { Connection, createCollection } from 'home-assistant-js-websocket';
-
 export interface ThemeSettings {
   theme: string;
   // Radio box selection for theme picker. Do not use in Lovelace rendering as
@@ -10,7 +8,7 @@ export interface ThemeSettings {
   accentColor?: string;
 }
 
-export interface ThemeVars {
+interface ThemeVars {
   // Incomplete
   'primary-color': string;
   'text-primary-color': string;
@@ -18,7 +16,7 @@ export interface ThemeVars {
   [key: string]: string;
 }
 
-export type Theme = ThemeVars & {
+type Theme = ThemeVars & {
   modes?: {
     light?: ThemeVars;
     dark?: ThemeVars;
@@ -36,14 +34,3 @@ export interface Themes {
   // Currently globally active theme name
   theme: string;
 }
-
-const fetchThemes = (conn) =>
-  conn.sendMessagePromise({
-    type: 'frontend/get_themes',
-  });
-
-const subscribeUpdates = (conn, store) =>
-  conn.subscribeEvents(() => fetchThemes(conn).then((data) => store.setState(data, true)), 'themes_updated');
-
-export const subscribeThemes = (conn: Connection, onChange: (themes: Themes) => void) =>
-  createCollection<Themes>('_thm', fetchThemes, subscribeUpdates, conn, onChange);

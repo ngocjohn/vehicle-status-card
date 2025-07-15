@@ -11,6 +11,7 @@ import {
   RangeItemConfig,
   RenderTemplateResult,
   subscribeRenderTemplate,
+  hasTemplate,
 } from '../../types';
 import {
   addActions,
@@ -19,7 +20,6 @@ import {
   getColorForLevel,
   getNormalizedValue,
   hasPercent,
-  hasTemplate,
 } from '../../utils';
 import { hasActions } from '../../utils/ha-helper';
 

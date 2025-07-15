@@ -1,7 +1,7 @@
 // Cutom card helpers:
 import { ActionConfig, EntityConfig } from 'custom-card-helpers';
-import { MapEntityConfig } from 'extra-map-card/dist/types/config';
 
+import { MapEntityConfig } from './emc-config';
 import { LovelaceCardConfig } from './ha-frontend/lovelace/lovelace';
 
 /* ----------------------- INDICATOR CONFIG INTERFACE ----------------------- */
@@ -97,6 +97,7 @@ export interface SingleMapCustomStyles {
   light?: string;
   dark?: string;
 }
+
 export interface MiniMapConfig {
   default_zoom: number;
   device_tracker: string;
@@ -226,10 +227,10 @@ export interface ButtonCardConfig {
   button: ButtonConfig;
   button_action?: ButtonActionConfig;
   button_type?: BUTTON_TYPE;
-  card_type: CARD_TYPE;
+  card_type?: CARD_TYPE;
   custom_card: LovelaceCardConfig[];
-  default_card: Array<DefaultCardConfig>;
-  hide_button: boolean;
+  default_card: DefaultCardConfig[];
+  hide_button?: boolean;
   tire_card?: TireTemplateConfig;
 }
 
@@ -251,16 +252,12 @@ export interface ButtonCardEntityItem {
   button_type: BUTTON_TYPE;
   card_type: CARD_TYPE;
   custom_card: LovelaceCardConfig[];
-  default_card: Array<{
-    collapsed_items: boolean;
-    items: CardItemConfig[];
-    title: string;
-  }>;
+  default_card: DefaultCardConfig[];
   hide_button: boolean;
   tire_card?: TireEntity;
 }
 type BUTTON_TYPE = 'action' | 'default';
-type CARD_TYPE = 'custom' | 'default' | 'tire';
+type CARD_TYPE = 'default' | 'custom' | 'tire';
 
 export type ButtonCardEntity = ButtonCardEntityItem[];
 
