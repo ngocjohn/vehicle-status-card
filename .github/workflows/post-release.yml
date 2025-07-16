@@ -4,8 +4,12 @@ on:
     types:
       - published
       - unpublished
+      - deleted
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
