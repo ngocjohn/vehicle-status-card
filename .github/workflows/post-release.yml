@@ -1,8 +1,19 @@
 name: Post release
 on:
   release:
-    types: [published]
+    types:
+      - published
+      - unpublished
+      - deleted
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_REPO: ${{ github.repository }}
 
 jobs:
   update-files:
@@ -22,12 +33,10 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install axios
+        run: npm install axios js-yaml
 
       - name: Update Bug Report Template
         run: node scripts/update-bug-template.js
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push changes
         run: |
@@ -36,5 +45,15 @@ jobs:
           git add .github/ISSUE_TEMPLATE/BUG_REPORT.yml
           git commit -m "Update Bug Report Template" || echo "No changes to commit"
           git push origin main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  changelog:
+    name: Update changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: rhysd/changelog-from-release/action@v3
+        with:
+          file: CHANGELOG.md
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_summary_template: 'update changelog for %s changes'
