@@ -1,14 +1,3 @@
-<a id="v1.15.3"></a>
-# [v1.15.3](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.15.3) - 2025-07-16
-
-## Changes
-
-* No changes
-
-
-[Changes][v1.15.3]
-
-
 <a id="v1.15.2"></a>
 # [v1.15.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.15.2) - 2025-07-16
 
@@ -595,7 +584,6 @@ v1.0.0
 [Changes][v1.0.0]
 
 
-[v1.15.3]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.15.2...v1.15.3
 [v1.15.2]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.15.1...v1.15.2
 [v1.15.1]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.14.0...v1.15.1
 [v1.14.0]: https://github.com/ngocjohn/vehicle-status-card/compare/v1.13.1...v1.14.0
