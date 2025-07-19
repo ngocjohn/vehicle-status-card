@@ -15,8 +15,10 @@ categories:
   - title: Other Changes
     labels:
       - "*"
-change-template: '* $TITLE @$AUTHOR (#$NUMBER)'
+change-template: '* $TITLE #$NUMBER (@$AUTHOR)\n$BODY'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+
+
 version-resolver:
   major:
     labels:
@@ -50,6 +52,6 @@ autolabeler:
     body:
       - '/JIRA-[0-9]{1,4}/'
 template: |
-  ## Changes
+  ## What's Changed
 
   $CHANGES

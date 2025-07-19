@@ -1,10 +1,7 @@
 name: Post release
 on:
   release:
-    types:
-      - published
-      - unpublished
-      - deleted
+    types: [published, prereleased]
   workflow_dispatch:
 
 concurrency:
@@ -45,15 +42,3 @@ jobs:
           git add .github/ISSUE_TEMPLATE/BUG_REPORT.yml
           git commit -m "Update Bug Report Template" || echo "No changes to commit"
           git push origin main
-  changelog:
-    name: Update changelog
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: rhysd/changelog-from-release/action@v3
-        with:
-          file: CHANGELOG.md
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          commit_summary_template: 'update changelog for %s changes'
