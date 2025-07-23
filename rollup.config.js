@@ -48,6 +48,10 @@ export default [
         sourcemap: dev,
         inlineDynamicImports: true,
         banner: custombanner,
+        sourcemapIgnoreList: (relativeSourcePath, sourcemapPath) => {
+          // will ignore-list all files with node_modules in their paths
+          return relativeSourcePath.includes('node_modules');
+        },
       },
     ],
     watch: {
