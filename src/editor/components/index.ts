@@ -8,5 +8,5 @@ export * from './panel-base-button';
 export * from './panel-default-card-category';
 export * from './panel-indicator-single';
 export * from './panel-indicator-group';
-export * from './vic-tab';
-export * from './vic-tab-bar';
+export * from '../../utils/editor/vic-tab';
+export * from '../../utils/editor/vic-tab-bar';

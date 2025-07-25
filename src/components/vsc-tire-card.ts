@@ -8,9 +8,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { TIRE_BG } from '../const/img-const';
 // styles
 import cardstyles from '../css/card.css';
-import { HomeAssistant, TireEntity } from '../types';
-import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../types/ha-frontend/data/ws-templates';
-import { VehicleStatusCard } from '../vehicle-status-card';
+import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
+import { TireEntity } from '../types/config/card/tire-card';
 
 const TEMPLATE_KEYS = ['color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -18,7 +17,6 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 @customElement('vsc-tire-card')
 export class VehicleTireCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) card!: VehicleStatusCard;
   @property({ attribute: false }) tireConfig!: TireEntity;
 
   @state() private _templateResults: Record<string, Partial<Record<TemplateKey, RenderTemplateResult | undefined>>> =

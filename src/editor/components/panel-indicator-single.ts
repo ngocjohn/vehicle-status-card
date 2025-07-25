@@ -4,8 +4,9 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { HomeAssistant, IndicatorConfig, fireEvent } from '../../types';
 import './sub-panel-yaml';
+import { fireEvent, HomeAssistant } from '../../ha';
+import { IndicatorItemConfig } from '../../types/config';
 import { VehicleStatusCardEditor } from '../editor';
 import { singleIndicatorSchema, singleApparenceSchema, singleActionSchema } from '../form';
 
@@ -13,7 +14,7 @@ import { singleIndicatorSchema, singleApparenceSchema, singleActionSchema } from
 export class PanelIndicatorSingle extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public editor!: VehicleStatusCardEditor;
-  @property({ attribute: false }) private singleConfig?: IndicatorConfig[];
+  @property({ attribute: false }) private singleConfig?: IndicatorItemConfig[];
 
   @state() private _yamlEditorVisible: boolean = false;
   @state() private _yamlSubEditorVisible: boolean = false;
@@ -64,7 +65,7 @@ export class PanelIndicatorSingle extends LitElement {
             <div class="indicator-list">
               ${repeat(
                 singleItems || [],
-                (item: IndicatorConfig, index: number) => html`
+                (item: IndicatorItemConfig, index: number) => html`
                   <div class="item-config-row" data-index=${index}>
                     <div class="handle"><ha-icon icon="mdi:drag"></ha-icon></div>
                     <div class="item-content">
@@ -84,7 +85,7 @@ export class PanelIndicatorSingle extends LitElement {
                       .naturalMenuWidth=${true}
                       @closed=${(ev: Event) => ev.stopPropagation()}
                     >
-                      <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                      <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
                       ${actionMap.map(
                         (action) => html`
                           <mwc-list-item
@@ -213,7 +214,7 @@ export class PanelIndicatorSingle extends LitElement {
     const entity = ev.detail.value;
     if (!entity) return;
 
-    const newItem: IndicatorConfig = {
+    const newItem: IndicatorItemConfig = {
       entity,
       action_config: {
         tap_action: {
@@ -328,7 +329,7 @@ export class PanelIndicatorSingle extends LitElement {
     return schema.helper || '';
   }
 
-  private _configChanged(newConfig: IndicatorConfig[]): void {
+  private _configChanged(newConfig: IndicatorItemConfig[]): void {
     console.log('Config changed for single', newConfig);
     if (newConfig === undefined || newConfig === null) {
       newConfig = [];

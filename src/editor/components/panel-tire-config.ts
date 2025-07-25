@@ -2,7 +2,8 @@ import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css } from '
 import { customElement, property, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
-import { HomeAssistant, TireTemplateConfig } from '../../types';
+import { HomeAssistant } from '../../ha';
+import { TireTemplateConfig } from '../../types/config';
 import { Create } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
 import { DEFAULT_TIRE_CONFIG, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../form';

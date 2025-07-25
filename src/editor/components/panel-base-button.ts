@@ -2,8 +2,8 @@ import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css }
 import { customElement, property, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
-import { BaseButtonConfig, HomeAssistant } from '../../types';
-import { _dispatchEvent } from '../../utils';
+import { HomeAssistant } from '../../ha';
+import { BaseButtonConfig } from '../../types/config';
 import { BASE_BUTTON_ACTION_SCHEMA, BASE_BUTTON_APPEARANCE_SCHEMA, BASE_BUTTON_SCHEMA } from '../form';
 
 @customElement('vsc-panel-base-button')
@@ -108,16 +108,14 @@ export class PanelBaseButton extends LitElement {
   private _dispatchConfigChange(newConfig: BaseButtonConfig): void {
     if (!this.buttonConfig) return;
     this.buttonConfig = { ...this.buttonConfig, ...newConfig };
-    const detail = { config: this.buttonConfig };
 
     // Dispatch a custom event with the updated configuration
-    _dispatchEvent(this, 'button-config-changed', detail);
-    // const event = new CustomEvent('button-config-changed', {
-    //   detail: { config: this.buttonConfig },
-    //   bubbles: true,
-    //   composed: true,
-    // });
-    // this.dispatchEvent(event);
+    const event = new CustomEvent('button-config-changed', {
+      detail: { config: this.buttonConfig },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
   }
 }
 

@@ -1,6 +1,6 @@
 import memoizeOne from 'memoize-one';
 
-import { TireEntityConfig, TireTemplateConfig } from '../../types';
+import { TireEntityConfig, TireTemplateConfig } from '../../types/config';
 
 const DEFAULT_TIRE_ENTITY: TireEntityConfig = {
   entity: '',

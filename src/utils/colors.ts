@@ -1,6 +1,6 @@
 import tinycolor from 'tinycolor2';
 
-import { Threshold } from '../types';
+import { Threshold } from '../types/config';
 
 /**
  * Generates a color based on the given thresholds and current level.
@@ -123,11 +123,11 @@ export const colorToRgb = (color: string): [number, number, number] => {
 
 /**
  * Creates a random color palette based on a base color and maximum value.
- * @param {string} baseColor - The base color to generate the palette from.
- * @param {number} maxValue - The maximum value for the palette.
+ * @param {string} baseColor - The base color to generate the palette from. If not provided, a random color will be used.
+ * @param {number} maxValue - The maximum value for the palette. Defaults to 100.
  * @returns {Threshold[]} - An array of thresholds with value and color.
  */
-export const createRandomPallete = (baseColor: string, maxValue: number): Threshold[] => {
+export const createRandomPallete = (baseColor: string, maxValue: number = 100): Threshold[] => {
   const steps = 5;
   const stepSize = maxValue / steps;
 

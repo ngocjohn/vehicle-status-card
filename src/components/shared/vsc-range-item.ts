@@ -4,25 +4,10 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import cardcss from '../../css/card.css';
-import {
-  ButtonActionConfig,
-  HomeAssistant,
-  RangeInfoConfig,
-  RangeItemConfig,
-  RenderTemplateResult,
-  subscribeRenderTemplate,
-  hasTemplate,
-} from '../../types';
-import {
-  addActions,
-  generateColorBlocks,
-  generateGradient,
-  getColorForLevel,
-  getNormalizedValue,
-  hasPercent,
-} from '../../utils';
-import { hasActions } from '../../utils/ha-helper';
-
+import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate, hasTemplate, hasPercent } from '../../ha';
+import { ActionsSharedConfig, hasItemAction, RangeInfoConfig, RangeItemConfig } from '../../types/config';
+import { generateColorBlocks, generateGradient, getColorForLevel, getNormalizedValue } from '../../utils/colors';
+import { addActions } from '../../utils/tap-action';
 const TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 @customElement('vsc-range-item')
@@ -279,14 +264,14 @@ export class VscRangeItem extends LitElement {
   private _addActions(): void {
     const energeActions = this.getValue('energyActions');
     const rangeActions = this.getValue('rangeActions');
-    if (hasActions(energeActions)) {
+    if (hasItemAction(energeActions)) {
       const energyItem = this.shadowRoot?.getElementById('energy-item') as HTMLElement;
       if (!energyItem) {
         return;
       }
       addActions(energyItem, energeActions);
     }
-    if (hasActions(rangeActions)) {
+    if (hasItemAction(rangeActions)) {
       const rangeItem = this.shadowRoot?.getElementById('range-item') as HTMLElement;
       if (!rangeItem) {
         return;
@@ -306,7 +291,7 @@ export class VscRangeItem extends LitElement {
           : hass.formatEntityState(hass.states[entity])
         : '';
 
-    const getActions = (config?: RangeItemConfig): ButtonActionConfig => ({
+    const getActions = (config?: RangeItemConfig): ActionsSharedConfig => ({
       entity: config?.entity || '',
       tap_action: config?.tap_action,
       hold_action: config?.hold_action,
@@ -413,7 +398,7 @@ export class VscRangeItem extends LitElement {
           r.color_thresholds && r.energy_level?.value_alignment === 'start'
             ? this.getValue('level') < 3
               ? this.getValue('barBackground')
-              : r.color_thresholds[0].color || this.getValue('barBackground')
+              : r.color_thresholds[0]?.color || this.getValue('barBackground')
             : r.color_thresholds && r.energy_level?.value_alignment === 'end'
             ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax) || this.getValue('barBackground')
             : this.getValue('level') > 2

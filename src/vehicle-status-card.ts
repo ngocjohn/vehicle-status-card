@@ -1,37 +1,39 @@
-import { fireEvent, forwardHaptic } from 'custom-card-helpers';
 import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
-
-import './components';
-
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
+// components
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
+import './components';
+import './editor/editor';
 import { ICON, SECTION, SECTION_ORDER } from './const/const';
+// Styles
 import cardcss from './css/card.css';
+// Ha utils
+import { fireEvent, forwardHaptic, HomeAssistant, LovelaceCard, LovelaceCardConfig, LovelaceCardEditor } from './ha';
 import {
   ButtonCardEntity,
-  HomeAssistant,
-  VehicleStatusCardConfig,
-  TireEntity,
-  PREVIEW_TYPE,
   ButtonCardEntityItem,
   DefaultCardConfig,
   MapData,
-} from './types';
-import { LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from './types/';
-import { HaHelp, isDarkColor, isEmpty, applyThemesOnElement, getDefaultConfig, loadAndCleanExtraMap } from './utils';
-import { createSingleMapCard } from './utils/ha-helper';
+  PREVIEW_TYPE,
+  TireEntity,
+  VehicleStatusCardConfig,
+} from './types/config';
+import { isDarkColor, isEmpty, applyThemesOnElement, loadAndCleanExtraMap } from './utils';
+import { createSingleMapCard } from './utils/lovelace/create-map-card';
+import { handleFirstUpdated } from './utils/lovelace/first-updated';
+import { _setUpPreview, previewHandler } from './utils/lovelace/preview-helper';
+import { createStubConfig } from './utils/lovelace/stub-config';
 
 @customElement('vehicle-status-card')
 export class VehicleStatusCard extends LitElement implements LovelaceCard {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editor/editor');
     return document.createElement('vehicle-status-card-editor');
   }
 
   public static getStubConfig = async (hass: HomeAssistant): Promise<VehicleStatusCardConfig> => {
-    const DEFAULT_CONFIG = await getDefaultConfig(hass);
+    const DEFAULT_CONFIG = await createStubConfig(hass);
     return {
       ...DEFAULT_CONFIG,
     };
@@ -107,7 +109,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   protected async willUpdate(changedProps: PropertyValues): Promise<void> {
     super.willUpdate(changedProps);
     if (changedProps.has('_config') && !this._buttonReady) {
-      await HaHelp.handleFirstUpdated(this);
+      await handleFirstUpdated(this);
     }
     if (
       changedProps.has('_config') &&
@@ -131,7 +133,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    HaHelp._setUpPreview(this);
+    _setUpPreview(this);
   }
 
   private createSingleMapCard() {
@@ -158,7 +160,8 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
     // Always configure the card preview when there are config changes
     if (changedProps.has('_config') && this._currentPreview !== null) {
       console.log('Reconfiguring card preview');
-      HaHelp.previewHandler(this._currentPreview, this);
+
+      previewHandler(this._currentPreview, this);
     }
     if (changedProps.has('_config') && this._config.active_group !== undefined && this.isEditorPreview) {
       // If active group is set, show the group indicator in the card

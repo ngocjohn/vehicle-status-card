@@ -6,8 +6,9 @@ import memoizeOne from 'memoize-one';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { CardItemConfig, DefaultCardConfig, HomeAssistant } from '../../types';
-import { processCardItemEntities } from '../../utils/process-editor-entities';
+import { HomeAssistant } from '../../ha';
+import { CardItemConfig, DefaultCardConfig } from '../../types/config';
+import { processCardItemEntities } from '../../utils/editor/process-editor-entities';
 
 export const defaultCardSchema = [
   {

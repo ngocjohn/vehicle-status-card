@@ -7,10 +7,9 @@ import { customElement, state, property } from 'lit/decorators.js';
 // CSS
 import cardcss from '../../css/card.css';
 // Utils
-import { hasTemplate, HomeAssistant, IndicatorConfig } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
+import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
+import { hasItemAction, IndicatorItemConfig } from '../../types/config';
 import { addActions } from '../../utils';
-import { hasActions } from '../../utils/ha-helper';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -18,7 +17,7 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 @customElement('vsc-indicator-single')
 export class VscIndicatorSingle extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) indicator!: IndicatorConfig;
+  @property({ attribute: false }) indicator!: IndicatorItemConfig;
 
   @state() _visibility: boolean = true;
   @state() private _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
@@ -145,7 +144,7 @@ export class VscIndicatorSingle extends LitElement {
 
   private _setEventListeners(): void {
     const actionConfig = this.indicator.action_config ?? {};
-    if (hasActions(actionConfig)) {
+    if (hasItemAction(actionConfig)) {
       const config = { ...actionConfig, entity: this.indicator.entity };
       const actionEl = this.shadowRoot?.getElementById('single-action') as HTMLElement;
       addActions(actionEl, config);

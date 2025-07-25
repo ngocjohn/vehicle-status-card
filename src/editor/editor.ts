@@ -6,9 +6,11 @@ import { repeat } from 'lit/directives/repeat.js';
 import { CARD_VERSION, ICON, SECTION } from '../const/const';
 // Import styles
 import editorcss from '../css/editor.css';
-import { HomeAssistant, VehicleStatusCardConfig, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../types';
+import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
 // Import all components
 import './components/';
+import { VehicleStatusCardConfig } from '../types/config';
+import { SectionOrder } from '../types/section';
 import { loadHaComponents, stickyPreview, Create } from '../utils';
 import {
   PanelImagesEditor,
@@ -458,7 +460,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
           (section: string) => section,
           (section: string, index: number) => html` <div class="item-config-row" data-index="${index}">
             <div class="handle">
-              <ha-icon-button class="action-icon" .path=${ICON.DRAG}></ha-icon-button>
+              <ha-icon-button .path=${ICON.DRAG}></ha-icon-button>
             </div>
             <div class="item-content">
               <div class="primary">${section.replace(/_/g, ' ').toUpperCase()}</div>
@@ -563,7 +565,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
       if (configIndex === 'hide') {
         const sectionOrder = [...(this._config.layout_config?.section_order || [])];
         const updatedOrder = this._setOrderList(newValue, sectionOrder);
-        layoutConfig.section_order = updatedOrder;
+        layoutConfig.section_order = updatedOrder as SectionOrder[];
         hiddenChanged = true;
       }
       updates.layout_config = layoutConfig;
