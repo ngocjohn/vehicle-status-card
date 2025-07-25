@@ -4,6 +4,9 @@ import { TireEntityConfig, TireTemplateConfig } from '../../types/config';
 
 const DEFAULT_TIRE_ENTITY: TireEntityConfig = {
   entity: '',
+  attribute: '',
+  name: '',
+  color: '',
 };
 
 export const DEFAULT_TIRE_CONFIG: TireTemplateConfig = {

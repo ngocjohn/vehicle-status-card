@@ -43,7 +43,7 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
 
     const customCard = (await createCardElement(hass, btnCrd.custom_card)) || [];
 
-    const tireCard = (await getTireCard(hass, btnCrd.tire_card ?? DEFAULT_TIRE_CONFIG)) || ({} as TireEntity);
+    const tireCard = getTireCard(hass, btnCrd.tire_card ?? DEFAULT_TIRE_CONFIG) || ({} as TireEntity);
 
     buttonCardItem.push({
       button: buttonDetails,
@@ -52,7 +52,7 @@ export async function getButtonCard(hass: HomeAssistant, buttonConfig: ButtonCar
       custom_card: customCard,
       default_card: btnCrd.default_card || [],
       hide_button: btnCrd.hide_button || false,
-      tire_card: tireCard,
+      tire_card: tireCard as TireEntity,
     });
   }
 

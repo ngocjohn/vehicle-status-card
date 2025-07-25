@@ -3,7 +3,7 @@
  */
 
 export type TireEntityConfig = {
-  entity: string;
+  entity?: string;
   attribute?: string;
   name?: string;
   color?: string;
