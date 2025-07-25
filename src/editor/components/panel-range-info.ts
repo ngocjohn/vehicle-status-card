@@ -10,27 +10,24 @@ import { ICON } from '../../const/const';
 import './sub-panel-yaml';
 import editorcss from '../../css/editor.css';
 import {
-  HomeAssistant,
-  VehicleStatusCardConfig,
-  RangeInfoConfig,
-  RangeItemConfig,
+  findBatteryChargingEntity,
+  findPowerEntities,
   fireEvent,
-  Threshold,
-} from '../../types';
+  getEntitiesByDomain,
+  hasPercent,
+  HomeAssistant,
+} from '../../ha';
+import { RangeInfoConfig, RangeItemConfig, Threshold, VehicleStatusCardConfig } from '../../types/config';
 import {
   colorToRgb,
   createRandomPallete,
-  findBatteryChargingEntity,
-  findEntitiesByDomain,
-  findPowerEntities,
   generateColorBlocks,
   generateGradient,
   getColorForLevel,
   getNormalizedValue,
   getRandomHexColor,
-  hasPercent,
-} from '../../utils';
-import * as Create from '../../utils/create';
+} from '../../utils/colors';
+import * as Create from '../../utils/editor/create';
 import { VehicleStatusCardEditor } from '../editor';
 import { RANGE_ACTIONS } from '../editor-const';
 import {
@@ -359,7 +356,7 @@ export class PanelRangeInfo extends LitElement {
         const entities = Object.values(this.hass.states);
 
         const energyEntity = [
-          ...(findEntitiesByDomain(this.hass, 50, ['number']) || []),
+          ...(getEntitiesByDomain(this.hass.states, 50, ['number']) || []),
           ...(findPowerEntities(this.hass, entities) || []),
         ].map((entity) => {
           if (typeof entity === 'object') {

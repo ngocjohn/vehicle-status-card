@@ -1,5 +1,4 @@
 import { mdiCodeBracesBox, mdiDelete, mdiEye, mdiGrid, mdiImagePlus, mdiListBoxOutline, mdiPlus } from '@mdi/js';
-import { EntityConfig } from 'custom-card-helpers';
 import { debounce } from 'es-toolkit';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
@@ -11,11 +10,12 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { VehicleStatusCardConfig, ImageConfig, HomeAssistant, fireEvent } from '../../types';
-import { EntitiesEditorEvent } from '../../types/ha-frontend/data/image';
-import { processEditorEntities, showConfirmDialog } from '../../utils';
-import { VicTab } from '../../utils/create';
-import { uploadImage } from '../../utils/ha-helper';
+import { EntitiesEditorEvent, fireEvent, HomeAssistant } from '../../ha';
+import { EntityConfig, ImageConfig, VehicleStatusCardConfig } from '../../types/config';
+import { VicTab } from '../../utils/editor/create';
+import { processEditorEntities } from '../../utils/editor/process-editor-entities';
+import { showConfirmDialog } from '../../utils/editor/show-dialog-box';
+import { uploadImage } from '../../utils/editor/upload-image';
 import { VehicleStatusCardEditor } from '../editor';
 import { IMAGE_CONFIG_ACTIONS, IMAGE_ACTIONS } from '../editor-const';
 import { IMAGES_SLIDE_SCHEMA } from '../form';
@@ -297,7 +297,7 @@ export class PanelImagesEditor extends LitElement {
                         .naturalMenuWidth=${true}
                         @closed=${(ev: Event) => ev.stopPropagation()}
                       >
-                        <ha-icon-button class="action-icon" slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
+                        <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
                         ${actionMap.map(
                           (action) => html`
                             <mwc-list-item @click=${this.toggleAction(action.action, idx)} .graphic=${'icon'}>

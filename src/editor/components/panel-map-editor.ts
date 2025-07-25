@@ -1,20 +1,18 @@
-import { EntityConfig } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
+import { fireEvent, HomeAssistant, LovelaceCardConfig, LovelaceConfig } from '../../ha';
 import {
-  VehicleStatusCardConfig,
-  HomeAssistant,
-  fireEvent,
+  EntityConfig,
+  ExtraMapCardConfig,
+  MapEntityConfig,
   MiniMapConfig,
-  LovelaceConfig,
-  LovelaceCardConfig,
-} from '../../types';
-import { ExtraMapCardConfig, MapEntityConfig } from '../../types';
+  VehicleStatusCardConfig,
+} from '../../types/config';
 import { Create } from '../../utils';
 import { processConfigEntities } from '../../utils';
-import { _convertToExtraMapConfig } from '../../utils/ha-helper';
+import { _convertToExtraMapConfig } from '../../utils/lovelace/create-map-card';
 import { VehicleStatusCardEditor } from '../editor';
 import { ALERT_INFO } from '../editor-const';
 import { BASE_MAP_SCHEMA, MINI_MAP_LAYOUT_SCHEMA } from '../form';

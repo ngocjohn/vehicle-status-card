@@ -1,9 +1,7 @@
-import { hasAction } from 'custom-card-helpers';
-
-import { ButtonActionConfig } from '../types';
+import { ActionsSharedConfig, hasAction } from '../types/config/actions-config';
 type ActionType = 'double_tap' | 'hold' | 'tap';
 
-export function addActions(element: HTMLElement, config: ButtonActionConfig) {
+export function addActions(element: HTMLElement, config: ActionsSharedConfig) {
   const handler = new ActionHandler(element, config, sendActionEvent);
 
   element.addEventListener('pointerdown', handler.handleStart.bind(handler));
@@ -14,7 +12,7 @@ export function addActions(element: HTMLElement, config: ButtonActionConfig) {
   element.setAttribute('has-action', '');
 }
 
-function sendActionEvent(element: HTMLElement, config: ButtonActionConfig, action: ActionType) {
+function sendActionEvent(element: HTMLElement, config: ActionsSharedConfig, action: ActionType) {
   setTimeout(() => {
     const event = new CustomEvent('hass-action', { bubbles: true, composed: true, detail: { action, config } });
     element.dispatchEvent(event);
@@ -22,10 +20,10 @@ function sendActionEvent(element: HTMLElement, config: ButtonActionConfig, actio
 }
 
 class ActionHandler {
-  private config: ButtonActionConfig;
+  private config: ActionsSharedConfig;
   private element: HTMLElement;
   private lastTap: number;
-  private sendActionEvent: (element: HTMLElement, config: ButtonActionConfig, action: ActionType) => void;
+  private sendActionEvent: (element: HTMLElement, config: ActionsSharedConfig, action: ActionType) => void;
   private startTime: null | number;
   private tapTimeout: null | number;
   private isSwiping: boolean;
@@ -34,8 +32,8 @@ class ActionHandler {
 
   constructor(
     element: HTMLElement,
-    config: ButtonActionConfig,
-    sendActionEvent: (element: HTMLElement, config: ButtonActionConfig, action: ActionType) => void
+    config: ActionsSharedConfig,
+    sendActionEvent: (element: HTMLElement, config: ActionsSharedConfig, action: ActionType) => void
   ) {
     this.element = element;
     this.config = config;

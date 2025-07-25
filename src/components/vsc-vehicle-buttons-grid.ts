@@ -10,9 +10,10 @@ import swipercss from 'swiper/swiper-bundle.css';
 
 // local
 import cardstyles from '../css/card.css';
-import { ButtonCardEntity, HomeAssistant, LayoutConfig, VehicleStatusCardConfig } from '../types';
-import { VehicleStatusCard } from '../vehicle-status-card';
+import { HomeAssistant } from '../ha';
 import './shared/vsc-button-single';
+import { ButtonCardEntity, LayoutConfig, VehicleStatusCardConfig } from '../types/config';
+import { VehicleStatusCard } from '../vehicle-status-card';
 
 @customElement('vehicle-buttons-grid')
 export class VehicleButtonsGrid extends LitElement {

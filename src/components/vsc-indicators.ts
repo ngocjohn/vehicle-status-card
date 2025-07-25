@@ -4,11 +4,11 @@ import { customElement, state, property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import cardcss from '../css/card.css';
-import { HomeAssistant, IndicatorGroupConfig, VehicleStatusCardConfig } from '../types';
+import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
+import { IndicatorGroupConfig, VehicleStatusCardConfig } from '../types/config';
 // components items
 import './shared/vsc-indicator-single';
 import './shared/vsc-indicator-group-item';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../types';
 import { VscIndicatorGroupItem } from './shared/vsc-indicator-group-item';
 
 const TEMPLATE_KEYS = ['color', 'visibility'] as const;

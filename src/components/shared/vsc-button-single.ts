@@ -7,16 +7,16 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 // styles
 import cardstyles from '../../css/card.css';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, HomeAssistant } from '../../ha';
 // local
-import { BUTTON_LAYOUT, ButtonCardEntityItem, HomeAssistant } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate } from '../../types';
-import { addActions, strStartsWith } from '../../utils';
-import { hasActions } from '../../utils/ha-helper';
+import { ButtonCardEntityItem, hasItemAction } from '../../types/config';
+import { strStartsWith } from '../../utils';
+import { addActions } from '../../utils/tap-action';
 import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
 
 const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template', 'notify_color', 'notify_icon'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
-
+type BUTTON_LAYOUT = 'horizontal' | 'vertical';
 @customElement('vsc-button-single')
 export class VehicleButtonSingle extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -111,7 +111,7 @@ export class VehicleButtonSingle extends LitElement {
       return;
     }
     const actionConfig = this._buttonConfig.button?.button_action || {};
-    if (hasActions(actionConfig)) {
+    if (hasItemAction(actionConfig)) {
       const actionEl = this.shadowRoot?.getElementById('actionBtn') as HTMLElement;
       addActions(actionEl, actionConfig);
     }

@@ -3,9 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 
 // styles
 import editorcss from '../../css/editor.css';
+import { HomeAssistant } from '../../ha';
 // local
-import { HomeAssistant } from '../../types';
-import { _dispatchEvent } from '../../utils';
 
 @customElement('vsc-sub-panel-yaml')
 export class SubPanelYaml extends LitElement {
@@ -63,23 +62,22 @@ export class SubPanelYaml extends LitElement {
       index: this.configIndex,
     };
     // Dispatch a custom event with the updated configuration
-    _dispatchEvent(this, 'yaml-config-changed', detail);
 
-    // const event = new CustomEvent('yaml-config-changed', {
-    //   detail: {
-    //     ...detail,
-    //     key: this.configKey,
-    //     index: this.configIndex,
-    //   },
-    //   composed: true,
-    //   bubbles: true,
-    // });
+    const event = new CustomEvent('yaml-config-changed', {
+      detail,
+      composed: true,
+      bubbles: true,
+    });
 
-    // this.dispatchEvent(event);
+    this.dispatchEvent(event);
   }
 
   private _closeEditor(): void {
     // Dispatch a custom event to close the editor
-    _dispatchEvent(this, 'close-editor');
+    const event = new CustomEvent('close-editor', {
+      composed: true,
+      bubbles: true,
+    });
+    this.dispatchEvent(event);
   }
 }

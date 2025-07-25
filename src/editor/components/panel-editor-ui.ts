@@ -5,11 +5,11 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import { HomeAssistant, VehicleStatusCardConfig, LovelaceConfig, LovelaceCardConfig } from '../../types';
-import { fireEvent, HASSDomEvent } from '../../types/ha-frontend/fire-event';
+import { fireEvent, HASSDomEvent, HomeAssistant, LovelaceCardConfig, LovelaceConfig } from '../../ha';
+import '../../utils/editor/vic-tab-bar';
+import '../../utils/editor/vic-tab';
+import { VehicleStatusCardConfig } from '../../types/config';
 import { VehicleStatusCardEditor } from '../editor';
-import './vic-tab-bar';
-import './vic-tab';
 export interface GUIModeChangedEvent {
   guiMode: boolean;
   guiModeAvailable: boolean;

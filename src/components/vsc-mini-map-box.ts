@@ -1,14 +1,16 @@
 import 'leaflet-providers/leaflet-providers.js';
+import { HomeAssistant } from 'custom-card-helpers';
 import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { SECTION, SECTION_ORDER } from '../const/const';
-import { Address, HomeAssistant, MapData } from '../types';
-import { _getMapAddress } from '../utils/ha-helper';
-import { showHaMapDialog } from '../utils/show-map-dialog';
+import { SECTION } from '../const/const';
+import { Address, MapData } from '../types/config';
+import { SectionOrder } from '../types/section';
+import { _getMapAddress } from '../utils/lovelace/create-map-card';
+import { showHaMapDialog } from '../utils/lovelace/show-map-dialog';
 import { VehicleStatusCard } from '../vehicle-status-card';
 export const DEFAULT_HOURS_TO_SHOW = 0;
 export const DEFAULT_ZOOM = 14;
@@ -267,10 +269,10 @@ export class MiniMapBox extends LitElement {
     // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const map_height = this.card._config.mini_map?.map_height ?? 150;
     const noHeader = this.card._config.layout_config?.hide.card_name || this.card._config.name?.trim() === '';
-    const section_order = this.card._config.layout_config?.section_order || [...SECTION_ORDER];
-    const firstItem = section_order[0] === SECTION.MINI_MAP && noHeader;
+    const section_order = this.card._config.layout_config?.section_order || [];
+    const firstItem = section_order[0] === SectionOrder.MINI_MAP && noHeader;
     const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
-    const single = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
+    const single = section_order.includes(SectionOrder.MINI_MAP) && section_order.length === 1;
 
     let maskImage = 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)';
 

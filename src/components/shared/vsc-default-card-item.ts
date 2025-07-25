@@ -5,9 +5,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 // Styles
 import cardstyles from '../../css/card.css';
 // Local
-import { CardItemConfig, HomeAssistant } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
-import { computeEntityName } from '../../utils';
+import { RenderTemplateResult, subscribeRenderTemplate, HomeAssistant } from '../../ha';
+import { computeEntityName } from '../../ha';
+import { CardItemConfig } from '../../types/config';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 
 const TEMPLATE_KEY = ['state_template'] as const;

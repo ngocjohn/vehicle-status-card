@@ -7,8 +7,8 @@ import swipercss from 'swiper/swiper-bundle.css';
 import { SwiperOptions } from 'swiper/types';
 
 import cardstyles from '../css/card.css';
-import { HomeAssistant, ImageConfig, VehicleStatusCardConfig } from '../types';
-import { computeImageUrl, ImageEntity } from '../types/ha-frontend/data/image';
+import { HomeAssistant, computeImageUrl, ImageEntity } from '../ha';
+import { VehicleStatusCardConfig, ImageConfig } from '../types/config';
 
 @customElement('images-slide')
 export class ImagesSlide extends LitElement {

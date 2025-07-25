@@ -3,9 +3,10 @@ import { css, CSSResultGroup, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { DEFAULT_HA_MAP_STYLES } from '../../const/maptiler-const';
-import { HomeAssistant, LovelaceCardConfig, MiniMapConfig, fireEvent } from '../../types';
-import { MapDialogParams } from '../../utils';
-import { createSingleMapCard } from '../../utils/ha-helper';
+import { HomeAssistant, LovelaceCardConfig, fireEvent } from '../../ha';
+import { MiniMapConfig } from '../../types/config';
+import { createSingleMapCard } from '../../utils/lovelace/create-map-card';
+import { MapDialogParams } from '../../utils/lovelace/show-map-dialog';
 
 @customElement('vsc-dialog-ha-map')
 export class VscDialogHaMap extends LitElement {

@@ -7,10 +7,9 @@ import { customElement, state, property } from 'lit/decorators.js';
 // CSS
 import cardcss from '../../css/card.css';
 // Utils
-import { hasTemplate, HomeAssistant, IndicatorConfig } from '../../types';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../../types';
-import { addActions } from '../../utils';
-import { hasActions } from '../../utils/ha-helper';
+import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
+import { hasItemAction, IndicatorItemConfig } from '../../types/config';
+import { addActions } from '../../utils/tap-action';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -18,7 +17,7 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 @customElement('vsc-indicator-group-item')
 export class VscIndicatorGroupItem extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) item!: IndicatorConfig;
+  @property({ attribute: false }) item!: IndicatorItemConfig;
 
   @state() private _itemTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
   @state() private _unsubItemRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
@@ -77,7 +76,7 @@ export class VscIndicatorGroupItem extends LitElement {
 
   public _setEventListeners(): void {
     const actionConfig = this.item.action_config ?? {};
-    if (hasActions(actionConfig)) {
+    if (hasItemAction(actionConfig)) {
       const config = { ...actionConfig, entity: this.item.entity };
       const actionEl = this.shadowRoot?.getElementById('group-item-action') as HTMLElement;
       addActions(actionEl, config);
