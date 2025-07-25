@@ -15,7 +15,7 @@ import { HomeAssistant } from '../../ha';
  * @param tireCard Tire card configuration
  * @returns Promise that resolves to a TireEntity object containing tire information
  */
-export async function getTireCard(hass: HomeAssistant, tireCard: TireTemplateConfig): Promise<TireEntity> {
+export function getTireCard(hass: HomeAssistant, tireCard: TireTemplateConfig): TireEntity {
   let tireCardItem: TireEntity = {} as TireEntity;
 
   const tires: TiresConfig = {
@@ -42,14 +42,19 @@ export async function getTireCard(hass: HomeAssistant, tireCard: TireTemplateCon
 }
 
 const createTireItem = (hass: HomeAssistant, key: keyof TireTemplateEntities, item: TireEntityConfig): TireItem => {
-  const { entity, attribute, name, color } = item;
+  const entity = item?.entity || '';
+  const stateObj = hass.states[entity];
+  const attribute = item?.attribute || '';
+  const name = item?.name || '';
+  const color = item?.color || '';
 
+  // If entity and entityStateObj is undefined, return a default TireItem
   const state =
-    entity && hass.states[entity]
+    entity && stateObj
       ? attribute
-        ? hass.formatEntityAttributeValue(hass.states[entity], attribute)
-        : hass.formatEntityState(hass.states[entity])
-      : 'N/A'; // If the entity exists but has no state, set 'N/A'
+        ? hass.formatEntityAttributeValue(stateObj, attribute)
+        : hass.formatEntityState(stateObj)
+      : 'N/A'; // If the entity does not exist, set 'N/A'
 
   const itemName = name || key.replace('_', ' ').replace(/^\w/, (c) => c.toUpperCase());
   return {
