@@ -39,3 +39,7 @@ export type ChargingConfig = Partial<{
   charge_target_visibility: string;
   charge_target_tooltip: boolean;
 }>;
+
+export const RANGE_INFO_TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
+
+export type RangeInfoTemplateKey = (typeof RANGE_INFO_TEMPLATE_KEYS)[number];

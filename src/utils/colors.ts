@@ -92,7 +92,15 @@ export const getMaxThreshold = (thresholds: Threshold[]): number => {
   const lastValue = sorted[sorted.length - 1].value;
   return lastValue;
 };
-
+/**
+ * Calculate normalized value based on thresholds.
+ * @param thresholds - Array of thresholds with value and color.
+ * @param value - The value to normalize.
+ * @param maxDefault - Default maximum value if no thresholds are provided.
+ * If not provided, it will use the maximum value from thresholds.
+ * If thresholds are empty and maxDefault is undefined, it will return the value capped at 100.
+ * @returns {number} - The normalized value as a percentage of the maximum threshold.
+ */
 export const getNormalizedValue = (thresholds: Threshold[], value: number, maxDefault: number | undefined): number => {
   if (!thresholds || (thresholds.length === 0 && maxDefault === undefined)) {
     return value > 100 ? 100 : value;

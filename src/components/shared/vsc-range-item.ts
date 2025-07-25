@@ -5,18 +5,24 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import cardcss from '../../css/card.css';
 import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate, hasTemplate, hasPercent } from '../../ha';
-import { ActionsSharedConfig, hasItemAction, RangeInfoConfig, RangeItemConfig } from '../../types/config';
+import {
+  ActionsSharedConfig,
+  hasItemAction,
+  RangeInfoConfig,
+  RangeItemConfig,
+  RangeInfoTemplateKey,
+  RANGE_INFO_TEMPLATE_KEYS,
+} from '../../types/config';
 import { generateColorBlocks, generateGradient, getColorForLevel, getNormalizedValue } from '../../utils/colors';
 import { addActions } from '../../utils/tap-action';
-const TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
-type TemplateKey = (typeof TEMPLATE_KEYS)[number];
+
 @customElement('vsc-range-item')
 export class VscRangeItem extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) rangeItem!: RangeInfoConfig;
 
-  @state() private _templateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
-  @state() private _unsubRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
+  @state() private _templateResults: Partial<Record<RangeInfoTemplateKey, RenderTemplateResult | undefined>> = {};
+  @state() private _unsubRenderTemplates: Map<RangeInfoTemplateKey, Promise<UnsubscribeFunc>> = new Map();
 
   static get styles(): CSSResultGroup {
     return [
@@ -184,12 +190,12 @@ export class VscRangeItem extends LitElement {
   }
 
   private async _tryConnect(): Promise<void> {
-    TEMPLATE_KEYS.forEach((key) => {
+    RANGE_INFO_TEMPLATE_KEYS.forEach((key) => {
       this._subscribeRenderTemplate(key);
     });
   }
 
-  private async _subscribeRenderTemplate(key: TemplateKey): Promise<void> {
+  private async _subscribeRenderTemplate(key: RangeInfoTemplateKey): Promise<void> {
     if (this._unsubRenderTemplates.get(key) !== undefined || !this.hass || !hasTemplate(this.rangeItem[key])) {
       return;
     }
@@ -237,12 +243,12 @@ export class VscRangeItem extends LitElement {
   }
 
   private async _tryDisconnect(): Promise<void> {
-    TEMPLATE_KEYS.forEach((key) => {
+    RANGE_INFO_TEMPLATE_KEYS.forEach((key) => {
       this._tryDisconnectKey(key);
     });
   }
 
-  private async _tryDisconnectKey(key: TemplateKey): Promise<void> {
+  private async _tryDisconnectKey(key: RangeInfoTemplateKey): Promise<void> {
     const unsubRenderTemplate = this._unsubRenderTemplates.get(key);
     if (!unsubRenderTemplate) {
       return;
