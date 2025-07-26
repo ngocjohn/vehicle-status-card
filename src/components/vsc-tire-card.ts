@@ -9,7 +9,7 @@ import { TIRE_BG } from '../const/img-const';
 // styles
 import cardstyles from '../css/card.css';
 import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
-import { TireEntity } from '../types/config/card/tire-card';
+import { TireEntity, TireItemKey } from '../types/config/card/tire-card';
 
 const TEMPLATE_KEYS = ['color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -19,9 +19,10 @@ export class VehicleTireCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) tireConfig!: TireEntity;
 
-  @state() private _templateResults: Record<string, Partial<Record<TemplateKey, RenderTemplateResult | undefined>>> =
-    {};
-  @state() private _unsubRenderTemplates: Record<string, Map<TemplateKey, Promise<UnsubscribeFunc>>> = {};
+  @state() private _templateResults: Partial<
+    Record<TireItemKey, Record<TemplateKey, RenderTemplateResult | undefined>>
+  > = {};
+  @state() private _unsubRenderTemplates: Partial<Record<TireItemKey, Map<TemplateKey, Promise<UnsubscribeFunc>>>> = {};
 
   static get styles(): CSSResultGroup {
     return [
@@ -164,7 +165,7 @@ export class VehicleTireCard extends LitElement {
     }
   }
 
-  private async _subscribeRenderTemplate(tire: string, key: TemplateKey): Promise<void> {
+  private async _subscribeRenderTemplate(tire: TireItemKey, key: TemplateKey): Promise<void> {
     if (!this.hass || !hasTemplate(this.tireConfig.tires[tire][key])) {
       return;
     }
