@@ -35,6 +35,7 @@ export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities
  */
 
 export const TireItems = ['front_left', 'front_right', 'rear_left', 'rear_right'] as const;
+
 export type TireItem = {
   state: string;
   name: string;
@@ -42,10 +43,12 @@ export type TireItem = {
 };
 export type TiresConfig = {
   front_left: TireItem;
-  rear_left: TireItem;
   front_right: TireItem;
+  rear_left: TireItem;
   rear_right: TireItem;
 };
+
+export type TireItemKey = (keyof TiresConfig)[number];
 
 /**
  * TireCardConfig Interface
