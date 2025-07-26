@@ -9,7 +9,7 @@ import type {
   MapEntityConfig,
 } from '../../types/config';
 
-import { HomeAssistant, LovelaceCardConfig } from '../../ha';
+import { HomeAssistant, LovelaceCard, LovelaceCardConfig } from '../../ha';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 import { createCardElement } from './create-card-element';
 
@@ -181,34 +181,20 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string): P
   }
 }
 
+const defaultMapEntity = (config: MiniMapConfig): MapEntityConfig => ({
+  entity: config.device_tracker,
+  color: config.path_color || '',
+  label_mode: config.label_mode,
+  attribute: config.attribute || '',
+  icon: '',
+  focus: true,
+});
+
 export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
   const useMaptiler = config?.maptiler_api_key && config?.maptiler_api_key !== '';
   const mapConfig = config as MiniMapConfig;
   let extra_entities = mapConfig.extra_entities || [];
-  // if (extra_entities?.length) {
-  //   // filter out the device tracker if it exists in extra_entities
-  //   extra_entities = extra_entities.filter((entity) => {
-  //     if (typeof entity === 'string') {
-  //       return entity !== deviceTrackerEntity;
-  //     } else if (typeof entity === 'object' && entity.entity) {
-  //       return entity.entity !== deviceTrackerEntity;
-  //     }
-  //     return true; // keep the entity if it's not a string or object with entity
-  //   });
-  // }
 
-  const deviceTracker = {
-    entity: mapConfig.device_tracker,
-    color: mapConfig.path_color || '',
-    label_mode: mapConfig.label_mode,
-    attribute: mapConfig.attribute || '',
-    icon: '',
-    focus: true,
-  };
-  // Ensure deviceTracker is included in extra_entities if not already present
-  if (extra_entities.length === 0) {
-    extra_entities = [deviceTracker];
-  }
   let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(
     mapConfig,
     [...(extra_entities as MapEntityConfig[])],
@@ -228,6 +214,9 @@ export const _convertToExtraMapConfig = (
   entities: (MapEntityConfig | string)[] = [],
   useMaptiler: boolean = false
 ): ExtraMapCardConfig | LovelaceCardConfig => {
+  if (!entities.length) {
+    entities = [defaultMapEntity(config)];
+  }
   const sharedConfig = {
     entities: entities,
     aspect_ratio: config.aspect_ratio,
@@ -240,7 +229,7 @@ export const _convertToExtraMapConfig = (
   const defaultMapConfig = {
     type: 'map',
     ...sharedConfig,
-  };
+  } as LovelaceCardConfig;
   const maptilerConfig = {
     type: 'custom:extra-map-card',
     api_key: config.maptiler_api_key,
@@ -248,6 +237,48 @@ export const _convertToExtraMapConfig = (
     history_period: config.history_period,
     use_more_info: config.use_more_info,
     ...sharedConfig,
-  };
+  } as ExtraMapCardConfig;
+
   return useMaptiler ? maptilerConfig : defaultMapConfig;
+};
+
+export const createMapCard = (config: MiniMapConfig): LovelaceCard | undefined => {
+  if (!config || !config.device_tracker) {
+    console.log('No device tracker set, cancelling map card creation');
+    return;
+  }
+  const useMapTiler = config.maptiler_api_key && config.maptiler_api_key !== '';
+  if (!useMapTiler) {
+    console.log('maptiler_api_key is not set, cancelling map card creation');
+    return;
+  }
+
+  const extraEntities = config.extra_entities || [];
+  const mapConfig = _convertToExtraMapConfig(config, extraEntities, useMapTiler) as ExtraMapCardConfig;
+  console.log('Creating map element...');
+  try {
+    const tag = 'extra-map-card';
+    if (customElements.get(tag)) {
+      // @ts-ignore
+      const element = document.createElement(tag, config) as LovelaceCard;
+      element.setConfig(mapConfig);
+      console.log('Map element already exists, reusing:', element);
+      return element;
+    }
+    // @ts-ignore
+    const element = document.createElement(tag) as LovelaceCard;
+    customElements.whenDefined(tag).then(() => {
+      try {
+        customElements.upgrade(element);
+        element.setConfig(mapConfig);
+      } catch (error: any) {
+        console.log(`Error setting config for ${tag}:`, error.message);
+      }
+    });
+    console.log('Map element created:', element);
+    return element;
+  } catch (err) {
+    console.error('Error creating map card:', err);
+    return undefined;
+  }
 };
