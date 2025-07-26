@@ -5,10 +5,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 // Styles
 import cardstyles from '../../css/card.css';
 // Local
-import { RenderTemplateResult, subscribeRenderTemplate, HomeAssistant } from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, HomeAssistant, fireEvent } from '../../ha';
 import { computeEntityName } from '../../ha';
 import { CardItemConfig } from '../../types/config';
-import { VehicleStatusCard } from '../../vehicle-status-card';
 
 const TEMPLATE_KEY = ['state_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEY)[number];
@@ -16,9 +15,7 @@ type TemplateKey = (typeof TEMPLATE_KEY)[number];
 @customElement('vsc-default-card-item')
 export class VehicleDefaultCardItem extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) public _card!: VehicleStatusCard;
-  @property({ attribute: false }) public defaultCardItem!: CardItemConfig;
-  @property({ type: Boolean }) lastItem = false;
+  @property({ attribute: false }) private defaultCardItem!: CardItemConfig;
   @property({ type: Boolean }) stateColor = false;
 
   @state() private _defaultCardItemsTemplate: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
@@ -30,8 +27,6 @@ export class VehicleDefaultCardItem extends LitElement {
         .data-row {
           display: flex;
           justify-content: space-between;
-          padding: var(--vic-gutter-gap);
-          border-bottom: 1px solid #444;
           overflow: hidden;
         }
 
@@ -61,23 +56,19 @@ export class VehicleDefaultCardItem extends LitElement {
           height: 24px;
           cursor: pointer;
         }
-        .data-row[last-item] {
-          border-bottom: none;
-          padding-bottom: 0;
-        }
       `,
       cardstyles,
     ];
   }
 
-  connectedCallback(): void {
+  connectedCallback() {
     super.connectedCallback();
     this._tryConnect();
   }
 
-  disconnectedCallback(): void {
-    this._tryDisconnect();
+  disconnectedCallback() {
     super.disconnectedCallback();
+    this._tryDisconnect();
   }
 
   protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
@@ -191,12 +182,12 @@ export class VehicleDefaultCardItem extends LitElement {
       : this.hass.formatEntityState(this.hass.states[entity]);
 
     return html`
-      <div class="data-row" ?last-item=${this.lastItem}>
+      <div class="data-row">
         <div>
           <state-badge
             class="data-icon"
             .hass=${this.hass}
-            @click=${() => this._card.toggleMoreInfo(entity)}
+            @click=${() => this._toggleMoreInfo(entity)}
             .stateObj=${this.hass.states[entity]}
             .overrideIcon=${icon}
             .stateColor=${this.stateColor}
@@ -205,10 +196,16 @@ export class VehicleDefaultCardItem extends LitElement {
 
           <span>${name}</span>
         </div>
-        <div class="data-value-unit" @click=${() => this._card.toggleMoreInfo(entity)}>
+        <div class="data-value-unit" @click=${() => this._toggleMoreInfo(entity)}>
           <span>${state}</span>
         </div>
       </div>
     `;
+  }
+
+  private _toggleMoreInfo(entity: string): void {
+    fireEvent(this, 'hass-more-info', {
+      entityId: entity,
+    });
   }
 }
