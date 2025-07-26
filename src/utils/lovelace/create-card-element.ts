@@ -1,7 +1,16 @@
-const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 import type { LovelaceCardConfig } from '../../ha';
 
 import { HomeAssistant } from '../../ha';
+
+const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
+// Load the helpers and ensure they are available
+let helpers;
+if ((window as any).loadCardHelpers) {
+  helpers = await (window as any).loadCardHelpers();
+} else if (HELPERS) {
+  helpers = HELPERS;
+}
+
 /**
  *
  * @param hass Home Assistant instance
@@ -14,14 +23,6 @@ export async function createCardElement(
 ): Promise<LovelaceCardConfig[] | void> {
   if (!cards) {
     return;
-  }
-
-  // Load the helpers and ensure they are available
-  let helpers;
-  if ((window as any).loadCardHelpers) {
-    helpers = await (window as any).loadCardHelpers();
-  } else if (HELPERS) {
-    helpers = HELPERS;
   }
 
   // Check if helpers were loaded and if createCardElement exists
@@ -44,3 +45,21 @@ export async function createCardElement(
   );
   return cardElements;
 }
+
+const VERTICAL_STACK_TAG = 'hui-vertical-stack-card';
+export const loadVerticalStackCard = async (): Promise<void> => {
+  if (customElements.get(VERTICAL_STACK_TAG)) {
+    // console.log('Vertical stack card already loaded');
+    return;
+  }
+
+  if (!customElements.get(VERTICAL_STACK_TAG)) {
+    helpers.createCardElement({
+      type: 'vertical-stack',
+      cards: [],
+    });
+  }
+  customElements.whenDefined(VERTICAL_STACK_TAG).then(() => {
+    console.log('Vertical stack card loaded');
+  });
+};
