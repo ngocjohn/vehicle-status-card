@@ -12,16 +12,19 @@ import cardcss from './css/card.css';
 // Ha utils
 import { fireEvent, forwardHaptic, HomeAssistant, LovelaceCard, LovelaceCardConfig, LovelaceCardEditor } from './ha';
 import {
+  ButtonCardConfig,
   ButtonCardEntity,
-  ButtonCardEntityItem,
   DefaultCardConfig,
   MapData,
   PREVIEW_TYPE,
   TireEntity,
+  TireTemplateConfig,
   VehicleStatusCardConfig,
 } from './types/config';
 import { isDarkColor, isEmpty, applyThemesOnElement, loadAndCleanExtraMap } from './utils';
-import { createSingleMapCard } from './utils/lovelace/create-map-card';
+import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
+import { createCustomCard } from './utils/lovelace/create-custom-card';
+import { createMapCard, createSingleMapCard } from './utils/lovelace/create-map-card';
 import { handleFirstUpdated } from './utils/lovelace/first-updated';
 import { _setUpPreview, previewHandler } from './utils/lovelace/preview-helper';
 import { createStubConfig } from './utils/lovelace/stub-config';
@@ -40,12 +43,17 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   };
 
   public setConfig(config: VehicleStatusCardConfig): void {
-    this._config = config;
+    const newConfig = JSON.parse(JSON.stringify(config)) as VehicleStatusCardConfig;
+    this._config = newConfig;
+    if (this._config.button_card && this._config.button_card.length) {
+      this._buttonCardConfigItem = this._config.button_card as ButtonCardConfig[];
+    }
   }
 
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
   @property({ attribute: false }) public layout?: string;
+  @property({ attribute: false }) public isPanel?: boolean;
 
   @state() public _currentPreview: PREVIEW_TYPE | null = null;
   @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
@@ -62,7 +70,6 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @state() public _buttonReady = false;
 
   @state() _connected = false;
-  @state() _singleLoaded = false;
 
   @query('vehicle-buttons-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query('images-slide') _imagesSlide!: ImagesSlide;
@@ -70,18 +77,22 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
   @query('vsc-indicators') _indicators!: VscIndicators;
   @query('mini-map-box') _miniMap!: MiniMapBox;
 
+  @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
+
+  @state() _buttonCardConfigItem!: ButtonCardConfig[]; // Button card configuration items
+
   set hass(hass: HomeAssistant) {
     this._hass = hass;
-    if (this._buttonReady && this._buttonCards) {
-      this._buttonCards.map((button) => {
-        const cardType = button.card_type;
-        if (cardType === 'custom') {
-          button.custom_card.map((card) => {
-            card.hass = hass;
-          });
-        }
-      });
-    }
+    // if (this._buttonReady && this._buttonCards) {
+    //   this._buttonCards.map((button) => {
+    //     const cardType = button.card_type;
+    //     if (cardType === 'custom') {
+    //       button.custom_card.map((card) => {
+    //         card.hass = hass;
+    //       });
+    //     }
+    //   });
+    // }
     if (this._singleMapCard && this._singleMapCard.length) {
       this._singleMapCard.map((card) => {
         card.hass = hass;
@@ -91,6 +102,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
   connectedCallback(): void {
     super.connectedCallback();
+    void loadVerticalStackCard();
     window.VehicleCard = this;
     if (this.isEditorPreview) {
       // console.log('Editor preview connected');
@@ -118,8 +130,8 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       this._config.mini_map?.maptiler_api_key
     ) {
       console.log('Creating single map card');
-      this._singleLoaded = false;
-      this.createSingleMapCard();
+      // this.createSingleMapCard();
+      this._createMapElement();
     }
 
     if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
@@ -152,6 +164,20 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         }
       }, 0);
     }, 0);
+  }
+
+  private _createMapElement(): void {
+    const miniMapConfig = this._config.mini_map;
+    const element = createMapCard(miniMapConfig);
+    if (element) {
+      if (this._hass) {
+        element.hass = this._hass;
+      }
+      element.isPanel = this.isPanel;
+      element.layout = this.layout;
+      this._extraMapCard = element;
+      console.log('Map element created:', this._extraMapCard);
+    }
   }
 
   protected async updated(changedProps: PropertyValues): Promise<void> {
@@ -189,8 +215,12 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       return this._renderCardPreview();
     }
 
-    if (this._config.mini_map?.single_map_card === true && this._singleMapCard.length) {
-      const mapCard = this._singleMapCard[0];
+    // if (this._config.mini_map?.single_map_card === true && this._singleMapCard.length) {
+    //   const mapCard = this._singleMapCard[0];
+    //   return html`${mapCard}`;
+    // }
+    if (this._config.mini_map?.single_map_card === true && this._extraMapCard) {
+      const mapCard = this._extraMapCard;
       return html`${mapCard}`;
     }
 
@@ -320,7 +350,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
 
   /* -------------------------- CUSTOM CARD RENDERING -------------------------- */
 
-  private _renderSelectedCard(): TemplateResult {
+  private _renderSelectedCard() {
     const index = this._activeCardIndex;
     if (index === null) return html``;
 
@@ -329,7 +359,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       default_card: defaultCard,
       custom_card: customCard,
       tire_card: tireCard = null,
-    } = this._buttonCards[index] as ButtonCardEntityItem;
+    } = this._buttonCardConfigItem[index] as ButtonCardConfig;
 
     const renderButton = (label: string, icon: string, action: () => void): TemplateResult => {
       return html`
@@ -359,7 +389,7 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
         : this._showWarning('Default card not found, configure it in the editor');
     } else if (cardType === 'custom') {
       selectedContent = customCard?.length
-        ? customCard.map((card) => html`<div class="added-cutom">${card}</div>`)
+        ? this._renderCustomCard(customCard)
         : this._showWarning('Custom card not found');
     } else if (cardType === 'tire') {
       selectedContent = this._renderTireCard(tireCard);
@@ -374,39 +404,76 @@ export class VehicleStatusCard extends LitElement implements LovelaceCard {
       </main>
     `;
   }
+  // private _renderSelectedCard(): TemplateResult {
+  //   const index = this._activeCardIndex;
+  //   if (index === null) return html``;
 
-  private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
-    const title = data.title;
-    const items = data.items;
-    const collapsed_items = data.collapsed_items;
+  //   const {
+  //     card_type: cardType = 'default',
+  //     default_card: defaultCard,
+  //     custom_card: customCard,
+  //     tire_card: tireCard = null,
+  //   } = this._buttonCards[index] as ButtonCardEntityItem;
 
-    const header = collapsed_items
-      ? html`<div class="subcard-icon" ?active=${collapsed_items} @click=${(ev: Event) => this.toggleSubCard(ev)}>
-          <ha-icon icon="mdi:chevron-up"></ha-icon>
-        </div>`
-      : html``;
+  //   const renderButton = (label: string, icon: string, action: () => void): TemplateResult => {
+  //     return html`
+  //       <ha-icon-button
+  //         class="click-shrink headder-btn"
+  //         .label=${label}
+  //         .path=${icon}
+  //         @click=${action}
+  //       ></ha-icon-button>
+  //     `;
+  //   };
+  //   const cardHeaderBox = html`
+  //     <div class="added-card-header">
+  //       ${renderButton('Close', ICON.CLOSE, () => (this._activeCardIndex = null))}
+  //       <div class="card-toggle">
+  //         ${renderButton('Previous', ICON.CHEVRON_LEFT, () => this.toggleCard('prev'))}
+  //         ${renderButton('Next', ICON.CHEVRON_RIGHT, () => this.toggleCard('next'))}
+  //       </div>
+  //     </div>
+  //   `;
 
-    return html`
-      <div class="default-card">
-        <div class="data-header">${title} ${header}</div>
-        <div class="data-box" ?active=${collapsed_items || !items.length}>
-          ${items.map((item, index) => {
-            const isLastItem = index === items.length - 1;
-            return html`<vsc-default-card-item
-              .lastItem=${isLastItem}
-              .key=${item.entity}
-              .hass=${this._hass}
-              .defaultCardItem=${item}
-              .stateColor=${data?.state_color || false}
-              ._card=${this as any}
-            ></vsc-default-card-item>`;
-          })}
-        </div>
-      </div>
-    `;
+  //   let selectedContent: unknown = nothing;
+
+  //   if (cardType === 'default') {
+  //     selectedContent = defaultCard?.length
+  //       ? defaultCard.map((card) => this._renderDefaultCardItems(card))
+  //       : this._showWarning('Default card not found, configure it in the editor');
+  //   } else if (cardType === 'custom') {
+  //     selectedContent = customCard?.length
+  //       ? customCard.map((card) => html`<div class="added-cutom">${card}</div>`)
+  //       : this._showWarning('Custom card not found');
+  //   } else if (cardType === 'tire') {
+  //     selectedContent = this._renderTireCard(tireCard);
+  //   }
+
+  //   return html`
+  //     <main id="cards-wrapper">
+  //       ${cardHeaderBox}
+  //       <section class="card-element">
+  //         <div class="added-card">${selectedContent}</div>
+  //       </section>
+  //     </main>
+  //   `;
+  // }
+
+  private _renderCustomCard(cards: LovelaceCardConfig[]) {
+    const element = createCustomCard(cards);
+    if (element) {
+      if (this._hass) {
+        element.hass = this._hass;
+      }
+    }
+    return html`${element}`;
   }
 
-  private _renderTireCard(tireConfig: TireEntity | null): TemplateResult {
+  private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
+    return html` <vsc-default-card .hass=${this._hass} ._data=${data}></vsc-default-card> `;
+  }
+
+  private _renderTireCard(tireConfig: TireTemplateConfig | TireEntity | null): TemplateResult {
     if (!tireConfig) {
       return html`<div class="error">Tire configuration not available</div>`;
     }
