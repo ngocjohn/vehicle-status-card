@@ -1,4 +1,3 @@
-import { HomeAssistant } from 'custom-card-helpers';
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -15,7 +14,7 @@ import editorcss from '../../css/editor.css';
 import { PanelBaseButton } from '../../editor/components/panel-base-button';
 import { PanelDefaultCard } from '../../editor/components/panel-default-card-category';
 import { PanelTireConfig } from '../../editor/components/panel-tire-config';
-import { fireEvent } from '../../ha';
+import { fireEvent, HomeAssistant } from '../../ha';
 import {
   VehicleStatusCardConfig,
   DefaultCardConfig,

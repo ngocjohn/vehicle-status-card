@@ -95,3 +95,13 @@ export interface ButtonCardEntityItem {
   tire_card?: TireEntity;
 }
 export type ButtonCardEntity = ButtonCardEntityItem[];
+
+export const BUTTON_TEMPLATE_KEYS = [
+  'state_template',
+  'notify',
+  'color',
+  'picture_template',
+  'notify_color',
+  'notify_icon',
+] as const;
+export type ButtonTemplateKey = (typeof BUTTON_TEMPLATE_KEYS)[number];

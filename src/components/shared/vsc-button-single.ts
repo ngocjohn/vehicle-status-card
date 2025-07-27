@@ -1,5 +1,4 @@
 // External
-import { forwardHaptic } from 'custom-card-helpers';
 import { HassEntity, UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -7,28 +6,29 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 // styles
 import cardstyles from '../../css/card.css';
-import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, HomeAssistant } from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, HomeAssistant, forwardHaptic } from '../../ha';
+import { hasItemAction } from '../../types/config';
 // local
-import { ButtonCardEntityItem, hasItemAction } from '../../types/config';
+import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../types/config/card/button';
 import { strStartsWith } from '../../utils';
-import { addActions } from '../../utils/tap-action';
-import { VehicleButtonsGrid } from '../vsc-vehicle-buttons-grid';
+import { addActions } from '../../utils/lovelace/tap-action';
+import { VehicleButtonsGrid } from '../vsc-button-grid';
 
-const TEMPLATE_KEYS = ['state_template', 'notify', 'color', 'picture_template', 'notify_color', 'notify_icon'] as const;
-type TemplateKey = (typeof TEMPLATE_KEYS)[number];
-type BUTTON_LAYOUT = 'horizontal' | 'vertical';
+type TemplateResults = Partial<Record<ButtonTemplateKey, RenderTemplateResult | undefined>>;
+
 @customElement('vsc-button-single')
 export class VehicleButtonSingle extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) _card!: VehicleButtonsGrid;
-  @property({ attribute: false }) _buttonConfig!: ButtonCardEntityItem;
+  @property({ attribute: false }) _buttonConfig!: ButtonCardConfig;
   @property({ attribute: false }) _index!: number;
-  @property({ attribute: 'layout', type: String }) layout?: BUTTON_LAYOUT;
+  @property({ attribute: 'transparent', type: Boolean, reflect: true }) public transparent!: boolean;
+  @property({ attribute: 'vertical', type: Boolean, reflect: true }) public vertical!: boolean;
   @property({ attribute: false }) _entityStateObj?: HassEntity;
 
-  @state() private _templateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
+  @state() private _templateResults?: TemplateResults;
 
-  @state() private _unsubRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
+  @state() private _unsubRenderTemplates: Map<ButtonTemplateKey, Promise<UnsubscribeFunc>> = new Map();
   @state() private _iconStyle: Record<string, string | undefined> = {};
 
   @state() private _stateBadgeEl?: any;
@@ -110,7 +110,7 @@ export class VehicleButtonSingle extends LitElement {
     if (!this.isAction) {
       return;
     }
-    const actionConfig = this._buttonConfig.button?.button_action || {};
+    const actionConfig = this._buttonConfig?.button_action || {};
     if (hasItemAction(actionConfig)) {
       const actionEl = this.shadowRoot?.getElementById('actionBtn') as HTMLElement;
       addActions(actionEl, actionConfig);
@@ -122,17 +122,17 @@ export class VehicleButtonSingle extends LitElement {
     return buttonType === 'action';
   }
 
-  public isTemplate(key: TemplateKey) {
+  public isTemplate(key: ButtonTemplateKey) {
     const button = this._buttonConfig.button;
     const value = key === 'state_template' ? button.secondary.state_template : button[key];
     return hasTemplate(value);
   }
 
-  private _getTemplateValue(key: TemplateKey) {
-    return this._templateResults[key]?.result;
+  private _getTemplateValue(key: ButtonTemplateKey) {
+    return this._templateResults?.[key]?.result;
   }
 
-  private _getValue(key: TemplateKey) {
+  private _getValue(key: ButtonTemplateKey) {
     const button = this._buttonConfig.button;
     switch (key) {
       case 'state_template':
@@ -170,12 +170,12 @@ export class VehicleButtonSingle extends LitElement {
   }
   private async _tryConnect(): Promise<void> {
     // console.log('Trying to connect');
-    TEMPLATE_KEYS.forEach((key) => {
+    BUTTON_TEMPLATE_KEYS.forEach((key) => {
       this._subscribeRenderTemplate(key);
     });
   }
 
-  private async _subscribeRenderTemplate(key: TemplateKey): Promise<void> {
+  private async _subscribeRenderTemplate(key: ButtonTemplateKey): Promise<void> {
     if (this._unsubRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(key)) {
       return;
     }
@@ -222,11 +222,11 @@ export class VehicleButtonSingle extends LitElement {
     }
   }
   private async _tryDisconnect(): Promise<void> {
-    TEMPLATE_KEYS.forEach((key) => {
+    BUTTON_TEMPLATE_KEYS.forEach((key) => {
       this._tryDisconnectKey(key);
     });
   }
-  private async _tryDisconnectKey(key: TemplateKey): Promise<void> {
+  private async _tryDisconnectKey(key: ButtonTemplateKey): Promise<void> {
     const unsubRenderTemplate = this._unsubRenderTemplates.get(key);
     if (!unsubRenderTemplate) {
       return;
@@ -251,6 +251,16 @@ export class VehicleButtonSingle extends LitElement {
         :host {
           --vic-notify-icon-color: var(--white-color);
         }
+        :host([vertical]) .click-container {
+          flex-direction: column;
+          text-align: center;
+          gap: 10px;
+        }
+        :host([transparent]) .grid-item {
+          background: none !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
 
         #actionBtn {
           cursor: pointer;
@@ -273,11 +283,11 @@ export class VehicleButtonSingle extends LitElement {
           height: 100%;
         }
 
-        .grid-item[transparent] {
+        /* .grid-item[transparent] {
           background: none !important;
           border: none !important;
           box-shadow: none !important;
-        }
+        } */
 
         .grid-item .click-container {
           position: relative;
@@ -291,11 +301,11 @@ export class VehicleButtonSingle extends LitElement {
           gap: 1em;
         }
 
-        .grid-item .click-container[vertical] {
+        /* .grid-item .click-container[vertical] {
           flex-direction: column;
           text-align: center;
           gap: 10px;
-        }
+        } */
 
         .grid-item .item-notify {
           position: absolute;
@@ -443,7 +453,8 @@ export class VehicleButtonSingle extends LitElement {
   protected render(): TemplateResult {
     const stateObj = this._entityStateObj;
     const { hideNotify } = this._card;
-    const { icon, primary, secondary } = this._buttonConfig.button;
+    const { primary, secondary } = this._buttonConfig.button;
+    const icon = this._buttonConfig.button.icon || '';
     const entity = secondary?.entity || '';
     const state = this._getValue('state_template');
     const notify = this._getValue('notify');
@@ -496,7 +507,7 @@ export class VehicleButtonSingle extends LitElement {
         ?transparent=${this._card.gridConfig.transparent}
       >
         <ha-ripple></ha-ripple>
-        <div class="click-container click-shrink" ?vertical=${this.layout === 'vertical'}>
+        <div class="click-container click-shrink">
           <div class="item-icon">
             <div class="icon-background">
               ${isPictureUrl ? html`<img class="icon-picture" src=${picture} />` : iconElement}

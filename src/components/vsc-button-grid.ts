@@ -1,6 +1,6 @@
 // utils
 import { chunk } from 'es-toolkit';
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 // swiper
@@ -8,20 +8,19 @@ import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 import swipercss from 'swiper/swiper-bundle.css';
 
-// local
-import cardstyles from '../css/card.css';
-import { HomeAssistant } from '../ha';
 import './shared/vsc-button-single';
-import { ButtonCardEntity, LayoutConfig, VehicleStatusCardConfig } from '../types/config';
+import { ButtonCardConfig, LayoutConfig, VehicleStatusCardConfig } from '../types/config';
+import { BaseElement } from '../utils/base-element';
+import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
-@customElement('vehicle-buttons-grid')
-export class VehicleButtonsGrid extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) card!: VehicleStatusCard;
-  @property({ attribute: false }) config!: VehicleStatusCardConfig;
-  @property({ type: Array }) buttons: ButtonCardEntity = [];
+@customElement('vsc-button-grid')
+export class VehicleButtonsGrid extends BaseElement {
+  @property({ attribute: false }) private _store!: Store;
+  @property({ attribute: false, type: Array }) private buttons!: ButtonCardConfig[];
 
+  @state() private card!: VehicleStatusCard;
+  @state() private config!: VehicleStatusCardConfig;
   @state() swiper?: Swiper;
   @state() private _cardCurrentSwipeIndex?: number;
   @state() public activeSlideIndex: number = 0;
@@ -32,6 +31,10 @@ export class VehicleButtonsGrid extends LitElement {
       this.initSwiper();
     }
     this._setUpButtonAnimation();
+  }
+
+  protected updated(changedProperties: PropertyValues): void {
+    super.updated(changedProperties);
   }
 
   private _setUpButtonAnimation(): void {
@@ -98,9 +101,8 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.buttons || this.buttons.length === 0) {
-      return html``;
-    }
+    this.card = this._store.card;
+    this.config = this._store.config;
 
     return html`
       <div id="button-swiper" style=${this.computeBaseStyles()}>
@@ -114,10 +116,11 @@ export class VehicleButtonsGrid extends LitElement {
   }
 
   private computeBaseStyles() {
-    const order = this.config.layout_config?.section_order || [];
-    const isMiniMapPrev = order.indexOf('buttons') - order.indexOf('mini_map') === 1;
+    const buttonOrder = this._store.sectionOrderMap.get('buttons');
+    const isSomeElementPrev = buttonOrder !== undefined && buttonOrder !== 0;
+    // If mini map is previous section, add padding to top
     return styleMap({
-      marginTop: !isMiniMapPrev ? 'var(--vic-card-padding)' : 'unset',
+      marginTop: isSomeElementPrev ? 'var(--vic-card-padding)' : 'unset',
     });
   }
 
@@ -127,7 +130,7 @@ export class VehicleButtonsGrid extends LitElement {
     const newButtons = buttons.map((button, index) => {
       return { ...button, index };
     });
-    const chunked = chunk(newButtons, total);
+    const chunked = chunk<ButtonCardConfig>(newButtons, total);
 
     return html`
       <div class="swiper-container">
@@ -149,14 +152,15 @@ export class VehicleButtonsGrid extends LitElement {
     `;
   }
 
-  private _renderButton(button: any, index: number): TemplateResult {
+  private _renderButton(button: ButtonCardConfig, index: number): TemplateResult {
     return html`<vsc-button-single
       id=${`button-id-${index}`}
       .hass=${this.hass}
       ._card=${this as any}
       ._buttonConfig=${button}
       ._index=${index}
-      .layout=${this.gridConfig.button_layout}
+      ?transparent=${this.gridConfig.transparent}
+      ?vertical=${this.gridConfig.button_layout === 'vertical'}
     ></vsc-button-single>`;
   }
 
@@ -244,6 +248,7 @@ export class VehicleButtonsGrid extends LitElement {
 
   static get styles(): CSSResultGroup {
     return [
+      super.styles,
       unsafeCSS(swipercss),
       css`
         #button-swiper {
@@ -280,13 +285,12 @@ export class VehicleButtonsGrid extends LitElement {
           opacity: 0.7;
         }
       `,
-      cardstyles,
     ];
   }
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'vehicle-buttons-grid': VehicleButtonsGrid;
+    'vsc-button-grid': VehicleButtonsGrid;
   }
 }
