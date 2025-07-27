@@ -1,7 +1,7 @@
 export * as Create from './editor/create';
 export * from './helpers';
 export * from './loader';
-export * from './tap-action';
+export * from './lovelace/tap-action';
 export * from './lovelace/apply-theme';
 export * from './editor/process-editor-entities';
 export * from './editor/show-dialog-box';
