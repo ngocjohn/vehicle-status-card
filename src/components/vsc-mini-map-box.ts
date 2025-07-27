@@ -1,28 +1,26 @@
 import 'leaflet-providers/leaflet-providers.js';
-import { HomeAssistant } from 'custom-card-helpers';
 import L from 'leaflet';
 import mapstyle from 'leaflet/dist/leaflet.css';
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
-import { SECTION } from '../const/const';
-import { Address, MapData } from '../types/config';
-import { SectionOrder } from '../types/section';
+import { Address, MapData, MiniMapConfig } from '../types/config';
+import { BaseElement } from '../utils/base-element';
 import { _getMapAddress } from '../utils/lovelace/create-map-card';
 import { showHaMapDialog } from '../utils/lovelace/show-map-dialog';
-import { VehicleStatusCard } from '../vehicle-status-card';
+
 export const DEFAULT_HOURS_TO_SHOW = 0;
 export const DEFAULT_ZOOM = 14;
 
 @customElement('mini-map-box')
-export class MiniMapBox extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) mapData?: MapData;
-  @property({ attribute: false }) card!: VehicleStatusCard;
-  @property({ type: Boolean }) isDark: boolean = false;
+export class MiniMapBox extends BaseElement {
+  @property({ attribute: false }) mapConfig!: MiniMapConfig;
+  @property({ attribute: 'is-dark', type: Boolean, reflect: true })
+  isDark!: boolean;
+  @property({ attribute: false }) private mapData?: MapData;
 
   @state() private map: L.Map | null = null;
+
   private latLon: L.LatLng | null = null;
   private marker: L.Marker | null = null;
 
@@ -34,27 +32,28 @@ export class MiniMapBox extends LitElement {
   private resizeObserver?: ResizeObserver;
 
   private get mapPopup(): boolean {
-    return this.card._config.mini_map?.enable_popup || false;
+    return this.mapConfig?.enable_popup || false;
   }
 
   private get zoom(): number {
-    return this.card._config.mini_map?.map_zoom || 14;
+    return this.mapConfig?.map_zoom || 14;
   }
 
   private get useMapTiler(): boolean {
-    return !!this.card._config.mini_map.maptiler_api_key;
+    return !!this.mapConfig.maptiler_api_key;
   }
 
   private get _deviceState(): string {
-    const stateObj = this.card._hass.states[this.card._config.mini_map?.device_tracker];
+    const deviceTracker = this.mapConfig?.device_tracker;
+    const stateObj = this.hass.states[deviceTracker];
     if (stateObj) {
-      return this.card._hass.formatEntityState(stateObj);
+      return this.hass.formatEntityState(stateObj);
     }
     return '';
   }
 
   private get _deviceNotInZone(): boolean {
-    return this.card._hass.states[this.card._config.mini_map?.device_tracker].state === 'not_home';
+    return this.hass.states[this.mapConfig.device_tracker]?.state === 'not_home' || false;
   }
 
   connectedCallback() {
@@ -75,14 +74,10 @@ export class MiniMapBox extends LitElement {
     this.resizeObserver?.disconnect();
   }
 
-  protected async firstUpdated(changedProperties: PropertyValues): Promise<void> {
-    super.updated(changedProperties);
-  }
-
   protected willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
-    if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map && this.mapData) {
-      // console.log('Map initialized, setting view...');
+    if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map) {
+      console.log('Map initialized, setting view...');
       this.latLon = this._getTargetLatLng(this.map);
       this.map.invalidateSize();
       this.map.setView(this.latLon, this.zoom);
@@ -91,9 +86,10 @@ export class MiniMapBox extends LitElement {
 
   protected async updated(changedProperties: PropertyValues): Promise<void> {
     super.updated(changedProperties);
+
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined && !this.map) {
       this.initMap();
-      if (this.card._config.mini_map?.hide_map_address !== true) {
+      if (this.mapConfig?.hide_map_address !== true) {
         this._getAddress();
       }
     }
@@ -104,7 +100,7 @@ export class MiniMapBox extends LitElement {
 
     if (changedProperties.has('hass') && this.hass && this.map && this.mapData) {
       const { lat, lon } = this.mapData;
-      const stateObj = this.hass.states[this.card._config.mini_map.device_tracker];
+      const stateObj = this.hass.states[this.mapConfig.device_tracker];
       if (stateObj) {
         const { latitude, longitude } = stateObj.attributes;
         if (lat !== latitude || lon !== longitude) {
@@ -126,7 +122,7 @@ export class MiniMapBox extends LitElement {
   private async _getAddress(): Promise<void> {
     const { lat, lon } = this.mapData!;
     // console.log('Getting adress...');
-    const address = await _getMapAddress(this.card, lat, lon);
+    const address = await _getMapAddress(this.mapConfig, lat, lon);
     if (address) {
       this._address = address;
       this.mapData!.address = address;
@@ -213,7 +209,7 @@ export class MiniMapBox extends LitElement {
   protected render(): TemplateResult {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     return html`
-      <div class="map-wrapper" ?safari=${isSafari} style=${this._computeMapStyle()}>
+      <div class="map-wrapper" ?safari=${isSafari} style=${`height: ${this.mapConfig?.map_height || 150}px;`}>
         <div id="overlay-container">
           <div class="reset-button" @click=${this.resetMap} .hidden=${this._locateIconVisible}>
             <ha-icon icon="mdi:compass"></ha-icon>
@@ -226,10 +222,11 @@ export class MiniMapBox extends LitElement {
   }
 
   private _renderAddress(): TemplateResult {
-    const hide = this.card._config.mini_map?.hide_map_address ?? false;
+    const config = this.mapConfig;
+    const hide = config?.hide_map_address ?? false;
     if (hide) return html``;
 
-    const useZoneName = this.card._config.mini_map?.use_zone_name ?? false;
+    const useZoneName = config?.use_zone_name ?? false;
 
     if (!this._addressReady) {
       return html`<div class="address-line loading"><span class="loader"></span></div>`;
@@ -237,6 +234,7 @@ export class MiniMapBox extends LitElement {
 
     const address = this._address || {};
     const inZone = !this._deviceNotInZone;
+    // const inZone = this.hass.states[config.device_tracker]?.state !== 'not_home';
 
     const addressContent =
       useZoneName && inZone
@@ -259,51 +257,26 @@ export class MiniMapBox extends LitElement {
   private _toggleDialog(): void {
     if (!this.mapPopup) return;
     const params = {
-      map_config: this.card._config.mini_map,
+      map_config: this.mapConfig,
       use_map_tiler: this.useMapTiler,
     };
     showHaMapDialog(this, params);
-  }
-
-  private _computeMapStyle() {
-    // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const map_height = this.card._config.mini_map?.map_height ?? 150;
-    const noHeader = this.card._config.layout_config?.hide.card_name || this.card._config.name?.trim() === '';
-    const section_order = this.card._config.layout_config?.section_order || [];
-    const firstItem = section_order[0] === SectionOrder.MINI_MAP && noHeader;
-    const lastItem = section_order[section_order.length - 1] === SECTION.MINI_MAP;
-    const single = section_order.includes(SectionOrder.MINI_MAP) && section_order.length === 1;
-
-    let maskImage = 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)';
-
-    if (lastItem && !firstItem) {
-      maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
-    } else if (firstItem && !lastItem) {
-      maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
-    } else if (single) {
-      maskImage = 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)';
-    } else {
-      maskImage;
-    }
-
-    const markerColor = this.isDark ? 'var(--accent-color)' : 'var(--primary-color)';
-    const markerFilter = this.isDark ? 'contrast(1.2) saturate(6) brightness(1.3)' : 'none';
-    const tileFilter = this.isDark
-      ? 'brightness(0.7) invert(1) contrast(2.8)  brightness(1.8) opacity(0.17) grayscale(1)'
-      : 'grayscale(1) contrast(1.1)';
-    return styleMap({
-      '--vic-map-marker-color': markerColor,
-      '--vic-marker-filter': markerFilter,
-      '--vic-map-tiles-filter': tileFilter,
-      '--vic-map-mask-image': maskImage,
-      height: `${map_height}px`,
-    });
   }
 
   static get styles(): CSSResultGroup {
     return [
       unsafeCSS(mapstyle),
       css`
+        :host {
+          --vic-map-marker-color: var(--primary-color);
+          --vic-marker-filter: none;
+          --vic-map-tiles-filter: grayscale(1) contrast(1.1);
+        }
+        :host([is-dark]) {
+          --vic-map-marker-color: var(--accent-color);
+          --vic-marker-filter: contrast(1.2) saturate(6) brightness(1.3);
+          --vic-map-tiles-filter: brightness(0.7) invert(1) contrast(2.8) brightness(1.8) opacity(0.17) grayscale(1);
+        }
         *:focus {
           outline: none;
         }

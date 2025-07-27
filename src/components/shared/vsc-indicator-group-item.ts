@@ -9,7 +9,7 @@ import cardcss from '../../css/card.css';
 // Utils
 import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
 import { hasItemAction, IndicatorItemConfig } from '../../types/config';
-import { addActions } from '../../utils/tap-action';
+import { addActions } from '../../utils/lovelace/tap-action';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
