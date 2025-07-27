@@ -407,6 +407,7 @@ header h1 {
   animation: slideUpDown 0.3s linear;
 }
 
+.preview-card vsc-default-card:not(:last-child),
 #cards-wrapper vsc-default-card:not(:last-child) {
   margin-bottom: var(--vic-gutter-gap);
 }
@@ -542,4 +543,32 @@ dialog::backdrop {
 
 .helper-active {
   border: solid 2px var(--accent-color);
+}
+
+.default-card {
+  align-items: center;
+  padding: var(--vic-card-padding);
+  background: var(--ha-card-background-color, var(--secondary-background-color));
+  box-shadow: var(--ha-card-box-shadow);
+  box-sizing: border-box;
+  border-radius: var(--ha-card-border-radius, 12px);
+  border-width: var(--ha-card-border-width, 1px);
+  border-style: solid;
+  border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+  transition: all 0.3s ease-out;
+  position: relative;
+}
+
+.default-card .data-header {
+  color: var(--ha-card-header-color, --primary-text-color);
+  font-family: var(--ha-card-header-font-family, inherit);
+  font-size: 1.3rem;
+  line-height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: auto;
+  min-height: 24px;
+
+  /* padding: 8px 0; */
 }
