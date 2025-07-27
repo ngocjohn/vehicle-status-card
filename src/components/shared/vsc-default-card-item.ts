@@ -1,28 +1,29 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-// Styles
-import cardstyles from '../../css/card.css';
 // Local
-import { RenderTemplateResult, subscribeRenderTemplate, HomeAssistant, fireEvent } from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, fireEvent } from '../../ha';
 import { computeEntityName } from '../../ha';
 import { CardItemConfig } from '../../types/config';
+import { BaseElement } from '../../utils/base-element';
 
 const TEMPLATE_KEY = ['state_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEY)[number];
 
-@customElement('vsc-default-card-item')
-export class VehicleDefaultCardItem extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) private defaultCardItem!: CardItemConfig;
-  @property({ type: Boolean }) stateColor = false;
+type TemplateResults = Partial<Record<TemplateKey, RenderTemplateResult | undefined>>;
 
-  @state() private _defaultCardItemsTemplate: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
+@customElement('vsc-default-card-item')
+export class VehicleDefaultCardItem extends BaseElement {
+  @property({ attribute: false }) private defaultCardItem!: CardItemConfig;
+  @property({ attribute: false, type: Boolean }) private stateColor = false;
+
+  @state() private _templateResults?: TemplateResults;
   @state() private _unsubRenderTemplate: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
 
   static get styles(): CSSResultGroup {
     return [
+      super.styles,
       css`
         .data-row {
           display: flex;
@@ -57,7 +58,6 @@ export class VehicleDefaultCardItem extends LitElement {
           cursor: pointer;
         }
       `,
-      cardstyles,
     ];
   }
 
@@ -79,8 +79,8 @@ export class VehicleDefaultCardItem extends LitElement {
     super.updated(changedProperties);
   }
 
-  private isTemplate(key: TemplateKey): boolean {
-    const value = this.defaultCardItem[key] || '';
+  private isTemplate(key: TemplateKey) {
+    const value = this.defaultCardItem?.[key];
     return value?.includes('{');
   }
 
@@ -91,7 +91,12 @@ export class VehicleDefaultCardItem extends LitElement {
   }
 
   private async _subscribeRenderTemplate(key: TemplateKey): Promise<void> {
-    if (this._unsubRenderTemplate.get(key) !== undefined || !this.hass || !this.isTemplate(key)) {
+    if (
+      this._unsubRenderTemplate.get(key) !== undefined ||
+      !this.hass ||
+      !this.defaultCardItem ||
+      !this.isTemplate(key)
+    ) {
       return;
     }
 
@@ -99,8 +104,8 @@ export class VehicleDefaultCardItem extends LitElement {
       const sub = subscribeRenderTemplate(
         this.hass.connection,
         (result) => {
-          this._defaultCardItemsTemplate = {
-            ...this._defaultCardItemsTemplate,
+          this._templateResults = {
+            ...this._templateResults,
             [key]: result,
           };
         },
@@ -127,8 +132,8 @@ export class VehicleDefaultCardItem extends LitElement {
           time: false,
         },
       };
-      this._defaultCardItemsTemplate = {
-        ...this._defaultCardItemsTemplate,
+      this._templateResults = {
+        ...this._templateResults,
         [key]: result,
       };
       this._unsubRenderTemplate.delete(key);
@@ -160,9 +165,9 @@ export class VehicleDefaultCardItem extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
-    if (!this.defaultCardItem) {
-      return html``;
+  protected render() {
+    if (!this.defaultCardItem || !this.hass) {
+      return nothing;
     }
 
     const item = this.defaultCardItem;
@@ -176,7 +181,7 @@ export class VehicleDefaultCardItem extends LitElement {
 
     // Fallback to default state if template state isn't available yet
     const state = item.state_template
-      ? this._defaultCardItemsTemplate.state_template?.result || item.state_template
+      ? this._templateResults?.state_template?.result
       : item.attribute && item.entity
       ? this.hass.formatEntityAttributeValue(this.hass.states[entity], item.attribute)
       : this.hass.formatEntityState(this.hass.states[entity]);
