@@ -15,11 +15,13 @@ export const BUTTON_GRID_SCHEMA = [
         name: 'rows',
         label: 'Rows',
         type: 'integer',
+        selector: { number: { mode: 'box', min: 1, step: 1 } },
       },
       {
         name: 'columns',
         label: 'Columns',
         type: 'integer',
+        selector: { number: { mode: 'box', min: 1, step: 1 } },
       },
     ],
   },
@@ -115,7 +117,6 @@ export const NAME_SCHEMA = [
     name: 'name',
     label: 'Card Name',
     required: false,
-    default: '',
     type: 'string',
   },
 ] as const;

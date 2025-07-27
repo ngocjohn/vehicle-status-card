@@ -49,6 +49,7 @@ export const MINI_MAP_LAYOUT_SCHEMA = [
             name: 'map_zoom',
             label: 'Map Zoom',
             default: 14,
+            valueMin: 0,
             type: 'integer',
           },
           {
