@@ -1,146 +1,25 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { CSSResultGroup, html, LitElement, TemplateResult, css, nothing } from 'lit';
+import { CSSResultGroup, html, TemplateResult, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { ifDefined } from 'lit/directives/if-defined.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 // local
 import { TIRE_BG } from '../const/img-const';
-// styles
-import cardstyles from '../css/card.css';
-import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
+import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
 import { TireEntity, TireItemKey } from '../types/config/card/tire-card';
+import { BaseElement } from '../utils/base-element';
 
 const TEMPLATE_KEYS = ['color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-tire-card')
-export class VehicleTireCard extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) tireConfig!: TireEntity;
+export class VehicleTireCard extends BaseElement {
+  @property({ attribute: false }) private tireConfig!: TireEntity;
 
   @state() private _templateResults: Partial<
     Record<TireItemKey, Record<TemplateKey, RenderTemplateResult | undefined>>
   > = {};
   @state() private _unsubRenderTemplates: Partial<Record<TireItemKey, Map<TemplateKey, Promise<UnsubscribeFunc>>>> = {};
-
-  static get styles(): CSSResultGroup {
-    return [
-      css`
-        .tyre-wrapper {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          aspect-ratio: 1;
-          transition: all 0.5s ease-in-out;
-        }
-
-        .tyre-toggle-btn {
-          position: absolute;
-          top: 0;
-          right: 0;
-          z-index: 2;
-          padding: var(--vic-card-padding);
-          opacity: 0.5;
-          cursor: pointer;
-          transition: opacity 0.3s;
-        }
-
-        .tyre-toggle-btn:hover {
-          opacity: 1;
-        }
-
-        /* TYRE WRAP ROTATED */
-        .tyre-wrapper[rotated='true'] {
-          transform: rotate(90deg);
-        }
-
-        .tyre-wrapper[rotated='true'] .tyre-box {
-          transform: rotate(-90deg);
-        }
-
-        .tyre-wrapper .background {
-          position: absolute;
-          width: var(--vic-tire-size, 100%);
-          height: var(--vic-tire-size, 100%);
-          z-index: 0;
-          top: var(--vic-tire-top, 50%);
-          left: var(--vic-tire-left, 50%);
-          transform: translate(-50%, -50%);
-          background-size: contain;
-          background-repeat: no-repeat;
-          overflow: hidden;
-          filter: drop-shadow(2px 4px 1rem #000000d8);
-        }
-
-        .tyre-wrapper .tyre-box {
-          position: absolute;
-          width: 35%;
-          height: 50%;
-          z-index: 1;
-          display: flex;
-          align-items: center;
-          flex-direction: column;
-          justify-content: center;
-          gap: 0.5rem;
-          text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
-          transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
-          scale: var(--vic-tire-value-size);
-        }
-
-        .tyre-value {
-          font-size: 1.5rem;
-          color: var(--primary-text-color);
-          text-align: center;
-          margin: 0;
-        }
-
-        .tyre-name {
-          color: var(--secondary-text-color);
-          text-align: left;
-          margin: 0;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          white-space: nowrap;
-        }
-
-        .tyre-info {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-          color: var(--secondary-text-color);
-          text-align: center;
-        }
-
-        *[tyre='frontleft'] {
-          top: 0%;
-          left: 0%;
-          /* transform: translate(-15%, -10%); */
-        }
-
-        *[tyre='frontright'] {
-          top: 0%;
-          right: 0%;
-          /* transform: translate(15%, -10%); */
-        }
-
-        *[tyre='rearleft'] {
-          bottom: 0%;
-          left: 0%;
-          /* transform: translate(-15%, 10%); */
-        }
-
-        *[tyre='rearright'] {
-          bottom: 0%;
-          right: 0%;
-          /* transform: translate(15%, 10%); */
-        }
-      `,
-      cardstyles,
-    ];
-  }
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -275,7 +154,7 @@ export class VehicleTireCard extends LitElement {
 
     return html`
       <div class="default-card">
-        ${ifDefined(tireCardTitle) ? html`<div class="data-header">${tireCardTitle}</div>` : nothing}
+        ${tireCardTitle ? html`<div class="data-header">${tireCardTitle}</div>` : nothing}
         <div
           .hidden=${hideRotationButton}
           class="tyre-toggle-btn click-shrink"
@@ -284,7 +163,7 @@ export class VehicleTireCard extends LitElement {
           <ha-icon icon="mdi:rotate-right-variant"></ha-icon>
         </div>
 
-        <div class="data-box tyre-wrapper" rotated=${isHorizontal} style=${styleMap(sizeStyle)}>
+        <div class="tyre-wrapper" rotated=${isHorizontal} style=${styleMap(sizeStyle)}>
           <div class="background" style="background-image: url(${background})"></div>
           ${Object.keys(tires).map((key) => {
             const { state, name } = tires[key];
@@ -307,6 +186,124 @@ export class VehicleTireCard extends LitElement {
 
     const isHorizontal = tyreWrapper.getAttribute('rotated') === 'true';
     tyreWrapper.setAttribute('rotated', isHorizontal ? 'false' : 'true');
+  }
+
+  static get styles(): CSSResultGroup {
+    return [
+      super.styles,
+      css`
+        .tyre-wrapper {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          aspect-ratio: 1;
+          transition: all 0.5s ease-in-out;
+        }
+
+        .tyre-toggle-btn {
+          position: absolute;
+          top: 0;
+          right: 0;
+          z-index: 2;
+          padding: var(--vic-card-padding);
+          opacity: 0.5;
+          cursor: pointer;
+          transition: opacity 0.3s;
+        }
+
+        .tyre-toggle-btn:hover {
+          opacity: 1;
+        }
+
+        /* TYRE WRAP ROTATED */
+        .tyre-wrapper[rotated='true'] {
+          transform: rotate(90deg);
+        }
+
+        .tyre-wrapper[rotated='true'] .tyre-box {
+          transform: rotate(-90deg);
+        }
+
+        .tyre-wrapper .background {
+          position: absolute;
+          width: var(--vic-tire-size, 100%);
+          height: var(--vic-tire-size, 100%);
+          z-index: 0;
+          top: var(--vic-tire-top, 50%);
+          left: var(--vic-tire-left, 50%);
+          transform: translate(-50%, -50%);
+          background-size: contain;
+          background-repeat: no-repeat;
+          overflow: hidden;
+          filter: drop-shadow(2px 4px 1rem #000000d8);
+        }
+
+        .tyre-wrapper .tyre-box {
+          position: absolute;
+          width: 35%;
+          height: 50%;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          flex-direction: column;
+          justify-content: center;
+          gap: 0.5rem;
+          text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+          transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
+          scale: var(--vic-tire-value-size);
+        }
+
+        .tyre-value {
+          font-size: 1.5rem;
+          color: var(--primary-text-color);
+          text-align: center;
+          margin: 0;
+        }
+
+        .tyre-name {
+          color: var(--secondary-text-color);
+          text-align: left;
+          margin: 0;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          white-space: nowrap;
+        }
+
+        .tyre-info {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
+          color: var(--secondary-text-color);
+          text-align: center;
+        }
+
+        *[tyre='frontleft'] {
+          top: 0%;
+          left: 0%;
+          /* transform: translate(-15%, -10%); */
+        }
+
+        *[tyre='frontright'] {
+          top: 0%;
+          right: 0%;
+          /* transform: translate(15%, -10%); */
+        }
+
+        *[tyre='rearleft'] {
+          bottom: 0%;
+          left: 0%;
+          /* transform: translate(-15%, 10%); */
+        }
+
+        *[tyre='rearright'] {
+          bottom: 0%;
+          right: 0%;
+          /* transform: translate(15%, 10%); */
+        }
+      `,
+    ];
   }
 }
 

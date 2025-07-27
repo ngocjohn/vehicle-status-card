@@ -14,7 +14,7 @@ import {
   RANGE_INFO_TEMPLATE_KEYS,
 } from '../../types/config';
 import { generateColorBlocks, generateGradient, getColorForLevel, getNormalizedValue } from '../../utils/colors';
-import { addActions } from '../../utils/tap-action';
+import { addActions } from '../../utils/lovelace/tap-action';
 
 @customElement('vsc-range-item')
 export class VscRangeItem extends LitElement {

@@ -25,7 +25,7 @@ type ImagesSwipeConfig = Partial<{
   hide_pagination: boolean;
 }>;
 
-type HideConfig = Partial<{
+export type HideConfig = Partial<{
   button_notify: boolean;
   buttons: boolean;
   images: boolean;
@@ -37,7 +37,7 @@ type HideConfig = Partial<{
 }>;
 
 type BUTTON_LAYOUT = 'horizontal' | 'vertical';
-type ButtonGridConfig = Partial<{
+export type ButtonGridConfig = Partial<{
   rows: number;
   columns: number;
   swipe: boolean;
