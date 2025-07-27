@@ -59,7 +59,4 @@ export const loadVerticalStackCard = async (): Promise<void> => {
       cards: [],
     });
   }
-  customElements.whenDefined(VERTICAL_STACK_TAG).then(() => {
-    console.log('Vertical stack card loaded');
-  });
 };

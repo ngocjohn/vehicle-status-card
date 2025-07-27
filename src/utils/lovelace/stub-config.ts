@@ -5,6 +5,8 @@ import { createButtonCard, generateButtonCardConfig } from './stub-config_button
 import { getIndicatorsConfig } from './stub-config_idicators';
 import { getRangeInfoConfig } from './stub-config_range';
 
+const STORAGE_STUB_CONFIG = 'vsc-stub-config';
+
 const GIT_ASSETS_URL =
   'https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/refs/heads/main/assets/sample-images/';
 const SAMPLE_IMAGES = ['sample-car-1.png', 'sample-car-2.png', 'sample-car-3.png'] as const;
@@ -79,5 +81,28 @@ export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStat
     clonedConfig.layout_config = layoutConfig;
   }
 
+  saveStubConfig(clonedConfig);
   return clonedConfig;
+};
+
+export const loadStubConfig = async (): Promise<VehicleStatusCardConfig | null> => {
+  const storedConfig = localStorage.getItem(STORAGE_STUB_CONFIG);
+  if (storedConfig) {
+    try {
+      console.log('Loading stub config from localStorage');
+      return JSON.parse(storedConfig) as VehicleStatusCardConfig;
+    } catch (error) {
+      console.error('Failed to parse stored stub config:', error);
+    }
+  }
+  return null;
+};
+
+export const saveStubConfig = async (config: VehicleStatusCardConfig): Promise<void> => {
+  try {
+    localStorage.setItem(STORAGE_STUB_CONFIG, JSON.stringify(config));
+    console.log('Stub config saved successfully.');
+  } catch (error) {
+    console.error('Failed to save stub config:', error);
+  }
 };

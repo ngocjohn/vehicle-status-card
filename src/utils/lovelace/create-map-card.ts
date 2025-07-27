@@ -10,7 +10,6 @@ import type {
 } from '../../types/config';
 
 import { HomeAssistant, LovelaceCard, LovelaceCardConfig } from '../../ha';
-import { VehicleStatusCard } from '../../vehicle-status-card';
 import { createCardElement } from './create-card-element';
 
 export const getMapData = (hass: HomeAssistant, config: VehicleStatusCardConfig): MapData | void => {
@@ -31,13 +30,15 @@ export const getMapData = (hass: HomeAssistant, config: VehicleStatusCardConfig)
 };
 
 export const _getMapAddress = memoizeOne(
-  async (card: VehicleStatusCard, lat: number, lon: number): Promise<Address | undefined> => {
-    if (card._config.layout_config?.hide?.map_address) return undefined;
+  async (config: MiniMapConfig, lat: number, lon: number): Promise<Address | undefined> => {
+    if (config?.hide_map_address === true) {
+      return undefined;
+    }
 
     // console.log('Getting map address');
 
-    const maptilerKey = card._config.mini_map?.maptiler_api_key;
-    const apiKey = card._config.mini_map?.google_api_key;
+    const maptilerKey = config?.maptiler_api_key;
+    const apiKey = config?.google_api_key;
 
     const address = maptilerKey
       ? await getAddressFromMapTiler(lat, lon, maptilerKey)
@@ -48,7 +49,7 @@ export const _getMapAddress = memoizeOne(
     if (!address) return undefined;
 
     let formattedAddress: string;
-    if (card._config.mini_map?.us_format) {
+    if (config?.us_format) {
       formattedAddress = `${address.streetNumber} ${address.streetName}`;
     } else {
       formattedAddress = `${address.streetName} ${address.streetNumber}`;
