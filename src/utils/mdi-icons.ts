@@ -16,11 +16,6 @@ import {
   mdiRestart,
 } from '@mdi/js';
 
-import { version } from '../../package.json';
-
-export const CARD_VERSION = `v${version}`;
-export const NAMESPACE_TITLE = 'Vehicle Status Card';
-
 export const ICON = {
   CLOSE: mdiClose,
   CODE_BRACES: mdiCodeBraces,
@@ -38,15 +33,3 @@ export const ICON = {
   THEME_LIGHT_DARK: mdiThemeLightDark,
   RESTART: mdiRestart,
 };
-
-export const enum SECTION {
-  INDICATORS = 'indicators',
-  RANGE_INFO = 'range_info',
-  IMAGES = 'images',
-  MINI_MAP = 'mini_map',
-  BUTTONS = 'buttons',
-  HEADER_INFO = 'header_info',
-  CARD_NAME = 'card_name',
-}
-
-export const SECTION_ORDER = [SECTION.HEADER_INFO, SECTION.IMAGES, SECTION.MINI_MAP, SECTION.BUTTONS];

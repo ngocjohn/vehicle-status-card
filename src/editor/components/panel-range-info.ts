@@ -6,9 +6,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 // utils
 import tinycolor from 'tinycolor2';
 
-import { ICON } from '../../const/const';
-import './sub-panel-yaml';
 import editorcss from '../../css/editor.css';
+import './sub-panel-yaml';
 import {
   findBatteryChargingEntity,
   findPowerEntities,
@@ -18,6 +17,7 @@ import {
   HomeAssistant,
 } from '../../ha';
 import { RangeInfoConfig, RangeItemConfig, Threshold, VehicleStatusCardConfig } from '../../types/config';
+import { ICON } from '../../utils';
 import {
   colorToRgb,
   createRandomPallete,

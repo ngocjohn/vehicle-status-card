@@ -3,12 +3,12 @@ import { cloneDeep } from 'es-toolkit';
 import { LitElement, html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { fireEvent, HASSDomEvent, HomeAssistant, LovelaceCardConfig, LovelaceConfig } from '../../ha';
+import { VehicleStatusCardConfig } from '../../types/config';
 import '../../utils/editor/vic-tab-bar';
 import '../../utils/editor/vic-tab';
-import { VehicleStatusCardConfig } from '../../types/config';
+import { ICON } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
 export interface GUIModeChangedEvent {
   guiMode: boolean;

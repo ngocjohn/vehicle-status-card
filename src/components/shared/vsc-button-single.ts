@@ -12,7 +12,7 @@ import { hasItemAction } from '../../types/config';
 import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../types/config/card/button';
 import { strStartsWith } from '../../utils';
 import { addActions } from '../../utils/lovelace/tap-action';
-import { VehicleButtonsGrid } from '../vsc-button-grid';
+import { VehicleButtonsGrid } from '../vsc-buttons-grid';
 
 type TemplateResults = Partial<Record<ButtonTemplateKey, RenderTemplateResult | undefined>>;
 

@@ -2,7 +2,7 @@ import { mdiClose } from '@mdi/js';
 import { css, CSSResultGroup, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import { DEFAULT_HA_MAP_STYLES } from '../../const/maptiler-const';
+import { DEFAULT_HA_MAP_STYLES } from '../../constants/maptiler-const';
 import { HomeAssistant, LovelaceCardConfig, fireEvent } from '../../ha';
 import { MiniMapConfig } from '../../types/config';
 import { createSingleMapCard } from '../../utils/lovelace/create-map-card';

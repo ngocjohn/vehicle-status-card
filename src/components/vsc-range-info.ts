@@ -1,20 +1,20 @@
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
-import cardcss from '../css/card.css';
+import { COMPONENT } from '../constants/const';
 import './shared/vsc-range-item';
-import { HomeAssistant } from '../ha';
 import { RangeInfoConfig } from '../types/config/card/range-info';
+import { BaseElement } from '../utils/base-element';
 
-@customElement('vsc-range-info')
-export class VscRangeInfo extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+@customElement(COMPONENT.RANGE_INFO)
+export class VscRangeInfo extends BaseElement {
   @property({ attribute: false }) rangeConfig!: RangeInfoConfig[];
   @property({ type: Boolean, reflect: true }) public row = false;
   @state() public _groupIndicatorActive: number | null = null;
 
   static get styles(): CSSResultGroup {
     return [
+      super.styles,
       css`
         .combined-info-box[row] {
           display: flex;
@@ -42,7 +42,6 @@ export class VscRangeInfo extends LitElement {
           transition-delay: 400ms;
         }
       `,
-      cardcss,
     ];
   }
 
@@ -63,11 +62,5 @@ export class VscRangeInfo extends LitElement {
 
   public _handleIndicatorClick(index: number | null): void {
     this._groupIndicatorActive = this._groupIndicatorActive === index ? null : index;
-  }
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'vsc-range-info': VscRangeInfo;
   }
 }

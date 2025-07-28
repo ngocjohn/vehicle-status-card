@@ -9,3 +9,4 @@ export * from './colors';
 export * from './lovelace/show-map-dialog';
 export * from './editor/process-config-entities';
 export * from './loader_extra_map';
+export * from './mdi-icons';
