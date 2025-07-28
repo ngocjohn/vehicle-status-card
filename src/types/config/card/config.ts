@@ -2,7 +2,7 @@ import { LovelaceCardConfig } from '../../../ha';
 import { EntityConfig } from '../entity-config';
 import { ButtonCardConfig } from './button';
 import { ImageConfig } from './images';
-import { IndicatorsConfig } from './indicators';
+import { IndicatorsConfig, IndicatorRow } from './indicators';
 import { LayoutConfig } from './layout';
 import { MiniMapConfig } from './mini-map';
 import { RangeInfoConfig } from './range-info';
@@ -17,6 +17,7 @@ export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   images?: ImageConfig[];
   mini_map: MiniMapConfig;
   indicators: IndicatorsConfig;
+  indicator_rows?: IndicatorRow[]; // Optional array of indicator rows
   layout_config: LayoutConfig;
   image_entities?: (EntityConfig | string)[];
 }
