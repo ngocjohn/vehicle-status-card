@@ -9,7 +9,6 @@ import '../../editor/components/panel-base-button';
 import '../../editor/components/panel-default-card-category';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { PanelBaseButton } from '../../editor/components/panel-base-button';
 import { PanelDefaultCard } from '../../editor/components/panel-default-card-category';
@@ -22,6 +21,7 @@ import {
   TireTemplateConfig,
   BaseButtonConfig,
 } from '../../types/config';
+import { ICON } from '../../utils';
 import { Create, showConfirmDialog } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
 import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS } from '../editor-const';

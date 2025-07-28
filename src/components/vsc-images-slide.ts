@@ -6,11 +6,12 @@ import { Autoplay, Pagination, EffectFade, EffectCoverflow } from 'swiper/module
 import swipercss from 'swiper/swiper-bundle.css';
 import { SwiperOptions } from 'swiper/types';
 
+import { COMPONENT } from '../constants/const';
 import cardstyles from '../css/card.css';
 import { HomeAssistant, computeImageUrl, ImageEntity } from '../ha';
 import { VehicleStatusCardConfig, ImageConfig } from '../types/config';
 
-@customElement('images-slide')
+@customElement(COMPONENT.IMAGES_SLIDE)
 export class ImagesSlide extends LitElement {
   @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
@@ -263,11 +264,5 @@ export class ImagesSlide extends LitElement {
         }
       `,
     ];
-  }
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'images-slide': ImagesSlide;
   }
 }

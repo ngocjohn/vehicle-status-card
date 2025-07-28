@@ -2,10 +2,10 @@ import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues }
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { fireEvent, HomeAssistant } from '../../ha';
 import { IndicatorGroupConfig, IndicatorItemConfig } from '../../types/config';
+import { ICON } from '../../utils';
 import { showPromptDialog } from '../../utils/editor/show-dialog-box';
 import { VehicleStatusCardEditor } from '../editor';
 import { mainGroupSchema, groupApparenceSchema, subGroupItemSchema } from '../form';

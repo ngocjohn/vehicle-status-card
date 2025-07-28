@@ -3,7 +3,7 @@ import { CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResu
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { CARD_VERSION, ICON, SECTION } from '../const/const';
+import { CARD_VERSION, SECTION } from '../constants/const';
 // Import styles
 import editorcss from '../css/editor.css';
 import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
@@ -11,7 +11,7 @@ import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '..
 import './components/';
 import { VehicleStatusCardConfig } from '../types/config';
 import { SectionOrder } from '../types/section';
-import { loadHaComponents, stickyPreview, Create } from '../utils';
+import { loadHaComponents, stickyPreview, Create, ICON } from '../utils';
 import {
   PanelImagesEditor,
   PanelButtonCard,

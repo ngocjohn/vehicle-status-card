@@ -7,7 +7,7 @@ import './components';
 import './editor/editor';
 // components
 import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
-import { ICON, SECTION, SECTION_ORDER } from './const/const';
+import { SECTION, SECTION_ORDER, COMPONENT, CARD_NAME } from './constants/const';
 // Ha utils
 import { fireEvent, forwardHaptic, HomeAssistant, LovelaceCard, LovelaceCardConfig, LovelaceCardEditor } from './ha';
 import {
@@ -19,7 +19,7 @@ import {
   TireTemplateConfig,
   VehicleStatusCardConfig,
 } from './types/config';
-import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme } from './utils';
+import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createCustomCard } from './utils/lovelace/create-custom-card';
@@ -29,7 +29,7 @@ import { _setUpPreview, previewHandler } from './utils/lovelace/preview-helper';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
 
-@customElement('vehicle-status-card')
+@customElement(CARD_NAME)
 export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     return document.createElement('vehicle-status-card-editor');
@@ -64,11 +64,11 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   @state() _connected = false;
 
-  @query('vsc-button-grid') _vehicleButtonsGrid!: VehicleButtonsGrid;
-  @query('images-slide') _imagesSlide!: ImagesSlide;
-  @query('vsc-range-info') _rangeInfo!: VscRangeInfo;
-  @query('vsc-indicators') _indicators!: VscIndicators;
-  @query('mini-map-box') _miniMap!: MiniMapBox;
+  @query(COMPONENT.BUTTONS_GRID) _vehicleButtonsGrid!: VehicleButtonsGrid;
+  @query(COMPONENT.IMAGES_SLIDE) _imagesSlide!: ImagesSlide;
+  @query(COMPONENT.RANGE_INFO) _rangeInfo!: VscRangeInfo;
+  @query(COMPONENT.INDICATORS) _indicators!: VscIndicators;
+  @query(COMPONENT.MINI_MAP) _miniMap!: MiniMapBox;
 
   @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
 
@@ -184,9 +184,8 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     const headerHidden = this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '';
-    const sectionOrder = this._config.layout_config?.section_order || [...SECTION_ORDER];
     return html`
-      <ha-card class=${this._computeClasses(sectionOrder)} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>
+      <ha-card class=${this._computeClasses()} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>
         <header id="name" ?hidden=${headerHidden}>
           <h1>${this._config.name}</h1>
         </header>
@@ -236,13 +235,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const visibleButtons = this._buttonCardConfigItem.filter((button) => !button.hide_button);
     return html`
       <div id=${SECTION.BUTTONS}>
-        <vsc-button-grid
+        <vsc-buttons-grid
           .hass=${this.hass}
           .buttons=${visibleButtons}
           ._store=${this._store}
           ._cardCurrentSwipeIndex=${this._currentSwipeIndex}
         >
-        </vsc-button-grid>
+        </vsc-buttons-grid>
       </div>
     `;
   }
@@ -272,7 +271,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
     return html`
       <div id=${SECTION.IMAGES}>
-        <images-slide .hass=${this.hass} .config=${this._config}> </images-slide>
+        <vsc-images-slide .hass=${this.hass} .config=${this._config}> </vsc-images-slide>
       </div>
     `;
   }
@@ -292,12 +291,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
     return html`
       <div id=${SECTION.MINI_MAP} style=${this._computeMapStyles()}>
-        <mini-map-box
+        <vsc-mini-map
           .hass=${this.hass}
           .mapConfig=${miniMapConfig}
           .mapData=${mapData}
           .isDark=${this.isDark}
-        ></mini-map-box>
+        ></vsc-mini-map>
       </div>
     `;
   }
@@ -406,7 +405,8 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
   }
 
-  private _computeClasses(section_order: string[]) {
+  private _computeClasses() {
+    const section_order = this._config.layout_config?.section_order || [];
     const lastItem = section_order[section_order.length - 1];
     const firstItem = section_order[0];
     const mapSingle = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
@@ -593,7 +593,7 @@ declare global {
   }
 
   interface HTMLElementTagNameMap {
-    'vehicle-status-card': VehicleStatusCard;
+    [CARD_NAME]: VehicleStatusCard;
   }
 }
 // Load and clean extra map resources

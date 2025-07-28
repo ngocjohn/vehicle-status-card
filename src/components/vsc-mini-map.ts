@@ -4,6 +4,7 @@ import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+import { COMPONENT } from '../constants/const';
 import { Address, MapData, MiniMapConfig } from '../types/config';
 import { BaseElement } from '../utils/base-element';
 import { _getMapAddress } from '../utils/lovelace/create-map-card';
@@ -12,7 +13,7 @@ import { showHaMapDialog } from '../utils/lovelace/show-map-dialog';
 export const DEFAULT_HOURS_TO_SHOW = 0;
 export const DEFAULT_ZOOM = 14;
 
-@customElement('mini-map-box')
+@customElement(COMPONENT.MINI_MAP)
 export class MiniMapBox extends BaseElement {
   @property({ attribute: false }) mapConfig!: MiniMapConfig;
   @property({ attribute: 'is-dark', type: Boolean, reflect: true })
@@ -476,11 +477,5 @@ export class MiniMapBox extends BaseElement {
         }
       `,
     ];
-  }
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'mini-map-box': MiniMapBox;
   }
 }

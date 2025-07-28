@@ -1,4 +1,4 @@
-import { NAMESPACE_TITLE } from '../../const/const';
+import { NAMESPACE_TITLE } from '../../constants/const';
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 let helpers: any;
 if ((window as any).loadCardHelpers) {

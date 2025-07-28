@@ -2,11 +2,11 @@ import { LitElement, html, TemplateResult, CSSResultGroup, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
-import './sub-panel-yaml';
 import { fireEvent, HomeAssistant } from '../../ha';
+import './sub-panel-yaml';
 import { IndicatorItemConfig } from '../../types/config';
+import { ICON } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
 import { singleIndicatorSchema, singleApparenceSchema, singleActionSchema } from '../form';
 

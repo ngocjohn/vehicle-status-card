@@ -1,22 +1,23 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import cardcss from '../css/card.css';
-import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
-import { IndicatorGroupConfig, VehicleStatusCardConfig } from '../types/config';
 // components items
+import { COMPONENT } from '../constants/const';
+import cardcss from '../css/card.css';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../ha';
+import { IndicatorGroupConfig, VehicleStatusCardConfig } from '../types/config';
 import './shared/vsc-indicator-single';
 import './shared/vsc-indicator-group-item';
+import { BaseElement } from '../utils/base-element';
 import { VscIndicatorGroupItem } from './shared/vsc-indicator-group-item';
 
 const TEMPLATE_KEYS = ['color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
-@customElement('vsc-indicators')
-export class VscIndicators extends LitElement {
-  @property({ attribute: false }) private hass!: HomeAssistant;
+@customElement(COMPONENT.INDICATORS)
+export class VscIndicators extends BaseElement {
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() public _activeGroupIndicator: number | null = null;

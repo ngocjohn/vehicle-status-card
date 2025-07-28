@@ -14,7 +14,7 @@ import { BaseElement } from '../utils/base-element';
 import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
 
-@customElement('vsc-button-grid')
+@customElement('vsc-buttons-grid')
 export class VehicleButtonsGrid extends BaseElement {
   @property({ attribute: false }) private _store!: Store;
   @property({ attribute: false, type: Array }) private buttons!: ButtonCardConfig[];

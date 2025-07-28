@@ -4,10 +4,10 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 // local
-import { TIRE_BG } from '../const/img-const';
-import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
-import { TireEntity, TireItemKey } from '../types/config/card/tire-card';
-import { BaseElement } from '../utils/base-element';
+import { TIRE_BG } from '../../constants/img-const';
+import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
+import { TireEntity, TireItemKey } from '../../types/config/card/tire-card';
+import { BaseElement } from '../../utils/base-element';
 
 const TEMPLATE_KEYS = ['color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];

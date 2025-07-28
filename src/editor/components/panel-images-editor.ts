@@ -8,10 +8,10 @@ import './sub-panel-yaml';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { ICON } from '../../const/const';
 import editorcss from '../../css/editor.css';
 import { EntitiesEditorEvent, fireEvent, HomeAssistant } from '../../ha';
 import { EntityConfig, ImageConfig, VehicleStatusCardConfig } from '../../types/config';
+import { ICON } from '../../utils';
 import { VicTab } from '../../utils/editor/create';
 import { processEditorEntities } from '../../utils/editor/process-editor-entities';
 import { showConfirmDialog } from '../../utils/editor/show-dialog-box';
