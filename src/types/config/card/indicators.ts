@@ -38,3 +38,25 @@ export interface IndicatorGroupConfig {
   visibility?: string; // Visibility condition for the group
   color?: string; // Custom color for the group
 }
+
+export type SingleIndicator = IndicatorItemConfig & {
+  type: 'single'; // Type of the indicator
+};
+export type GroupIndicator = IndicatorGroupConfig & {
+  type: 'group'; // Type of the indicator group
+};
+
+// Combined type for indicator rows
+// This allows for both single indicators and groups of indicators to be used interchangeably.
+export type IndicatorRowItems = SingleIndicator | GroupIndicator;
+
+// List of possible indicator row types
+export const INDICATOR_ROW_LIST: IndicatorRowItems['type'][] = ['single', 'group'];
+
+export const ALIGNMENT = ['default', 'start', 'center', 'end', 'justify'] as const;
+export type Alignment = (typeof ALIGNMENT)[number];
+
+export interface IndicatorRow {
+  row_items: IndicatorRowItems[]; // Array of indicator items in the row
+  alignment?: string;
+}
