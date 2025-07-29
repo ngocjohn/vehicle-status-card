@@ -34,6 +34,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   @state() private _reloadSectionList: boolean = false;
   @state() private _layoutTabIndex: number = 0;
   @state() private _indicatorTabIndex: number = 0;
+  @state() private _buttonConfigTabIndex: number = 0;
 
   @query('panel-images-editor') _panelImages?: PanelImagesEditor;
   @query('panel-range-info') _panelRangeInfo?: PanelRangeInfo;
@@ -276,12 +277,27 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   }
 
   /* ---------------------------- RENDER CONFIG TYPES ---------------------------- */
+
   private _renderButtonCard(): TemplateResult {
-    return html`<panel-button-card
+    const buttonPanel = html`<panel-button-card
       .hass=${this._hass}
       .cardEditor=${this as any}
       .config=${this._config}
     ></panel-button-card>`;
+
+    const tabsConfig = [
+      { content: buttonPanel, key: 'button_card', label: 'Buttons' },
+      { content: this._renderButtonGrid(), key: 'button_grid', label: 'Grid layout' },
+    ];
+    return html`
+      <div class="card-config">
+        ${Create.VicTab({
+          activeTabIndex: this._buttonConfigTabIndex || 0,
+          onTabChange: (index: number) => (this._buttonConfigTabIndex = index),
+          tabs: tabsConfig,
+        })}
+      </div>
+    `;
   }
 
   private _renderConfigTypeSelector(): TemplateResult {
@@ -366,49 +382,14 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
   private _renderLayoutConfig(): TemplateResult {
     const layout = this._config.layout_config || {};
 
-    const BUTTON_GRID_DATA = { ...layout.button_grid };
     const HIDE_CONFIG_DATA = { ...layout.hide };
     const THEME_DATA = { ...layout.theme_config };
     const NAME_DATA = { name: this._config.name || '' };
 
-    const _renderPanels = (
-      sections: {
-        title: string;
-        content: TemplateResult;
-        expansion?: boolean;
-      }[]
-    ): TemplateResult => {
-      return html`
-        ${sections.map(({ title, content, expansion }) => {
-          if (expansion) {
-            return Create.ExpansionPanel({
-              content,
-              options: {
-                header: title,
-                expanded: false,
-              },
-            });
-          } else {
-            return html`
-              <div class="sub-panel-config button-card">
-                <div class="sub-header">${title}</div>
-                <div class="sub-panel">${content}</div>
-              </div>
-            `;
-          }
-        })}
-      `;
-    };
-
-    const buttonGridWrapper = _renderPanels([
-      {
-        title: 'Button Grid Configuration',
-        content: this._createHaForm(BUTTON_GRID_DATA, BUTTON_GRID_SCHEMA, 'layout_config', 'button_grid'),
-      },
-    ]);
+    const buttonGridWrapper = this._renderButtonGrid();
 
     // Hide configuration wrapper
-    const hideWrapper = _renderPanels([
+    const hideWrapper = Create.SectionPanel([
       {
         title: 'Choose the items / sections to hide',
         content: this._createHaForm(HIDE_CONFIG_DATA, HIDE_SCHEMA, 'layout_config', 'hide'),
@@ -421,7 +402,7 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
     ]);
 
     // Theme configuration wrapper
-    const themeWrapper = _renderPanels([
+    const themeWrapper = Create.SectionPanel([
       {
         title: 'Select the name for card',
         content: this._createHaForm(NAME_DATA, NAME_SCHEMA),
@@ -447,6 +428,17 @@ export class VehicleStatusCardEditor extends LitElement implements LovelaceCardE
         })}
       </div>
     `;
+  }
+
+  private _renderButtonGrid(): TemplateResult {
+    const BUTTON_GRID_DATA = { ...(this._config.layout_config?.button_grid || {}) };
+    const useSwiper = BUTTON_GRID_DATA.swipe;
+    return Create.SectionPanel([
+      {
+        title: 'Button Grid Configuration',
+        content: this._createHaForm(BUTTON_GRID_DATA, BUTTON_GRID_SCHEMA(!useSwiper), 'layout_config', 'button_grid'),
+      },
+    ]);
   }
 
   private _renderSectionOrder(): TemplateResult {

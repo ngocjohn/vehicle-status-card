@@ -11,7 +11,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import editorcss from '../../css/editor.css';
 import { EntitiesEditorEvent, fireEvent, HomeAssistant } from '../../ha';
 import { EntityConfig, ImageConfig, VehicleStatusCardConfig } from '../../types/config';
-import { ICON } from '../../utils';
+import { Create, ICON } from '../../utils';
 import { VicTab } from '../../utils/editor/create';
 import { processEditorEntities } from '../../utils/editor/process-editor-entities';
 import { showConfirmDialog } from '../../utils/editor/show-dialog-box';
@@ -527,22 +527,20 @@ export class PanelImagesEditor extends LitElement {
     const imagesSwipeConfig = this.config?.layout_config?.images_swipe || {};
     const DATA = { ...imagesSwipeConfig };
 
-    return html`
-      <div class="sub-panel-config button-card">
-        <div class="sub-header">
-          <div>Slide configuration</div>
-        </div>
-        <div class="sub-panel">
-          <ha-form
-            .hass=${this.hass}
-            .data=${DATA}
-            .schema=${IMAGES_SLIDE_SCHEMA}
-            .computeLabel=${(schema: any) => schema.label || schema.name || ''}
-            @value-changed=${this._hanleSwipeConfigChanged}
-          ></ha-form>
-        </div>
-      </div>
-    `;
+    const haFormEl = html` <ha-form
+      .hass=${this.hass}
+      .data=${DATA}
+      .schema=${IMAGES_SLIDE_SCHEMA}
+      .computeLabel=${(schema: any) => schema.label || schema.name || ''}
+      @value-changed=${this._hanleSwipeConfigChanged}
+    ></ha-form>`;
+
+    return Create.SectionPanel([
+      {
+        title: 'Slide configuration',
+        content: haFormEl,
+      },
+    ]);
   }
 
   private _hanleSwipeConfigChanged(ev: CustomEvent): void {

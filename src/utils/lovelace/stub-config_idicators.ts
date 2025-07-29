@@ -38,7 +38,7 @@ export const getIndicatorsConfig = (hass: HomeAssistant): IndicatorsConfig => {
     groups.push(createGroupIndicator(hass, 'Lights', 'mdi:lightbulb-group', lights));
   }
   if (motions.length) {
-    groups.push(createGroupIndicator(hass, 'Motion Sensors', 'mdi:motion-sensor', motions));
+    groups.push(createGroupIndicator(hass, 'Motions', 'mdi:motion-sensor', motions));
   }
   return {
     single: singleIndicators,

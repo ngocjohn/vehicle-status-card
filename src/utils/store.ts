@@ -75,14 +75,15 @@ export class Store {
   }
 
   public get gridConfig(): ButtonGridConfig {
-    const {
-      rows = 2,
-      columns = 2,
-      button_layout = 'horizontal',
-      swipe = false,
-      transparent = false,
-    } = this.layoutConfig.button_grid || {};
-    return { rows, columns, button_layout, swipe, transparent };
+    const button_grid = this.layoutConfig?.button_grid || {};
+    return {
+      rows: button_grid?.rows ?? 2,
+      columns: button_grid?.columns ?? 2,
+      button_layout: button_grid?.button_layout ?? 'horizontal',
+      swipe: button_grid?.swipe ?? false,
+      transparent: button_grid?.transparent ?? false,
+      hide_notify_badge: button_grid?.hide_notify_badge ?? false,
+    };
   }
 
   public get hiddenItemsMap(): Map<keyof HideConfig, boolean> {
