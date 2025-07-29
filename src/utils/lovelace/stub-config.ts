@@ -27,16 +27,17 @@ const DEFAULT_CONFIG: Partial<VehicleStatusCardConfig> = {
       rows: 2,
       columns: 2,
       swipe: true,
+      button_layout: 'horizontal',
+      transparent: false,
+      hide_notify_badge: false,
     },
     hide: {
-      button_notify: false,
       buttons: false,
       images: false,
       indicators: true,
       range_info: true,
       mini_map: true,
       card_name: false,
-      map_address: false,
     },
   },
 };
@@ -86,7 +87,7 @@ export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStat
 };
 
 export const loadStubConfig = async (): Promise<VehicleStatusCardConfig | null> => {
-  const storedConfig = localStorage.getItem(STORAGE_STUB_CONFIG);
+  const storedConfig = sessionStorage.getItem(STORAGE_STUB_CONFIG);
   if (storedConfig) {
     try {
       console.log('Loading stub config from localStorage');
@@ -100,7 +101,7 @@ export const loadStubConfig = async (): Promise<VehicleStatusCardConfig | null> 
 
 export const saveStubConfig = async (config: VehicleStatusCardConfig): Promise<void> => {
   try {
-    localStorage.setItem(STORAGE_STUB_CONFIG, JSON.stringify(config));
+    sessionStorage.setItem(STORAGE_STUB_CONFIG, JSON.stringify(config));
     console.log('Stub config saved successfully.');
   } catch (error) {
     console.error('Failed to save stub config:', error);

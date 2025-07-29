@@ -99,3 +99,32 @@ export const VicTab = ({
     <div class="vic-tab-content">${tabs[activeTabIndex]?.content || html`<div>No content available</div>`}</div>
   `;
 };
+
+export const SectionPanel = (
+  sections: {
+    title: string;
+    content: TemplateResult;
+    expansion?: boolean;
+  }[]
+): TemplateResult => {
+  return html`
+    ${sections.map(({ title, content, expansion }) => {
+      if (expansion) {
+        return ExpansionPanel({
+          content,
+          options: {
+            header: title,
+            expanded: false,
+          },
+        });
+      } else {
+        return html`
+          <div class="sub-panel-config button-card">
+            <div class="sub-header">${title}</div>
+            <div class="sub-panel">${content}</div>
+          </div>
+        `;
+      }
+    })}
+  `;
+};

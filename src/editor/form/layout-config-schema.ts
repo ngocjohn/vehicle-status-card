@@ -1,68 +1,69 @@
-export const BUTTON_GRID_SCHEMA = [
-  {
-    name: '',
-    type: 'grid',
-    column_min_width: '140px',
-    schema: [
-      {
-        name: 'swipe',
-        label: 'Use swipe',
-        type: 'boolean',
-        default: false,
-      },
+export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
+  [
+    {
+      name: '',
+      type: 'grid',
+      column_min_width: '140px',
+      schema: [
+        {
+          name: 'swipe',
+          label: 'Use swipe',
+          type: 'boolean',
+          default: false,
+        },
 
-      {
-        name: 'rows',
-        label: 'Rows',
-        type: 'integer',
-        selector: { number: { mode: 'box', min: 1, step: 1 } },
-      },
-      {
-        name: 'columns',
-        label: 'Columns',
-        type: 'integer',
-        selector: { number: { mode: 'box', min: 1, step: 1 } },
-      },
-    ],
-  },
-  {
-    name: 'transparent',
-    label: 'Transparent background',
-    type: 'boolean',
-    default: false,
-    helper: 'Use this option to make the button background transparent.',
-  },
-  {
-    name: 'button_layout',
-    label: 'Button layout',
-    required: true,
-    default: 'horizontal',
-    selector: {
-      select: {
-        mode: 'box',
-        options: ['horizontal', 'vertical'].map((value) => ({
-          label: value.charAt(0).toUpperCase() + value.slice(1),
-          value,
-          image: {
-            src: `/static/images/form/tile_content_layout_${value}.svg`,
-            src_dark: `/static/images/form/tile_content_layout_${value}_dark.svg`,
-            flip_rtl: true,
-          },
-        })),
+        {
+          name: 'rows',
+          label: 'Rows',
+          type: 'integer',
+          disabled: swipeDisabled,
+          selector: { number: { mode: 'box', min: 1, step: 1 } },
+        },
+        {
+          name: 'columns',
+          label: 'Columns',
+          type: 'integer',
+          selector: { number: { mode: 'box', min: 1, step: 1 } },
+        },
+      ],
+    },
+    {
+      name: 'transparent',
+      label: 'Transparent background',
+      type: 'boolean',
+      default: false,
+      helper: 'Use this option to make the button background transparent.',
+    },
+    {
+      name: 'hide_notify_badge',
+      label: 'Hide notify badge',
+      type: 'boolean',
+      default: false,
+      helper: 'Use this option to hide the notification badge on the button.',
+    },
+    {
+      name: 'button_layout',
+      label: 'Button layout',
+      required: true,
+      default: 'horizontal',
+      selector: {
+        select: {
+          mode: 'box',
+          options: ['horizontal', 'vertical'].map((value) => ({
+            label: value.charAt(0).toUpperCase() + value.slice(1),
+            value,
+            image: {
+              src: `/static/images/form/tile_content_layout_${value}.svg`,
+              src_dark: `/static/images/form/tile_content_layout_${value}_dark.svg`,
+              flip_rtl: true,
+            },
+          })),
+        },
       },
     },
-  },
-] as const;
+  ] as const;
 
-const HIDE_OPTIONS = [
-  'card_name',
-  'indicators',
-  'range_info',
-  'images',
-  'mini_map',
-  'buttons',
-  'button_notify',
-] as const;
+const HIDE_OPTIONS = ['card_name', 'indicators', 'range_info', 'images', 'mini_map', 'buttons'] as const;
 
 export const HIDE_SCHEMA = [
   {

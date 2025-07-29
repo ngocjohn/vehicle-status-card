@@ -1,5 +1,3 @@
-// utils
-import { chunk } from 'es-toolkit';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -9,36 +7,30 @@ import { Pagination } from 'swiper/modules';
 import swipercss from 'swiper/swiper-bundle.css';
 
 import './shared/vsc-button-single';
-import { ButtonCardConfig, LayoutConfig, VehicleStatusCardConfig } from '../types/config';
+import { COMPONENT } from '../constants/const';
+import { ButtonCardConfig } from '../types/config';
 import { BaseElement } from '../utils/base-element';
 import { Store } from '../utils/store';
-import { VehicleStatusCard } from '../vehicle-status-card';
 
-@customElement('vsc-buttons-grid')
+@customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {
   @property({ attribute: false }) private _store!: Store;
-  @property({ attribute: false, type: Array }) private buttons!: ButtonCardConfig[];
+  @property({ attribute: false }) private buttons!: ButtonCardConfig[];
 
-  @state() private card!: VehicleStatusCard;
-  @state() private config!: VehicleStatusCardConfig;
   @state() swiper?: Swiper;
   @state() private _cardCurrentSwipeIndex?: number;
   @state() public activeSlideIndex: number = 0;
 
-  protected async firstUpdated(changeProperties: PropertyValues): Promise<void> {
-    super.firstUpdated(changeProperties);
+  protected firstUpdated(changedProperties: PropertyValues): void {
+    super.firstUpdated(changedProperties);
     if (this.useSwiper) {
       this.initSwiper();
     }
     this._setUpButtonAnimation();
   }
 
-  protected updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-  }
-
   private _setUpButtonAnimation(): void {
-    if (this.card.isEditorPreview) return;
+    if (this._store.card.isEditorPreview) return;
     if (!this.shadowRoot) return;
 
     const runAnimation = () => {
@@ -82,28 +74,23 @@ export class VehicleButtonsGrid extends BaseElement {
     requestAnimationFrame(() => runAnimation());
   }
 
-  public get gridConfig(): LayoutConfig['button_grid'] {
-    return {
-      rows: this.config.layout_config?.button_grid?.rows ?? 2,
-      columns: this.config.layout_config?.button_grid?.columns ?? 2,
-      button_layout: this.config.layout_config?.button_grid?.button_layout ?? 'horizontal',
-      swipe: this.config.layout_config?.button_grid?.swipe ?? false,
-      transparent: this.config.layout_config?.button_grid?.transparent ?? false,
-    };
-  }
+  // private get gridConfig(): LayoutConfig['button_grid'] {
+  //   const button_grid = this.config.layout_config?.button_grid;
+  //   return {
+  //     rows: button_grid?.rows ?? 2,
+  //     columns: button_grid?.columns ?? 2,
+  //     button_layout: button_grid?.button_layout ?? 'horizontal',
+  //     swipe: button_grid?.swipe ?? false,
+  //     transparent: button_grid?.transparent ?? false,
+  //     hide_notify_badge: button_grid?.hide_notify_badge ?? false,
+  //   };
+  // }
 
   private get useSwiper(): boolean {
-    return this.config.layout_config?.button_grid?.swipe || false;
-  }
-
-  public get hideNotify(): boolean {
-    return this.config.layout_config?.hide?.button_notify || false;
+    return this._store.gridConfig.swipe!;
   }
 
   protected render(): TemplateResult {
-    this.card = this._store.card;
-    this.config = this._store.config;
-
     return html`
       <div id="button-swiper" style=${this.computeBaseStyles()}>
         ${this.useSwiper
@@ -125,22 +112,23 @@ export class VehicleButtonsGrid extends BaseElement {
   }
 
   private _renderSwiper(): TemplateResult {
-    const total = this.gridConfig.rows! * this.gridConfig.columns!;
-    const buttons = [...this.buttons];
-    const newButtons = buttons.map((button, index) => {
-      return { ...button, index };
-    });
-    const chunked = chunk<ButtonCardConfig>(newButtons, total);
+    const { rows, columns } = this._store.gridConfig;
+    const total = rows! * columns!;
+    const buttons = this.buttons;
 
     return html`
       <div class="swiper-container">
         <div class="swiper-wrapper">
-          ${chunked.map((buttonGroup: any) => {
+          ${Array.from({ length: Math.ceil(buttons.length / total) }, (_, slideIndex) => {
+            const start = slideIndex * total;
+            const end = start + total;
+
             return html`
               <div class="swiper-slide">
                 <div class="grid-container" style=${this._computeGridColumns()}>
-                  ${buttonGroup.map((button: any) => {
-                    return this._renderButton(button, button.index);
+                  ${buttons.slice(start, end).map((button, index) => {
+                    const realIndex = start + index;
+                    return this._renderButton(button, realIndex);
                   })}
                 </div>
               </div>
@@ -153,21 +141,26 @@ export class VehicleButtonsGrid extends BaseElement {
   }
 
   private _renderButton(button: ButtonCardConfig, index: number): TemplateResult {
+    const { hide_notify_badge, transparent, button_layout } = this._store.gridConfig;
     return html`<vsc-button-single
       id=${`button-id-${index}`}
       .hass=${this.hass}
-      ._card=${this as any}
       ._buttonConfig=${button}
-      ._index=${index}
-      ?transparent=${this.gridConfig.transparent}
-      ?vertical=${this.gridConfig.button_layout === 'vertical'}
+      data-index=${index}
+      .hideNotify=${hide_notify_badge}
+      ?transparent=${transparent}
+      ?vertical=${button_layout === 'vertical'}
+      @click-index=${this._handleClick}
     ></vsc-button-single>`;
   }
 
-  _handleClick(index: number): void {
+  _handleClick(ev: Event): void {
+    ev.stopPropagation();
+    const index = (ev.target as any).dataset.index;
+    console.log('Button clicked at index:', index);
     setTimeout(() => {
-      this.card._currentSwipeIndex = this.activeSlideIndex;
-      this.card._activeCardIndex = index;
+      this._store.card._currentSwipeIndex = this.activeSlideIndex;
+      this._store.card._activeCardIndex = index;
     }, 50);
   }
 
@@ -239,7 +232,7 @@ export class VehicleButtonsGrid extends BaseElement {
   };
 
   private _computeGridColumns() {
-    const { columns } = this.gridConfig;
+    const { columns } = this._store.gridConfig;
     const minWidth = `calc((100% / ${columns}) - 8px)`;
     return styleMap({
       gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,

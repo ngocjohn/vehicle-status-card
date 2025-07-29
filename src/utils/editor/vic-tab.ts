@@ -71,6 +71,7 @@ export class VicTab extends LitElement {
 
     :host(:not([narrow])[active]) div {
       border-bottom: 2px solid var(--primary-color);
+      background-color: var(--secondary-background-color);
     }
 
     :host([narrow]) {

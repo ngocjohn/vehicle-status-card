@@ -26,14 +26,12 @@ type ImagesSwipeConfig = Partial<{
 }>;
 
 export type HideConfig = Partial<{
-  button_notify: boolean;
   buttons: boolean;
   images: boolean;
   indicators: boolean;
   mini_map: boolean;
   range_info: boolean;
   card_name: boolean;
-  map_address: boolean;
 }>;
 
 type BUTTON_LAYOUT = 'horizontal' | 'vertical';
@@ -43,6 +41,7 @@ export type ButtonGridConfig = Partial<{
   swipe: boolean;
   button_layout: BUTTON_LAYOUT;
   transparent: boolean;
+  hide_notify_badge: boolean;
 }>;
 
 type RANGE_INFO_LAYOUT = 'column' | 'row';

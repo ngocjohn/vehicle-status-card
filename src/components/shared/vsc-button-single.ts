@@ -1,46 +1,57 @@
 // External
 import { HassEntity, UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import hash from 'object-hash/dist/object_hash.js';
 
-// styles
-import cardstyles from '../../css/card.css';
-import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, HomeAssistant, forwardHaptic } from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, forwardHaptic } from '../../ha';
 import { hasItemAction } from '../../types/config';
-// local
 import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../types/config/card/button';
 import { strStartsWith } from '../../utils';
+import { BaseElement } from '../../utils/base-element';
+import { CacheManager } from '../../utils/cache-manager';
 import { addActions } from '../../utils/lovelace/tap-action';
-import { VehicleButtonsGrid } from '../vsc-buttons-grid';
+
+const templateCache = new CacheManager<TemplateResults>(1000);
 
 type TemplateResults = Partial<Record<ButtonTemplateKey, RenderTemplateResult | undefined>>;
 
 @customElement('vsc-button-single')
-export class VehicleButtonSingle extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) _card!: VehicleButtonsGrid;
-  @property({ attribute: false }) _buttonConfig!: ButtonCardConfig;
-  @property({ attribute: false }) _index!: number;
+export class VehicleButtonSingle extends BaseElement {
+  @property({ attribute: false }) private _buttonConfig = {} as ButtonCardConfig;
+  @property({ attribute: false }) public hideNotify!: boolean;
   @property({ attribute: 'transparent', type: Boolean, reflect: true }) public transparent!: boolean;
+
   @property({ attribute: 'vertical', type: Boolean, reflect: true }) public vertical!: boolean;
-  @property({ attribute: false }) _entityStateObj?: HassEntity;
+
+  @state() private _entityStateObj?: HassEntity;
 
   @state() private _templateResults?: TemplateResults;
-
   @state() private _unsubRenderTemplates: Map<ButtonTemplateKey, Promise<UnsubscribeFunc>> = new Map();
   @state() private _iconStyle: Record<string, string | undefined> = {};
 
   @state() private _stateBadgeEl?: any;
 
-  connectedCallback(): void {
+  public connectedCallback() {
     super.connectedCallback();
     this._tryConnect();
   }
 
-  disconnectedCallback(): void {
+  public disconnectedCallback() {
     super.disconnectedCallback();
     this._tryDisconnect();
+
+    if (this._buttonConfig && this._templateResults) {
+      const key = this._computeCacheKey();
+      templateCache.set(key, this._templateResults);
+      // console.debug(`Cached template results for key: ${key}`);
+    }
+  }
+
+  private _computeCacheKey() {
+    // console.debug('Computing cache key for button config');
+    return hash(this._buttonConfig);
   }
 
   private get _stateColor(): boolean {
@@ -52,6 +63,19 @@ export class VehicleButtonSingle extends LitElement {
 
   protected willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
+    if (!this._buttonConfig) {
+      return;
+    }
+
+    if (!this._templateResults) {
+      const key = this._computeCacheKey();
+      if (templateCache.has(key)) {
+        this._templateResults = templateCache.get(key)!;
+      } else {
+        this._templateResults = {};
+      }
+    }
+
     if (changedProperties.has('_buttonConfig') && this._buttonConfig) {
       const button = this._buttonConfig.button;
       if (button.secondary && button.secondary.entity) {
@@ -60,8 +84,11 @@ export class VehicleButtonSingle extends LitElement {
     }
   }
 
-  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
+  protected firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties);
+    if (!this._buttonConfig || !this.hass) {
+      return;
+    }
     this._setEventListeners();
     if (!this._stateBadgeEl) {
       this._stateBadgeEl = this.shadowRoot?.querySelector('state-badge');
@@ -83,9 +110,10 @@ export class VehicleButtonSingle extends LitElement {
 
   protected updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
-    if (changedProperties.has('hass')) {
-      this._tryConnect();
+    if (!this._buttonConfig || !this.hass) {
+      return;
     }
+
     if (
       (this._stateColor && changedProperties.has('hass') && this.hass) ||
       (changedProperties.has('_entityStateObj') && this._entityStateObj)
@@ -104,6 +132,7 @@ export class VehicleButtonSingle extends LitElement {
         }, 100);
       }
     }
+    this._tryConnect();
   }
 
   private _setEventListeners(): void {
@@ -176,9 +205,15 @@ export class VehicleButtonSingle extends LitElement {
   }
 
   private async _subscribeRenderTemplate(key: ButtonTemplateKey): Promise<void> {
-    if (this._unsubRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(key)) {
+    if (
+      this._unsubRenderTemplates.get(key) !== undefined ||
+      !this.hass ||
+      !this._buttonConfig ||
+      !this.isTemplate(key)
+    ) {
       return;
     }
+
     const button = this._buttonConfig.button;
 
     const template = key === 'state_template' ? button.secondary.state_template : button[key];
@@ -193,18 +228,18 @@ export class VehicleButtonSingle extends LitElement {
         },
         {
           template: template ?? '',
-          entity_ids: button.secondary.entity ? [button.secondary.entity] : undefined,
           variables: {
-            config: button,
+            config: this._buttonConfig,
             user: this.hass.user!.name,
+            entity: button.secondary.entity,
           },
           strict: true,
         }
       );
       this._unsubRenderTemplates.set(key, sub);
       await sub;
-    } catch (e) {
-      console.warn('Error while rendering template', e);
+    } catch (_err) {
+      console.warn(`Error while subscribing to render template for key ${key}`, _err);
       const result = {
         result: template ?? '',
         listeners: {
@@ -221,6 +256,7 @@ export class VehicleButtonSingle extends LitElement {
       this._unsubRenderTemplates.delete(key);
     }
   }
+
   private async _tryDisconnect(): Promise<void> {
     BUTTON_TEMPLATE_KEYS.forEach((key) => {
       this._tryDisconnectKey(key);
@@ -228,25 +264,27 @@ export class VehicleButtonSingle extends LitElement {
   }
   private async _tryDisconnectKey(key: ButtonTemplateKey): Promise<void> {
     const unsubRenderTemplate = this._unsubRenderTemplates.get(key);
+
     if (!unsubRenderTemplate) {
+      // console.debug(`No unsubscribe function found for key: ${key}`);
       return;
     }
 
     try {
       const unsub = await unsubRenderTemplate;
+
       unsub();
       this._unsubRenderTemplates.delete(key);
     } catch (err: any) {
       if (err.code === 'not_found' || err.code === 'template_error') {
-        // If we get here, the connection was probably already closed. Ignore.
-      } else {
-        throw err;
+        // the connection was closed or the template was not found. Ignore this error
       }
     }
   }
 
   static get styles(): CSSResultGroup {
     return [
+      super.styles,
       css`
         :host {
           --vic-notify-icon-color: var(--white-color);
@@ -446,16 +484,19 @@ export class VehicleButtonSingle extends LitElement {
           }
         }
       `,
-      cardstyles,
     ];
   }
 
   protected render(): TemplateResult {
-    const stateObj = this._entityStateObj;
-    const { hideNotify } = this._card;
+    if (!this._buttonConfig || !this.hass) {
+      return html``;
+    }
+
+    const hideNotify = this.hideNotify;
     const { primary, secondary } = this._buttonConfig.button;
     const icon = this._buttonConfig.button.icon || '';
     const entity = secondary?.entity || '';
+    const stateObj = this._entityStateObj;
     const state = this._getValue('state_template');
     const notify = this._getValue('notify');
     const notifyIcon = this._getValue('notify_icon');
@@ -499,13 +540,7 @@ export class VehicleButtonSingle extends LitElement {
             </ha-state-icon>
           `;
     return html`
-      <div
-        class="grid-item"
-        id="actionBtn"
-        @click=${this._handleNavigate}
-        style=${styleMap(iconStyle)}
-        ?transparent=${this._card.gridConfig.transparent}
-      >
+      <div class="grid-item" id="actionBtn" @click=${this._handleNavigate} style=${styleMap(iconStyle)}>
         <ha-ripple></ha-ripple>
         <div class="click-container click-shrink">
           <div class="item-icon">
@@ -531,11 +566,6 @@ export class VehicleButtonSingle extends LitElement {
     event.stopPropagation();
     if (this.isAction) return;
     forwardHaptic('light');
-    this._card._handleClick(this._index);
-  }
-}
-declare global {
-  interface HTMLElementTagNameMap {
-    'vsc-button-single': VehicleButtonSingle;
+    this.dispatchEvent(new CustomEvent('click-index', { bubbles: true, composed: true }));
   }
 }
