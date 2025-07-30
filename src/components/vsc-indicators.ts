@@ -6,7 +6,7 @@ import { repeat } from 'lit/directives/repeat.js';
 // components items
 import { COMPONENT } from '../constants/const';
 import cardcss from '../css/card.css';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../ha';
+import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
 import { IndicatorGroupConfig, VehicleStatusCardConfig } from '../types/config';
 import './shared/vsc-indicator-single';
 import './shared/vsc-indicator-group-item';
@@ -18,6 +18,7 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement(COMPONENT.INDICATORS)
 export class VscIndicators extends BaseElement {
+  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() public _activeGroupIndicator: number | null = null;
@@ -250,5 +251,10 @@ export class VscIndicators extends BaseElement {
         distpatchEvent(index);
       }, 400);
     }
+  }
+}
+declare global {
+  interface HTMLElementTagNameMap {
+    'vsc-indicators': VscIndicators;
   }
 }

@@ -70,18 +70,20 @@ header[hidden] {
   display: none !important;
 }
 
-header h1 {
-  color: var(--ha-card-header-color, var(--primary-text-color));
-  font-family: var(--ha-card-header-font-family, inherit);
-  font-size: var(--ha-card-header-font-size, 24px);
+.card-header,
+ha-card .card-header {
+  color: var(--ha-card-header-color, var(--primary-text-color)) !important;
+  font-family: var(--ha-card-header-font-family, inherit) !important;
+  font-size: var(--ha-card-header-font-size, 24px) !important;
   /* letter-spacing: -0.012em; */
-  line-height: 2rem;
-  display: block;
-  margin-top: 0px;
-  margin-bottom: 0px;
-  font-weight: 400;
-  text-align: center;
-  /* padding-bottom: 0.67em; */
+  line-height: 2rem !important;
+  display: block !important;
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+  font-weight: 400 !important;
+  text-align: center !important;
+  /* padding: 0 !important; */
+  padding-block: 0 var(--vic-card-padding) !important;
 }
 
 
@@ -522,24 +524,7 @@ dialog::backdrop {
   }
 }
 
-.redGlows {
-  animation: redGlow 1s infinite;
-  animation-iteration-count: 5;
-}
 
-@keyframes redGlow {
-  0% {
-    box-shadow: 0 0 10px 0 rgba(255, 0, 0, 0.5);
-  }
-
-  50% {
-    box-shadow: 0 0 20px 0 rgba(255, 0, 0, 0.5);
-  }
-
-  100% {
-    box-shadow: 0 0 10px 0 rgba(255, 0, 0, 0.5);
-  }
-}
 
 .helper-active {
   border: solid 2px var(--accent-color);

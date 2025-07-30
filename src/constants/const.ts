@@ -7,13 +7,17 @@ export const EDITOR_NAME = `${CARD_NAME}-editor`;
 
 export const PREFIX_NAME = 'vsc';
 
-export const COMPONENT = {
-  BUTTONS_GRID: `${PREFIX_NAME}-buttons-grid`,
-  IMAGES_SLIDE: `${PREFIX_NAME}-images-slide`,
-  RANGE_INFO: `${PREFIX_NAME}-range-info`,
-  INDICATORS: `${PREFIX_NAME}-indicators`,
-  MINI_MAP: `${PREFIX_NAME}-mini-map`,
-} as const;
+export enum COMPONENT {
+  BUTTONS_GRID = `${PREFIX_NAME}-buttons-grid`,
+  IMAGES_SLIDE = `${PREFIX_NAME}-images-slide`,
+  RANGE_INFO = `${PREFIX_NAME}-range-info`,
+  INDICATORS = `${PREFIX_NAME}-indicators`,
+  MINI_MAP = `${PREFIX_NAME}-mini-map`,
+}
+
+export type ComponentType = COMPONENT;
+
+export const COMPONENTS = Object.values(COMPONENT) as ComponentType[];
 
 export const enum SECTION {
   INDICATORS = 'indicators',

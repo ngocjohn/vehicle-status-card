@@ -8,14 +8,17 @@ import swipercss from 'swiper/swiper-bundle.css';
 
 import './shared/vsc-button-single';
 import { COMPONENT } from '../constants/const';
+import { HomeAssistant } from '../ha';
 import { ButtonCardConfig } from '../types/config';
 import { BaseElement } from '../utils/base-element';
-import { Store } from '../utils/store';
 
 @customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {
-  @property({ attribute: false }) private _store!: Store;
-  @property({ attribute: false }) private buttons!: ButtonCardConfig[];
+  @property({ attribute: false }) private hass!: HomeAssistant;
+  // @property({ attribute: false }) private buttons!: ButtonCardConfig[];
+
+  @state() private buttons!: ButtonCardConfig[];
+  @state() private useSwiper!: boolean;
 
   @state() swiper?: Swiper;
   @state() private _cardCurrentSwipeIndex?: number;
@@ -86,11 +89,9 @@ export class VehicleButtonsGrid extends BaseElement {
   //   };
   // }
 
-  private get useSwiper(): boolean {
-    return this._store.gridConfig.swipe!;
-  }
-
   protected render(): TemplateResult {
+    this.useSwiper = this._store.gridConfig.swipe!;
+    this.buttons = this._store.visibleButtons;
     return html`
       <div id="button-swiper" style=${this.computeBaseStyles()}>
         ${this.useSwiper
@@ -106,8 +107,10 @@ export class VehicleButtonsGrid extends BaseElement {
     const buttonOrder = this._store.sectionOrderMap.get('buttons');
     const isSomeElementPrev = buttonOrder !== undefined && buttonOrder !== 0;
     // If mini map is previous section, add padding to top
+    const bottomPadding = !this.useSwiper || this.swiper?.slides.length === 1 ? '0' : 'var(--vic-card-padding)';
     return styleMap({
       marginTop: isSomeElementPrev ? 'var(--vic-card-padding)' : 'unset',
+      padding: `0 0 ${bottomPadding} 0`,
     });
   }
 
@@ -144,9 +147,9 @@ export class VehicleButtonsGrid extends BaseElement {
     const { hide_notify_badge, transparent, button_layout } = this._store.gridConfig;
     return html`<vsc-button-single
       id=${`button-id-${index}`}
+      data-index=${index}
       .hass=${this.hass}
       ._buttonConfig=${button}
-      data-index=${index}
       .hideNotify=${hide_notify_badge}
       ?transparent=${transparent}
       ?vertical=${button_layout === 'vertical'}
@@ -284,6 +287,6 @@ export class VehicleButtonsGrid extends BaseElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'vsc-button-grid': VehicleButtonsGrid;
+    'vsc-buttons-grid': VehicleButtonsGrid;
   }
 }

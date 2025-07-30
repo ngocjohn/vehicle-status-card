@@ -1,3 +1,4 @@
+import { UiAction } from '../../ha';
 export const computeActionsFormSchema = () => {
   return [
     {
@@ -30,7 +31,7 @@ export const computeActionsFormSchema = () => {
   ] as const;
 };
 
-const DEFAULT_ACTIONS = ['more-info', 'toggle', 'navigate', 'perform-action', 'assist'];
+const DEFAULT_ACTIONS: UiAction[] = ['more-info', 'toggle', 'navigate', 'url', 'perform-action', 'assist', 'none'];
 
 export const computeOptionalActionSchema = () => {
   return [
@@ -40,7 +41,7 @@ export const computeOptionalActionSchema = () => {
       selector: {
         ui_action: {
           actions: DEFAULT_ACTIONS,
-          default_action: 'none',
+          default_action: 'none' as const,
         },
       },
     },
@@ -48,29 +49,15 @@ export const computeOptionalActionSchema = () => {
       name: '',
       type: 'optional_actions',
       flatten: true,
-      schema: [
-        {
-          name: 'hold_action',
-          label: 'Hold Action',
-          selector: {
-            ui_action: {
-              actions: DEFAULT_ACTIONS,
-              default_action: 'none',
-            },
+      schema: (['hold_action', 'double_tap_action'] as const).map((action) => ({
+        name: action,
+        selector: {
+          ui_action: {
+            actions: DEFAULT_ACTIONS,
+            default_action: 'none' as const,
           },
         },
-
-        {
-          name: 'double_tap_action',
-          label: 'Double Tap Action',
-          selector: {
-            ui_action: {
-              actions: DEFAULT_ACTIONS,
-              default_action: 'none',
-            },
-          },
-        },
-      ],
+      })),
     },
   ] as const;
 };

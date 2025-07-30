@@ -5,7 +5,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import hash from 'object-hash/dist/object_hash.js';
 
-import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, forwardHaptic } from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, forwardHaptic, HomeAssistant } from '../../ha';
 import { hasItemAction } from '../../types/config';
 import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../types/config/card/button';
 import { strStartsWith } from '../../utils';
@@ -19,13 +19,13 @@ type TemplateResults = Partial<Record<ButtonTemplateKey, RenderTemplateResult | 
 
 @customElement('vsc-button-single')
 export class VehicleButtonSingle extends BaseElement {
-  @property({ attribute: false }) private _buttonConfig = {} as ButtonCardConfig;
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) private _buttonConfig!: ButtonCardConfig;
   @property({ attribute: false }) public hideNotify!: boolean;
   @property({ attribute: 'transparent', type: Boolean, reflect: true }) public transparent!: boolean;
 
   @property({ attribute: 'vertical', type: Boolean, reflect: true }) public vertical!: boolean;
-
-  @state() private _entityStateObj?: HassEntity;
+  @property({ attribute: false }) _entityStateObj?: HassEntity;
 
   @state() private _templateResults?: TemplateResults;
   @state() private _unsubRenderTemplates: Map<ButtonTemplateKey, Promise<UnsubscribeFunc>> = new Map();
@@ -33,12 +33,19 @@ export class VehicleButtonSingle extends BaseElement {
 
   @state() private _stateBadgeEl?: any;
 
-  public connectedCallback() {
+  constructor() {
+    super();
+    this.hideNotify = false;
+    this.transparent = false;
+    this.vertical = false;
+  }
+
+  connectedCallback() {
     super.connectedCallback();
     this._tryConnect();
   }
 
-  public disconnectedCallback() {
+  disconnectedCallback() {
     super.disconnectedCallback();
     this._tryDisconnect();
 
@@ -61,10 +68,13 @@ export class VehicleButtonSingle extends BaseElement {
     return this._buttonConfig.button.state_color || false;
   }
 
-  protected willUpdate(changedProperties: PropertyValues): void {
+  protected async willUpdate(changedProperties: PropertyValues): Promise<void> {
     super.willUpdate(changedProperties);
-    if (!this._buttonConfig) {
-      return;
+    if (changedProperties.has('_buttonConfig') && this._buttonConfig) {
+      const button = this._buttonConfig.button;
+      if (button.secondary && button.secondary.entity) {
+        this._entityStateObj = this.hass.states[button.secondary.entity];
+      }
     }
 
     if (!this._templateResults) {
@@ -75,20 +85,11 @@ export class VehicleButtonSingle extends BaseElement {
         this._templateResults = {};
       }
     }
-
-    if (changedProperties.has('_buttonConfig') && this._buttonConfig) {
-      const button = this._buttonConfig.button;
-      if (button.secondary && button.secondary.entity) {
-        this._entityStateObj = this.hass.states[button.secondary.entity];
-      }
-    }
   }
 
-  protected firstUpdated(_changedProperties: PropertyValues): void {
+  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
     super.firstUpdated(_changedProperties);
-    if (!this._buttonConfig || !this.hass) {
-      return;
-    }
+
     this._setEventListeners();
     if (!this._stateBadgeEl) {
       this._stateBadgeEl = this.shadowRoot?.querySelector('state-badge');
@@ -108,20 +109,25 @@ export class VehicleButtonSingle extends BaseElement {
     }
   }
 
-  protected updated(changedProperties: PropertyValues): void {
+  protected async updated(changedProperties: PropertyValues): Promise<void> {
     super.updated(changedProperties);
-    if (!this._buttonConfig || !this.hass) {
-      return;
+    if (changedProperties.has('hass')) {
+      this._tryConnect();
     }
-
     if (
       (this._stateColor && changedProperties.has('hass') && this.hass) ||
       (changedProperties.has('_entityStateObj') && this._entityStateObj)
     ) {
       const oldEntitObj = changedProperties.get('_entityStateObj') as HassEntity | undefined;
       const newEntityObj = this._entityStateObj as HassEntity;
+      // If the state object has changed and the icon
       // log the change to console
       if (oldEntitObj && JSON.stringify(oldEntitObj) !== JSON.stringify(newEntityObj)) {
+        console.log(
+          'Entity state object changed:',
+          oldEntitObj,
+          JSON.stringify(oldEntitObj) !== JSON.stringify(newEntityObj)
+        );
         setTimeout(() => {
           const newIconStyle = this._stateBadgeEl?._iconStyle || {};
           const currentStyle = this._iconStyle;
@@ -132,7 +138,17 @@ export class VehicleButtonSingle extends BaseElement {
         }, 100);
       }
     }
-    this._tryConnect();
+  }
+
+  protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+    if (_changedProperties.has('hass') || _changedProperties.has('_buttonConfig')) {
+      this._tryConnect();
+    }
+    if (_changedProperties.has('_entityStateObj') && this._entityStateObj) {
+      return true;
+    }
+
+    return true;
   }
 
   private _setEventListeners(): void {
@@ -205,12 +221,7 @@ export class VehicleButtonSingle extends BaseElement {
   }
 
   private async _subscribeRenderTemplate(key: ButtonTemplateKey): Promise<void> {
-    if (
-      this._unsubRenderTemplates.get(key) !== undefined ||
-      !this.hass ||
-      !this._buttonConfig ||
-      !this.isTemplate(key)
-    ) {
+    if (this._unsubRenderTemplates.get(key) !== undefined || !this.hass || !this.isTemplate(key)) {
       return;
     }
 
@@ -284,7 +295,6 @@ export class VehicleButtonSingle extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [
-      super.styles,
       css`
         :host {
           --vic-notify-icon-color: var(--white-color);
@@ -483,20 +493,36 @@ export class VehicleButtonSingle extends BaseElement {
             transform: translateX(0%);
           }
         }
+        .redGlows {
+          animation: redGlow 1s infinite;
+          animation-iteration-count: 5;
+        }
+
+        @keyframes redGlow {
+          0% {
+            box-shadow: 0 0 10px 0 rgba(255, 0, 0, 0.5);
+          }
+
+          50% {
+            box-shadow: 0 0 20px 0 rgba(255, 0, 0, 0.5);
+          }
+
+          100% {
+            box-shadow: 0 0 10px 0 rgba(255, 0, 0, 0.5);
+          }
+        }
       `,
     ];
   }
 
   protected render(): TemplateResult {
-    if (!this._buttonConfig || !this.hass) {
-      return html``;
-    }
-
-    const hideNotify = this.hideNotify;
     const { primary, secondary } = this._buttonConfig.button;
     const icon = this._buttonConfig.button.icon || '';
     const entity = secondary?.entity || '';
+    this._entityStateObj = this.hass.states[entity];
     const stateObj = this._entityStateObj;
+    const hideNotify = this.hideNotify;
+
     const state = this._getValue('state_template');
     const notify = this._getValue('notify');
     const notifyIcon = this._getValue('notify_icon');
@@ -567,5 +593,11 @@ export class VehicleButtonSingle extends BaseElement {
     if (this.isAction) return;
     forwardHaptic('light');
     this.dispatchEvent(new CustomEvent('click-index', { bubbles: true, composed: true }));
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'vsc-button-single': VehicleButtonSingle;
   }
 }
