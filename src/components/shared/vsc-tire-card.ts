@@ -5,7 +5,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 // local
 import { TIRE_BG } from '../../constants/img-const';
-import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
+import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
 import { TireEntity, TireItemKey } from '../../types/config/card/tire-card';
 import { BaseElement } from '../../utils/base-element';
 
@@ -14,6 +14,7 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-tire-card')
 export class VehicleTireCard extends BaseElement {
+  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private tireConfig!: TireEntity;
 
   @state() private _templateResults: Partial<

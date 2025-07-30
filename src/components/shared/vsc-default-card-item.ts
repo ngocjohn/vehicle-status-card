@@ -3,7 +3,7 @@ import { css, CSSResultGroup, html, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 // Local
-import { RenderTemplateResult, subscribeRenderTemplate, fireEvent } from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, fireEvent, HomeAssistant } from '../../ha';
 import { computeEntityName } from '../../ha';
 import { CardItemConfig } from '../../types/config';
 import { BaseElement } from '../../utils/base-element';
@@ -15,6 +15,7 @@ type TemplateResults = Partial<Record<TemplateKey, RenderTemplateResult | undefi
 
 @customElement('vsc-default-card-item')
 export class VehicleDefaultCardItem extends BaseElement {
+  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private defaultCardItem!: CardItemConfig;
   @property({ attribute: false, type: Boolean }) private stateColor = false;
 

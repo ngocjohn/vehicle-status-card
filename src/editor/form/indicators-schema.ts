@@ -1,7 +1,10 @@
 import { mdiGestureTap, mdiPalette } from '@mdi/js';
 import memoizeOne from 'memoize-one';
 
+import { UiAction } from '../../ha';
 import { computeOptionalActionSchema } from './actions-config';
+
+const DEFAULT_ACTIONS: UiAction[] = ['more-info', 'toggle', 'navigate', 'url', 'perform-action', 'assist'];
 
 export const singleIndicatorSchema = memoizeOne(
   (entity: string | undefined) =>
@@ -177,7 +180,15 @@ export const subGroupItemSchema = memoizeOne(
         type: 'expandable',
         title: 'Interaction Configuration',
         iconPath: mdiGestureTap,
-        schema: [...computeOptionalActionSchema()],
+        schema: (['tap_action', 'hold_action', 'double_tap_action'] as const).map((action) => ({
+          name: action,
+          selector: {
+            ui_action: {
+              actions: DEFAULT_ACTIONS,
+              default_action: 'none' as const,
+            },
+          },
+        })),
       },
     ] as const
 );

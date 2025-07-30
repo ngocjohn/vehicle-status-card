@@ -207,6 +207,8 @@ export const isDarkColor = (color: string): boolean => {
 
 export const isDarkTheme = (node: Element): boolean => {
   const css = getComputedStyle(node);
+  console.log('primaryTextColor', css.getPropertyValue('--primary-text-color').trim());
   const primaryTextColor = css.getPropertyValue('--primary-text-color').trim();
+  console.log('isDarkColor', isDarkColor(primaryTextColor));
   return isDarkColor(primaryTextColor);
 };
