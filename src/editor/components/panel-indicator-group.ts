@@ -178,7 +178,10 @@ export class PanelIndicatorGroup extends LitElement {
 
     const header = html` <div class="header-row">
       <div class="icon-title">
-        <ha-icon-button .path=${ICON.CLOSE} @click=${() => (this._selectedGroup = null)}></ha-icon-button>
+        <ha-icon-button
+          .path=${ICON.CLOSE}
+          @click=${() => ((this._selectedGroup = null), (this._selectedItem = 0))}
+        ></ha-icon-button>
       </div>
       <div class="header-title">Group: ${group.name}</div>
       <ha-icon-button
@@ -203,7 +206,10 @@ export class PanelIndicatorGroup extends LitElement {
     `;
   }
 
-  private _renderSubGroupItemConfig(index: number): TemplateResult {
+  private _renderSubGroupItemConfig(index: number): TemplateResult | void {
+    if (this._selectedItem !== index || !this.groupItems || this.groupItems.length === 0) {
+      return;
+    }
     const item = this.groupItems![index];
     const DATA = { ...item };
     const _subGroupSchema = (entity: string) => [...subGroupItemSchema(entity)];
@@ -368,21 +374,21 @@ export class PanelIndicatorGroup extends LitElement {
     let value = ev.detail.value as IndicatorItemConfig;
     if (index === undefined || value === undefined) return;
     console.log('Group item changed', index, value);
-
-    const actions = value.action_config || {};
-    console.log('Group item value before action cleanup', actions);
-    for (const key of Object.keys(actions)) {
-      console.log('Checking action key', key, actions[key]);
-      if (actions[key]?.action === 'none') {
-        delete actions[key];
-      }
-      if (actions.entity) {
-        delete actions.entity; // Remove entity from action config
+    const actionConfig = value.action_config;
+    if (actionConfig && Object.keys(actionConfig).length !== 0) {
+      for (const key of Object.keys(actionConfig)) {
+        if (actionConfig[key]?.action === undefined || actionConfig[key]?.action === 'none') {
+          delete actionConfig[key];
+        }
+        if (actionConfig.entity !== undefined) {
+          delete actionConfig.entity;
+        }
       }
     }
+    if (Object.keys(actionConfig || {}).length === 0) {
+      delete value.action_config;
+    }
 
-    value.action_config = actions;
-    console.log('Group item value after action cleanup', value.action_config);
     const groupIndex = this._selectedGroup!;
     const newGroups = [...(this.groupConfig || [])];
     const groupConfig = { ...newGroups[groupIndex] } as IndicatorGroupConfig;
@@ -394,7 +400,6 @@ export class PanelIndicatorGroup extends LitElement {
     newGroups[groupIndex] = groupConfig;
     this._configChanged(newGroups);
     console.log('New group config after item change', newGroups[groupIndex]);
-    this.requestUpdate();
   }
 
   private _subGroupChanged(ev: CustomEvent): void {

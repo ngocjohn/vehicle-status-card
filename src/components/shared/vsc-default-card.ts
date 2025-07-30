@@ -1,11 +1,13 @@
 import { css, CSSResultGroup, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+import { HomeAssistant } from '../../ha';
 import { DefaultCardConfig } from '../../types/config';
 import { BaseElement } from '../../utils/base-element';
 
 @customElement('vsc-default-card')
 export class VscDefaultCard extends BaseElement {
+  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private _data!: DefaultCardConfig;
 
   @state() private _subCardActive: boolean = false;
@@ -45,8 +47,10 @@ export class VscDefaultCard extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [
-      super.styles,
       css`
+        .default-card {
+          padding: 8px 14px !important;
+        }
         .default-card .data-box {
           opacity: 1;
           padding-top: var(--vic-gutter-gap);
@@ -60,15 +64,15 @@ export class VscDefaultCard extends BaseElement {
           max-height: 0;
           overflow: hidden;
           padding: 0;
-          transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
+          transition: all 350ms ease-in-out;
         }
         .default-card .data-box .card-item {
-          padding: var(--vic-gutter-gap);
+          padding: var(--vic-gutter-gap) 4px;
           border-bottom: 1px solid var(--divider-color, #444);
         }
         .default-card .data-box .card-item:last-child {
           border-bottom: none;
-          padding-bottom: 0;
+          /* padding-bottom: 0; */
         }
 
         .data-icon.warning,
@@ -91,6 +95,7 @@ export class VscDefaultCard extends BaseElement {
           visibility: hidden;
         }
       `,
+      super.styles,
     ];
   }
 }

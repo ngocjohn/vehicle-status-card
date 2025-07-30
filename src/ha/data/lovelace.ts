@@ -345,3 +345,5 @@ export type ActionConfig =
   | AssistActionConfig
   | NoActionConfig
   | CustomActionConfig;
+
+export type UiAction = Exclude<ActionConfig['action'], 'fire-dom-event'>;

@@ -1,5 +1,5 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { css, CSSResultGroup, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -13,12 +13,13 @@ import {
   RangeInfoTemplateKey,
   RANGE_INFO_TEMPLATE_KEYS,
 } from '../../types/config';
+import { BaseElement } from '../../utils/base-element';
 import { generateColorBlocks, generateGradient, getColorForLevel, getNormalizedValue } from '../../utils/colors';
 import { addActions } from '../../utils/lovelace/tap-action';
 
 @customElement('vsc-range-item')
-export class VscRangeItem extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+export class VscRangeItem extends BaseElement {
+  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) rangeItem!: RangeInfoConfig;
 
   @state() private _templateResults: Partial<Record<RangeInfoTemplateKey, RenderTemplateResult | undefined>> = {};
@@ -287,6 +288,9 @@ export class VscRangeItem extends LitElement {
   }
 
   private getValue(key: string) {
+    if (!this.hass || !this.rangeItem) {
+      return undefined;
+    }
     const r = this.rangeItem;
     const hass = this.hass;
 
@@ -307,7 +311,7 @@ export class VscRangeItem extends LitElement {
     const entityMax =
       r.energy_level?.max_value !== undefined
         ? r.energy_level.max_value
-        : r.energy_level?.entity && hass.states[r.energy_level.entity]
+        : r.energy_level?.entity && hass.states?.[r.energy_level?.entity]
         ? hass.states[r.energy_level.entity]?.attributes?.max
         : hasPercent(hass.states[r.energy_level?.entity || ''])
         ? 100
@@ -417,7 +421,10 @@ export class VscRangeItem extends LitElement {
         return undefined;
     }
   }
-  protected render(): TemplateResult {
+  protected render(): TemplateResult | typeof nothing {
+    if (!this.hass || !this.rangeItem) {
+      return nothing;
+    }
     const get = (key: string) => this.getValue(key);
     const itemsInside = get('energyPosition') === 'inside' || get('rangePosition') === 'inside';
     const minHeight = get('barHeight') > 20 ? get('barHeight') : 20; // Ensure minimum height for the bar

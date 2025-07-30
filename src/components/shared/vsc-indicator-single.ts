@@ -1,7 +1,7 @@
 // Home Assistant
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 // Lit
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
 // CSS
@@ -10,14 +10,15 @@ import cardcss from '../../css/card.css';
 import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
 import { hasItemAction, IndicatorItemConfig } from '../../types/config';
 import { addActions } from '../../utils';
+import { BaseElement } from '../../utils/base-element';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-indicator-single')
-export class VscIndicatorSingle extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) indicator!: IndicatorItemConfig;
+export class VscIndicatorSingle extends BaseElement {
+  @property({ attribute: false }) private hass!: HomeAssistant;
+  @property({ attribute: false }) private indicator!: IndicatorItemConfig;
 
   @state() _visibility: boolean = true;
   @state() private _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};

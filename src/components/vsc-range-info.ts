@@ -3,11 +3,13 @@ import { customElement, state, property } from 'lit/decorators.js';
 
 import { COMPONENT } from '../constants/const';
 import './shared/vsc-range-item';
+import { HomeAssistant } from '../ha';
 import { RangeInfoConfig } from '../types/config/card/range-info';
 import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.RANGE_INFO)
 export class VscRangeInfo extends BaseElement {
+  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) rangeConfig!: RangeInfoConfig[];
   @property({ type: Boolean, reflect: true }) public row = false;
   @state() public _groupIndicatorActive: number | null = null;

@@ -266,3 +266,9 @@ export class ImagesSlide extends LitElement {
     ];
   }
 }
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'vsc-images-slide': ImagesSlide;
+  }
+}
