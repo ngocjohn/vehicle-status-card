@@ -15,14 +15,24 @@ import { BaseElement } from '../utils/base-element';
 @customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {
   @property({ attribute: false }) private hass!: HomeAssistant;
-  // @property({ attribute: false }) private buttons!: ButtonCardConfig[];
 
   @state() private buttons!: ButtonCardConfig[];
   @state() private useSwiper!: boolean;
 
-  @state() swiper?: Swiper;
+  @state() private swiper?: Swiper;
   @state() private _cardCurrentSwipeIndex?: number;
-  @state() public activeSlideIndex: number = 0;
+  @state() activeSlideIndex: number = 0;
+
+  constructor() {
+    super();
+  }
+  protected willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+    if (changedProperties.has('_store') && this._store) {
+      this.useSwiper = this._store.gridConfig.swipe!;
+      this.buttons = this._store.visibleButtons;
+    }
+  }
 
   protected firstUpdated(changedProperties: PropertyValues): void {
     super.firstUpdated(changedProperties);
@@ -33,8 +43,8 @@ export class VehicleButtonsGrid extends BaseElement {
   }
 
   private _setUpButtonAnimation(): void {
-    if (this._store.card.isEditorPreview) return;
-    if (!this.shadowRoot) return;
+    if (this._store.card._hasAnimated || this._store.card.isEditorPreview || !this.shadowRoot) return;
+    this._store.card._hasAnimated = true;
 
     const runAnimation = () => {
       const gridItems = this.shadowRoot?.querySelectorAll('vsc-button-single') as NodeListOf<HTMLElement>;
@@ -77,21 +87,7 @@ export class VehicleButtonsGrid extends BaseElement {
     requestAnimationFrame(() => runAnimation());
   }
 
-  // private get gridConfig(): LayoutConfig['button_grid'] {
-  //   const button_grid = this.config.layout_config?.button_grid;
-  //   return {
-  //     rows: button_grid?.rows ?? 2,
-  //     columns: button_grid?.columns ?? 2,
-  //     button_layout: button_grid?.button_layout ?? 'horizontal',
-  //     swipe: button_grid?.swipe ?? false,
-  //     transparent: button_grid?.transparent ?? false,
-  //     hide_notify_badge: button_grid?.hide_notify_badge ?? false,
-  //   };
-  // }
-
   protected render(): TemplateResult {
-    this.useSwiper = this._store.gridConfig.swipe!;
-    this.buttons = this._store.visibleButtons;
     return html`
       <div id="button-swiper" style=${this.computeBaseStyles()}>
         ${this.useSwiper
@@ -107,10 +103,10 @@ export class VehicleButtonsGrid extends BaseElement {
     const buttonOrder = this._store.sectionOrderMap.get('buttons');
     const isSomeElementPrev = buttonOrder !== undefined && buttonOrder !== 0;
     // If mini map is previous section, add padding to top
-    const bottomPadding = !this.useSwiper || this.swiper?.slides.length === 1 ? '0' : 'var(--vic-card-padding)';
+    const bottomPadding = this.swiper?.slides.length === 1 || !this.useSwiper;
     return styleMap({
       marginTop: isSomeElementPrev ? 'var(--vic-card-padding)' : 'unset',
-      padding: `0 0 ${bottomPadding} 0`,
+      paddingBottom: bottomPadding ? '0' : undefined,
     });
   }
 
@@ -144,16 +140,14 @@ export class VehicleButtonsGrid extends BaseElement {
   }
 
   private _renderButton(button: ButtonCardConfig, index: number): TemplateResult {
-    const { hide_notify_badge, transparent, button_layout } = this._store.gridConfig;
+    const gridConfig = this._store.gridConfig;
     return html`<vsc-button-single
       id=${`button-id-${index}`}
       data-index=${index}
       .hass=${this.hass}
       ._buttonConfig=${button}
-      .hideNotify=${hide_notify_badge}
-      ?transparent=${transparent}
-      ?vertical=${button_layout === 'vertical'}
-      @click-index=${this._handleClick}
+      .gridConfig=${gridConfig}
+      @click-index=${this._handleClick.bind(this)}
     ></vsc-button-single>`;
   }
 

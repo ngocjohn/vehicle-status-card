@@ -267,17 +267,20 @@ export class MiniMapBox extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [
+      super.styles,
       unsafeCSS(mapstyle),
       css`
         :host {
           --vic-map-marker-color: var(--primary-color);
           --vic-marker-filter: none;
           --vic-map-tiles-filter: grayscale(1) contrast(1.1);
+          --vic-address-line-color: var(--text-light-primary-color);
         }
         :host([is-dark]) {
           --vic-map-marker-color: var(--accent-color);
           --vic-marker-filter: contrast(1.2) saturate(6) brightness(1.3);
           --vic-map-tiles-filter: brightness(0.7) invert(1) contrast(2.8) brightness(1.8) opacity(0.17) grayscale(1);
+          --vic-address-line-color: var(--primary-text-color);
         }
         *:focus {
           outline: none;
@@ -420,7 +423,7 @@ export class MiniMapBox extends BaseElement {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          color: var(--primary-text-color);
+          color: var(--vic-address-line-color, var(--primary-text-color));
           backdrop-filter: blur(2px);
           text-shadow: 0 0 black;
           ha-icon {
@@ -455,7 +458,7 @@ export class MiniMapBox extends BaseElement {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          border: 2px solid var(--primary-text-color);
+          border: 2px solid var(--vic-address-line-color, var(--primary-text-color));
           position: absolute;
           left: 0;
           top: 0;
