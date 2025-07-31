@@ -73,19 +73,21 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @state() public _tireCardPreview: TireEntity | undefined;
 
   @state() public _activeCardIndex: null | number | string = null;
+
+  @state() _hasAnimated: boolean = false;
   @state() _currentSwipeIndex?: number;
 
   @state() _connected = false;
+
+  @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
+
+  @state() _buttonCardConfigItem!: ButtonCardConfig[]; // Button card configuration items
 
   @query(COMPONENT.BUTTONS_GRID) _vehicleButtonsGrid!: VehicleButtonsGrid;
   @query(COMPONENT.IMAGES_SLIDE) _imagesSlide!: ImagesSlide;
   @query(COMPONENT.RANGE_INFO) _rangeInfo!: VscRangeInfo;
   @query(COMPONENT.INDICATORS) _indicators!: VscIndicators;
   @query(COMPONENT.MINI_MAP) _miniMap!: MiniMapBox;
-
-  @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
-
-  @state() _buttonCardConfigItem!: ButtonCardConfig[]; // Button card configuration items
 
   connectedCallback(): void {
     super.connectedCallback();

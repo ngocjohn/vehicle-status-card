@@ -1,12 +1,19 @@
 // External
 import { HassEntity, UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import hash from 'object-hash/dist/object_hash.js';
 
-import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, forwardHaptic, HomeAssistant } from '../../ha';
-import { hasItemAction } from '../../types/config';
+import {
+  RenderTemplateResult,
+  subscribeRenderTemplate,
+  hasTemplate,
+  forwardHaptic,
+  HomeAssistant,
+  isActive,
+} from '../../ha';
+import { ButtonGridConfig, hasItemAction } from '../../types/config';
 import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../types/config/card/button';
 import { strStartsWith } from '../../utils';
 import { BaseElement } from '../../utils/base-element';
@@ -21,10 +28,8 @@ type TemplateResults = Partial<Record<ButtonTemplateKey, RenderTemplateResult | 
 export class VehicleButtonSingle extends BaseElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _buttonConfig!: ButtonCardConfig;
-  @property({ attribute: false }) public hideNotify!: boolean;
-  @property({ attribute: 'transparent', type: Boolean, reflect: true }) public transparent!: boolean;
+  @property({ attribute: false }) private gridConfig?: ButtonGridConfig;
 
-  @property({ attribute: 'vertical', type: Boolean, reflect: true }) public vertical!: boolean;
   @property({ attribute: false }) _entityStateObj?: HassEntity;
 
   @state() private _templateResults?: TemplateResults;
@@ -32,13 +37,6 @@ export class VehicleButtonSingle extends BaseElement {
   @state() private _iconStyle: Record<string, string | undefined> = {};
 
   @state() private _stateBadgeEl?: any;
-
-  constructor() {
-    super();
-    this.hideNotify = false;
-    this.transparent = false;
-    this.vertical = false;
-  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -70,6 +68,11 @@ export class VehicleButtonSingle extends BaseElement {
 
   protected async willUpdate(changedProperties: PropertyValues): Promise<void> {
     super.willUpdate(changedProperties);
+    if (changedProperties.has('gridConfig') && this.gridConfig) {
+      const { transparent, button_layout } = this.gridConfig;
+      this.toggleAttribute('transparent', transparent);
+      this.toggleAttribute('vertical', button_layout === 'vertical');
+    }
     if (changedProperties.has('_buttonConfig') && this._buttonConfig) {
       const button = this._buttonConfig.button;
       if (button.secondary && button.secondary.entity) {
@@ -120,14 +123,8 @@ export class VehicleButtonSingle extends BaseElement {
     ) {
       const oldEntitObj = changedProperties.get('_entityStateObj') as HassEntity | undefined;
       const newEntityObj = this._entityStateObj as HassEntity;
-      // If the state object has changed and the icon
-      // log the change to console
+      // If the state object has changed and the icon style is different, update the icon style
       if (oldEntitObj && JSON.stringify(oldEntitObj) !== JSON.stringify(newEntityObj)) {
-        console.log(
-          'Entity state object changed:',
-          oldEntitObj,
-          JSON.stringify(oldEntitObj) !== JSON.stringify(newEntityObj)
-        );
         setTimeout(() => {
           const newIconStyle = this._stateBadgeEl?._iconStyle || {};
           const currentStyle = this._iconStyle;
@@ -153,12 +150,12 @@ export class VehicleButtonSingle extends BaseElement {
 
   private _setEventListeners(): void {
     if (!this.isAction) {
+      this.addEventListener('click', this._handleNavigate.bind(this));
       return;
     }
     const actionConfig = this._buttonConfig?.button_action || {};
     if (hasItemAction(actionConfig)) {
-      const actionEl = this.shadowRoot?.getElementById('actionBtn') as HTMLElement;
-      addActions(actionEl, actionConfig);
+      addActions(this, actionConfig);
     }
   }
 
@@ -511,24 +508,39 @@ export class VehicleButtonSingle extends BaseElement {
             box-shadow: 0 0 10px 0 rgba(255, 0, 0, 0.5);
           }
         }
+        .zoom-in {
+          animation-duration: 0.3s;
+          animation-fill-mode: both;
+          animation-name: zoomIn;
+        }
+
+        @keyframes zoomIn {
+          from {
+            opacity: 0.5;
+            transform: scale3d(0.3, 0.3, 0.3);
+          }
+
+          to {
+            opacity: 1;
+          }
+        }
       `,
     ];
   }
 
   protected render(): TemplateResult {
     const { primary, secondary } = this._buttonConfig.button;
-    const icon = this._buttonConfig.button.icon || '';
     const entity = secondary?.entity || '';
     this._entityStateObj = this.hass.states[entity];
     const stateObj = this._entityStateObj;
-    const hideNotify = this.hideNotify;
+    const stateColor = this._stateColor;
 
     const state = this._getValue('state_template');
-    const notify = this._getValue('notify');
-    const notifyIcon = this._getValue('notify_icon');
+    const notify = Boolean(this._getValue('notify'));
+    const notifyIcon = String(this._getValue('notify_icon'));
     const notifyColor = this._getValue('notify_color');
-    const stateColor = this._stateColor;
     const color = this._getValue('color');
+
     const iconBackgroundColor = stateColor ? this._iconStyle.color : color || 'var(--disabled-text-color)';
     const iconColor = color ? color : 'var(--secondary-text-color)';
 
@@ -537,6 +549,26 @@ export class VehicleButtonSingle extends BaseElement {
       '--vic-icon-color': `${iconColor}`,
       '--vic-notify-color': `${notifyColor}`,
     };
+
+    return html`
+      <div class="grid-item" id="actionBtn">
+        <ha-ripple></ha-ripple>
+        <div class="click-container click-shrink">
+          <div class="item-icon" style=${styleMap(iconStyle)}>
+            ${this._renderIcon(stateObj, iconColor)} ${this._renderNotifyIcon(notify, notifyIcon)}
+          </div>
+          <div class="item-content">
+            <span class="primary">${primary}</span>
+            <span class="secondary">${state}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderIcon(stateObj: HassEntity, iconColor: string): TemplateResult {
+    const stateColor = this._stateColor;
+    const icon = this._buttonConfig.button.icon || '';
 
     const picture = String(this._getValue('picture_template'));
     const isPictureUrl = strStartsWith(picture, 'http') || strStartsWith(picture, '/');
@@ -547,14 +579,16 @@ export class VehicleButtonSingle extends BaseElement {
     } else {
       changedIcon = icon;
     }
+
+    const active = isActive(stateObj);
     const iconElement =
-      this._stateColor && entity
+      stateColor && stateObj.entity_id
         ? html`<state-badge
             .hass=${this.hass}
             .stateObj=${stateObj}
-            .stateColor=${this._stateColor}
+            .stateColor=${stateColor}
             .overrideIcon=${changedIcon}
-            .color=${this._stateColor ? undefined : iconColor}
+            .color=${stateColor && active ? undefined : iconColor}
           ></state-badge>`
         : html`
             <ha-state-icon
@@ -565,24 +599,19 @@ export class VehicleButtonSingle extends BaseElement {
             >
             </ha-state-icon>
           `;
+    return html`<div class="icon-background">
+      ${isPictureUrl ? html`<img class="icon-picture" src=${picture} />` : iconElement}
+    </div>`;
+  }
+
+  private _renderNotifyIcon(notify: boolean, notifyIcon: string): TemplateResult | typeof nothing {
+    if (this.gridConfig?.hide_notify_badge || !notify) {
+      return nothing;
+    }
     return html`
-      <div class="grid-item" id="actionBtn" @click=${this._handleNavigate} style=${styleMap(iconStyle)}>
-        <ha-ripple></ha-ripple>
-        <div class="click-container click-shrink">
-          <div class="item-icon">
-            <div class="icon-background">
-              ${isPictureUrl ? html`<img class="icon-picture" src=${picture} />` : iconElement}
-            </div>
-            <div class="item-notify" ?hidden=${!notify || hideNotify}>
-              <div class="notify-icon">
-                <ha-icon icon=${notifyIcon}></ha-icon>
-              </div>
-            </div>
-          </div>
-          <div class="item-content">
-            <span class="primary">${primary}</span>
-            <span class="secondary">${state}</span>
-          </div>
+      <div class="item-notify">
+        <div class="notify-icon">
+          <ha-icon icon=${notifyIcon}></ha-icon>
         </div>
       </div>
     `;
