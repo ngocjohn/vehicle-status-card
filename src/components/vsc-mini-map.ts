@@ -32,6 +32,7 @@ export class MiniMapBox extends BaseElement {
   private _address: Partial<Address> | null = null;
 
   @state() private _mapInitialized = false;
+
   private resizeObserver?: ResizeObserver;
 
   private get mapPopup(): boolean {
@@ -79,6 +80,7 @@ export class MiniMapBox extends BaseElement {
 
   protected willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
+
     if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map) {
       this.latLon = this._getTargetLatLng(this.map);
       this.map.invalidateSize();
@@ -175,9 +177,14 @@ export class MiniMapBox extends BaseElement {
   }
 
   private _createTileLayer(map: L.Map): L.TileLayer {
+    const retina = L.Browser.retina;
     const tileOpts = {
-      tileSize: 256,
       className: 'map-tiles',
+      detectRetina: true,
+      tileSize: retina ? 512 : 256,
+      zoomOffset: retina ? -1 : 0,
+      transparent: true,
+      // opacity: 0.8,
     };
 
     const tileLayer = L.tileLayer.provider('CartoDB.Positron', tileOpts).addTo(map);
@@ -279,7 +286,8 @@ export class MiniMapBox extends BaseElement {
         :host([is-dark]) {
           --vic-map-marker-color: var(--accent-color);
           --vic-marker-filter: contrast(1.2) saturate(6) brightness(1.3);
-          --vic-map-tiles-filter: brightness(0.7) invert(1) contrast(2.8) brightness(1.8) opacity(0.17) grayscale(1);
+          --vic-map-tiles-filter: brightness(0.8) invert(0.9) contrast(2.1) brightness(2) opacity(27%) grayscale(1);
+          /* --vic-map-tiles-filter: brightness(0.7) invert(1) contrast(2.8) brightness(1.8) opacity(0.17) grayscale(1); */
           --vic-address-line-color: var(--primary-text-color);
         }
         *:focus {
