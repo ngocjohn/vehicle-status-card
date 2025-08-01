@@ -130,6 +130,9 @@ export const OFF = 'off';
 const OFF_STATES = [UNAVAILABLE, UNKNOWN, OFF];
 
 export function isActive(stateObj: HassEntity) {
+  if (!stateObj) {
+    return false;
+  }
   const domain = computeDomain(stateObj.entity_id);
   const state = stateObj.state;
 
