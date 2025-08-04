@@ -60,7 +60,7 @@ export class VscRangeItem extends BaseElement {
           transition: width 0.4s ease-in-out;
           top: 0;
           bottom: 0;
-          z-index: 4;
+          z-index: 2;
           margin: 2px 0;
         }
 
@@ -74,7 +74,7 @@ export class VscRangeItem extends BaseElement {
           background-color: transparent;
           width: var(--vsc-bar-level);
           display: inline-flex;
-          z-index: 4;
+          z-index: 2;
           padding-inline: var(--vic-card-padding);
           box-sizing: border-box;
           max-width: 100% !important;
@@ -161,7 +161,7 @@ export class VscRangeItem extends BaseElement {
           box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
           transform: translateY(-50%);
           display: var(--vsc-bar-target-display, none);
-          z-index: 5;
+          z-index: 4;
         }
       `,
     ];
