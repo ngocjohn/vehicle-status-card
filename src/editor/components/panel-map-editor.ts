@@ -168,9 +168,12 @@ export class PanelMapEditor extends LitElement {
         ${content}
         <div style="justify-content: flex-end; display: flex; margin-top: 1rem;">
           <ha-button
+            size="small"
+            variant="neutral"
+            appearance="filled"
             @click=${() => (this._yamlMode = !this._yamlMode)}
-            .label=${this._yamlMode ? 'Show UI editor' : 'Show Code editor'}
-          ></ha-button>
+            >${this._yamlMode ? 'Show UI editor' : 'Show Code editor'}</ha-button
+          >
         </div>
       </div>
     `;

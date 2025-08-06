@@ -320,12 +320,9 @@ export class PanelImagesEditor extends LitElement {
         >`;
 
     const actionHeader = html`<div class="action-footer">
-      <ha-button
-        class="warning-btn"
-        .outlined=${true}
-        @click=${() => (this._dropAreaActive = true)}
-        .label=${'Add Image'}
-      ></ha-button>
+      <ha-button size="small" appearance="filled" @click=${() => (this._dropAreaActive = true)}
+        ><ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add image</ha-button
+      >
       <div class="item-actions">
         <ha-icon-button ?active=${!this._listView} .path=${mdiGrid} @click=${() => (this._listView = false)}>
         </ha-icon-button>
@@ -341,22 +338,28 @@ export class PanelImagesEditor extends LitElement {
       style="flex-direction: row-reverse;"
     >
       <ha-button
+        size="small"
+        appearance="filled"
         @click=${this.toggleAction('select-all')}
-        .label=${'Select All'}
         .disabled=${this._selectedItems.size === images.length}
-      ></ha-button>
+        >Select All</ha-button
+      >
       <ha-button
+        size="small"
+        appearance="filled"
+        variant="warning"
         @click=${this.toggleAction('delete-selected')}
-        .label=${'Delete Selected'}
         ?hidden=${!this._selectedItems.size}
-        class="delete-btn"
-      ></ha-button>
+        >Delete Selected</ha-button
+      >
       <ha-button
+        size="small"
+        appearance="filled"
         @click=${this.toggleAction('deselect-all')}
         .disabled=${!this._selectedItems.size}
-        .label=${'Deselect All'}
         ?hidden=${!this._selectedItems.size}
-      ></ha-button>
+        >Deselect All</ha-button
+      >
     </div>`;
 
     return html` ${this._yamlEditorActive
@@ -414,7 +417,9 @@ export class PanelImagesEditor extends LitElement {
         <ha-alert id="image-alert" class="hidden" alert-type="success">New image added successfully!</ha-alert>
       </div>
       <div class="action-footer">
-        <ha-button id="upload-btn" @click=${() => (this._dropAreaActive = false)}>Cancel</ha-button>
+        <ha-button size="small" appearance="filled" id="upload-btn" @click=${() => (this._dropAreaActive = false)}
+          >Cancel</ha-button
+        >
       </div>
     `;
   }

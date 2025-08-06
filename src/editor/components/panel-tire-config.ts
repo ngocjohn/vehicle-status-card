@@ -34,7 +34,9 @@ export class PanelTireConfig extends LitElement {
     return !this.yamlMode
       ? html` <div class="indicator-config">
           ${tireBackground} ${tireAppearance} ${tireEntities}
-          <ha-button @click=${() => (this.yamlMode = true)} .label=${'Edit YAML'}></ha-button>
+          <ha-button size="small" variant="neutral" appearance="filled" @click=${() => (this.yamlMode = true)}
+            >Edit YAML</ha-button
+          >
         </div>`
       : this._renderYamlEditor();
   }
@@ -56,7 +58,9 @@ export class PanelTireConfig extends LitElement {
       ${bgForm}
       <div class="sub-content">
         ${this.tireConfig?.background !== undefined && this.tireConfig?.background !== ''
-          ? html`<ha-button @click=${this._handleAction('reset_background')} .label=${'Use Default'}></ha-button>`
+          ? html`<ha-button size="small" appearance="filled" @click=${this._handleAction('reset_background')}
+              >Use Default</ha-button
+            >`
           : nothing}
       </div>
     `;
@@ -73,7 +77,7 @@ export class PanelTireConfig extends LitElement {
     const content = html`
       ${appearanceForm}
       <div class="sub-content">
-        <ha-button @click=${this._handleAction('reset_appearance')} .label=${'Reset to Default'}></ha-button>
+        <ha-button Use Default @click=${this._handleAction('reset_appearance')}>Reset to Default'</ha-button>
       </div>
     `;
 

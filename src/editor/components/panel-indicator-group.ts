@@ -111,13 +111,12 @@ export class PanelIndicatorGroup extends LitElement {
             </div>
           </ha-sortable>`}
       <div class="action-footer">
-        <ha-button .outlined=${true} @click=${this._togglePromptNewGroup} .label=${'Add new group'}></ha-button>
-        <ha-button
-          .outlined=${true}
-          class="edit-yaml-btn"
-          @click=${() => (this._yamlMode = !this._yamlMode)}
-          .label=${this._yamlMode ? 'Close YAML' : 'Edit YAML'}
+        <ha-button size="small" appearance="filled" @click=${this._togglePromptNewGroup}>
+          <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>
+          Add new group</ha-button
         >
+        <ha-button size="small" variant="neutral" appearance="filled" @click=${() => (this._yamlMode = !this._yamlMode)}
+          >${this._yamlMode ? 'Close YAML' : 'Edit YAML'}
         </ha-button>
       </div>`;
   }
