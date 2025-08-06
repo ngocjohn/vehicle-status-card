@@ -114,7 +114,9 @@ export class PanelButtonCard extends LitElement {
         'Button List',
         [],
         false,
-        html`<ha-button @click=${this.toggleAction('add-new-button')}>Add New Button</ha-button>`
+        html`<ha-button size="small" appearance="filled" @click=${this.toggleAction('add-new-button')}
+          ><ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add New Button</ha-button
+        >`
       )}
       ${!buttons.length
         ? html`<span>No buttons added</span>`
@@ -465,8 +467,16 @@ export class PanelButtonCard extends LitElement {
     ></vsc-sub-panel-yaml>`;
 
     const footerActions = html` <div class="action-footer">
-      <ha-button @click=${this.toggleAction('category-add', buttonIndex)}>Add category</ha-button>
-      <ha-button @click=${this.toggleAction('yaml-default-card', buttonIndex)} .label=${'Edit YAML'}></ha-button>
+      <ha-button size="small" appearance="filled" @click=${this.toggleAction('category-add', buttonIndex)}
+        ><ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add category</ha-button
+      >
+      <ha-button
+        size="small"
+        variant="neutral"
+        appearance="filled"
+        @click=${this.toggleAction('yaml-default-card', buttonIndex)}
+        >Edit YAML</ha-button
+      >
     </div>`;
 
     const cardInfo = CONFIG_TYPES.options.button_card.subpanels.default_cards.description;
@@ -524,11 +534,9 @@ export class PanelButtonCard extends LitElement {
         },
       ],
       false,
-      html`<ha-button
-        .outlined=${true}
-        .label=${this._previewLabel}
-        @click=${() => this._togglePreview('default', buttonIndex)}
-      ></ha-button>`
+      html`<ha-button size="small" appearance="filled" @click=${() => this._togglePreview('default', buttonIndex)}
+        >${this._previewLabel}</ha-button
+      >`
     );
     return html`
       ${itemHeader}
@@ -548,7 +556,7 @@ export class PanelButtonCard extends LitElement {
       <div class="sub-header" ?hidden=${isHidden}>
         <div>Custom Card Configuration</div>
         <div class="subcard-icon">
-          <ha-button @click=${() => this._togglePreview('custom', buttonIndex)}>
+          <ha-button size="small" appearance="filled" @click=${() => this._togglePreview('custom', buttonIndex)}>
             ${this._activePreview === 'custom' ? 'Close Preview' : 'Preview'}</ha-button
           >
         </div>
@@ -577,11 +585,11 @@ export class PanelButtonCard extends LitElement {
         (action) =>
           html` <div class="subcard-icon">
             <ha-button
-              .outlined=${true}
-              .label=${action?.title || ''}
+              size="small"
+              appearance="filled"
               .disabled="${action?.disabled || false}"
               @click=${(ev: Event) => action.action(ev)}
-            >
+              >${action?.title || ''}
             </ha-button>
           </div>`
       )}

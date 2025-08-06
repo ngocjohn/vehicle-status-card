@@ -634,13 +634,16 @@ export class PanelRangeInfo extends LitElement {
           `
         : this._renderYamlEditor()}
       <div class="action-footer">
-        <ha-button .outlined=${true} @click=${() => this._toggleAction('add')} .label=${'Add Range Info'}> </ha-button>
+        <ha-button size="small" appearance="filled" @click=${() => this._toggleAction('add')}>
+          <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>
+          Add new bar
+        </ha-button>
         <ha-button
-          .outlined=${true}
-          class="edit-yaml-btn"
+          size="small"
+          variant="neutral"
+          appearance="filled"
           @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}
-          .label=${!this._yamlEditorActive ? 'Edit YAML' : 'Close YAML'}
-        >
+          >${!this._yamlEditorActive ? 'Edit YAML' : 'Close YAML'}
         </ha-button>
       </div> `;
   }

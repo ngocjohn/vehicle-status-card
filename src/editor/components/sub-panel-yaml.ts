@@ -44,7 +44,13 @@ export class SubPanelYaml extends LitElement {
           .configValue=${'button_card'}
         >
           ${this.extraAction
-            ? html`<ha-button style="float: inline-end;" slot="extra-actions" @click=${this._closeEditor}
+            ? html`<ha-button
+                size="medium"
+                variant="warning"
+                appearance="plain"
+                style="float: inline-end;"
+                slot="extra-actions"
+                @click=${this._closeEditor}
                 >Close Editor</ha-button
               >`
             : nothing}

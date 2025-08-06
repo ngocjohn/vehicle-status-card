@@ -117,11 +117,11 @@ export class PanelIndicatorSingle extends LitElement {
           </div>
           <div class="action-footer">
             <ha-button
-              .outlined=${true}
-              class="edit-yaml-btn"
+              size="small"
+              variant="neutral"
+              appearance="filled"
               @click=${() => (this._yamlEditorVisible = !this._yamlEditorVisible)}
-              .label=${this._yamlEditorVisible ? 'Close YAML' : 'Edit YAML'}
-            >
+              >${this._yamlEditorVisible ? 'Close YAML' : 'Edit YAML'}
             </ha-button>
           </div>
         `;
