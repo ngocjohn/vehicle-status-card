@@ -141,6 +141,7 @@ export class VehicleButtonsGrid extends BaseElement {
 
   private _renderButton(button: ButtonCardConfig, index: number): TemplateResult {
     const gridConfig = this._store.gridConfig;
+
     return html`<vsc-button-single
       id=${`button-id-${index}`}
       data-index=${index}
@@ -168,7 +169,7 @@ export class VehicleButtonsGrid extends BaseElement {
     const paginationEl = swiperCon.querySelector('.swiper-pagination') as HTMLElement;
 
     this.swiper = new Swiper(swiperCon as HTMLElement, {
-      grabCursor: true,
+      // grabCursor: true,
       loop: false,
       modules: [Pagination],
       pagination: {
