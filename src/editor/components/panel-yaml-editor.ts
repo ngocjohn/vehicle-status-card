@@ -4,14 +4,15 @@ import { customElement, property, state } from 'lit/decorators.js';
 // styles
 import editorcss from '../../css/editor.css';
 import { HomeAssistant } from '../../ha';
+import { PANEL } from '../editor-const';
 // local
 
-@customElement('vsc-sub-panel-yaml')
+@customElement(PANEL.YAML_EDITOR)
 export class SubPanelYaml extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) configDefault: any;
-  @state() configIndex?: number;
-  @state() configKey?: string;
+  @state() configIndex?: number | string;
+  @state() configKey?: string | number;
 
   @property({ attribute: 'has-extra-actions', type: Boolean })
   public extraAction = false;
@@ -85,5 +86,11 @@ export class SubPanelYaml extends LitElement {
       bubbles: true,
     });
     this.dispatchEvent(event);
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'panel-yaml-editor': SubPanelYaml;
   }
 }

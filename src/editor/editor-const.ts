@@ -1,3 +1,5 @@
+import { CARD_NAME } from '../constants/const';
+
 const makePanel = (name: string, description: string, icon?: string, helper?: string) => ({
   name,
   description,
@@ -5,14 +7,16 @@ const makePanel = (name: string, description: string, icon?: string, helper?: st
   helper,
 });
 
+const DOC_URL = 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#';
+
 export const CONFIG_TYPES = {
   name: 'Config type',
   description: 'Select the type of configuration you want to edit.',
   options: {
     indicators: {
       name: 'Indicators',
-      description: 'Display individual or grouped entity states on the card header.',
-      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#indicators-configuration',
+      description: 'Display individual or grouped entity states as indicators.',
+      doc: `${DOC_URL}indicators-configuration`,
       subpanels: {
         single: makePanel(
           'Single Indicators',
@@ -27,7 +31,7 @@ export const CONFIG_TYPES = {
     range: {
       name: 'Range progress bar',
       description: 'Show progress bars for fuel, battery, or any entity with a range state.',
-      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#range-info-bars',
+      doc: `${DOC_URL}range-info-bars`,
       subpanels: {
         rangeIndicator: makePanel(
           'Range Indicator',
@@ -38,17 +42,17 @@ export const CONFIG_TYPES = {
     images: {
       name: 'Images',
       description: 'Add images for slides and set intervals for auto-changing.',
-      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#image-slides',
+      doc: `${DOC_URL}image-slides`,
     },
     mini_map: {
       name: 'Mini Map',
       description: 'Track device_tracker entities on a mini map.',
-      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#mini-map',
+      doc: `${DOC_URL}mini-map`,
     },
-    button_card: {
-      name: 'Button and Card',
+    buttons: {
+      name: 'Buttons and sub-cards',
       description: 'Configure button appearance, notifications, and default or custom cards.',
-      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#button-card',
+      doc: `${DOC_URL}button-card`,
       subpanels: {
         button: makePanel(
           'Button',
@@ -61,13 +65,19 @@ export const CONFIG_TYPES = {
     },
     layout_config: {
       name: 'Layout Configuration',
-      description: 'Set the card’s layout, theme, rows, and swipe for button grids.',
-      doc: 'https://github.com/ngocjohn/vehicle-status-card?tab=readme-ov-file#button-card',
+      description: 'Set the card’s layout, theme, and visibility of sections.',
     },
   },
 };
 
-const PREVIEW_CONFIG_TYPES = ['btn_preview', 'default_card_preview', 'card_preview', 'tire_preview', 'active_group'];
+const PREVIEW_CONFIG_TYPES = [
+  'btn_preview',
+  'default_card_preview',
+  'card_preview',
+  'tire_preview',
+  'active_group',
+  'row_group_preview',
+];
 
 type BUTTON_CARD_ACTIONS =
   | 'add-item'
@@ -179,6 +189,8 @@ enum ALERT_INFO {
   MAPTILER_DOC_LINK = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup',
   MAP_SINGLE_CARD = 'Configuration is same as for HA Default Map Card',
   MAP_SINGLE_LINK = 'https://www.home-assistant.io/dashboards/map/',
+  IDICATOR_LEGACY = 'More info in the wiki. Or migrate to the new format.',
+  INDICATOR_ROW_URL = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup',
 }
 
 export {
@@ -190,3 +202,24 @@ export {
   IMAGE_CONFIG_ACTIONS,
   ALERT_INFO,
 };
+
+export const EDITOR_NAME = `${CARD_NAME}-editor`;
+
+const PANEL_PREFIX = 'panel-';
+
+export enum PANEL {
+  RANGE_INFO = `${PANEL_PREFIX}range-info`,
+  BASE_BUTTON = `${PANEL_PREFIX}base-button`,
+  BUTTON_CARD = `${PANEL_PREFIX}button-card`,
+  DEFAULT_CARD = `${PANEL_PREFIX}default-card`,
+  EDITOR_UI = `${PANEL_PREFIX}editor-ui`,
+  IMAGES_EDITOR = `${PANEL_PREFIX}images-editor`,
+  INDICATOR_GROUP = `${PANEL_PREFIX}indicator-group`,
+  INDICATOR_SINGLE = `${PANEL_PREFIX}indicator-single`,
+  INDICATOR_ROWS = `${PANEL_PREFIX}indicator-rows`,
+  INDICATOR_ITEM = `${PANEL_PREFIX}indicator-item`,
+  MAP_EDITOR = `${PANEL_PREFIX}map-editor`,
+  TIRE_CONFIG = `${PANEL_PREFIX}tire-config`,
+  YAML_EDITOR = `${PANEL_PREFIX}yaml-editor`,
+  BUTTON_LIST = `${PANEL_PREFIX}button-list`,
+}

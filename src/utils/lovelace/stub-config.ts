@@ -2,7 +2,7 @@ import type { ImageConfig, LayoutConfig, MiniMapConfig, VehicleStatusCardConfig 
 
 import { getEntitiesByDomain, HomeAssistant } from '../../ha';
 import { createButtonCard, generateButtonCardConfig } from './stub-config_button';
-import { getIndicatorsConfig } from './stub-config_idicators';
+import { getIndicatorRows } from './stub-config_idicators';
 import { getRangeInfoConfig } from './stub-config_range';
 
 const STORAGE_STUB_CONFIG = 'vsc-stub-config';
@@ -45,7 +45,7 @@ const DEFAULT_CONFIG: Partial<VehicleStatusCardConfig> = {
 export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStatusCardConfig> => {
   const deviceTracker = getEntitiesByDomain(hass.states, 1, ['device_tracker']);
   const buttonCardConfig = generateButtonCardConfig(hass);
-  const idicators = getIndicatorsConfig(hass);
+  const indicatorRows = getIndicatorRows(hass);
   const rangeInfo = getRangeInfoConfig(hass);
 
   let clonedConfig = { ...DEFAULT_CONFIG } as VehicleStatusCardConfig;
@@ -62,8 +62,8 @@ export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStat
   if (buttonCardConfig.length) {
     clonedConfig.button_card = buttonCardConfig;
   }
-  if (idicators) {
-    clonedConfig.indicators = idicators;
+  if (indicatorRows) {
+    clonedConfig.indicator_rows = [indicatorRows];
     clonedConfig.layout_config.hide.indicators = false;
   }
   if (rangeInfo) {

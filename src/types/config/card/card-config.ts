@@ -2,11 +2,11 @@ import { LovelaceCardConfig } from '../../../ha';
 import { EntityConfig } from '../entity-config';
 import { ButtonCardConfig } from './button';
 import { ImageConfig } from './images';
-import { IndicatorRowConfig } from './indicator_rows';
 import { IndicatorsConfig } from './indicators';
 import { LayoutConfig } from './layout';
 import { MiniMapConfig } from './mini-map';
 import { RangeInfoConfig } from './range-info';
+import { IndicatorRowConfig } from './row-indicators';
 /**
  * Configuration interface for the Vehicle Card.
  */

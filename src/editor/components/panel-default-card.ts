@@ -9,6 +9,7 @@ import { HomeAssistant } from '../../ha';
 import { CardItemConfig, DefaultCardConfig } from '../../types/config';
 import { ICON } from '../../utils';
 import { processCardItemEntities } from '../../utils/editor/process-editor-entities';
+import { PANEL } from '../editor-const';
 
 export const defaultCardSchema = [
   {
@@ -78,7 +79,7 @@ export const defaultCardItemSchema = memoizeOne(
     ] as const
 );
 
-@customElement('vsc-panel-default-card')
+@customElement(PANEL.DEFAULT_CARD)
 export class PanelDefaultCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) defaultCardConfig!: DefaultCardConfig;
@@ -321,6 +322,6 @@ export class PanelDefaultCard extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'vsc-panel-default-card': PanelDefaultCard;
+    'panel-default-card': PanelDefaultCard;
   }
 }

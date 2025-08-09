@@ -1,26 +1,39 @@
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import './components';
 import './editor/editor';
 // components
-import { VehicleButtonsGrid, ImagesSlide, VscRangeInfo, VscIndicators, MiniMapBox } from './components';
-import { SECTION, SECTION_ORDER, COMPONENT, CARD_NAME } from './constants/const';
+import {
+  VehicleButtonsGrid,
+  ImagesSlide,
+  VscRangeInfo,
+  VscIndicators,
+  MiniMapBox,
+  VscIndicatorRow,
+} from './components';
+import { COMPONENT, CARD_NAME } from './constants/const';
+import { EditorEventParams } from './editor/base-editor';
 // Ha utils
 import { fireEvent, forwardHaptic, HomeAssistant, LovelaceCard, LovelaceCardConfig, LovelaceCardEditor } from './ha';
 import {
   ButtonCardConfig,
   DefaultCardConfig,
+  IndicatorRowConfig,
   MapData,
   PREVIEW_TYPE,
   TireEntity,
   TireTemplateConfig,
   VehicleStatusCardConfig,
 } from './types/config';
+import { SECTION_KEYS } from './types/config/card/layout';
+import { SECTION } from './types/section';
 import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
+import { reorderSection } from './utils/editor/reorder-section';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createCustomCard } from './utils/lovelace/create-custom-card';
 import { createMapCard } from './utils/lovelace/create-map-card';
@@ -43,6 +56,24 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   };
 
   public setConfig(config: VehicleStatusCardConfig): void {
+    const layoutConfig = config.layout_config || {};
+    const hasHeaderInfo = layoutConfig.section_order?.includes(SECTION.HEADER_INFO);
+
+    if (hasHeaderInfo || !layoutConfig.section_order) {
+      console.debug('has header info, removing it from section order');
+      const hideConfig = layoutConfig.hide || {};
+      const currentOrder = layoutConfig?.section_order || [];
+      const updatedOrder = reorderSection(hideConfig, currentOrder);
+      // console.debug('Updated section order:', updatedOrder);
+      config = {
+        ...config,
+        layout_config: {
+          ...layoutConfig,
+          section_order: updatedOrder,
+        },
+      };
+    }
+
     const newConfig = JSON.parse(JSON.stringify(config)) as VehicleStatusCardConfig;
     this._config = newConfig;
     if (this._config.button_card && this._config.button_card.length) {
@@ -83,27 +114,27 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   @state() _buttonCardConfigItem!: ButtonCardConfig[]; // Button card configuration items
 
-  @query(COMPONENT.BUTTONS_GRID) _vehicleButtonsGrid!: VehicleButtonsGrid;
-  @query(COMPONENT.IMAGES_SLIDE) _imagesSlide!: ImagesSlide;
-  @query(COMPONENT.RANGE_INFO) _rangeInfo!: VscRangeInfo;
-  @query(COMPONENT.INDICATORS) _indicators!: VscIndicators;
-  @query(COMPONENT.MINI_MAP) _miniMap!: MiniMapBox;
+  @query(COMPONENT.BUTTONS_GRID, true) _vehicleButtonsGrid!: VehicleButtonsGrid;
+  @query(COMPONENT.IMAGES_SLIDE, true) _imagesSlide!: ImagesSlide;
+  @query(COMPONENT.RANGE_INFO, true) _rangeInfo!: VscRangeInfo;
+  @query(COMPONENT.INDICATORS, true) _indicators!: VscIndicators;
+  @query(COMPONENT.MINI_MAP, true) _miniMap!: MiniMapBox;
+  @queryAll(COMPONENT.INDICATOR_ROW) _indicatorRows!: VscIndicatorRow[];
 
   connectedCallback(): void {
     super.connectedCallback();
     void loadVerticalStackCard();
     window.VehicleCard = this;
-    if (this.isEditorPreview) {
-      // console.log('Editor preview connected');
-      document.addEventListener('editor-event', this._handleEditorEvent.bind(this));
-    }
     this._connected = true;
+    if (this.isEditorPreview) {
+      console.log('Card in preview', this._config.name);
+      window.addEventListener('editor-event', this._handleEditorEvent.bind(this));
+    }
   }
 
   disconnectedCallback(): void {
-    document.removeEventListener('editor-event', this._handleEditorEvent.bind(this));
     this._connected = false;
-
+    window.removeEventListener('editor-event', this._handleEditorEvent.bind(this));
     super.disconnectedCallback();
   }
 
@@ -154,18 +185,25 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     // Always configure the card preview when there are config changes
     if (changedProps.has('_config') && this._currentPreview !== null) {
       console.log('Reconfiguring card preview');
-
       previewHandler(this._currentPreview, this);
     }
-    if (changedProps.has('_config') && this._config.active_group !== undefined && this.isEditorPreview) {
-      // If active group is set, show the group indicator in the card
-      const groupIndex = this._config.active_group;
-      console.log('Active group index:', groupIndex);
-      if (this._indicators) {
-        this._indicators._activeGroupIndicator = groupIndex;
-        console.log('Setting active group indicator:', this._indicators._activeGroupIndicator);
-        if (this._rangeInfo) {
-          this._rangeInfo._groupIndicatorActive = groupIndex;
+
+    if (changedProps.has('_config') && this.isEditorPreview) {
+      if (this._config.active_group !== undefined) {
+        // If active group is set, show the group indicator in the card
+        const groupIndex = this._config.active_group;
+        console.log('Active group index:', groupIndex);
+        if (this._indicators) {
+          this._indicators._activeGroupIndicator = groupIndex;
+          console.log('Setting active group indicator:', this._indicators._activeGroupIndicator);
+        }
+      }
+      if (this._config.row_group_preview !== undefined) {
+        const { row_index, group_index, entity_index } = this._config.row_group_preview;
+
+        if (this._indicatorRows) {
+          this._toggleIndicatorRow({ rowIndex: row_index, groupIndex: group_index });
+          this._toggleIndicatorEntity({ row_index, group_index, entity_index });
         }
       }
     }
@@ -186,10 +224,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       return this._renderCardPreview();
     }
 
-    // if (this._config.mini_map?.single_map_card === true && this._singleMapCard.length) {
-    //   const mapCard = this._singleMapCard[0];
-    //   return html`${mapCard}`;
-    // }
     if (this._config.mini_map?.single_map_card === true && this._extraMapCard) {
       const mapCard = this._extraMapCard;
       return html`${mapCard}`;
@@ -204,16 +238,17 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       </ha-card>
     `;
   }
+
   private _renderMainCard(): TemplateResult {
-    const sectionOrder = this._config.layout_config?.section_order ?? [...SECTION_ORDER];
+    const sectionOrder = this._config.layout_config?.section_order || SECTION_KEYS;
 
     return html` <main id="main-wrapper">
       ${sectionOrder.map((section: string) => {
         switch (section) {
-          case SECTION.HEADER_INFO:
-            return html` <div class="header-info-box" id=${SECTION.HEADER_INFO}>
-              ${this._renderIndicators()} ${this._renderRangeInfo()}
-            </div>`;
+          case SECTION.INDICATORS:
+            return this._renderIndicators();
+          case SECTION.RANGE_INFO:
+            return this._renderRangeInfo();
           case SECTION.IMAGES:
             return this._renderImagesSlide();
           case SECTION.MINI_MAP:
@@ -227,17 +262,41 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     </main>`;
   }
 
-  private _renderIndicators(): TemplateResult {
-    if (!this._config.indicators || this._isSectionHidden(SECTION.INDICATORS)) return html``;
-    return html` <div id="${SECTION.INDICATORS}">
-      <vsc-indicators
-        .hass=${this._hass}
-        .config=${this._config}
-        @indicator-toggle=${(ev: CustomEvent) => {
-          this._rangeInfo?._handleIndicatorClick(ev.detail.active);
-        }}
-      ></vsc-indicators>
+  private _renderIndicators() {
+    if (this._isSectionHidden(SECTION.INDICATORS)) return html``;
+    const hasRows = this._config.indicator_rows && this._config.indicator_rows.length > 0;
+    const hasBoth = this._config.indicators && hasRows;
+    const inFirstSection = this._config.layout_config?.section_order![0] === SECTION.INDICATORS;
+    return html`<div class="header-info-box" id=${SECTION.INDICATORS} ?noMargin=${inFirstSection}>
+      ${hasBoth
+        ? html`${this._renderIndicatorRows()} ${this._renderIndicatorsLegacy()}`
+        : hasRows
+        ? this._renderIndicatorRows()
+        : this._renderIndicatorsLegacy()}
     </div>`;
+  }
+
+  private _renderIndicatorRows(): TemplateResult {
+    if (!this._config.indicator_rows?.length) return html``;
+    const rows = this._config.indicator_rows;
+    return html`
+      <div id="indicator-rows" class="indicator-rows">
+        ${repeat(
+          rows,
+          (row: IndicatorRowConfig) => row.row_items.map((item) => item.type).join('-'),
+          (row: IndicatorRowConfig, index: number) => {
+            return html`
+              <vsc-indicator-row data-index=${index} .hass=${this._hass} .rowConfig=${row}></vsc-indicator-row>
+            `;
+          }
+        )}
+      </div>
+    `;
+  }
+
+  private _renderIndicatorsLegacy(): TemplateResult | typeof nothing {
+    if (!this._config.indicators) return nothing;
+    return html` <vsc-indicators .hass=${this._hass} .config=${this._config} ._store=${this._store}></vsc-indicators> `;
   }
 
   private _renderButtons(): TemplateResult | typeof nothing {
@@ -270,7 +329,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _renderImagesSlide(): TemplateResult {
-    const imageEntities = this._config.image_entities || [];
+    const imageEntities = this._config?.image_entities || [];
     const configImages = this._config?.images || [];
     if ((!configImages.length && !imageEntities.length) || this._isSectionHidden(SECTION.IMAGES)) return html``;
 
@@ -308,13 +367,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _renderRangeInfo(): TemplateResult {
     const { range_info } = this._config;
-    if (!range_info) return html``;
+    if (this._isSectionHidden(SECTION.RANGE_INFO) || !range_info) return html``;
     const rangeLayout = this._config.layout_config?.range_info_config?.layout || 'column';
-    return html`<div
-      id="range"
-      ?noMargin=${!this._config.indicators || this._isSectionHidden(SECTION.INDICATORS)}
-      ?hidden=${this._isSectionHidden(SECTION.RANGE_INFO) || !range_info}
-    >
+    return html`<div id="${SECTION.RANGE_INFO}">
       <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info} ?row=${rangeLayout === 'row'}></vsc-range-info>
     </div>`;
   }
@@ -407,6 +462,85 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       setTimeout(() => {
         element.classList.remove('helper-active');
       }, 2000);
+    }
+  }
+
+  private _toggleIndicatorRow(data: { rowIndex?: number | null; groupIndex?: number }, peek: boolean = false): void {
+    if (!this.isEditorPreview) return;
+
+    let { rowIndex } = data;
+    const rows = this._indicatorRows;
+    if (!rows || rows.length === 0) return;
+
+    // normalize: if out of bounds, treat as null
+    if (rowIndex === undefined || rowIndex === null || rowIndex >= rows.length) {
+      rowIndex = null;
+    }
+
+    if (rowIndex !== null) {
+      // one active row: disable all others
+      rows.forEach((row, index) => {
+        if (index === rowIndex) {
+          row.classList.remove('disabled');
+          if (peek) {
+            row.classList.add('peek');
+            setTimeout(() => {
+              row.classList.remove('peek');
+            }, 2000);
+          }
+        } else {
+          row.classList.add('disabled');
+        }
+      });
+    } else {
+      // no active row or invalid index: clear disabled from all
+      rows.forEach((row) => row.classList.remove('disabled'));
+    }
+  }
+
+  private _toggleIndicatorEntity(
+    data: { row_index: number; group_index?: number | null; entity_index?: number | null },
+    peek: boolean = false
+  ): void {
+    const { row_index, group_index, entity_index } = data;
+    const indicatorRow = this._indicatorRows[row_index];
+    if (indicatorRow) {
+      indicatorRow.updateComplete.then(() => {
+        const items = indicatorRow._itemEls;
+        if (group_index !== null && group_index !== undefined) {
+          indicatorRow._toggleGroupIndicator(group_index);
+          console.log('Toggled group indicator:', group_index);
+        }
+        if (entity_index !== null && entity_index !== undefined) {
+          // dim all items except the one at entity_index
+          console.debug('set highlight entity index:', entity_index);
+          const entityItem = items?.[entity_index];
+          if (entityItem) {
+            entityItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            if (peek) {
+              entityItem.classList.add('peek');
+              setTimeout(() => {
+                entityItem.classList.remove('peek');
+              }, 2000);
+            }
+          }
+          items.forEach((item, index) => {
+            if (index === entity_index) {
+              item.classList.remove('dimmed');
+            } else {
+              item.classList.add('dimmed');
+              if (peek) {
+                setTimeout(() => {
+                  item.classList.remove('dimmed');
+                }, 2000);
+              }
+            }
+          });
+        } else {
+          // if entity_index is null, remove dimmed from all items
+          items.forEach((item) => item.classList.remove('dimmed'));
+        }
+      });
     }
   }
 
@@ -515,34 +649,43 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
-  private _handleEditorEvent(ev: any): void {
+
+  public _handleEditorEvent(ev: CustomEvent<EditorEventParams>): void {
     ev.stopPropagation();
     if (!this.isEditorPreview || this._config.mini_map?.single_map_card === true) return;
-    const { detail } = ev;
-    const type = detail.type;
+    const { type, data } = ev.detail;
     switch (type) {
       case 'show-button':
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
-        console.log('Show button:', detail.data.buttonIndex);
+        console.log('Show button:', data.buttonIndex);
         if (this._currentPreview !== null) {
           this._currentPreview = null;
         }
         this.updateComplete.then(() => {
-          this._vehicleButtonsGrid.showButton(detail.data.buttonIndex);
+          this._vehicleButtonsGrid.showButton(data.buttonIndex);
         });
         break;
 
       case 'show-image':
         if (this._isSectionHidden(SECTION.IMAGES)) return;
-        this._imagesSlide?.showImage(detail.data.index);
+        this._imagesSlide?.showImage(data.index);
         break;
       case 'toggle-preview':
-        const cardType = detail.data.cardType;
+        const cardType = data.cardType;
         this._currentPreview = cardType;
         break;
 
       case 'toggle-helper':
-        this._toggleHelper(detail.data);
+        this._toggleHelper(data);
+        break;
+      case 'toggle-indicator-row':
+        const peek = data.peek ?? false;
+        this._toggleIndicatorRow(data, peek);
+        break;
+      case 'toggle-highlight-row-item':
+        const preview = { row_index: data.rowIndex, group_index: data.groupIndex, entity_index: data.itemIndex };
+        const peekItem = data.peek ?? false;
+        this._toggleIndicatorEntity(preview, peekItem);
         break;
     }
   }
@@ -574,7 +717,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _createStore() {
     if (!this._store) {
-      console.log('Creating store for VehicleStatusCard', this._config.name);
+      // console.log('Creating store for VehicleStatusCard', this._config.name);
       this._store = new Store(this, this._config);
       super.requestUpdate();
     }

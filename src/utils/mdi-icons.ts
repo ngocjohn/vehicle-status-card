@@ -14,6 +14,9 @@ import {
   mdiCodeJson,
   mdiThemeLightDark,
   mdiRestart,
+  mdiChevronDown,
+  mdiGrid,
+  mdiEye,
 } from '@mdi/js';
 
 export const ICON = {
@@ -29,7 +32,10 @@ export const ICON = {
   PLUS: mdiPlus,
   CHEVRON_RIGHT: mdiChevronRight,
   CHEVRON_LEFT: mdiChevronLeft,
+  CHEVRON_DOWN: mdiChevronDown,
   CODE_JSON: mdiCodeJson,
   THEME_LIGHT_DARK: mdiThemeLightDark,
   RESTART: mdiRestart,
+  GRID: mdiGrid,
+  EYE: mdiEye,
 };

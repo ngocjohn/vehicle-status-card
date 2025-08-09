@@ -1,19 +1,9 @@
-import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
+import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
-
-import '../../editor/components/panel-editor-ui';
-import '../../editor/components/sub-panel-yaml';
-import '../../editor/components/panel-tire-config';
-import '../../editor/components/panel-base-button';
-import '../../editor/components/panel-default-card-category';
 import { repeat } from 'lit/directives/repeat.js';
 
-import editorcss from '../../css/editor.css';
-import { PanelBaseButton } from '../../editor/components/panel-base-button';
-import { PanelDefaultCard } from '../../editor/components/panel-default-card-category';
-import { PanelTireConfig } from '../../editor/components/panel-tire-config';
-import { fireEvent, HomeAssistant } from '../../ha';
+import { fireEvent } from '../../ha';
 import {
   VehicleStatusCardConfig,
   DefaultCardConfig,
@@ -23,15 +13,15 @@ import {
 } from '../../types/config';
 import { ICON } from '../../utils';
 import { Create, showConfirmDialog } from '../../utils';
-import { VehicleStatusCardEditor } from '../editor';
-import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS } from '../editor-const';
+import { BaseEditor } from '../base-editor';
+import * as ELEMENT from '../components';
+import { ButtonListEditorEventParams } from '../components';
+import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS, PANEL } from '../editor-const';
 import { DEFAULT_TIRE_CONFIG } from '../form';
 
-@customElement('panel-button-card')
-export class PanelButtonCard extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
-  @property({ attribute: false }) config!: VehicleStatusCardConfig;
+@customElement(PANEL.BUTTON_CARD)
+export class PanelButtonCard extends BaseEditor {
+  @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() _activePreview: string | null = null;
   @state() _activeTabIndex: number = 0;
@@ -44,17 +34,21 @@ export class PanelButtonCard extends LitElement {
   @state() _yamlEditorActive: boolean = false;
   @state() _yamlDefaultCardActive: boolean = false;
 
-  @query('vsc-panel-tire-config') _panelTireConfig?: PanelTireConfig;
-  @query('vsc-panel-base-button') _panelBaseButton?: PanelBaseButton;
-  @query('vsc-panel-default-card') _panelDefaultCard?: PanelDefaultCard;
+  @query(PANEL.BUTTON_LIST) _panelButtonList?: ELEMENT.PanelButtonList;
+  @query(PANEL.TIRE_CONFIG) _panelTireConfig?: ELEMENT.PanelTireConfig;
+  @query(PANEL.BASE_BUTTON) _panelBaseButton?: ELEMENT.PanelBaseButton;
+  @query(PANEL.DEFAULT_CARD) _panelDefaultCard?: ELEMENT.PanelDefaultCard;
 
   static get styles(): CSSResultGroup {
     return [
-      editorcss,
+      super.styles,
       css`
         *[hidden],
         .hidden {
           display: none !important;
+        }
+        *[active] {
+          color: var(--primary-color);
         }
       `,
     ];
@@ -106,123 +100,31 @@ export class PanelButtonCard extends LitElement {
   }
 
   private _renderButtonList(): TemplateResult {
-    const buttons = this.config.button_card ?? [];
-    let foundHiddenDivider = false;
-
-    return html` <div class="card-config">
-      ${this._renderSubHeader(
-        'Button List',
-        [],
-        false,
-        html`<ha-button size="small" appearance="filled" @click=${this.toggleAction('add-new-button')}
-          ><ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add New Button</ha-button
-        >`
-      )}
-      ${!buttons.length
-        ? html`<span>No buttons added</span>`
-        : html`<ha-sortable handle-selector=".handle" @item-moved=${this._buttonsMoved}>
-            <div class="button-list" id="button-list">
-              ${repeat(
-                buttons,
-                (btn: ButtonCardConfig) => btn.button.primary,
-                (btn: ButtonCardConfig, index: number) => {
-                  const isHidden = btn.hide_button;
-                  // Add a divider before the first hidden button
-                  if (isHidden && !foundHiddenDivider) {
-                    foundHiddenDivider = true;
-                    return html`
-                      <div class="sub-header divider">
-                        <div>Hidden Buttons</div>
-                      </div>
-                      ${this._renderButton(btn, index)}
-                    `;
-                  }
-                  return this._renderButton(btn, index);
-                }
-              )}
-            </div>
-          </ha-sortable>`}
-    </div>`;
+    const buttons = this.config.button_card || [];
+    return html`
+      <panel-button-list
+        .hass=${this._hass}
+        ._buttonListConfig=${buttons}
+        ._store=${this._store}
+        .config=${this.config}
+        @button-list-action=${this._handleButtonListAction}
+        @button-list-changed=${this._handleButtonListChanged}
+      ></panel-button-list>
+    `;
   }
 
-  private _renderButton(button: ButtonCardConfig, index: number): TemplateResult {
-    let actionMap = [
-      { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
-      { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
-      { title: 'Hide on card', action: ACTIONS.HIDE_BUTTON, icon: 'mdi:eye-off' },
-      { title: 'Unhide on card', action: ACTIONS.UNHIDE_BUTTON, icon: 'mdi:eye' },
-      {
-        title: 'Delete',
-        action: ACTIONS.DELETE_BUTTON,
-        icon: 'mdi:delete',
-        color: 'var(--error-color)',
-      },
-    ];
+  private _handleButtonListAction(ev: CustomEvent<ButtonListEditorEventParams>): void {
+    ev.stopPropagation();
+    const { action, buttonIndex, cardIndex } = ev.detail;
+    this.toggleAction(action, buttonIndex, cardIndex)();
+  }
 
-    actionMap = actionMap.filter((action) => {
-      if (action.title === 'Show Button' && button.hide_button) {
-        return false;
-      }
-      if (action.title === 'Hide on card' && button.hide_button) {
-        return false;
-      }
-
-      if (action.title === 'Unhide on card' && !button.hide_button) {
-        return false;
-      }
-
-      return true;
-    });
-
-    return html`
-      <div class="item-config-row" data-index="${index}" ?hiddenoncard=${button.hide_button}>
-        <div class=${!button.hide_button ? 'handle' : 'ignore'}>
-          <ha-icon-button .path=${ICON.DRAG}></ha-icon-button>
-        </div>
-        <div class="sub-content">
-          <ha-selector
-            .hass=${this.hass}
-            .value=${button.button.primary}
-            .configValue=${'primary'}
-            .configType=${'button'}
-            .configIndex=${index}
-            .label=${`Button #${index + 1}`}
-            .selector=${{ text: {} }}
-            .required=${false}
-            @value-changed=${this._handleTitlePrimaryChanged}
-            .disabled=${button.hide_button}
-          ></ha-selector>
-        </div>
-        <div class="item-actions">
-          <ha-icon-button @click="${this.toggleAction('edit-button', index)}" .path=${ICON.PENCIL}></ha-icon-button>
-          <ha-button-menu
-            .corner=${'TOP_LEFT'}
-            .fixed=${true}
-            .menuCorner=${'END'}
-            .activatable=${true}
-            .naturalMenuWidth=${true}
-            @closed=${(ev: Event) => ev.stopPropagation()}
-          >
-            <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
-            ${actionMap.map(
-              (action) =>
-                html`<ha-list-item
-                  @click=${this.toggleAction(action.action, index)}
-                  .graphic=${'icon'}
-                  style="z-index: 6; ${action.color ? `color: ${action.color}` : ''}"
-                >
-                  <ha-icon
-                    icon=${action.icon}
-                    slot="graphic"
-                    style="${action.color ? `color: ${action.color}` : ''}"
-                  ></ha-icon>
-                  ${action.title}
-                </ha-list-item>`
-            )}
-          </ha-button-menu>
-        </div>
-      </div>
-    `;
+  private _handleButtonListChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { config } = ev.detail;
+    console.debug('Button list changed:', config);
+    this.config = { ...this.config, button_card: config };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _renderButtonCardConfig(): TemplateResult {
@@ -281,13 +183,13 @@ export class PanelButtonCard extends LitElement {
                 activeTabIndex: this._activeTabIndex,
                 onTabChange: (index: number) => (this._activeTabIndex = index),
               })
-            : html`<vsc-sub-panel-yaml
-                .hass=${this.hass}
+            : html`<panel-yaml-editor
+                .hass=${this._hass}
                 .configIndex=${buttonIndex}
                 .configKey=${'button_card'}
                 .configDefault=${buttonCard}
                 @yaml-config-changed=${this._handleYamlChange}
-              ></vsc-sub-panel-yaml>`}
+              ></panel-yaml-editor>`}
         </div>
       </div>
     `;
@@ -345,7 +247,7 @@ export class PanelButtonCard extends LitElement {
         : [];
 
     const btnHeader = this._renderSubHeader('Button configuration', headerActions);
-    const infoText = CONFIG_TYPES.options.button_card.subpanels.button.description;
+    const infoText = CONFIG_TYPES.options.buttons.subpanels.button.description;
 
     const baseBtnConfig = {
       button: buttonCard.button,
@@ -361,11 +263,11 @@ export class PanelButtonCard extends LitElement {
         ${Create.HaAlert({
           message: infoText,
         })}
-        <vsc-panel-base-button
-          .hass=${this.hass}
+        <panel-base-button
+          .hass=${this._hass}
           .buttonConfig=${baseBtnConfig}
           @button-config-changed=${this._handleButtonConfigChange}
-        ></vsc-panel-base-button>
+        ></panel-base-button>
       </div>
     `;
   }
@@ -379,12 +281,11 @@ export class PanelButtonCard extends LitElement {
     ]);
     const tireCard = buttonCard.tire_card || (DEFAULT_TIRE_CONFIG as TireTemplateConfig);
     return html` ${tireHeader}
-      <vsc-panel-tire-config
-        .hass=${this.hass}
-        .cardEditor=${this.cardEditor}
+      <panel-tire-config
+        ._hass=${this._hass}
         .tireConfig=${tireCard}
         @tire-config-changed=${this._handleTireConfigChange}
-      ></vsc-panel-tire-config>`;
+      ></panel-tire-config>`;
   }
 
   private _renderDefaultCardList(defaultCard: DefaultCardConfig[], buttonIndex: number): TemplateResult {
@@ -401,13 +302,13 @@ export class PanelButtonCard extends LitElement {
               defaultCard,
               (card: DefaultCardConfig) => card.title,
               (card: DefaultCardConfig, cardIndex: number) => html`
-                <div class="item-config-row" data-card-title=${card.title} data-index="${cardIndex}">
+                <div class="item-config-row" data-index="${cardIndex}">
                   <div class="handle">
                     <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
                   </div>
                   <div class="item-content">
                     <ha-selector
-                      .hass=${this.hass}
+                      .hass=${this._hass}
                       .value=${card.title}
                       .configValue=${'title'}
                       .configType=${'default_card'}
@@ -457,14 +358,14 @@ export class PanelButtonCard extends LitElement {
         >`
       : nothing;
 
-    const yamlDefaultEditor = html` <vsc-sub-panel-yaml
-      .hass=${this.hass}
+    const yamlDefaultEditor = html` <panel-yaml-editor
+      .hass=${this._hass}
       .configDefault=${defaultCard}
       .extraAction=${true}
       .configIndex=${buttonIndex}
       @close-editor=${() => (this._yamlDefaultCardActive = false)}
       @yaml-config-changed=${this._handleYamlDefaultCardChange}
-    ></vsc-sub-panel-yaml>`;
+    ></panel-yaml-editor>`;
 
     const footerActions = html` <div class="action-footer">
       <ha-button size="small" appearance="filled" @click=${this.toggleAction('category-add', buttonIndex)}
@@ -479,7 +380,7 @@ export class PanelButtonCard extends LitElement {
       >
     </div>`;
 
-    const cardInfo = CONFIG_TYPES.options.button_card.subpanels.default_cards.description;
+    const cardInfo = CONFIG_TYPES.options.buttons.subpanels.default_cards.description;
     const infoAlert = !noCards
       ? Create.HaAlert({
           message: cardInfo,
@@ -540,11 +441,11 @@ export class PanelButtonCard extends LitElement {
     );
     return html`
       ${itemHeader}
-      <vsc-panel-default-card
-        .hass=${this.hass}
+      <panel-default-card
+        .hass=${this._hass}
         .defaultCardConfig=${baseCard}
         @card-item-changed=${this._handleCardItemChange}
-      ></vsc-panel-default-card>
+      ></panel-default-card>
     `;
   }
 
@@ -563,9 +464,9 @@ export class PanelButtonCard extends LitElement {
       </div>
       <div class="sub-panel">
         <panel-editor-ui
-          .hass=${this.hass}
+          .hass=${this._hass}
           .config=${this.config}
-          .cardEditor=${this.cardEditor}
+          ._store=${this._store}
           .buttonIndex=${buttonIndex}
           .activePreview=${this._activePreview}
         ></panel-editor-ui>
@@ -627,6 +528,9 @@ export class PanelButtonCard extends LitElement {
       };
 
       const handleButtonAction = async () => {
+        console.log('Toggle action', action, buttonIndex, cardIndex);
+        let buttonCardConfig = [...(this.config.button_card || [])];
+        const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
         switch (action) {
           case 'edit-button':
             this._buttonIndex = buttonIndex!;
@@ -638,12 +542,12 @@ export class PanelButtonCard extends LitElement {
             this._cardIndex = null;
             break;
           case 'add-new-button':
-            const buttonCardConfig = [...(this.config.button_card || [])];
-            const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
+            const indexToInsert = visibleButtons.length;
             const newButton = JSON.parse(JSON.stringify(NEW_BUTTON_CONFIG));
-            buttonCardConfig.splice(visibleButtons.length, 0, newButton);
+            buttonCardConfig.splice(indexToInsert, 0, newButton);
             updateChange(buttonCardConfig);
             this.requestUpdate();
+            this._buttonIndex = indexToInsert;
 
             break;
           case 'delete-button':
@@ -658,7 +562,7 @@ export class PanelButtonCard extends LitElement {
             }
             break;
           case 'show-button':
-            this.cardEditor._dispatchEvent('show-button', { buttonIndex: buttonIndex });
+            this._dispatchEditorEvent('show-button', { buttonIndex: buttonIndex });
             break;
           case 'category-edit':
             this._cardIndex = cardIndex!;
@@ -706,9 +610,7 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'duplicate-button':
             if (buttonIndex !== undefined) {
-              const buttonCardConfig = [...(this.config.button_card || [])];
               const newButton = JSON.parse(JSON.stringify(buttonCardConfig[buttonIndex]));
-              const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
               buttonCardConfig.splice(visibleButtons.length, 0, newButton);
               updateChange(buttonCardConfig);
               this.requestUpdate();
@@ -716,7 +618,6 @@ export class PanelButtonCard extends LitElement {
             break;
           case 'hide-button':
             if (buttonIndex !== undefined) {
-              const buttonCardConfig = [...(this.config.button_card || [])];
               buttonCardConfig[buttonIndex].hide_button = !buttonCardConfig[buttonIndex].hide_button;
               // move the button to the end of the list
               const button = buttonCardConfig.splice(buttonIndex, 1);
@@ -728,11 +629,9 @@ export class PanelButtonCard extends LitElement {
           case 'unhide-button':
             if (buttonIndex !== undefined) {
               console.log('Unhide button', buttonIndex);
-              const buttonCardConfig = [...(this.config.button_card || [])];
               buttonCardConfig[buttonIndex].hide_button = false;
               // move the button to the end of visible buttons
               const button = buttonCardConfig.splice(buttonIndex, 1);
-              const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
               buttonCardConfig.splice(visibleButtons.length, 0, button[0]);
               updateChange(buttonCardConfig);
               this.requestUpdate();
@@ -752,30 +651,14 @@ export class PanelButtonCard extends LitElement {
     };
   }
 
-  private _buttonsMoved(ev: CustomEvent): void {
-    ev.stopPropagation();
-    const { oldIndex, newIndex } = ev.detail;
-    console.log('button moved', oldIndex, newIndex);
-
-    const newButtonsConfig = JSON.parse(JSON.stringify(this.config.button_card || []));
-    newButtonsConfig.splice(newIndex, 0, newButtonsConfig.splice(oldIndex, 1)[0]);
-    this.config = {
-      ...this.config,
-      button_card: [...newButtonsConfig],
-    };
-
-    fireEvent(this, 'config-changed', { config: this.config });
-  }
-
   private resetEditorPreview(): void {
-    console.log('Resetting editor preview');
-    this.cardEditor._cleanConfig();
+    this._cleanConfig();
 
     if (this._activePreview !== null) {
       this._activePreview = null;
       this.requestUpdate();
       this.updateComplete.then(() => {
-        this.cardEditor._dispatchEvent('toggle-preview', { cardType: null });
+        this._dispatchEditorEvent('toggle-preview', { cardType: null });
       });
     }
   }
@@ -793,13 +676,13 @@ export class PanelButtonCard extends LitElement {
     };
 
     const sentEvent = (cardType: string | null) => {
-      this.cardEditor._dispatchEvent('toggle-preview', { cardType: cardType });
+      this._dispatchEditorEvent('toggle-preview', { cardType: cardType });
     };
 
     if (this._activePreview !== null) {
       this._activePreview = null;
       sentEvent(this._activePreview);
-      this.cardEditor._cleanConfig();
+      this._cleanConfig();
       return;
     } else if (index !== null) {
       this._activePreview = type;
@@ -944,5 +827,11 @@ export class PanelButtonCard extends LitElement {
       console.log('Not copied to preview');
     }
     fireEvent(this, 'config-changed', { config: this.config });
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'panel-button-card': PanelButtonCard;
   }
 }

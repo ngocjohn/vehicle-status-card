@@ -1,17 +1,15 @@
-import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css } from 'lit';
+import { html, TemplateResult, CSSResultGroup, nothing, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
-import { HomeAssistant } from '../../ha';
 import { TireTemplateConfig } from '../../types/config';
 import { Create } from '../../utils';
-import { VehicleStatusCardEditor } from '../editor';
+import { BaseEditor } from '../base-editor';
+import { PANEL } from '../editor-const';
 import { DEFAULT_TIRE_CONFIG, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../form';
 
-@customElement('vsc-panel-tire-config')
-export class PanelTireConfig extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) cardEditor!: VehicleStatusCardEditor;
+@customElement(PANEL.TIRE_CONFIG)
+export class PanelTireConfig extends BaseEditor {
   @property({ attribute: false }) tireConfig?: TireTemplateConfig;
 
   @state() public yamlMode: boolean = false;
@@ -43,13 +41,13 @@ export class PanelTireConfig extends LitElement {
 
   private _renderYamlEditor(): TemplateResult {
     return html`
-      <vsc-sub-panel-yaml
-        .hass=${this.hass}
+      <panel-yaml-editor
+        .hass=${this._hass}
         .configDefault=${this.tireConfig}
         .extraAction=${true}
         @close-editor=${() => (this.yamlMode = false)}
         @yaml-config-changed=${this._handleYamlConfigChanged}
-      ></vsc-sub-panel-yaml>
+      ></panel-yaml-editor>
     `;
   }
   private _renderBackground(): TemplateResult {
@@ -114,7 +112,7 @@ export class PanelTireConfig extends LitElement {
     const DATA = { ...this.tireConfig };
     return html`
       <ha-form
-        .hass=${this.hass}
+        .hass=${this._hass}
         .data=${DATA}
         .schema=${schema}
         .computeLabel=${this._computeLabel}
@@ -167,6 +165,7 @@ export class PanelTireConfig extends LitElement {
     console.log('YAML config changed:', value);
     this._dispatchConfigChange(value);
   }
+
   private _valueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     const config = ev.detail.value;
@@ -187,6 +186,6 @@ export class PanelTireConfig extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'vsc-panel-tire-config': PanelTireConfig;
+    'panel-tire-config': PanelTireConfig;
   }
 }

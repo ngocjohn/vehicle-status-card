@@ -4,8 +4,6 @@ import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
-// CSS
-import cardcss from '../../css/card.css';
 // Utils
 import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
 import { hasItemAction, IndicatorItemConfig } from '../../types/config';
@@ -26,7 +24,7 @@ export class VscIndicatorSingle extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [
-      cardcss,
+      super.styles,
       css`
         /* .item {
           display: flex;

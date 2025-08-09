@@ -1,4 +1,4 @@
-enum NumberFormat {
+export enum NumberFormat {
   language = 'language',
   system = 'system',
   comma_decimal = 'comma_decimal',

@@ -1,3 +1,7 @@
+import { css } from 'lit';
+
+import { selectTree } from './helpers-dom';
+
 // Hack to load ha-components needed for editor
 export const loadHaComponents = () => {
   if (!customElements.get('ha-form')) {
@@ -33,16 +37,45 @@ export const stickyPreview = () => {
 
   // Apply styles
   Object.assign(content.style, { padding: '8px' });
-  Object.assign(editorElement.style, { margin: '0 4px', maxWidth: '480px' });
+  Object.assign(editorElement.style, { margin: '0 8px' });
   Object.assign(previewElement.style, {
     position: 'sticky',
     top: '0',
-    padding: '0',
+    marginTop: '3em',
+
     // justifyItems: 'center',
   });
   Object.assign(previewHui.style, {
-    padding: '8px 4px',
-    margin: 'auto',
-    display: 'block',
+    padding: '4px',
+    margin: '3em auto',
+    // display: 'block',
   });
+};
+
+export const refactorEditDialog = async () => {
+  const editorDialog = await selectTree(document.body, 'home-assistant$hui-dialog-edit-card');
+
+  if (!editorDialog) return;
+  // console.debug('Found editor dialog', editorDialog);
+  // Add custom styles
+
+  const newStyle = css`
+    .element-preview {
+      flex: 0 0 50% !important;
+      margin: 3em auto 1em !important;
+    }
+    @media (min-width: 1000px) {
+      .content hui-card {
+        margin: 0 auto !important;
+        padding: inherit !important;
+      }
+    }
+  `;
+  const styleEl = document.createElement('style');
+  styleEl.textContent = newStyle.cssText;
+  if (!editorDialog.shadowRoot?.querySelector('style[refactored]')) {
+    styleEl.setAttribute('refactored', 'true');
+    editorDialog.shadowRoot?.appendChild(styleEl);
+  }
+  // console.debug('Appended new styles to editor dialog', styleEl);
 };

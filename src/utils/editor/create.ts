@@ -1,7 +1,8 @@
-import { html, TemplateResult } from 'lit';
+import { html, nothing, TemplateResult } from 'lit';
 
 import './vic-tab';
 import './vic-tab-bar';
+import { ICON } from '../mdi-icons';
 
 export const ExpansionPanel = ({
   content,
@@ -27,19 +28,14 @@ export const ExpansionPanel = ({
       .leftChevron=${false}
       style="border-radius: 6px;  --ha-card-border-radius: 6px;"
     >
-      ${options.icon ? html`<div slot="icons"><ha-icon icon=${options.icon}></ha-icon></div>` : ''}
-      <div class="card-config">${content}</div>
+      ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
+      <div class="card-config" style="margin-block: var(--vic-gutter-gap);">${content}</div>
     </ha-expansion-panel>
   `;
 };
 
-export const HaAlert = ({
-  message,
-  type,
-  dismissable,
-  options,
-}: {
-  message: string;
+interface HaAlertOptions {
+  message: string | TemplateResult;
   type?: 'info' | 'success' | 'warning' | 'error';
   dismissable?: boolean;
   options?: {
@@ -48,9 +44,12 @@ export const HaAlert = ({
     action?: {
       callback: () => void;
       label?: string;
+      variant?: string;
     }[];
   };
-}): TemplateResult => {
+}
+
+export const HaAlert = ({ message, type, dismissable, options }: HaAlertOptions): TemplateResult => {
   const dismisHandler = (ev: CustomEvent) => {
     ev.stopPropagation();
     ev.preventDefault();
@@ -61,16 +60,25 @@ export const HaAlert = ({
 
   return html`
     <ha-alert
-      alert-type=${type || 'info'}
-      ?dismissable=${dismissable || true}
+      .alertType=${type || 'info'}
+      .dismissable=${dismissable || true}
       @alert-dismissed-clicked=${dismisHandler}
-      title=${options?.title}
+      .title=${options?.title || ''}
       style="margin-block: 0.5rem;"
     >
       ${message}
       ${options?.action?.map(
         (action) =>
-          html` <mwc-button slot="action" @click=${action.callback} label=${action.label || 'More'}> </mwc-button>`
+          html`
+            <ha-button
+              slot="action"
+              size="small"
+              appearance="outlined"
+              variant=${action.variant ?? 'brand'}
+              @click=${action.callback}
+              >${action.label?.toLocaleUpperCase() || 'MORE'}
+            </ha-button>
+          `
       )}
     </ha-alert>
   `;
@@ -126,5 +134,33 @@ export const SectionPanel = (
         `;
       }
     })}
+  `;
+};
+
+export const HaButton = ({
+  label,
+  onClick,
+  option,
+}: {
+  label: string;
+  onClick: (ev?: Event) => void;
+  option?: any;
+}): TemplateResult => {
+  if (option?.disabled) {
+    return html``;
+  }
+  if (option?.type === 'add') {
+    option = { ...option, appearance: 'accent', variant: 'success' };
+  }
+  return html`
+    <ha-button
+      size=${option?.size || 'small'}
+      appearance=${option?.appearance || 'filled'}
+      variant=${option?.variant || 'brand'}
+      .disabled=${option?.disabled || false}
+      @click=${onClick}
+    >
+      ${option?.type === 'add' ? html`<ha-svg-icon slot="start" .path=${ICON.PLUS}></ha-svg-icon>` : ''} ${label}
+    </ha-button>
   `;
 };

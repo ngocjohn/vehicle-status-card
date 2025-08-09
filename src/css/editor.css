@@ -105,6 +105,7 @@
 	height: 100%;
 	justify-content: space-between;
 	gap: 1rem;
+	margin-block-start: var(--vic-card-padding);
 }
 
 .action-footer .delete-btn {
@@ -248,6 +249,8 @@
 .item-config-row[hiddenoncard]>.ignore {
 	visibility: hidden;
 	margin-right: var(--vic-card-padding);
+	max-width: 0;
+	overflow: hidden;
 }
 
 .item-content {
@@ -286,7 +289,7 @@
 
 .item-actions *:hover {
 	color: var(--primary-color);
-	box-shadow: 0 0 8px 0 rgba(3, 11, 115, 0.3);
+	/* box-shadow: 0 0 8px 0 rgba(3, 11, 115, 0.3); */
 }
 
 .item-actions .delete:hover {
@@ -486,13 +489,21 @@ ha-selector#vic-boolean-selector {
 	color: var(--secondary-text-color);
 }
 
+.click-shrink {
+	transition: transform 0.1s;
+}
+
+.click-shrink:active {
+	transform: scale(0.9);
+}
+
+/**
 .config-menu-wrapper {
 	display: flex;
 	font-size: 1.3rem;
 	align-items: center;
 	margin-inline-end: 0.5rem;
 	min-height: 56px;
-	/* margin-bottom: var(--vic-card-padding); */
 }
 
 .config-menu-wrapper .menu-wrapper {
@@ -589,7 +600,6 @@ ha-selector#vic-boolean-selector {
 
 .menu-content-wrapper .menu-label .secondary {
 	color: var(--secondary-text-color);
-	/* text-transform: capitalize; */
 	letter-spacing: 0.5px;
 	font-size: smaller;
 	text-wrap: wrap;
@@ -618,7 +628,6 @@ ha-selector#vic-boolean-selector {
 }
 
 .tip-item {
-	/* background-color: #ffffff; */
 	padding: var(--vic-card-padding);
 	border: 1px solid var(--divider-color);
 	border-radius: 6px;
@@ -640,14 +649,6 @@ ha-selector#vic-boolean-selector {
 	color: var(--secondary-text-color)
 }
 
-.click-shrink {
-	transition: transform 0.1s;
-}
-
-.click-shrink:active {
-	transform: scale(0.9);
-}
-
 .version-footer {
 	display: flex;
 	justify-content: space-between;
@@ -657,3 +658,4 @@ ha-selector#vic-boolean-selector {
 	margin-top: var(--vic-card-padding);
 	color: var(--secondary-text-color);
 }
+	*/

@@ -1,27 +1,28 @@
 // Custom card helpers
 import { cloneDeep } from 'es-toolkit';
-import { LitElement, html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
+import { html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 import editorcss from '../../css/editor.css';
-import { fireEvent, HASSDomEvent, HomeAssistant, LovelaceCardConfig, LovelaceConfig } from '../../ha';
+import { fireEvent, HASSDomEvent, LovelaceCardConfig, LovelaceConfig } from '../../ha';
 import { VehicleStatusCardConfig } from '../../types/config';
 import '../../utils/editor/vic-tab-bar';
 import '../../utils/editor/vic-tab';
 import { ICON } from '../../utils';
+import { BaseEditor } from '../base-editor';
 import { VehicleStatusCardEditor } from '../editor';
+import { PANEL } from '../editor-const';
 export interface GUIModeChangedEvent {
   guiMode: boolean;
   guiModeAvailable: boolean;
 }
-@customElement('panel-editor-ui')
-export class PanelEditorUI extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+@customElement(PANEL.EDITOR_UI)
+export class PanelEditorUI extends BaseEditor {
   @property({ attribute: false }) public lovelace?: LovelaceConfig;
 
   @property({ type: Object })
   protected config!: VehicleStatusCardConfig;
-  @state() cardEditor!: VehicleStatusCardEditor;
+  @state() cardEditor?: VehicleStatusCardEditor;
   @state() cards?: LovelaceCardConfig[] = [];
   @state() buttonIndex!: number;
   @state() activePreview?: string | null;
@@ -97,10 +98,11 @@ export class PanelEditorUI extends LitElement {
   }
 
   protected render() {
-    if (!this.hass || !this.config) {
+    if (!this._hass || !this.config) {
       return nothing;
     }
 
+    this.cardEditor = this._editor!;
     this.cards = this.config.button_card[this.buttonIndex].custom_card;
 
     const selected = this._selectedCard!;
@@ -177,7 +179,7 @@ export class PanelEditorUI extends LitElement {
                   ></ha-icon-button>
                 </div>
                 <hui-card-element-editor
-                  .hass=${this.hass}
+                  .hass=${this._hass}
                   .value=${this.cards[selected]}
                   .lovelace=${this.cardEditor.lovelace}
                   @config-changed=${this._handleConfigChanged}
@@ -187,7 +189,7 @@ export class PanelEditorUI extends LitElement {
             : html`
                 <div id="card-picker">
                   <hui-card-picker
-                    .hass=${this.hass}
+                    .hass=${this._hass}
                     .lovelace=${this.cardEditor.lovelace}
                     @config-changed=${this._handleCardPicked}
                     ._height=${500}

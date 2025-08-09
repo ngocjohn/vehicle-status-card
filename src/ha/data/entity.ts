@@ -1,7 +1,9 @@
 import { HassEntities, HassEntity } from 'home-assistant-js-websocket';
 
+import { arrayLiteralIncludes } from '../common/array/literal-includes';
 import { computeDomain } from '../common/entity/compute_domain';
 import { HomeAssistant } from '../types';
+import { isGroupEntity } from './group';
 
 const PERCENT_UNIT = ['%', 'PERCENT', 'PERCENTAGE'];
 const unavailableStates = ['unavailable', 'unknown', 'none'];
@@ -74,27 +76,6 @@ export const findPowerEntities = <T extends { entity_id: string }>(
   return undefined;
 };
 
-// export const findPowerEntities = <T extends { entity_id: string }>(
-//   hass: HomeAssistant,
-//   entities: T[]
-// ): T[] | undefined => {
-//   const poweEntities = entities.filter(
-//     (entity) =>
-//       hass.states[entity.entity_id] &&
-//       powerDeviceClasses.some((deviceClass) => hass.states[entity.entity_id].attributes.device_class === deviceClass) &&
-//       batteryPriorities.includes(computeDomain(entity.entity_id))
-//   );
-//   // .sort(
-//   //   (a, b) =>
-//   //     batteryPriorities.indexOf(computeDomain(a.entity_id)) - batteryPriorities.indexOf(computeDomain(b.entity_id))
-//   // );
-//   if (poweEntities.length > 0) {
-//     return poweEntities;
-//   }
-
-//   return undefined;
-// };
-
 export const findBatteryChargingEntity = <T extends { entity_id: string }>(
   hass: HomeAssistant,
   entities: T[]
@@ -103,6 +84,19 @@ export const findBatteryChargingEntity = <T extends { entity_id: string }>(
     (entity) =>
       hass.states[entity.entity_id] && hass.states[entity.entity_id].attributes.device_class === 'battery_charging'
   );
+
+export const findGroupEntity = <T extends { entity_id: string }>(hass: HomeAssistant, entities: T[]): T | undefined => {
+  const groupEntities = entities.filter(
+    (entity) =>
+      hass.states[entity.entity_id] &&
+      isGroupEntity(hass.states[entity.entity_id]) &&
+      !unavailableStates.includes(hass.states[entity.entity_id].state)
+  );
+  if (groupEntities.length > 0) {
+    return groupEntities[0];
+  }
+  return undefined;
+};
 
 export const findEntitiesByClass = <T extends { entity_id: string }>(
   hass: HomeAssistant,
@@ -153,7 +147,8 @@ export const UNKNOWN = 'unknown';
 export const ON = 'on';
 export const OFF = 'off';
 
-const OFF_STATES = [UNAVAILABLE, UNKNOWN, OFF];
+export const OFF_STATES = [UNAVAILABLE, UNKNOWN, OFF];
+export const UNAVAILABLE_STATES = [UNAVAILABLE, UNKNOWN] as const;
 
 export function isActive(stateObj: HassEntity) {
   if (!stateObj) {
@@ -200,3 +195,6 @@ export function isUnknown(stateObj: HassEntity) {
 export function getEntityPicture(stateObj: HassEntity) {
   return (stateObj.attributes.entity_picture_local as string | undefined) || stateObj.attributes.entity_picture;
 }
+
+export const isUnavailableState = arrayLiteralIncludes(UNAVAILABLE_STATES);
+export const isOffState = arrayLiteralIncludes(OFF_STATES);
