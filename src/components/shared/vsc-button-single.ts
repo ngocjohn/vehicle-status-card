@@ -13,12 +13,13 @@ import {
   HomeAssistant,
   isActive,
 } from '../../ha';
-import { ButtonGridConfig, hasItemAction } from '../../types/config';
+import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
+import { handleAction } from '../../ha/panels/common/handle-actions';
+import { ButtonGridConfig, hasAction } from '../../types/config';
 import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../types/config/card/button';
 import { strStartsWith } from '../../utils';
 import { BaseElement } from '../../utils/base-element';
 import { CacheManager } from '../../utils/cache-manager';
-import { addActions } from '../../utils/lovelace/tap-action';
 
 const templateCache = new CacheManager<TemplateResults>(1000);
 
@@ -93,7 +94,7 @@ export class VehicleButtonSingle extends BaseElement {
   protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
     super.firstUpdated(_changedProperties);
 
-    this._setEventListeners();
+    // this._setEventListeners();
     if (!this._stateBadgeEl) {
       this._stateBadgeEl = this.shadowRoot?.querySelector('state-badge');
       if (this._stateBadgeEl) {
@@ -146,17 +147,6 @@ export class VehicleButtonSingle extends BaseElement {
     }
 
     return true;
-  }
-
-  private _setEventListeners(): void {
-    if (!this.isAction) {
-      this.addEventListener('click', this._handleNavigate.bind(this));
-      return;
-    }
-    const actionConfig = this._buttonConfig?.button_action || {};
-    if (hasItemAction(actionConfig)) {
-      addActions(this, actionConfig);
-    }
   }
 
   private get isAction(): boolean {
@@ -295,6 +285,8 @@ export class VehicleButtonSingle extends BaseElement {
       css`
         :host {
           --vic-notify-icon-color: var(--white-color);
+          -webkit-tap-highlight-color: transparent;
+          --vic-ripple-color: var(--secondary-text-color);
         }
         :host([vertical]) .click-container {
           flex-direction: column;
@@ -306,10 +298,14 @@ export class VehicleButtonSingle extends BaseElement {
           border: none !important;
           box-shadow: none !important;
         }
-
-        #actionBtn {
+        [role='button'] {
           cursor: pointer;
+          pointer-events: auto;
         }
+        [role='button']:focus {
+          outline: none;
+        }
+
         .grid-item {
           display: flex;
           position: relative;
@@ -326,6 +322,10 @@ export class VehicleButtonSingle extends BaseElement {
           overflow: hidden;
           align-items: center;
           height: 100%;
+          /* --ha-ripple-color: var(--vic-icon-bg-color, var(--vic-icon-color)); */
+          --ha-ripple-color: var(--vic-ripple-color);
+          --ha-ripple-hover-opacity: 0.04;
+          --ha-ripple-pressed-opacity: 0.12;
         }
 
         /* .grid-item[transparent] {
@@ -548,13 +548,25 @@ export class VehicleButtonSingle extends BaseElement {
       '--vic-icon-bg-color': `${iconBackgroundColor}`,
       '--vic-icon-color': `${iconColor}`,
       '--vic-notify-color': `${notifyColor}`,
+      '--vic-ripple-color': `${iconBackgroundColor ?? 'var(--secondary-text-color)'}`,
     };
 
+    // const isAction = this.isAction;
+
     return html`
-      <div class="grid-item" id="actionBtn">
+      <div
+        class="grid-item"
+        role="button"
+        style=${styleMap(iconStyle)}
+        @action=${this._handleAction.bind(this)}
+        .actionHandler=${actionHandler({
+          hasHold: true,
+          hasDoubleClick: true,
+        })}
+      >
         <ha-ripple></ha-ripple>
-        <div class="click-container click-shrink">
-          <div class="item-icon" style=${styleMap(iconStyle)}>
+        <div class="click-container">
+          <div class="item-icon">
             ${this._renderIcon(stateObj, iconColor)} ${this._renderNotifyIcon(notify, notifyIcon)}
           </div>
           <div class="item-content">
@@ -564,6 +576,32 @@ export class VehicleButtonSingle extends BaseElement {
         </div>
       </div>
     `;
+  }
+
+  private _handleAction(ev: ActionHandlerEvent): void {
+    const action = ev.detail.action;
+    const isAction = this.isAction;
+    const config = this._buttonConfig.button_action || {};
+    const _hasAction = isAction && hasAction(config[`${action}_action`]);
+    switch (action) {
+      case 'tap':
+        if (!isAction) {
+          this.dispatchEvent(new CustomEvent('click-index', { bubbles: true, composed: true }));
+          return;
+        }
+        if (_hasAction) {
+          handleAction(this, this.hass, config, action);
+        }
+        break;
+      case 'hold':
+      case 'double_tap':
+        if (_hasAction) {
+          handleAction(this, this.hass, config, action);
+        }
+        break;
+      default:
+        break;
+    }
   }
 
   private _renderIcon(stateObj: HassEntity, iconColor: string): TemplateResult {
