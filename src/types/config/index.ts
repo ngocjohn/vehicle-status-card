@@ -2,6 +2,7 @@ export * from './card/button';
 export * from './card/config';
 export * from './card/images';
 export * from './card/indicators';
+export * from './card/indicator_rows';
 export * from './card/layout';
 export * from './card/mini-map';
 export * from './card/range-info';
