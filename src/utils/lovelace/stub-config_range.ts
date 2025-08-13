@@ -2,7 +2,7 @@ import type { RangeInfoConfig } from '../../types/config';
 
 import { HomeAssistant } from '../../ha';
 import { findBatteryChargingEntity, findPowerEntities, findEntitiesByClass } from '../../ha';
-import { createRandomPallete, getRandomHexColor } from '../colors';
+import { createRandomPallete, randomHexColor } from '../colors';
 
 const createRangeInfoItem = (
   energyEntity: string,
@@ -21,7 +21,7 @@ const createRangeInfoItem = (
     value_position: options.range_level?.value_position || 'outside',
   },
   charging_entity: chargingEntity || '',
-  progress_color: getRandomHexColor(),
+  progress_color: randomHexColor(),
   charging_template: chargingEntity ? `{{ true }}` : undefined,
   color_blocks: options.color_blocks || false,
   color_thresholds: options.color_thresholds || [],
@@ -55,7 +55,7 @@ export const getRangeInfoConfig = (hass: HomeAssistant): RangeInfoConfig[] | voi
     { energy_level: { value_position: 'inside' }, range_level: { value_position: 'inside' } }
   );
 
-  const randomPallete = createRandomPallete(getRandomHexColor(), 100);
+  const randomPallete = createRandomPallete(randomHexColor(), 100);
   const maxEnergyIndex = batteryOrPowerEntities.reduce((maxIndex, entity, index) => {
     const state = hass.states[entity.entity_id]?.state;
     return state && parseFloat(state) > parseFloat(hass.states[batteryOrPowerEntities[maxIndex].entity_id]?.state)
