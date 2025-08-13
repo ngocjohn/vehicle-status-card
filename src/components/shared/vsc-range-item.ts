@@ -4,7 +4,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import cardcss from '../../css/card.css';
-import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate, hasTemplate, hasPercent } from '../../ha';
+import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate, hasTemplate } from '../../ha';
 import {
   ActionsSharedConfig,
   hasItemAction,
@@ -109,7 +109,7 @@ export class VscRangeItem extends BaseElement {
         }
 
         .fuel-wrapper span.range-inside {
-          z-index: 3;
+          z-index: 1;
           position: absolute;
           top: 50%;
           right: 0.5em;
@@ -308,14 +308,9 @@ export class VscRangeItem extends BaseElement {
       double_tap_action: config?.double_tap_action,
     });
 
-    const entityMax =
-      r.energy_level?.max_value !== undefined
-        ? r.energy_level.max_value
-        : r.energy_level?.entity && hass.states?.[r.energy_level?.entity]
-        ? hass.states[r.energy_level.entity]?.attributes?.max
-        : hasPercent(hass.states[r.energy_level?.entity || ''])
-        ? 100
-        : undefined;
+    const entityMax = r.energy_level?.max_value
+      ? r.energy_level.max_value
+      : hass.states?.[r.energy_level?.entity || '']?.attributes?.max ?? 100;
 
     switch (key) {
       case 'icon':

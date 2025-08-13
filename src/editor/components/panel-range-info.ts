@@ -25,11 +25,11 @@ import {
   generateGradient,
   getColorForLevel,
   getNormalizedValue,
-  getRandomHexColor,
+  randomHexColor,
+  rgb2hex,
 } from '../../utils/colors';
 import * as Create from '../../utils/editor/create';
 import { VehicleStatusCardEditor } from '../editor';
-import { RANGE_ACTIONS } from '../editor-const';
 import {
   CHARGE_TARGET_KEYS,
   CHARGE_TARGET_SCHEMA,
@@ -38,6 +38,8 @@ import {
   PROGRESS_BAR_SCHEMA,
   RANGE_ITEM_SCHEMA,
 } from '../form';
+
+type ITEM_ACTION = 'add' | 'delete-item' | 'edit-item' | 'edit-yaml' | 'back-to-list';
 
 const COLOR_STYLES = ['basic', 'color_thresholds'] as const;
 type ColorStyle = (typeof COLOR_STYLES)[number];
@@ -60,8 +62,6 @@ export class PanelRangeInfo extends LitElement {
   @state() private _maxValue?: number;
   @state() private _overValue?: number;
   @state() private _overValueTimeout?: number;
-
-  private _tinycolor = tinycolor;
 
   static get styles(): CSSResultGroup {
     return [
@@ -343,21 +343,20 @@ export class PanelRangeInfo extends LitElement {
     `;
   }
 
-  private _toggleAction = (
-    action: 'add' | 'delete-item' | 'edit-item' | 'edit-yaml' | 'back-to-list',
-    index?: number
-  ) => {
-    const updateChanged = (update: any) => {
+  private _toggleAction(action: ITEM_ACTION, index?: number): void {
+    const updateChanged = (update: RangeInfoConfig[]) => {
       this.config = { ...this.config, range_info: update };
       fireEvent(this, 'config-changed', { config: this.config });
     };
     switch (action) {
       case 'add':
+        let rangeInfo = [...(this.config.range_info || [])];
+
         const entities = Object.values(this.hass.states);
 
         const energyEntity = [
-          ...(getEntitiesByDomain(this.hass.states, 50, ['number']) || []),
           ...(findPowerEntities(this.hass, entities) || []),
+          ...(getEntitiesByDomain(this.hass.states, 50, ['number']) || []),
         ].map((entity) => {
           if (typeof entity === 'object') {
             return entity.entity_id;
@@ -367,15 +366,13 @@ export class PanelRangeInfo extends LitElement {
 
         const batteryChargingEntity = findBatteryChargingEntity(this.hass, entities);
 
-        let rangeInfo = [...(this.config.range_info || [])];
         // select entity that is not already in range_info
         const uniqueEntity = (energyEntity || []).find(
           (entity) => !rangeInfo.some((item) => item.energy_level.entity === entity)
         );
         console.log('Unique energy entity', uniqueEntity);
 
-        const randomHex = getRandomHexColor();
-        console.log('Random color by index', rangeInfo.length, randomHex);
+        const randomHex = randomHexColor();
         const newRangeInfo = {
           energy_level: {
             entity: uniqueEntity || '',
@@ -385,6 +382,7 @@ export class PanelRangeInfo extends LitElement {
         };
         rangeInfo.push(newRangeInfo);
         updateChanged(rangeInfo);
+        this._activeIndexItem = rangeInfo.length - 1; // Set to the newly added item
         break;
 
       case 'delete-item':
@@ -399,7 +397,7 @@ export class PanelRangeInfo extends LitElement {
         if (index !== undefined) {
           console.log('Edit item', index);
           this._activeIndexItem = index;
-          this.requestUpdate();
+          // this.requestUpdate();
         }
         break;
       case 'edit-yaml':
@@ -412,13 +410,13 @@ export class PanelRangeInfo extends LitElement {
       default:
         break;
     }
-  };
+  }
 
   private _renderRangeConfigContent(): TemplateResult | typeof nothing {
     if (this._activeIndexItem === null) return nothing;
 
     const index = this._activeIndexItem;
-    const rangeItem = (this.config.range_info[index] || {}) as RangeInfoConfig;
+    const rangeItem = { ...(this.config.range_info || [])[index] } as RangeInfoConfig;
     this._rangeItemConfig = rangeItem;
 
     const createSection = this._createSection;
@@ -441,7 +439,7 @@ export class PanelRangeInfo extends LitElement {
 
     const headerActions = this._yamlItemEditorActive
       ? [{ title: 'Close Editor', action: () => (this._yamlItemEditorActive = false), icon: ICON.CLOSE }]
-      : [{ title: 'Back to list', action: () => (this._activeIndexItem = null), icon: ICON.CHEVRON_LEFT }];
+      : [{ title: 'Back to list', action: () => this._toggleAction('back-to-list'), icon: ICON.CHEVRON_LEFT }];
 
     const yamlEditorToggle = [{ action: () => (this._yamlItemEditorActive = !this._yamlItemEditorActive) }];
 
@@ -525,10 +523,11 @@ export class PanelRangeInfo extends LitElement {
         ? html`
             <vsc-sub-panel-yaml
               .hass=${this.hass}
-              .config=${this.config}
               .configDefault=${rangeItem}
               .configIndex=${index}
               .configKey=${'range_info_item'}
+              has-extra-actions
+              @close-editor=${() => (this._yamlItemEditorActive = false)}
               @yaml-config-changed=${this._onYamlConfigChanged}
             ></vsc-sub-panel-yaml>
           `
@@ -576,76 +575,73 @@ export class PanelRangeInfo extends LitElement {
       {
         title: 'Edit',
         icon: ICON.PENCIL,
-        action: (index: number) => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index),
+        action: (index: number) => this._toggleAction('edit-item', index),
       },
       {
         title: 'Remove',
         icon: ICON.DELETE,
-        action: (index: number) => this._toggleAction(RANGE_ACTIONS.DELETE_ITEM, index),
+        action: (index: number) => this._toggleAction('delete-item', index),
         color: 'var(--error-color)',
         class: 'delete',
       },
     ];
     return html`${!this._yamlEditorActive && this.config.range_info
-        ? html`
-            <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
-              <div class="range-info-list">
-                ${repeat(
-                  this.config.range_info || [],
-                  (rangeItem: RangeInfoConfig) => rangeItem.energy_level.entity,
-                  (rangeItem: RangeInfoConfig, index: number) => {
-                    const entity = rangeItem.energy_level.entity || '';
-                    const icon = rangeItem.energy_level.icon || '';
-                    const progressColor = rangeItem.progress_color || 'var(--primary-color)';
-                    return html`
-                      <div class="item-config-row" data-index=${index}>
-                        <div class="handle">
-                          <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
-                        </div>
-                        <ha-icon
-                          icon=${icon ? icon : 'mdi:gas-station'}
-                          style=${`color: ${progressColor}; margin-inline-end: 0.5rem;`}
-                        ></ha-icon>
-                        <div
-                          class="item-content click-shrink"
-                          @click=${() => this._toggleAction(RANGE_ACTIONS.EDIT_ITEM, index)}
-                        >
-                          <div class="primary">Range Info #${index + 1}</div>
-                          <div class="secondary">${entity}</div>
-                        </div>
-                        <div class="item-actions">
-                          ${actionMap.map(
-                            (action) => html`
-                              <ha-icon-button
-                                class=${action.class || ''}
-                                .path=${action.icon}
-                                @click=${() => action.action(index)}
-                                .label=${action.title}
-                              ></ha-icon-button>
-                            `
-                          )}
-                        </div>
+      ? html`
+          <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
+            <div class="range-info-list">
+              ${repeat(
+                this.config.range_info || [],
+                (rangeItem: RangeInfoConfig) => rangeItem.energy_level.entity,
+                (rangeItem: RangeInfoConfig, index: number) => {
+                  const entity = rangeItem.energy_level.entity || '';
+                  const icon = rangeItem.energy_level.icon || '';
+                  const progressColor = rangeItem.progress_color || 'var(--primary-color)';
+                  return html`
+                    <div class="item-config-row" data-index=${index}>
+                      <div class="handle">
+                        <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
                       </div>
-                    `;
-                  }
-                )}
-              </div>
-            </ha-sortable>
-          `
-        : this._renderYamlEditor()}
-      <div class="action-footer">
-        <ha-button size="small" appearance="filled" @click=${() => this._toggleAction('add')}>
-          <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>
-          Add new bar
-        </ha-button>
-        <ha-button
-          size="small"
-          variant="neutral"
-          appearance="filled"
-          @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}
-          >${!this._yamlEditorActive ? 'Edit YAML' : 'Close YAML'}
-        </ha-button>
-      </div> `;
+                      <ha-icon
+                        icon=${icon ? icon : 'mdi:gas-station'}
+                        style=${`color: ${progressColor}; margin-inline-end: 0.5rem;`}
+                      ></ha-icon>
+                      <div class="item-content click-shrink" @click=${() => this._toggleAction('edit-item', index)}>
+                        <div class="primary">Range Info #${index + 1}</div>
+                        <div class="secondary">${entity}</div>
+                      </div>
+                      <div class="item-actions">
+                        ${actionMap.map(
+                          (action) => html`
+                            <ha-icon-button
+                              class=${action.class || ''}
+                              .path=${action.icon}
+                              @click=${() => action.action(index)}
+                              .label=${action.title}
+                            ></ha-icon-button>
+                          `
+                        )}
+                      </div>
+                    </div>
+                  `;
+                }
+              )}
+            </div>
+          </ha-sortable>
+          <div class="action-footer">
+            <ha-button size="small" appearance="filled" @click=${() => this._toggleAction('add')}>
+              <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>
+              Add new bar
+            </ha-button>
+            <ha-button
+              size="small"
+              variant="neutral"
+              appearance="filled"
+              @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}
+              >Edit YAML
+            </ha-button>
+          </div>
+        `
+      : this._renderYamlEditor()} `;
   }
 
   private _entityMoved(ev: CustomEvent): void {
@@ -669,13 +665,15 @@ export class PanelRangeInfo extends LitElement {
           .config=${this.config}
           .configDefault=${this.config.range_info}
           .configKey=${'range_info'}
+          has-extra-actions
+          @close-editor=${() => (this._yamlEditorActive = false)}
           @yaml-config-changed=${this._onYamlConfigChanged}
         ></vsc-sub-panel-yaml>
       </div>
     `;
   }
 
-  private _onYamlConfigChanged(ev: any): void {
+  private _onYamlConfigChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     const detail = ev.detail;
     const { isValid, value, key, index } = detail;
@@ -726,7 +724,7 @@ export class PanelRangeInfo extends LitElement {
       return acc;
     }, {} as RangeInfoConfig);
 
-    return this._createHaForm(DATA, CHARGE_TARGET_SCHEMA);
+    return this._createHaForm(DATA, CHARGE_TARGET_SCHEMA(DATA.charge_target_entity));
   }
 
   private _renderBarBackground(config: RangeInfoConfig): TemplateResult {
@@ -858,28 +856,38 @@ export class PanelRangeInfo extends LitElement {
           ${!noColors
             ? html`
                 <ha-button
-                  class="warning"
-                  .label=${'Sort'}
+                  size="small"
+                  variant="neutral"
+                  appearance="filled"
                   ?hidden=${isSorted}
                   @click=${() => this._sortColorArr()}
-                ></ha-button>
+                  >Sort</ha-button
+                >
                 <ha-button
-                  class="error"
-                  .label=${'Remove all'}
+                  size="small"
+                  variant="warning"
+                  appearance="filled"
                   @click=${() => this._rangeColorThresholdsChanged([])}
-                ></ha-button>
+                  >Remove All</ha-button
+                >
               `
             : html`<ha-button
                 ?hidden=${noEntity}
                 .label=${'Random color pallete'}
+                size="small"
+                variant="neutral"
+                appearance="filled"
                 @click=${() => this._createRandomPallete()}
-              ></ha-button>`}
+                >Random color pallete</ha-button
+              >`}
           <ha-button
             ?hidden=${noEntity}
+            size="small"
+            appearance="filled"
             .label=${'Add'}
-            .outlined=${true}
             @click=${() => this._addColorThreshold()}
-          ></ha-button>
+            >Add</ha-button
+          >
         </div>
       </div>
     `;
@@ -901,7 +909,7 @@ export class PanelRangeInfo extends LitElement {
 
     if (!state) return;
 
-    const baseColor = rangeItem?.progress_color || tinycolor.random().toHexString();
+    const baseColor = rangeItem?.progress_color || randomHexColor();
     const isPercent = hasPercent(state);
     const rawMax = rangeItem?.energy_level?.max_value
       ? rangeItem.energy_level.max_value
@@ -937,7 +945,7 @@ export class PanelRangeInfo extends LitElement {
     const energyState = this.hass.states[energyConf?.entity || ''];
     const isPercent = hasPercent(energyState);
     const unit = isPercent ? '%' : energyState.attributes?.unit_of_measurement || '';
-    const max = energyConf?.max_value ? energyConf.max_value : energyState.attributes?.max ?? (isPercent ? 100 : 5000);
+    const max = energyConf?.max_value ? energyConf.max_value : energyState.attributes?.max ?? 100;
 
     this._maxValue = max;
     const testValue = this._colorTestValue ?? max;
@@ -952,8 +960,6 @@ export class PanelRangeInfo extends LitElement {
           ? barBackground
           : this._colorThresholds[0]?.color || barBackground
         : getColorForLevel(this._colorThresholds, testValue, max) || barBackground;
-    // const consoleStyle = `color: ${currentColor}; font-weight: bold; padding: 2px 4px; border-radius: 4px; `;
-    // console.log(`%cColor for test value: ${testValue} color: ${currentColor}`, consoleStyle);
 
     const normalizedWidth = getNormalizedValue(this._colorThresholds, testValue, max);
 
@@ -1005,6 +1011,7 @@ export class PanelRangeInfo extends LitElement {
             left: `${left}%`,
             transform: `translateX(-50%)`,
             backgroundColor: t.color,
+            zIndex: 3,
           })}
           @click=${() => this._editColorThreshold?.(t.value)}
         ></div>
@@ -1093,95 +1100,72 @@ export class PanelRangeInfo extends LitElement {
     ev.stopPropagation();
     const target = ev.target;
     const { index, configValue } = target;
-    let newValue = configValue === 'value' ? target.value : ev.detail.value;
-    console.log('Color threshold changed', index, configValue, newValue);
+    const newValue = configValue === 'value' ? target.value : ev.detail.value;
 
-    let currentThresholds = [...(this._colorThresholds || [])];
-    const currentThreshold = { ...currentThresholds[index] };
+    const thresholds: Threshold[] = [...(this._colorThresholds ?? [])];
+    const selectedThreshold = { ...thresholds[index] };
+
     if (configValue === 'value') {
       // Ensure the value is a number
-      newValue = newValue === '' || isNaN(newValue) ? undefined : Number(newValue);
-      if (newValue === undefined) return;
-      currentThreshold.value = newValue;
+      if (newValue === '' || isNaN(newValue)) return;
+      selectedThreshold.value = Number(newValue); // Convert to number
     } else {
       // Ensure the color is a valid hex color
-      if (typeof newValue === 'string' && this._tinycolor(newValue).isValid()) {
-        currentThreshold.color = this._tinycolor(newValue).toHexString(); // Convert to hex string
-      } else if (Array.isArray(newValue) && newValue.length === 3) {
-        // If the color is an RGB array, convert it to hex
-        const rgbColor = `rgb(${newValue[0]}, ${newValue[1]}, ${newValue[2]})`;
-        currentThreshold.color = this._tinycolor(rgbColor).toHexString();
-      }
+      const convertedColor = Array.isArray(newValue)
+        ? rgb2hex(newValue as [number, number, number])
+        : tinycolor(newValue).toHexString();
+
+      selectedThreshold.color = convertedColor; // Convert to hex color
     }
-    currentThresholds[index] = currentThreshold; // Replace the modified item in the color_thresholds array
-    this._colorThresholds = currentThresholds;
+    console.log('Updated color threshold:', selectedThreshold);
+    thresholds[index] = selectedThreshold;
+    this._colorThresholds = thresholds;
+
     this._rangeColorThresholdsChanged(this._colorThresholds);
   }
 
   private _addColorThreshold(clickValue?: number): void {
-    const _colorThresholds = this._colorThresholds || [];
-    const randomColor = tinycolor.random().toHexString();
+    const thresholds: Threshold[] = [...(this._colorThresholds ?? [])];
+    const base = this._rangeItemConfig?.progress_color ?? randomHexColor();
 
-    const getNewColor = (color: string) => {
-      const parsedColor = tinycolor(color);
-      // if the color is dark, lighten it, otherwise darken it
-      return parsedColor.isDark() ? parsedColor.lighten(30).toHexString() : parsedColor.darken(30).toHexString();
+    const shade = (c: string) => {
+      const t = tinycolor(c);
+      return t.isDark() ? t.lighten(30).toHexString() : t.darken(30).toHexString();
     };
 
-    const progressColor = this._rangeItemConfig?.progress_color || randomColor;
-    if (clickValue !== undefined) {
-      // check if the click value exists in the thresholds
-      const existingThreshold = _colorThresholds.find((threshold) => threshold.value === clickValue);
-      if (!existingThreshold) {
-        // find the index of the last threshold that is less than the click value
-        const lastIndex = _colorThresholds.findIndex((threshold) => threshold.value > clickValue);
-        if (lastIndex === -1) {
-          const newColor = {
-            value: clickValue,
-            color: getNewColor(progressColor),
-          };
-          _colorThresholds.push(newColor);
-        } else {
-          // If a threshold is found, insert the new threshold before it
-          const newColor = {
-            value: clickValue,
-            color: getNewColor(_colorThresholds[lastIndex - 1]?.color || progressColor),
-          };
-          // Insert the new threshold before the found index
-          _colorThresholds.splice(lastIndex, 0, newColor);
-        }
-        this._rangeColorThresholdsChanged(_colorThresholds);
-        setTimeout(() => {
-          this._editColorThreshold?.(clickValue);
-        }, 100); // Delay to allow the DOM to update
-        return;
-      }
-    } else {
-      if (_colorThresholds.length === 0) {
-        const newThreshold: Threshold[] = [
-          {
-            value: Number(0),
-            color: progressColor,
-          },
-          {
-            value: Number(5),
-            color: getNewColor(progressColor),
-          },
-        ];
+    const updateThresholds = () => {
+      this._rangeColorThresholdsChanged(thresholds);
+    };
 
-        _colorThresholds.push(...newThreshold);
-      } else {
-        const latestColorItem = _colorThresholds[_colorThresholds.length - 1];
-        const newColor = getNewColor(latestColorItem.color || progressColor);
-        const newThreshold: Threshold = {
-          value: latestColorItem.value + 5,
-          color: newColor,
-        };
-        // Add the new threshold to the existing array before latest index
-        _colorThresholds.push(newThreshold);
+    // Insert keeping order by value
+    const insert = (value: number, color: string) => {
+      const idx = thresholds.findIndex((t) => t.value > value);
+      if (idx === -1) thresholds.push({ value, color });
+      else thresholds.splice(idx, 0, { value, color });
+    };
+
+    if (clickValue !== undefined) {
+      // ignore if exact value already exists
+      if (!thresholds.some((t) => t.value === clickValue)) {
+        const idx = thresholds.findIndex((t) => t.value > clickValue);
+        const prevColor = idx > 0 ? thresholds[idx - 1].color : base;
+        insert(clickValue, shade(prevColor));
+        updateThresholds();
+        // allow DOM to update before opening editor
+        setTimeout(() => this._editColorThreshold?.(clickValue), 100);
       }
-      this._rangeColorThresholdsChanged(_colorThresholds);
+      return;
     }
+
+    // No click value: seed or append a new step
+    if (thresholds.length === 0) {
+      thresholds.push({ value: 0, color: base }, { value: 5, color: shade(base) });
+    } else {
+      const last = thresholds[thresholds.length - 1];
+      insert(last.value + 5, shade(last.color ?? base));
+    }
+
+    updateThresholds();
   }
 
   private _sortColorArr(): void {
@@ -1202,15 +1186,15 @@ export class PanelRangeInfo extends LitElement {
   }
 
   private _rangeColorThresholdsChanged(colorThresholds: Threshold[]): void {
-    const activeIndex = this._activeIndexItem;
-    if (!this.config || activeIndex === null) return;
-    const rangeInfo = [...(this.config.range_info || [])];
-    const rangeItem = { ...rangeInfo[activeIndex] }; // Clone the item at the active index
-    rangeItem.color_thresholds = colorThresholds; // Update the color thresholds
-    rangeInfo[activeIndex] = rangeItem; // Replace the modified item in the range_info array
-    this.config = { ...this.config, range_info: rangeInfo }; // Update the config with the modified range_info
-    fireEvent(this, 'config-changed', { config: this.config });
-    this.requestUpdate();
+    if (!this._rangeItemConfig) return;
+    const rangeItem = { ...(this._rangeItemConfig || {}) } as RangeInfoConfig;
+    if (colorThresholds.length === 0) {
+      delete rangeItem.color_thresholds; // Remove the color_thresholds property if empty
+    } else {
+      rangeItem.color_thresholds = colorThresholds; // Update the color thresholds
+    }
+    this._rangeItemConfig = rangeItem;
+    this._rangeItemChanged(this._rangeItemConfig);
   }
 
   private _renderBasicColors(config: RangeInfoConfig): TemplateResult {
@@ -1249,21 +1233,16 @@ export class PanelRangeInfo extends LitElement {
     this._rangeItemChanged(rangeItemConfig);
   }
 
-  private _progressColorChanged(ev: any): void {
+  private _progressColorChanged(ev: CustomEvent): void {
+    if (!this._rangeItemConfig) return;
     ev.stopPropagation();
     const value = ev.detail.value;
-    const configValue = ev.target.configValue;
-    let currentItemConfig = { ...(this._rangeItemConfig || {}) } as RangeInfoConfig;
-    if (typeof value === 'string' && this._tinycolor(value).isValid()) {
-      currentItemConfig[configValue] = this._tinycolor(value).toHexString(); // Convert to hex string
-    } else if (Array.isArray(value) && value.length === 3) {
-      // If the color is an RGB array, convert it to hex
-      const rgbColor = `rgb(${value[0]}, ${value[1]}, ${value[2]})`;
-      currentItemConfig[configValue] = this._tinycolor(rgbColor).toHexString();
-    }
+    const hexValue = rgb2hex(value);
 
-    this._rangeItemConfig = currentItemConfig;
-    this._rangeItemChanged(currentItemConfig);
+    this._rangeItemConfig = { ...(this._rangeItemConfig || {}) } as RangeInfoConfig;
+
+    this._rangeItemConfig.progress_color = hexValue;
+    this._rangeItemChanged(this._rangeItemConfig);
   }
 
   private _renderHeader(
@@ -1293,11 +1272,11 @@ export class PanelRangeInfo extends LitElement {
     </div>`;
   }
 
-  private _createHaForm = (data: any, schema: any, configyTpe?: string) => {
+  private _createHaForm = (data: any, schema: any, configyType?: string) => {
     return html`
       <ha-form
         .hass=${this.hass}
-        .configType=${configyTpe}
+        .configType=${configyType}
         .data=${data}
         .schema=${schema}
         .computeLabel=${this._computeLabel}
@@ -1313,28 +1292,53 @@ export class PanelRangeInfo extends LitElement {
     return schema.helper || '';
   }
 
-  private _rangeItemValueChanged(ev: any): void {
+  private _rangeItemValueChanged(ev: CustomEvent<{ value: any }>): void {
     ev.stopPropagation();
-    if (!this.config) {
-      return;
-    }
-    const configType = ev.target.configType; // E.g., 'energy_level', 'range_level', 'progress_color'
-    const value = ev.detail.value;
-    // console.log('Range item value changed', configType, value);
-    let currentItemConfig = { ...(this._rangeItemConfig || {}) } as RangeInfoConfig;
-    if (configType !== undefined) {
-      let configTypeConfig = { ...currentItemConfig[configType] };
-      configTypeConfig = { ...value };
-      currentItemConfig[configType] = configTypeConfig;
-    } else {
-      currentItemConfig = {
-        ...currentItemConfig,
-        ...value,
-      };
-    }
-    this._rangeItemConfig = currentItemConfig;
+    if (!this.config) return;
 
-    this._rangeItemChanged(currentItemConfig);
+    const configType = (ev.target as any)?.configType as keyof RangeInfoConfig | undefined;
+    const value = ev.detail?.value ?? {};
+
+    const currentRangeInfo = { ...(this._rangeItemConfig ?? {}) } as RangeInfoConfig;
+
+    const mergeWithCleanup = (dest: Record<string, any>, src: Record<string, any>): boolean => {
+      let changed = false;
+      for (const key of Object.keys(src)) {
+        const v = src[key];
+        if (v === undefined || v === '') {
+          if (key in dest) {
+            delete dest[key];
+            changed = true;
+          }
+        } else if (dest[key] !== v) {
+          dest[key] = v;
+          changed = true;
+        }
+      }
+      return changed;
+    };
+    let changed = false;
+
+    if (configType !== undefined) {
+      const section = { ...((currentRangeInfo[configType] as any) ?? {}) };
+      changed = mergeWithCleanup(section, value) || changed;
+      if (Object.keys(section).length === 0) {
+        if (configType in currentRangeInfo) {
+          delete currentRangeInfo[configType];
+          changed = true;
+        }
+      } else if (JSON.stringify(currentRangeInfo[configType]) !== JSON.stringify(section)) {
+        (currentRangeInfo as Record<string, any>)[configType] = section;
+        changed = true;
+      }
+    } else {
+      changed = mergeWithCleanup(currentRangeInfo as any, value) || changed;
+    }
+
+    if (!changed) return;
+
+    this._rangeItemConfig = currentRangeInfo;
+    this._rangeItemChanged(currentRangeInfo);
   }
 
   private _rangeItemChanged(config: RangeInfoConfig): void {

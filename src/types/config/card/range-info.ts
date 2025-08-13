@@ -1,8 +1,9 @@
-import { ActionsSharedConfig } from '../actions-config';
+import { ActionConfig } from '../../../ha';
+
 /**
  * Configuration interface for the Range Info section of the Vehicle Status Card.
  */
-export interface RangeInfoConfig extends RangeInfoLayoutConfig, ChargingConfig {
+export interface RangeInfoConfig extends RangeInfoLayoutConfig, ChargingConfig, ChargeTargetConfig {
   energy_level: RangeItemConfig;
   range_level?: RangeItemConfig;
 }
@@ -11,13 +12,16 @@ export type RangeValuePosition = 'outside' | 'inside' | 'off';
 export type RangeValueAlignment = 'start' | 'end';
 export type Threshold = { value: number; color: string };
 
-export type RangeItemConfig = ActionsSharedConfig & {
-  attribute?: string;
+export type RangeItemConfig = {
   entity?: string;
+  attribute?: string;
   icon?: string;
   max_value?: number;
   value_position?: RangeValuePosition;
   value_alignment?: RangeValueAlignment;
+  tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  double_tap_action?: ActionConfig;
 };
 
 export type RangeInfoLayoutConfig = Partial<{
@@ -34,6 +38,9 @@ export type RangeInfoLayoutConfig = Partial<{
 export type ChargingConfig = Partial<{
   charging_entity: string;
   charging_template: string;
+}>;
+
+export type ChargeTargetConfig = Partial<{
   charge_target_entity: string;
   charge_target_color: string;
   charge_target_visibility: string;

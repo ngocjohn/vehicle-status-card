@@ -1,6 +1,6 @@
 import memoizeOne from 'memoize-one';
 
-import { computeOptionalActionSchema } from './actions-config';
+import { computeOptionalActionSchemaFull } from './actions-config';
 
 const DIMENSION_KEYS = ['bar_height', 'bar_width', 'bar_radius'];
 
@@ -76,34 +76,73 @@ export const RANGE_ITEM_SCHEMA = memoizeOne((entityId: string, required: boolean
     required: required,
     selector: { entity: {} },
   },
-  {
-    name: '',
-    type: 'grid',
-    flatten: true,
-    schema: [
-      ...RANGE_ITEM_BASE_SCHEMA(entityId),
-      ...(valueAligment ? VALUE_ALIGNMENT_SCHEMA(valueAligment) : []),
-      ...(required === true
-        ? [
-            {
-              name: 'max_value',
-              label: 'Max Value',
-              type: 'integer',
-              valueMin: 0,
-            },
-          ]
-        : []),
-    ],
-  },
-  {
-    name: '',
-    type: 'expandable',
-    title: 'Interaction Options',
-    icon: 'mdi:gesture-tap-button',
-    flatten: true,
-    schema: [...computeOptionalActionSchema()],
-  },
+  ...(entityId && entityId !== ''
+    ? [
+        {
+          name: '',
+          type: 'grid',
+          flatten: true,
+          schema: [
+            ...RANGE_ITEM_BASE_SCHEMA(entityId),
+            ...(valueAligment ? VALUE_ALIGNMENT_SCHEMA(valueAligment) : []),
+            ...(required === true
+              ? [
+                  {
+                    name: 'max_value',
+                    label: 'Max Value',
+                    type: 'integer',
+                    valueMin: 0,
+                  },
+                ]
+              : []),
+          ],
+        },
+        {
+          name: '',
+          type: 'expandable',
+          title: 'Interaction Options',
+          icon: 'mdi:gesture-tap-button',
+          flatten: true,
+          schema: [...computeOptionalActionSchemaFull()],
+        },
+      ]
+    : []),
 ]);
+
+// export const RANGE_ITEM_SCHEMA = memoizeOne((entityId: string, required: boolean = false, valueAligment?: boolean) => [
+//   {
+//     name: 'entity',
+//     required: required,
+//     selector: { entity: {} },
+//   },
+//   {
+//     name: '',
+//     type: 'grid',
+//     flatten: true,
+//     schema: [
+//       ...RANGE_ITEM_BASE_SCHEMA(entityId),
+//       ...(valueAligment ? VALUE_ALIGNMENT_SCHEMA(valueAligment) : []),
+//       ...(required === true
+//         ? [
+//             {
+//               name: 'max_value',
+//               label: 'Max Value',
+//               type: 'integer',
+//               valueMin: 0,
+//             },
+//           ]
+//         : []),
+//     ],
+//   },
+//   {
+//     name: '',
+//     type: 'expandable',
+//     title: 'Interaction Options',
+//     icon: 'mdi:gesture-tap-button',
+//     flatten: true,
+//     schema: [...computeOptionalActionSchema()],
+//   },
+// ]);
 
 export const PROGRESS_BAR_SCHEMA = [
   {
@@ -148,43 +187,50 @@ export const CHARGING_STATE_SCHEMA = [
   },
 ] as const;
 
-export const CHARGE_TARGET_SCHEMA = [
-  {
-    name: '',
-    type: 'grid',
-    schema: [
-      {
-        name: 'charge_target_entity',
-        selector: { entity: {} },
-        required: false,
-      },
-      {
-        name: 'charge_target_color',
-        label: 'Charge Target Line Color',
-        selector: {
-          ui_color: {
-            include_none: false,
-            include_states: false,
-            default_color: 'accent',
+export const CHARGE_TARGET_SCHEMA = (entityId: string | undefined) =>
+  [
+    {
+      name: 'charge_target_entity',
+      selector: { entity: {} },
+      required: false,
+    },
+    ...(entityId && entityId !== ''
+      ? [
+          {
+            name: '',
+            type: 'grid',
+            flatten: true,
+            schema: [
+              {
+                name: 'charge_target_color',
+                label: 'Charge Target Line Color',
+                selector: {
+                  ui_color: {
+                    include_none: false,
+                    include_states: false,
+                    default_color: 'accent',
+                  },
+                },
+              },
+            ] as const,
           },
-        },
-      },
-    ] as const,
-  },
-  {
-    name: 'charge_target_tooltip',
-    label: 'Use Tooltip',
-    helper: 'Show tooltip with target value when hovering over the charge target line',
-    default: false,
-    type: 'boolean',
-  },
-  {
-    name: 'charge_target_visibility',
-    label: 'Charge Target Visibility',
-    helper: 'Template to set the visibility of the charge target line, defaults true if charge_target_entity is set',
-    selector: { template: {} },
-  },
-] as const;
+          {
+            name: 'charge_target_tooltip',
+            label: 'Use Tooltip',
+            helper: 'Show tooltip with target value when hovering over the charge target line',
+            default: false,
+            type: 'boolean',
+          },
+          {
+            name: 'charge_target_visibility',
+            label: 'Charge Target Visibility',
+            helper:
+              'Template to set the visibility of the charge target line, defaults true if charge_target_entity is set',
+            selector: { template: {} },
+          },
+        ]
+      : []),
+  ] as const;
 
 const RANGE_LAYOUTS = ['column', 'row'] as const;
 export const RANGE_LAYOUT_SCHEMA = [
