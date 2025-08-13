@@ -48,26 +48,52 @@ export const findBatteryEntity = <T extends { entity_id: string }>(
 };
 
 const powerDeviceClasses = ['battery', 'power_factor'];
+
 export const findPowerEntities = <T extends { entity_id: string }>(
   hass: HomeAssistant,
   entities: T[]
 ): T[] | undefined => {
-  const poweEntities = entities.filter(
-    (entity) =>
-      hass.states[entity.entity_id] &&
-      powerDeviceClasses.some((deviceClass) => hass.states[entity.entity_id].attributes.device_class === deviceClass) &&
-      batteryPriorities.includes(computeDomain(entity.entity_id))
-  );
-  // .sort(
-  //   (a, b) =>
-  //     batteryPriorities.indexOf(computeDomain(a.entity_id)) - batteryPriorities.indexOf(computeDomain(b.entity_id))
-  // );
+  const poweEntities = entities
+    .filter(
+      (entity) =>
+        hass.states[entity.entity_id] &&
+        powerDeviceClasses.some(
+          (deviceClass) => hass.states[entity.entity_id].attributes.device_class === deviceClass
+        ) &&
+        batteryPriorities.includes(computeDomain(entity.entity_id)) &&
+        !unavailableStates.includes(hass.states[entity.entity_id].state)
+    )
+    .sort(
+      (a, b) =>
+        batteryPriorities.indexOf(computeDomain(a.entity_id)) - batteryPriorities.indexOf(computeDomain(b.entity_id))
+    );
   if (poweEntities.length > 0) {
     return poweEntities;
   }
 
   return undefined;
 };
+
+// export const findPowerEntities = <T extends { entity_id: string }>(
+//   hass: HomeAssistant,
+//   entities: T[]
+// ): T[] | undefined => {
+//   const poweEntities = entities.filter(
+//     (entity) =>
+//       hass.states[entity.entity_id] &&
+//       powerDeviceClasses.some((deviceClass) => hass.states[entity.entity_id].attributes.device_class === deviceClass) &&
+//       batteryPriorities.includes(computeDomain(entity.entity_id))
+//   );
+//   // .sort(
+//   //   (a, b) =>
+//   //     batteryPriorities.indexOf(computeDomain(a.entity_id)) - batteryPriorities.indexOf(computeDomain(b.entity_id))
+//   // );
+//   if (poweEntities.length > 0) {
+//     return poweEntities;
+//   }
+
+//   return undefined;
+// };
 
 export const findBatteryChargingEntity = <T extends { entity_id: string }>(
   hass: HomeAssistant,
