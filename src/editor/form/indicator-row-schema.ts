@@ -7,8 +7,8 @@ const DISPLAY_ELEMENTS = ['show_name', 'show_state', 'show_icon', 'include_state
 
 export const ROW_NO_WRAP_SCHEMA = [
   {
-    name: 'wrap',
-    label: 'Allow Wrap',
+    name: 'no_wrap',
+    label: 'Disable Wrap',
     type: 'boolean',
     helper: 'Disable wrapping of items. Items will be in a single line and can be scrolled horizontally.',
     default: false,

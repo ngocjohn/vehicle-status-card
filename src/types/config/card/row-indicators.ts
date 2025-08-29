@@ -70,7 +70,7 @@ export type IndicatorRowItem = IndicatorEntityConfig | IndicatorRowGroupConfig;
 export interface IndicatorRowConfig {
   row_items: IndicatorRowItem[]; // Array of indicator items in the row
   alignment?: string;
-  wrap?: boolean;
+  no_wrap?: boolean;
 }
 
 export interface LovelaceIndicatorRowItem extends HTMLElement {

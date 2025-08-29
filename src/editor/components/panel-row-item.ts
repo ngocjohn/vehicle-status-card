@@ -90,7 +90,7 @@ export class PanelIndicatorItem extends BaseEditor {
             ></vsc-alignment-selector>
             <vsc-editor-form
               ._hass=${this._hass}
-              .data=${{ wrap: this._rowConfig?.wrap ?? false }}
+              .data=${{ no_wrap: this._rowConfig?.no_wrap ?? false }}
               .schema=${[...ROW_NO_WRAP_SCHEMA]}
               .configValue=${'no_wrap'}
               @value-changed=${this._handleRowChanged}
@@ -330,11 +330,11 @@ export class PanelIndicatorItem extends BaseEditor {
     if (!config) return;
     const configValue = (event.target as any).configValue;
     if (configValue && configValue === 'no_wrap') {
-      const noWrap = event.detail?.value.wrap as boolean;
+      const noWrap = event.detail?.value.no_wrap as boolean;
       console.debug('No Wrap changed to', noWrap);
-      config.wrap = noWrap;
+      config.no_wrap = noWrap;
       if (!noWrap) {
-        delete config.wrap;
+        delete config.no_wrap;
       }
       this._rowConfigChanged(config);
       return;

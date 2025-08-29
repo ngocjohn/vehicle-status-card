@@ -48,7 +48,7 @@ export class VscIndicatorRow extends BaseElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    if (this.rowConfig.wrap && this._rowEl) {
+    if (this.rowConfig.no_wrap && this._rowEl) {
       console.debug('Binding row events with connectedCallback');
       this._bindRowEvents();
       this._updateArrows();
@@ -63,7 +63,7 @@ export class VscIndicatorRow extends BaseElement {
     super.firstUpdated(changedProperties);
     // Initialize or fetch any necessary data here
     await new Promise((resolve) => setTimeout(resolve, 0)); // wait for DOM
-    if (this.rowConfig.wrap && this._rowEl) {
+    if (this.rowConfig.no_wrap && this._rowEl) {
       this._bindRowEvents();
       this._updateArrows();
     }
@@ -117,7 +117,7 @@ export class VscIndicatorRow extends BaseElement {
 
   private _updateArrows(): void {
     const el = this._rowEl;
-    if (!el || !this.rowConfig.wrap) {
+    if (!el || !this.rowConfig.no_wrap) {
       this._showLeftArrow = false;
       this._showRightArrow = false;
       return;
@@ -149,7 +149,7 @@ export class VscIndicatorRow extends BaseElement {
   protected render(): TemplateResult {
     const rowItems = this._rowItems || [];
     const active = this.active;
-    const noWrap = this.rowConfig.wrap;
+    const noWrap = this.rowConfig.no_wrap;
     const alignment = this.rowConfig.alignment || 'default';
     const groupActive = this._selectedGroupId !== null;
 
@@ -169,7 +169,7 @@ export class VscIndicatorRow extends BaseElement {
         <div
           class="indicator-row-container"
           ?active=${active}
-          ?no-wrap=${this.rowConfig.wrap}
+          ?no-wrap=${this.rowConfig.no_wrap}
           style=${styleMap(alignStyle)}
         >
           ${repeat(
