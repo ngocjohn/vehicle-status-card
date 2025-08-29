@@ -4,13 +4,13 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import editorcss from '../../css/editor.css';
 import { fireEvent, HomeAssistant } from '../../ha';
-import './sub-panel-yaml';
+import './panel-yaml-editor';
 import { IndicatorItemConfig } from '../../types/config';
 import { ICON } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';
 import { singleIndicatorSchema, singleApparenceSchema, singleActionSchema } from '../form';
 
-@customElement('vsc-panel-indicator-single')
+@customElement('panel-indicator-single')
 export class PanelIndicatorSingle extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public editor!: VehicleStatusCardEditor;
@@ -141,13 +141,13 @@ export class PanelIndicatorSingle extends LitElement {
         <div>YAML editor</div>
       </div>
       <div class="sub-panel-config">
-        <vsc-sub-panel-yaml
+        <panel-yaml-editor
           .hass=${this.hass}
           .config=${this.editor._config}
           .cardEditor=${this.editor}
           .configDefault=${config || []}
           @yaml-config-changed=${this._yamlConfigChanged}
-        ></vsc-sub-panel-yaml>
+        ></panel-yaml-editor>
       </div>
     `;
   }
@@ -190,14 +190,14 @@ export class PanelIndicatorSingle extends LitElement {
               ></ha-form>
             `
           : html`
-              <vsc-sub-panel-yaml
+              <panel-yaml-editor
                 .hass=${this.hass}
                 .config=${this.editor._config}
                 .cardEditor=${this.editor}
                 .configDefault=${item}
                 .configKey=${'single'}
                 @yaml-config-changed=${this._yamlConfigChanged}
-              ></vsc-sub-panel-yaml>
+              ></panel-yaml-editor>
             `}
       </div>
     `;
@@ -347,6 +347,6 @@ export class PanelIndicatorSingle extends LitElement {
 }
 declare global {
   interface HTMLElementTagNameMap {
-    'vsc-panel-indicator-single': PanelIndicatorSingle;
+    'panel-indicator-single': PanelIndicatorSingle;
   }
 }

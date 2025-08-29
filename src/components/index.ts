@@ -2,6 +2,7 @@ export * from './vsc-images-slide';
 export * from './vsc-mini-map';
 export * from './vsc-buttons-grid';
 export * from './vsc-indicators';
+export * from './vsc-indicator-row';
 export * from './vsc-range-info';
 // shared
 export * from './shared/vsc-tire-card';

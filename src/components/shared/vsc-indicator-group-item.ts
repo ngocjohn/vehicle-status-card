@@ -1,21 +1,21 @@
 // Home Assistant
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 // Lit
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
-// CSS
-import cardcss from '../../css/card.css';
 // Utils
 import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
-import { hasItemAction, IndicatorItemConfig } from '../../types/config';
+import { hasItemAction } from '../../types/config/actions-config';
+import { IndicatorItemConfig } from '../../types/config/card/indicators';
+import { BaseElement } from '../../utils/base-element';
 import { addActions } from '../../utils/lovelace/tap-action';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-indicator-group-item')
-export class VscIndicatorGroupItem extends LitElement {
+export class VscIndicatorGroupItem extends BaseElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) item!: IndicatorItemConfig;
 
@@ -24,7 +24,7 @@ export class VscIndicatorGroupItem extends LitElement {
 
   static get styles(): CSSResultGroup {
     return [
-      cardcss,
+      super.styles,
       css`
         .item {
           display: flex;

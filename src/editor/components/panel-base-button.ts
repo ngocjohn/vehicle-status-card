@@ -4,9 +4,10 @@ import { customElement, property, state } from 'lit/decorators.js';
 import editorcss from '../../css/editor.css';
 import { HomeAssistant } from '../../ha';
 import { BaseButtonConfig } from '../../types/config';
+import { PANEL } from '../editor-const';
 import { BASE_BUTTON_ACTION_SCHEMA, BASE_BUTTON_APPEARANCE_SCHEMA, BASE_BUTTON_SCHEMA } from '../form';
 
-@customElement('vsc-panel-base-button')
+@customElement(PANEL.BASE_BUTTON)
 export class PanelBaseButton extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) buttonConfig!: BaseButtonConfig;
@@ -44,13 +45,13 @@ export class PanelBaseButton extends LitElement {
 
   private _renderYamlEditor(): TemplateResult {
     return html`
-      <vsc-sub-panel-yaml
+      <panel-yaml-editor
         .hass=${this.hass}
         .configDefault=${this.buttonConfig}
         .extraAction=${true}
         @close-editor=${() => (this.yamlMode = false)}
         @yaml-config-changed=${this._handleYamlConfigChanged}
-      ></vsc-sub-panel-yaml>
+      ></panel-yaml-editor>
     `;
   }
 
@@ -123,6 +124,6 @@ export class PanelBaseButton extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'vsc-panel-base-button': PanelBaseButton;
+    'panel-base-button': PanelBaseButton;
   }
 }

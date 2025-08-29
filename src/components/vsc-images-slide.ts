@@ -1,4 +1,4 @@
-import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import Swiper from 'swiper';
@@ -10,11 +10,13 @@ import { COMPONENT } from '../constants/const';
 import cardstyles from '../css/card.css';
 import { HomeAssistant, computeImageUrl, ImageEntity } from '../ha';
 import { VehicleStatusCardConfig, ImageConfig } from '../types/config';
+import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.IMAGES_SLIDE)
-export class ImagesSlide extends LitElement {
+export class ImagesSlide extends BaseElement {
   @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
+
   @state() swiper: null | Swiper = null;
   @state() private _images: ImageConfig[] = [];
 

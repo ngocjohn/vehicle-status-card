@@ -1,5 +1,6 @@
+export * from './card/card-config';
 export * from './card/button';
-export * from './card/config';
+export * from './card/row-indicators';
 export * from './card/images';
 export * from './card/indicators';
 export * from './card/layout';

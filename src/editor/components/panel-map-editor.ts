@@ -319,13 +319,13 @@ export class PanelMapEditor extends LitElement {
     return html`
       <div id="yaml-editor">
         ${!this._useSingleMapCard
-          ? html` <vsc-sub-panel-yaml
+          ? html` <panel-yaml-editor
               .hass=${this.hass}
               .config=${this._config}
               .configDefault=${this._config.mini_map}
               @yaml-config-changed=${this._yamlChanged}
             >
-            </vsc-sub-panel-yaml>`
+            </panel-yaml-editor>`
           : html`
               <ha-yaml-editor
                 .hass=${this.hass}

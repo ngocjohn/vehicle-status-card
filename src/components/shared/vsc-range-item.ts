@@ -3,7 +3,6 @@ import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } fr
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import cardcss from '../../css/card.css';
 import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate, hasTemplate } from '../../ha';
 import {
   ActionsSharedConfig,
@@ -27,7 +26,7 @@ export class VscRangeItem extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [
-      cardcss,
+      super.styles,
       css`
         .fuel-container {
           display: flex;

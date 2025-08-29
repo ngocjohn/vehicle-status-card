@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
-import { customElement, state, property } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 
 import { COMPONENT } from '../constants/const';
 import './shared/vsc-range-item';
@@ -12,7 +12,6 @@ export class VscRangeInfo extends BaseElement {
   @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) rangeConfig!: RangeInfoConfig[];
   @property({ type: Boolean, reflect: true }) public row = false;
-  @state() public _groupIndicatorActive: number | null = null;
 
   static get styles(): CSSResultGroup {
     return [
@@ -53,16 +52,11 @@ export class VscRangeInfo extends BaseElement {
 
   protected render(): TemplateResult {
     // if (this._groupIndicatorActive !== null) return html``;
-    const _class = this._groupIndicatorActive !== null ? 'combined-info-box not-visible' : 'combined-info-box';
     const rangeInfo = this.rangeConfig.map((rangeItem) => {
       return html`<vsc-range-item .hass=${this.hass} .rangeItem=${rangeItem}></vsc-range-item>`;
     });
 
     // Wrap rangeInfo in a div if there are more than one entries
-    return html`<div class=${_class} ?row=${this.row}>${rangeInfo}</div>`;
-  }
-
-  public _handleIndicatorClick(index: number | null): void {
-    this._groupIndicatorActive = this._groupIndicatorActive === index ? null : index;
+    return html`<div class="combined-info-box" ?row=${this.row}>${rangeInfo}</div>`;
   }
 }

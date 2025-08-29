@@ -1,4 +1,8 @@
-import { SectionOrder } from '../../section';
+// List of all section keys
+export const SECTION_KEYS = ['indicators', 'range_info', 'images', 'mini_map', 'buttons'];
+
+// section order type is array of section keys, e.g. ['indicators', 'buttons', 'mini_map']
+export type SectionOrder = (typeof SECTION_KEYS)[number];
 
 /**
  * Layout configuration Interface

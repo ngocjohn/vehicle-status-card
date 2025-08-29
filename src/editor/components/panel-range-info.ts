@@ -1,4 +1,4 @@
-import { LitElement, html, TemplateResult, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
+import { html, TemplateResult, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -6,16 +6,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 // utils
 import tinycolor from 'tinycolor2';
 
-import editorcss from '../../css/editor.css';
-import './sub-panel-yaml';
-import {
-  findBatteryChargingEntity,
-  findPowerEntities,
-  fireEvent,
-  getEntitiesByDomain,
-  hasPercent,
-  HomeAssistant,
-} from '../../ha';
+import './panel-yaml-editor';
+import { findBatteryChargingEntity, findPowerEntities, fireEvent, getEntitiesByDomain, hasPercent } from '../../ha';
 import { RangeInfoConfig, RangeItemConfig, Threshold, VehicleStatusCardConfig } from '../../types/config';
 import { ICON } from '../../utils';
 import {
@@ -29,7 +21,8 @@ import {
   rgb2hex,
 } from '../../utils/colors';
 import * as Create from '../../utils/editor/create';
-import { VehicleStatusCardEditor } from '../editor';
+import { BaseEditor } from '../base-editor';
+import { PANEL } from '../editor-const';
 import {
   CHARGE_TARGET_KEYS,
   CHARGE_TARGET_SCHEMA,
@@ -44,10 +37,8 @@ type ITEM_ACTION = 'add' | 'delete-item' | 'edit-item' | 'edit-yaml' | 'back-to-
 const COLOR_STYLES = ['basic', 'color_thresholds'] as const;
 type ColorStyle = (typeof COLOR_STYLES)[number];
 
-@customElement('panel-range-info')
-export class PanelRangeInfo extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) editor?: VehicleStatusCardEditor;
+@customElement(PANEL.RANGE_INFO)
+export class PanelRangeInfo extends BaseEditor {
   @property({ attribute: false }) config!: VehicleStatusCardConfig;
 
   @state() private _activeIndexItem: number | null = null;
@@ -65,6 +56,7 @@ export class PanelRangeInfo extends LitElement {
 
   static get styles(): CSSResultGroup {
     return [
+      super.styles,
       css`
         *[hidden] {
           display: none;
@@ -276,7 +268,6 @@ export class PanelRangeInfo extends LitElement {
           --mdc-theme-primary: var(--error-color);
         }
       `,
-      editorcss,
     ];
   }
 
@@ -352,11 +343,11 @@ export class PanelRangeInfo extends LitElement {
       case 'add':
         let rangeInfo = [...(this.config.range_info || [])];
 
-        const entities = Object.values(this.hass.states);
+        const entities = Object.values(this._hass.states);
 
         const energyEntity = [
-          ...(findPowerEntities(this.hass, entities) || []),
-          ...(getEntitiesByDomain(this.hass.states, 50, ['number']) || []),
+          ...(findPowerEntities(this._hass, entities) || []),
+          ...(getEntitiesByDomain(this._hass.states, 50, ['number']) || []),
         ].map((entity) => {
           if (typeof entity === 'object') {
             return entity.entity_id;
@@ -364,7 +355,7 @@ export class PanelRangeInfo extends LitElement {
           return entity;
         });
 
-        const batteryChargingEntity = findBatteryChargingEntity(this.hass, entities);
+        const batteryChargingEntity = findBatteryChargingEntity(this._hass, entities);
 
         // select entity that is not already in range_info
         const uniqueEntity = (energyEntity || []).find(
@@ -424,7 +415,7 @@ export class PanelRangeInfo extends LitElement {
 
     const colorStyleSelect = html`
       <ha-control-select
-        .hass=${this.hass}
+        .hass=${this._hass}
         .options=${COLOR_STYLES.map((style) => ({
           value: style,
           label: style.replace('_', ' ').toUpperCase(),
@@ -521,15 +512,15 @@ export class PanelRangeInfo extends LitElement {
       ${this._renderHeader(`Range Info #${index + 1}`, undefined, headerActions, yamlEditorToggle)}
       ${this._yamlItemEditorActive
         ? html`
-            <vsc-sub-panel-yaml
-              .hass=${this.hass}
+            <panel-yaml-editor
+              .hass=${this._hass}
               .configDefault=${rangeItem}
               .configIndex=${index}
               .configKey=${'range_info_item'}
               has-extra-actions
               @close-editor=${() => (this._yamlItemEditorActive = false)}
               @yaml-config-changed=${this._onYamlConfigChanged}
-            ></vsc-sub-panel-yaml>
+            ></panel-yaml-editor>
           `
         : html`
             <div class="sub-panel-config" data-index=${index}>
@@ -586,62 +577,62 @@ export class PanelRangeInfo extends LitElement {
       },
     ];
     return html`${!this._yamlEditorActive && this.config.range_info
-      ? html`
-          <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
-            <div class="range-info-list">
-              ${repeat(
-                this.config.range_info || [],
-                (rangeItem: RangeInfoConfig) => rangeItem.energy_level.entity,
-                (rangeItem: RangeInfoConfig, index: number) => {
-                  const entity = rangeItem.energy_level.entity || '';
-                  const icon = rangeItem.energy_level.icon || '';
-                  const progressColor = rangeItem.progress_color || 'var(--primary-color)';
-                  return html`
-                    <div class="item-config-row" data-index=${index}>
-                      <div class="handle">
-                        <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
+        ? html`
+            <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
+              <div class="range-info-list">
+                ${repeat(
+                  this.config.range_info || [],
+                  (rangeItem: RangeInfoConfig) => rangeItem.energy_level.entity,
+                  (rangeItem: RangeInfoConfig, index: number) => {
+                    const entity = rangeItem.energy_level.entity || '';
+                    const icon = rangeItem.energy_level.icon || '';
+                    const progressColor = rangeItem.progress_color || 'var(--primary-color)';
+                    return html`
+                      <div class="item-config-row" data-index=${index}>
+                        <div class="handle">
+                          <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
+                        </div>
+                        <ha-icon
+                          icon=${icon ? icon : 'mdi:gas-station'}
+                          style=${`color: ${progressColor}; margin-inline-end: 0.5rem;`}
+                        ></ha-icon>
+                        <div class="item-content click-shrink" @click=${() => this._toggleAction('edit-item', index)}>
+                          <div class="primary">Range Info #${index + 1}</div>
+                          <div class="secondary">${entity}</div>
+                        </div>
+                        <div class="item-actions">
+                          ${actionMap.map(
+                            (action) => html`
+                              <ha-icon-button
+                                class=${action.class || ''}
+                                .path=${action.icon}
+                                @click=${() => action.action(index)}
+                                .label=${action.title}
+                              ></ha-icon-button>
+                            `
+                          )}
+                        </div>
                       </div>
-                      <ha-icon
-                        icon=${icon ? icon : 'mdi:gas-station'}
-                        style=${`color: ${progressColor}; margin-inline-end: 0.5rem;`}
-                      ></ha-icon>
-                      <div class="item-content click-shrink" @click=${() => this._toggleAction('edit-item', index)}>
-                        <div class="primary">Range Info #${index + 1}</div>
-                        <div class="secondary">${entity}</div>
-                      </div>
-                      <div class="item-actions">
-                        ${actionMap.map(
-                          (action) => html`
-                            <ha-icon-button
-                              class=${action.class || ''}
-                              .path=${action.icon}
-                              @click=${() => action.action(index)}
-                              .label=${action.title}
-                            ></ha-icon-button>
-                          `
-                        )}
-                      </div>
-                    </div>
-                  `;
-                }
-              )}
-            </div>
-          </ha-sortable>
-          <div class="action-footer">
-            <ha-button size="small" appearance="filled" @click=${() => this._toggleAction('add')}>
-              <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>
-              Add new bar
-            </ha-button>
-            <ha-button
-              size="small"
-              variant="neutral"
-              appearance="filled"
-              @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}
-              >Edit YAML
-            </ha-button>
-          </div>
-        `
-      : this._renderYamlEditor()} `;
+                    `;
+                  }
+                )}
+              </div>
+            </ha-sortable>
+          `
+        : this._renderYamlEditor()}
+      <div class="action-footer" ?hidden=${this._yamlEditorActive}>
+        <ha-button size="small" appearance="filled" @click=${() => this._toggleAction('add')}>
+          <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>
+          Add new bar
+        </ha-button>
+        <ha-button
+          size="small"
+          variant="neutral"
+          appearance="filled"
+          @click=${() => (this._yamlEditorActive = !this._yamlEditorActive)}
+          >Edit YAML
+        </ha-button>
+      </div> `;
   }
 
   private _entityMoved(ev: CustomEvent): void {
@@ -660,15 +651,15 @@ export class PanelRangeInfo extends LitElement {
 
     return html`
       <div class="card-config">
-        <vsc-sub-panel-yaml
-          .hass=${this.hass}
+        <panel-yaml-editor
+          .hass=${this._hass}
           .config=${this.config}
           .configDefault=${this.config.range_info}
           .configKey=${'range_info'}
           has-extra-actions
           @close-editor=${() => (this._yamlEditorActive = false)}
           @yaml-config-changed=${this._onYamlConfigChanged}
-        ></vsc-sub-panel-yaml>
+        ></panel-yaml-editor>
       </div>
     `;
   }
@@ -829,7 +820,7 @@ export class PanelRangeInfo extends LitElement {
                       @change=${this._colorThreholdChanged}
                       ></ha-textfield>
                     <ha-selector
-                      .hass=${this.hass}
+                      .hass=${this._hass}
                       .label=${`Color ${threshold.color}`}
                       .value=${threshold.color ? colorToRgb(threshold.color) : ''}
                       .selector=${{ color_rgb: {} }}
@@ -905,7 +896,7 @@ export class PanelRangeInfo extends LitElement {
   private _createRandomPallete = () => {
     const rangeItem = this._rangeItemConfig;
     const energyEntity = rangeItem?.energy_level?.entity || '';
-    const state = this.hass.states[energyEntity];
+    const state = this._hass.states[energyEntity];
 
     if (!state) return;
 
@@ -928,7 +919,7 @@ export class PanelRangeInfo extends LitElement {
 
   private _renderPreviewColor(): TemplateResult | typeof nothing {
     if (!this._colorThresholds?.length) return nothing;
-    const hass = this.hass;
+    const hass = this._hass;
     const getEntityState = (entity?: string, attr?: string) =>
       entity && hass.states[entity]
         ? attr
@@ -942,7 +933,7 @@ export class PanelRangeInfo extends LitElement {
     const rangeConf = config.range_level || {};
 
     const icon = energyConf?.icon || '';
-    const energyState = this.hass.states[energyConf?.entity || ''];
+    const energyState = this._hass.states[energyConf?.entity || ''];
     const isPercent = hasPercent(energyState);
     const unit = isPercent ? '%' : energyState.attributes?.unit_of_measurement || '';
     const max = energyConf?.max_value ? energyConf.max_value : energyState.attributes?.max ?? 100;
@@ -1040,7 +1031,7 @@ export class PanelRangeInfo extends LitElement {
     return html`
       <div class="item-content gradient-preview">
         <ha-selector
-          .hass=${this.hass}
+          .hass=${this._hass}
           .label=${'Test value & Bar Preview'}
           .helper=${'Click on the bar to add a color stop at the clicked value or click on dot to edit color on that value.'}
           .value=${testValue}
@@ -1213,7 +1204,7 @@ export class PanelRangeInfo extends LitElement {
         <div class="sub-content">
           ${this._createHaForm(DATA, colorFieldSchema)}
           <ha-selector
-            .hass=${this.hass}
+            .hass=${this._hass}
             .label=${'Progress Color'}
             .value=${progressColor ? colorToRgb(progressColor) : ''}
             .selector=${{ color_rgb: {} }}
@@ -1275,7 +1266,7 @@ export class PanelRangeInfo extends LitElement {
   private _createHaForm = (data: any, schema: any, configyType?: string) => {
     return html`
       <ha-form
-        .hass=${this.hass}
+        .hass=${this._hass}
         .configType=${configyType}
         .data=${data}
         .schema=${schema}

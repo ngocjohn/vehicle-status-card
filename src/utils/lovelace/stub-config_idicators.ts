@@ -1,6 +1,8 @@
-import type { IndicatorGroupConfig, IndicatorItemConfig, IndicatorsConfig } from '../../types/config';
+import type { IndicatorGroupConfig, IndicatorItemConfig, IndicatorsConfig } from '../../types/config/card/indicators';
 
 import { HomeAssistant, computeEntityName, getEntitiesByDomain, findEntitiesByClass } from '../../ha';
+import { IndicatorRowConfig } from '../../types/config/card/row-indicators';
+import { migrateLegacyIndicatorsConfig } from '../editor/migrate-indicator';
 
 const SINGLE_SENSORS = ['sensor', 'binary_sensor', 'switch'];
 
@@ -44,4 +46,10 @@ export const getIndicatorsConfig = (hass: HomeAssistant): IndicatorsConfig => {
     single: singleIndicators,
     group: groups,
   };
+};
+
+export const getIndicatorRows = (hass: HomeAssistant): IndicatorRowConfig => {
+  const legacyIndicators = getIndicatorsConfig(hass);
+  const newConfig: IndicatorRowConfig = migrateLegacyIndicatorsConfig(legacyIndicators);
+  return newConfig;
 };
