@@ -5,8 +5,13 @@ export * from './panel-range-info';
 export * from './panel-map-editor';
 export * from './panel-tire-config';
 export * from './panel-base-button';
-export * from './panel-default-card-category';
+export * from './panel-default-card';
 export * from './panel-indicator-single';
 export * from './panel-indicator-group';
+export * from './panel-indicator-rows';
+export * from './panel-yaml-editor';
+export * from './panel-button-list';
+
+// TAB components
 export * from '../../utils/editor/vic-tab';
 export * from '../../utils/editor/vic-tab-bar';

@@ -5,9 +5,9 @@ import { repeat } from 'lit/directives/repeat.js';
 
 // components items
 import { COMPONENT } from '../constants/const';
-import cardcss from '../css/card.css';
 import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
-import { IndicatorGroupConfig, VehicleStatusCardConfig } from '../types/config';
+import { VehicleStatusCardConfig } from '../types/config/card/card-config';
+import { IndicatorGroupConfig } from '../types/config/card/indicators';
 import './shared/vsc-indicator-single';
 import './shared/vsc-indicator-group-item';
 import { BaseElement } from '../utils/base-element';
@@ -32,7 +32,7 @@ export class VscIndicators extends BaseElement {
   @state() private _unsubGroupRenderTemplates: Record<number, Map<TemplateKey, Promise<UnsubscribeFunc>>> = {};
 
   static get styles(): CSSResultGroup {
-    return [cardcss];
+    return [super.styles];
   }
 
   connectedCallback(): void {
@@ -56,17 +56,8 @@ export class VscIndicators extends BaseElement {
     return true;
   }
 
-  protected updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-    if (changedProperties.has('_activeGroupIndicator') && this._activeGroupIndicator !== null) {
-      setTimeout(() => {
-        // this._addEventListeners();
-      }, 0);
-    }
-  }
-
   private async _tryConnect(): Promise<void> {
-    if (!this.config.indicators.group?.length) {
+    if (!this.config.indicators?.group?.length) {
       return;
     }
 
@@ -80,7 +71,7 @@ export class VscIndicators extends BaseElement {
   }
 
   private async _subscribeRenderTemplate(index: number, key: TemplateKey): Promise<void> {
-    const groupIndicators = this.config.indicators.group;
+    const groupIndicators = this.config.indicators?.group;
     if (!groupIndicators) return;
 
     try {
@@ -149,15 +140,13 @@ export class VscIndicators extends BaseElement {
 
   protected render(): TemplateResult {
     return html`
-      <div>
-        <div class="info-box">${this._renderSingleIndicators()} ${this._renderGroupIndicators()}</div>
-      </div>
+      <div class="info-box">${this._renderSingleIndicators()} ${this._renderGroupIndicators()}</div>
       ${this._renderActiveIndicator()}
     `;
   }
 
   private _renderActiveIndicator(): TemplateResult {
-    if (!this.config.indicators.group) return html``;
+    if (!this.config.indicators?.group) return html``;
     const activeIndex = this._activeGroupIndicator!;
     const items = this.config.indicators.group[activeIndex]?.items || [];
     const activeClass = this._activeGroupIndicator !== null ? 'info-box charge active' : 'info-box charge';
@@ -227,30 +216,7 @@ export class VscIndicators extends BaseElement {
   }
 
   public _toggleGroupIndicator(index: number): void {
-    const distpatchEvent = (active: number | null) => {
-      this.dispatchEvent(
-        new CustomEvent('indicator-toggle', {
-          detail: {
-            active,
-          },
-          bubbles: true,
-          composed: true,
-        })
-      );
-    };
-
-    if (this._activeGroupIndicator === index) {
-      this._activeGroupIndicator = null;
-      setTimeout(() => {
-        distpatchEvent(null);
-      }, 0);
-    } else {
-      this._activeGroupIndicator = null;
-      setTimeout(() => {
-        this._activeGroupIndicator = index;
-        distpatchEvent(index);
-      }, 400);
-    }
+    this._activeGroupIndicator = this._activeGroupIndicator === index ? null : index;
   }
 }
 declare global {

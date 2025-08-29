@@ -1,23 +1,22 @@
 import { mdiCodeBracesBox, mdiDelete, mdiEye, mdiGrid, mdiImagePlus, mdiListBoxOutline, mdiPlus } from '@mdi/js';
 import { debounce } from 'es-toolkit';
 import { HassEntity } from 'home-assistant-js-websocket';
-import { LitElement, html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
+import { html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
 
-import './sub-panel-yaml';
+import './panel-yaml-editor';
 
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import editorcss from '../../css/editor.css';
-import { EntitiesEditorEvent, fireEvent, HomeAssistant } from '../../ha';
+import { EntitiesEditorEvent, fireEvent } from '../../ha';
 import { EntityConfig, ImageConfig, VehicleStatusCardConfig } from '../../types/config';
 import { Create, ICON } from '../../utils';
 import { VicTab } from '../../utils/editor/create';
 import { processEditorEntities } from '../../utils/editor/process-editor-entities';
 import { showConfirmDialog } from '../../utils/editor/show-dialog-box';
 import { uploadImage } from '../../utils/editor/upload-image';
-import { VehicleStatusCardEditor } from '../editor';
-import { IMAGE_CONFIG_ACTIONS, IMAGE_ACTIONS } from '../editor-const';
+import { BaseEditor } from '../base-editor';
+import { IMAGE_CONFIG_ACTIONS, IMAGE_ACTIONS, PANEL } from '../editor-const';
 import { IMAGES_SLIDE_SCHEMA } from '../form';
 
 const ADD_IMAGE_TYPE = [
@@ -29,15 +28,14 @@ enum ADD_TYPE {
   FILE = 'file',
   PATH = 'path',
 }
-@customElement('panel-images-editor')
-export class PanelImagesEditor extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) editor?: VehicleStatusCardEditor;
-  @property({ attribute: false }) config!: VehicleStatusCardConfig;
+@customElement(PANEL.IMAGES_EDITOR)
+export class PanelImagesEditor extends BaseEditor {
+  @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() _yamlEditorActive = false;
   @state() _dropAreaActive = false;
   @state() _newImage: string = '';
+
   @state() private _selectedItems: Set<string> = new Set();
   @state() private _activeTabIndex: number = 0;
   @state() private _images: ImageConfig[] = [];
@@ -66,7 +64,7 @@ export class PanelImagesEditor extends LitElement {
 
   static get styles(): CSSResultGroup {
     return [
-      editorcss,
+      super.styles,
       css`
         *[active] {
           color: var(--primary-color);
@@ -206,7 +204,7 @@ export class PanelImagesEditor extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.config || !this.hass) {
+    if (!this.config || !this._hass) {
       return html`<div class="card-config">Loading...</div>`;
     }
     const imagesList = this._renderImageList();
@@ -233,7 +231,7 @@ export class PanelImagesEditor extends LitElement {
   private _renderImageEntity(): TemplateResult {
     return html`
       <hui-entity-editor
-        .hass=${this.hass}
+        .hass=${this._hass}
         .label=${'Image Entities'}
         .entities=${this._imageEntities}
         .entityFilter=${(entity: HassEntity) => {
@@ -384,8 +382,8 @@ export class PanelImagesEditor extends LitElement {
     if (!this._yamlEditorActive) return html``;
     return html`
       <div id="yaml-editor">
-        <vsc-sub-panel-yaml
-          .hass=${this.hass}
+        <panel-yaml-editor
+          .hass=${this._hass}
           .config=${this.config}
           .configDefault=${this.config.images}
           .extraAction=${true}
@@ -393,7 +391,7 @@ export class PanelImagesEditor extends LitElement {
             this._yamlEditorActive = false;
           }}
           @yaml-config-changed=${this._yamlChanged}
-        ></vsc-sub-panel-yaml>
+        ></panel-yaml-editor>
       </div>
     `;
   }
@@ -426,7 +424,7 @@ export class PanelImagesEditor extends LitElement {
 
   private _renderFileAddCon(): TemplateResult {
     const fileUpload = html` <ha-file-upload
-      .hass=${this.hass}
+      .hass=${this._hass}
       .icon=${mdiImagePlus}
       .value=${''}
       .secondary=${'Drag & drop files here or click to select files'}
@@ -455,9 +453,9 @@ export class PanelImagesEditor extends LitElement {
     </div>`;
 
     return html`
-      <ha-selector .hass=${this.hass} .selector=${{ image: {} }} style="display: none;"></ha-selector>
+      <ha-selector .hass=${this._hass} .selector=${{ image: {} }} style="display: none;"></ha-selector>
       <ha-selector
-        .hass=${this.hass}
+        .hass=${this._hass}
         .value=${this._imageAddType}
         .label=${'Select method to add image'}
         .selector=${{
@@ -533,7 +531,7 @@ export class PanelImagesEditor extends LitElement {
     const DATA = { ...imagesSwipeConfig };
 
     const haFormEl = html` <ha-form
-      .hass=${this.hass}
+      .hass=${this._hass}
       .data=${DATA}
       .schema=${IMAGES_SLIDE_SCHEMA}
       .computeLabel=${(schema: any) => schema.label || schema.name || ''}
@@ -633,7 +631,7 @@ export class PanelImagesEditor extends LitElement {
 
             break;
           case 'show-image':
-            this.editor?._dispatchEvent('show-image', { index: idx });
+            this._dispatchEditorEvent('show-image', { index: idx });
             break;
           case 'deselect-all':
             this._selectedItems.clear();
@@ -689,7 +687,7 @@ export class PanelImagesEditor extends LitElement {
     this._uploading = true;
     for (const file of files) {
       try {
-        const image = await uploadImage(this.hass, file);
+        const image = await uploadImage(this._hass, file);
         console.log('Image :', image);
         if (!image) continue;
 
@@ -706,11 +704,12 @@ export class PanelImagesEditor extends LitElement {
     if (imagesList.length > 0) {
       console.log('New images:', imagesList);
       this._uploadedImages = imagesList;
-      // const configImages = this.config?.images?.concat(imagesList) || imagesList;
-      // this.config = { ...this.config, images: configImages };
-      // this.configChanged();
-
-      // fireEvent(this, 'config-changed', { config: { ...this.config, images: imagesList } });
     }
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'panel-images-editor': PanelImagesEditor;
   }
 }

@@ -1,15 +1,16 @@
+import { VehicleStatusCardEditor } from '../editor/editor';
 import {
   ButtonCardConfig,
   ButtonGridConfig,
   HideConfig,
+  IndicatorRowConfig,
   LayoutConfig,
   MiniMapConfig,
   RangeInfoConfig,
   VehicleStatusCardConfig,
 } from '../types/config';
-import { SectionOrder } from '../types/section';
+import { SectionOrder } from '../types/config/card/layout';
 import { VehicleStatusCard } from '../vehicle-status-card';
-
 /**
  * Card storage class to manage the VehicleStatusCard configuration.
  * This class provides methods to get configurations for different sections of the card.
@@ -17,10 +18,17 @@ import { VehicleStatusCard } from '../vehicle-status-card';
 
 export class Store {
   public _config: VehicleStatusCardConfig;
-  public card: VehicleStatusCard;
-  constructor(card: VehicleStatusCard, config: VehicleStatusCardConfig) {
-    this.card = card;
+  public card!: VehicleStatusCard;
+  public _editor?: VehicleStatusCardEditor;
+  constructor(card: VehicleStatusCard | VehicleStatusCardEditor, config: VehicleStatusCardConfig) {
     this._config = config;
+    if (card instanceof VehicleStatusCardEditor) {
+      this._editor = card;
+    } else if (card instanceof VehicleStatusCard) {
+      this.card = card;
+    } else {
+      throw new Error('Invalid card type. Expected VehicleStatusCard or VehicleStatusCardEditor.');
+    }
   }
   public get config(): VehicleStatusCardConfig {
     return this._config;
@@ -37,6 +45,15 @@ export class Store {
 
   public get visibleButtons(): ButtonCardConfig[] {
     return this.buttons.filter((button) => !button.hide_button);
+  }
+
+  /**
+   * Get the indicator rows configuration.
+   * @returns {IndicatorRowConfig[]} Array of indicator row configurations.
+   * This method retrieves the indicator rows configurations from the main configuration.
+   */
+  public get indicatorRows(): IndicatorRowConfig[] {
+    return this._config.indicator_rows || [];
   }
 
   /**

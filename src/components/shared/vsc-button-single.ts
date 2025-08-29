@@ -9,7 +9,6 @@ import {
   RenderTemplateResult,
   subscribeRenderTemplate,
   hasTemplate,
-  forwardHaptic,
   HomeAssistant,
   isActive,
 } from '../../ha';
@@ -653,13 +652,6 @@ export class VehicleButtonSingle extends BaseElement {
         </div>
       </div>
     `;
-  }
-
-  private _handleNavigate(event: Event): void {
-    event.stopPropagation();
-    if (this.isAction) return;
-    forwardHaptic('light');
-    this.dispatchEvent(new CustomEvent('click-index', { bubbles: true, composed: true }));
   }
 }
 

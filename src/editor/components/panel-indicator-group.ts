@@ -4,13 +4,14 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import editorcss from '../../css/editor.css';
 import { fireEvent, HomeAssistant } from '../../ha';
-import { IndicatorGroupConfig, IndicatorItemConfig } from '../../types/config';
+import { IndicatorGroupConfig, IndicatorItemConfig } from '../../types/config/card/indicators';
 import { ICON } from '../../utils';
 import { showPromptDialog } from '../../utils/editor/show-dialog-box';
 import { VehicleStatusCardEditor } from '../editor';
+import { PANEL } from '../editor-const';
 import { mainGroupSchema, groupApparenceSchema, subGroupItemSchema } from '../form';
 
-@customElement('vsc-panel-indicator-group')
+@customElement(PANEL.INDICATOR_GROUP)
 export class PanelIndicatorGroup extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public editor!: VehicleStatusCardEditor;
@@ -195,11 +196,13 @@ export class PanelIndicatorGroup extends LitElement {
       <div class="sub-panel">
         ${header} ${groupForm}
         <ha-button
-          .label=${this._groupPreview ? 'Close preview' : 'Show items preview'}
+          slot="action"
+          size="small"
+          appearance="filled"
           @click=${() => this._tooglePreview()}
-          .outlined=${true}
           class=${previewClass}
-        ></ha-button>
+          >${this._groupPreview ? 'Close preview' : 'Show items preview'}</ha-button
+        >
         <div class="sub-panel-config group">${toolBar} ${this._renderSubGroupItemConfig(selectedItem)}</div>
       </div>
     `;
@@ -226,12 +229,15 @@ export class PanelIndicatorGroup extends LitElement {
         ></ha-form>
         <div class="action-footer" style="justify-content: flex-end;">
           <ha-button
-            class="delete-btn"
-            .label=${'Remove Item'}
+            slot="action"
+            size="small"
+            appearance="filled"
+            variant="danger"
             @click=${() => {
               this._removeGroupItem(index), (this._selectedItem = index === 0 ? 0 : index - 1);
             }}
-          ></ha-button>
+            >Remove Item</ha-button
+          >
         </div>
       </div>
     `;
@@ -255,7 +261,7 @@ export class PanelIndicatorGroup extends LitElement {
     return html`
       ${header}
       <div class="sub-panel-config">
-        <vsc-sub-panel-yaml
+        <panel-yaml-editor
           .hass=${this.hass}
           .config=${this.editor._config}
           .cardEditor=${this.editor}
@@ -263,7 +269,7 @@ export class PanelIndicatorGroup extends LitElement {
           .configKey=${configKey}
           @yaml-config-changed=${this._yamlConfigChanged}
         >
-        </vsc-sub-panel-yaml>
+        </panel-yaml-editor>
       </div>
     `;
   }
@@ -487,6 +493,6 @@ export class PanelIndicatorGroup extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'vsc-panel-indicator-group': PanelIndicatorGroup;
+    'panel-indicator-group': PanelIndicatorGroup;
   }
 }

@@ -31,7 +31,15 @@ export const computeActionsFormSchema = () => {
   ] as const;
 };
 
-const DEFAULT_ACTIONS: UiAction[] = ['more-info', 'toggle', 'navigate', 'url', 'perform-action', 'assist', 'none'];
+export const DEFAULT_ACTIONS: UiAction[] = [
+  'more-info',
+  'toggle',
+  'navigate',
+  'url',
+  'perform-action',
+  'assist',
+  'none',
+];
 
 export const computeOptionalActionSchema = () => {
   return [
@@ -62,18 +70,21 @@ export const computeOptionalActionSchema = () => {
   ] as const;
 };
 
-export const computeOptionalActionSchemaFull = () => {
+export const computeOptionalActionSchemaFull = (noTap: boolean = false, actions?: UiAction[]) => {
+  const tapGestureActions = noTap
+    ? (['hold_action', 'double_tap_action'] as const)
+    : (['tap_action', 'hold_action', 'double_tap_action'] as const);
   return [
     {
       name: '',
       type: 'optional_actions',
       flatten: true,
-      schema: (['tap_action', 'hold_action', 'double_tap_action'] as const).map((action) => ({
+      schema: tapGestureActions.map((action) => ({
         name: action,
-        label: action.charAt(0).toUpperCase() + action.slice(1).replace('_', ' '),
+        label: action.replace(/_/g, ' '),
         selector: {
           ui_action: {
-            actions: DEFAULT_ACTIONS,
+            actions: actions || DEFAULT_ACTIONS,
             default_action: 'none' as const,
           },
         },
