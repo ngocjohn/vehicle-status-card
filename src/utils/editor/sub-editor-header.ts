@@ -48,10 +48,12 @@ export class SubEditorHeader extends LitElement {
                     @click=${this._handlePrimaryAction}
                   ></ha-icon-button>
                   <slot name="title">
-                    <div class="title">
-                      ${this._label}
-                      <slot class="secondary" name="secondary">${this.secondary}</slot>
-                    </div>
+                    ${this._label
+                      ? html` <div class="title">
+                          <span class="primary">${this._label}</span>
+                          ${this.secondary ? html`<span class="secondary">${this.secondary}</span>` : nothing}
+                        </div>`
+                      : nothing}
                   </slot>
                 </div>
               `}
@@ -89,7 +91,7 @@ export class SubEditorHeader extends LitElement {
         display: block;
         overflow: hidden;
         min-height: 42px;
-        margin-bottom: 0.5em;
+        margin-bottom: auto;
         place-content: center;
       }
       :host([hide-primary]) .header {
@@ -100,6 +102,7 @@ export class SubEditorHeader extends LitElement {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding-block-end: 8px;
       }
       .back-title {
         display: flex;
@@ -121,6 +124,17 @@ export class SubEditorHeader extends LitElement {
       ::slotted([slot='title']) {
         flex: 1;
         overflow-wrap: anywhere;
+        /* line-height: 36px; */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      .primary {
+        font-size: var(--ha-font-size-l);
+        color: var(--primary-text-color);
+        font-weight: 500;
+        line-height: 1.2;
       }
       .secondary {
         display: block;

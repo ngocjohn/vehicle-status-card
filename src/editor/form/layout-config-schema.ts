@@ -12,13 +12,18 @@ export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
           default: false,
         },
 
-        {
-          name: 'rows',
-          label: 'Rows',
-          type: 'integer',
-          disabled: swipeDisabled,
-          selector: { number: { mode: 'box', min: 1, step: 1 } },
-        },
+        ...(!swipeDisabled
+          ? [
+              {
+                name: 'rows',
+                label: 'Rows',
+                type: 'integer',
+                disabled: swipeDisabled,
+                selector: { number: { mode: 'box', min: 1, step: 1 } },
+              },
+            ]
+          : []),
+
         {
           name: 'columns',
           label: 'Columns',

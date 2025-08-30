@@ -151,27 +151,31 @@ export class VscIndicatorRow extends BaseElement {
     const active = this.active;
     const noWrap = this.rowConfig.no_wrap;
     const alignment = this.rowConfig.alignment || 'default';
+    const align = ALIGNS[alignment as Alignment] || ALIGNS.default;
     const groupActive = this._selectedGroupId !== null;
+    const showLeftArrow = this._showLeftArrow;
+    const showRightArrow = this._showRightArrow;
 
-    const alignStyle = {
-      justifyContent: ALIGNS[alignment as Alignment] || ALIGNS.default,
-    };
+    let style: Record<string, string> = {};
 
+    if (noWrap) {
+      const overlayFade = this._computeOverlayFade(showLeftArrow, showRightArrow);
+      style['--vsc-arrow-fade'] = overlayFade;
+    } else {
+      style['justifyContent'] = align;
+    }
+
+    // Set CSS variable for fade overlay, if showing either arrow left or right
     return html`
       <div class="row-wrapper">
         ${noWrap
           ? html`
-              <div class="arrow-icon left" ?disabled=${groupActive} ?no-arrow=${!this._showLeftArrow}>
+              <div class="arrow-icon left" ?disabled=${groupActive} ?no-arrow=${!showLeftArrow}>
                 <ha-svg-icon .path=${ICON.CHEVRON_LEFT} @click=${() => this._handleScroll(-1)}></ha-svg-icon>
               </div>
             `
           : nothing}
-        <div
-          class="indicator-row-container"
-          ?active=${active}
-          ?no-wrap=${this.rowConfig.no_wrap}
-          style=${styleMap(alignStyle)}
-        >
+        <div class="indicator-row-container" ?active=${active} ?no-wrap=${noWrap} style=${styleMap(style)}>
           ${repeat(
             rowItems,
             (item: IndicatorRowItem) => item.type,
@@ -194,7 +198,7 @@ export class VscIndicatorRow extends BaseElement {
         </div>
         ${noWrap
           ? html`
-              <div class="arrow-icon right" ?disabled=${groupActive} ?no-arrow=${!this._showRightArrow}>
+              <div class="arrow-icon right" ?disabled=${groupActive} ?no-arrow=${!showRightArrow}>
                 <ha-svg-icon .path=${ICON.CHEVRON_RIGHT} @click=${() => this._handleScroll(1)}></ha-svg-icon>
               </div>
             `
@@ -317,6 +321,15 @@ export class VscIndicatorRow extends BaseElement {
     requestAnimationFrame(() => this._updateArrows());
   }
 
+  private _computeOverlayFade(showLeft: boolean, showRight: boolean): string {
+    if (showLeft) {
+      return 'linear-gradient(to right, transparent 0%, var(--card-background-color) 5%, transparent 20%)';
+    } else if (showRight) {
+      return 'linear-gradient(to left, var(--card-background-color) 0%, transparent 15%)';
+    } else {
+      return 'transparent';
+    }
+  }
   static get styles(): CSSResultGroup {
     return [
       css`
@@ -376,6 +389,17 @@ export class VscIndicatorRow extends BaseElement {
         .indicator-row-container[no-wrap] > * {
           scroll-snap-align: center;
         }
+        .indicator-row-container[no-wrap]::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          /* background: linear-gradient(to left, var(--card-background-color) 0%, transparent 20%); */
+          background: var(--vsc-arrow-fade, transparent);
+        }
 
         .arrow-icon {
           --mdc-icon-size: 18px;
@@ -426,10 +450,10 @@ export class VscIndicatorRow extends BaseElement {
           display: flex;
           border-radius: 8px;
           background: rgba(var(--rgb-secondary-background-color), 0.4);
-          justify-content: center;
+          justify-content: space-evenly;
           align-items: center;
           flex-wrap: wrap;
-          gap: 4px 0;
+          gap: 4px;
         }
 
         .indi-group-item[active] {

@@ -1,4 +1,5 @@
 import { VehicleStatusCardEditor } from '../editor/editor';
+import { HomeAssistant } from '../ha/types';
 import {
   ButtonCardConfig,
   ButtonGridConfig,
@@ -20,12 +21,15 @@ export class Store {
   public _config: VehicleStatusCardConfig;
   public card!: VehicleStatusCard;
   public _editor?: VehicleStatusCardEditor;
+  public hass?: HomeAssistant;
   constructor(card: VehicleStatusCard | VehicleStatusCardEditor, config: VehicleStatusCardConfig) {
     this._config = config;
     if (card instanceof VehicleStatusCardEditor) {
       this._editor = card;
+      this.hass = card._hass;
     } else if (card instanceof VehicleStatusCard) {
       this.card = card;
+      this.hass = card.hass;
     } else {
       throw new Error('Invalid card type. Expected VehicleStatusCard or VehicleStatusCardEditor.');
     }

@@ -85,11 +85,6 @@ export class PanelRowSubItem extends BaseEditor {
     return this._subItemConfig?.type === 'group' || false;
   }
 
-  private get _isExpanded(): boolean {
-    if (!this.isGroup) return false;
-    return this._expansionPanel?.expanded || false;
-  }
-
   private _onExpandChanged(event: CustomEvent): void {
     event.stopPropagation();
     if (!this.isGroup) return;
@@ -135,7 +130,7 @@ export class PanelRowSubItem extends BaseEditor {
       entity: config.entity,
     } as Pick<IndicatorEntityConfig, 'entity'>;
 
-    const baseForm = this._createHaForm(config, ROW_ITEM_CONTENT_SCHEMA(config.entity));
+    const baseForm = this._createHaForm(config, ROW_ITEM_CONTENT_SCHEMA(config.entity || ''));
     const stateContentForm = this._renderContentPicker();
 
     const baseContentWraper = Create.ExpansionPanel({
@@ -322,7 +317,7 @@ export class PanelRowSubItem extends BaseEditor {
     if ('name' in config && config.name) return config.name;
     if ('entity' in config && config.entity) {
       const stateObj = this._hass.states[config.entity];
-      const computedName = computeStateName(stateObj);
+      const computedName = stateObj ? computeStateName(stateObj) : undefined;
       return computedName || config.entity;
     }
     return `Item ${this._groupItemIndex !== null ? this._groupItemIndex + 1 : this.itemIndex + 1}`;

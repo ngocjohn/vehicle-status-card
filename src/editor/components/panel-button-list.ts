@@ -9,6 +9,7 @@ import { Create, ICON, isMobileClient, isTouch } from '../../utils';
 import { BaseEditor } from '../base-editor';
 import { ACTIONS, BUTTON_CARD_ACTIONS, PANEL } from '../editor-const';
 import '../shared/button-grid-item';
+import { BUTTON_GRID_SCHEMA } from '../form';
 
 export type ButtonListEditorEventParams = {
   action: BUTTON_CARD_ACTIONS;
@@ -36,10 +37,15 @@ const BUTTON_PRIMARY_SCHEMA = (label: string, disabled: boolean = false) =>
 
 @customElement(PANEL.BUTTON_LIST)
 export class PanelButtonList extends BaseEditor {
-  @property({ attribute: false }) private _buttonListConfig!: ButtonCardConfig[];
-  @state() private config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) public config!: VehicleStatusCardConfig;
 
+  @state() private _buttonListConfig?: ButtonCardConfig[];
   @state() private _listView: boolean = false;
+  @state() private _inGridSettings: boolean = false;
+
+  constructor() {
+    super();
+  }
 
   static get styles(): CSSResultGroup {
     return [
@@ -111,65 +117,116 @@ export class PanelButtonList extends BaseEditor {
           text-overflow: ellipsis;
           overflow: hidden;
         }
+        .item-actions {
+          box-sizing: border-box;
+          flex: 0;
+          margin-inline: auto 8px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          color: var(--secondary-text-color);
+        }
+        sub-editor-header [slot='secondary-action'] ha-icon-button {
+          color: var(--secondary-text-color);
+        }
+        sub-editor-header [slot='secondary-action'] ha-icon-button[active],
+        sub-editor-header [slot='secondary-action'] ha-icon-button:hover {
+          color: var(--primary-color);
+        }
       `,
     ];
   }
 
   protected render(): TemplateResult {
+    this._buttonListConfig = this.config.button_card;
+
+    return html`
+      ${this._editorHeader()} ${!this._inGridSettings ? this._renderButtonList() : this._renderGridLayoutSettings()}
+    `;
+  }
+
+  private _editorHeader(): TemplateResult {
+    const inGridSettings = this._inGridSettings;
+    const isListView = this._listView;
+
+    return html`
+      <sub-editor-header
+        .hidePrimaryAction=${!inGridSettings}
+        @primary-action=${() => (this._inGridSettings = false)}
+        .primaryIcon=${ICON.CLOSE}
+        .hideSecondaryAction=${true}
+        ._label=${'Grid layout'}
+      >
+        ${inGridSettings
+          ? nothing
+          : html`
+              <span slot="primary-action">
+                <ha-button size="small" appearance="filled" @click=${() => this._toggleAction(ACTIONS.ADD_NEW_BUTTON)}>
+                  <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add Button</ha-button
+                >
+              </span>
+              <span slot="secondary-action">
+                <ha-icon-button ?active=${!isListView} .path=${ICON.GRID} @click=${() => (this._listView = false)}>
+                </ha-icon-button>
+                <ha-icon-button
+                  ?active=${isListView}
+                  .path=${ICON.LIST_BOX_OUTLINE}
+                  @click=${() => (this._listView = true)}
+                >
+                </ha-icon-button>
+                <ha-icon-button .path=${ICON.COG} @click=${() => (this._inGridSettings = true)}> </ha-icon-button
+              ></span>
+            `}
+      </sub-editor-header>
+    `;
+  }
+
+  private _renderGridLayoutSettings(): TemplateResult {
+    const BUTTON_GRID_DATA = { ...(this.config.layout_config?.button_grid || {}) };
+    const useSwiper = BUTTON_GRID_DATA.swipe;
+    const gridForm = this._createVscForm(
+      BUTTON_GRID_DATA,
+      BUTTON_GRID_SCHEMA(!useSwiper),
+      'layout_config',
+      'button_grid'
+    );
+    return Create.SectionPanel([{ title: '', content: gridForm }]);
+  }
+
+  private _renderButtonList(): TemplateResult {
     const isListView = this._listView;
     const buttons = this._buttonListConfig ?? [];
 
     const visibleButtons = buttons.filter((btn) => !btn.hide_button);
     const hiddenButtons = buttons.filter((btn) => btn.hide_button);
-    const actionsHeader = this._renderActionHeader();
-
-    return html` <div class="card-config">
-      ${actionsHeader}
-      ${!buttons.length
-        ? html`<span>No buttons added</span>`
-        : html`<ha-sortable handle-selector=".handle" .noStyle=${true} @item-moved=${this._buttonsMoved}>
-              <div class=${!isListView ? 'button-grid-list' : 'button-list'} style=${this._computeGridColumns()}>
-                ${repeat(
-                  visibleButtons,
-                  (btn: ButtonCardConfig) => btn.button.primary,
-                  (btn: ButtonCardConfig, index: number) => {
-                    return this._renderButton(btn, index);
-                  }
-                )}
-              </div>
-            </ha-sortable>
-            ${hiddenButtons.length > 0
-              ? Create.SectionPanel([
-                  {
-                    title: 'Hidden Buttons',
-                    content: html`
-                      ${hiddenButtons.map((btn: ButtonCardConfig, index: number) => {
-                        const realIndex = visibleButtons.length + index;
-                        return this._renderButton(btn, realIndex);
-                      })}
-                    `,
-                    expansion: true,
-                  },
-                ])
-              : nothing}`}
-    </div>`;
+    return !buttons.length
+      ? html`<span>No buttons added</span>`
+      : html`<ha-sortable handle-selector=".handle" .noStyle=${true} @item-moved=${this._buttonsMoved}>
+            <div class=${!isListView ? 'button-grid-list' : 'button-list'} style=${this._computeGridColumns()}>
+              ${repeat(
+                visibleButtons,
+                (btn: ButtonCardConfig) => btn.button.primary,
+                (btn: ButtonCardConfig, index: number) => {
+                  return this._renderButton(btn, index);
+                }
+              )}
+            </div>
+          </ha-sortable>
+          ${hiddenButtons.length > 0
+            ? Create.SectionPanel([
+                {
+                  title: 'Hidden Buttons',
+                  content: html`
+                    ${hiddenButtons.map((btn: ButtonCardConfig, index: number) => {
+                      const realIndex = visibleButtons.length + index;
+                      return this._renderButton(btn, realIndex);
+                    })}
+                  `,
+                  expansion: true,
+                },
+              ])
+            : nothing}`;
   }
-
-  private _renderActionHeader(): TemplateResult {
-    const isListView = this._listView;
-    return html`<div class="action-footer">
-      <ha-button size="small" appearance="filled" @click=${() => this._toggleAction(ACTIONS.ADD_NEW_BUTTON)}>
-        <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add New Button</ha-button
-      >
-      <div class="item-actions">
-        <ha-icon-button ?active=${!isListView} .path=${ICON.GRID} @click=${() => (this._listView = false)}>
-        </ha-icon-button>
-        <ha-icon-button ?active=${isListView} .path=${ICON.LIST_BOX_OUTLINE} @click=${() => (this._listView = true)}>
-        </ha-icon-button>
-      </div>
-    </div> `;
-  }
-
   private _buttonActionsMap(hide_button: boolean = false, index: number): TemplateResult {
     let actionMap = [
       { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },

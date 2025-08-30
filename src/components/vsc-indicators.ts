@@ -18,7 +18,7 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement(COMPONENT.INDICATORS)
 export class VscIndicators extends BaseElement {
-  @property({ attribute: false }) private hass!: HomeAssistant;
+  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() public _activeGroupIndicator: number | null = null;
@@ -33,6 +33,10 @@ export class VscIndicators extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [super.styles];
+  }
+
+  constructor() {
+    super();
   }
 
   connectedCallback(): void {

@@ -70,10 +70,10 @@ export class VscIndicatorBadge extends LitElement {
         gap: 8px;
         height: var(--ha-badge-size, 36px);
         min-width: var(--ha-badge-size, 36px);
-        padding: 0px 12px;
+        padding: 0px 8px;
         box-sizing: border-box;
         width: auto;
-        border-radius: var(--ha-badge-border-radius, calc(var(--ha-badge-size, 36px) / 2));
+        border-radius: var(--ha-card-border-radius, 12px);
         background: none;
         -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
         backdrop-filter: var(--ha-card-backdrop-filter, none);
@@ -128,6 +128,9 @@ export class VscIndicatorBadge extends LitElement {
         text-align: start;
         overflow: hidden;
         white-space: nowrap;
+      }
+      .content > .error {
+        color: var(--error-color);
       }
       :host([active]) .content,
       :host([active]) .toggle-icon,

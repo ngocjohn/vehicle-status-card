@@ -31,7 +31,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   @state() private _reloadSectionList: boolean = false;
   @state() private _layoutTabIndex: number = 0;
   @state() private _indicatorTabIndex: number = 0;
-  @state() private _buttonConfigTabIndex: number = 0;
 
   public _migratedIndicatorsConfig: boolean = false;
 
@@ -67,7 +66,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       config.layout_config?.section_order.includes(SECTION.HEADER_INFO)
     ) {
       const sectionOrder = reorderSection(config.layout_config?.hide || {}, config.layout_config?.section_order || []);
-      // const sectionOrder = this._setOrderList(config.layout_config?.hide || {}, [...SECTION_KEYS]);
       config.layout_config = {
         ...config.layout_config,
         section_order: sectionOrder as SectionOrder[],
@@ -78,6 +76,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
     const newConfig = JSON.parse(JSON.stringify(config)); // Deep copy the config
     this._config = newConfig;
+    this.createStore();
   }
 
   connectedCallback() {
@@ -162,25 +161,11 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   /* ---------------------------- RENDER CONFIG TYPES ---------------------------- */
 
   private _renderButtonCard(): TemplateResult {
-    const buttonPanel = html`<panel-button-card
+    return html`<panel-button-card
       ._hass=${this._hass}
       .config=${this._config}
       ._store=${this._store}
     ></panel-button-card>`;
-
-    const tabsConfig = [
-      { content: buttonPanel, key: 'buttons', label: 'Buttons' },
-      { content: this._renderButtonGrid(), key: 'button_grid', label: 'Grid layout' },
-    ];
-    return html`
-      <div class="card-config">
-        ${Create.VicTab({
-          activeTabIndex: this._buttonConfigTabIndex || 0,
-          onTabChange: (index: number) => (this._buttonConfigTabIndex = index),
-          tabs: tabsConfig,
-        })}
-      </div>
-    `;
   }
 
   private _renderImages(): TemplateResult {
@@ -261,10 +246,21 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     const layout = this._config.layout_config || {};
 
     const HIDE_CONFIG_DATA = { ...layout.hide };
+    const BUTTON_GRID_DATA = { ...layout.button_grid };
     const THEME_DATA = { ...layout.theme_config };
     const NAME_DATA = { name: this._config.name || '' };
 
-    const buttonGridWrapper = this._renderButtonGrid();
+    const buttonGridWrapper = Create.SectionPanel([
+      {
+        title: 'Button Grid Configuration',
+        content: this._createHaForm(
+          BUTTON_GRID_DATA,
+          BUTTON_GRID_SCHEMA(!BUTTON_GRID_DATA.swipe),
+          'layout_config',
+          'button_grid'
+        ),
+      },
+    ]);
 
     // Hide configuration wrapper
     const hideWrapper = Create.SectionPanel([
@@ -306,17 +302,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
         })}
       </div>
     `;
-  }
-
-  private _renderButtonGrid(): TemplateResult {
-    const BUTTON_GRID_DATA = { ...(this._config.layout_config?.button_grid || {}) };
-    const useSwiper = BUTTON_GRID_DATA.swipe;
-    return Create.SectionPanel([
-      {
-        title: 'Button Grid Configuration',
-        content: this._createHaForm(BUTTON_GRID_DATA, BUTTON_GRID_SCHEMA(!useSwiper), 'layout_config', 'button_grid'),
-      },
-    ]);
   }
 
   private _renderSectionOrder(): TemplateResult {
@@ -441,6 +426,34 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
           this._reloadSectionList = false;
         }, 200);
       }
+    }
+  }
+
+  protected _onValueChanged(ev: CustomEvent): void {
+    console.debug('onValueChanged (Editor):');
+    const { key, subKey, currentConfig } = ev.target as any;
+    const newValue = { ...ev.detail.value };
+
+    console.debug('incoming:', { key, subKey, currentConfig, newValue });
+    if (!currentConfig || typeof currentConfig !== 'object') return;
+
+    const updates: Partial<VehicleStatusCardConfig> = {};
+    if (key && subKey) {
+      if (typeof currentConfig[key] !== 'object' || currentConfig[key] === null) {
+        currentConfig[key] = {};
+      }
+      currentConfig[key][subKey] = newValue;
+      updates[key] = currentConfig[key];
+    } else if (key) {
+      updates[key] = newValue;
+    } else {
+      Object.assign(updates, newValue);
+    }
+    console.debug('updates:', updates);
+    if (Object.keys(updates).length > 0) {
+      const newConfig = { ...currentConfig, ...updates };
+      console.debug('newConfig:', newConfig);
+      fireEvent(this, 'config-changed', { config: newConfig });
     }
   }
 

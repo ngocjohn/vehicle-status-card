@@ -200,6 +200,9 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
   }
 
   protected _computeStateColor = memoizeOne((stateObj: HassEntity, color?: string) => {
+    if (!stateObj) {
+      return undefined;
+    }
     // Use custom color if active
     if (color) {
       return stateActive(stateObj) ? computeCssColor(color) : undefined;
@@ -239,7 +242,7 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
   protected _renderStateDisplay(): TemplateResult {
     const stateObj = this._stateObj;
     if (!stateObj) {
-      return html`<span class="error">State object not found</span>`;
+      return html`<span style="color: var(--error-color)">${this.hass.localize('ui.badge.entity.not_found')}</span>`;
     }
 
     const stateTemplate = this._getTemplateResult('state_template') ?? undefined;

@@ -128,7 +128,7 @@ export const SectionPanel = (
       } else {
         return html`
           <div class="sub-panel-config button-card">
-            <div class="sub-header">${title}</div>
+            ${title !== '' ? html`<div class="sub-header">${title}</div>` : nothing}
             <div class="sub-panel">${content}</div>
           </div>
         `;

@@ -144,11 +144,10 @@ export class MenuElement extends BaseEditor {
     return css`
       .config-menu-wrapper {
         display: flex;
-        /* font-size: 1.3rem; */
         align-items: center;
-        margin-inline-end: 0.5rem;
         min-height: 43px;
-        margin-bottom: var(--vic-gutter-gap);
+        margin-inline: 4px 8px;
+        padding-block-end: 8px;
       }
 
       .config-menu-wrapper .menu-wrapper {

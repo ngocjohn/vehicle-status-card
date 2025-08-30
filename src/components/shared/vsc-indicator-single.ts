@@ -83,7 +83,7 @@ export class VscIndicatorSingle extends BaseElement {
         },
         {
           template: this.indicator[key] ?? '',
-          entity_ids: this.indicator.entity ? [this.indicator.entity] : undefined,
+
           variables: {
             user: this.hass.user!.name,
             config: this.indicator,
@@ -152,7 +152,7 @@ export class VscIndicatorSingle extends BaseElement {
 
   protected render(): TemplateResult {
     const indicator = this.indicator;
-    const entity = indicator.entity;
+    const entity = indicator.entity ?? '';
     const icon = indicator.icon_template
       ? this._singleTemplateResults.icon_template?.result
       : indicator.icon
@@ -160,9 +160,12 @@ export class VscIndicatorSingle extends BaseElement {
       : '';
     const state = indicator.state_template
       ? this._singleTemplateResults.state_template?.result
-      : indicator.attribute
+      : indicator.attribute && entity
       ? this.hass.formatEntityAttributeValue(this.hass.states[entity], indicator.attribute)
-      : this.hass.formatEntityState(this.hass.states[entity]);
+      : entity && this.hass.states[entity]
+      ? this.hass.formatEntityState(this.hass.states[entity])
+      : '';
+
     const visibility = indicator.visibility ? this._singleTemplateResults.visibility?.result : true;
     const color = indicator.color
       ? this._singleTemplateResults.color?.result || indicator.color

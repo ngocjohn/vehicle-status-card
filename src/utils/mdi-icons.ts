@@ -17,6 +17,7 @@ import {
   mdiChevronDown,
   mdiGrid,
   mdiEye,
+  mdiCog,
 } from '@mdi/js';
 
 export const ICON = {
@@ -38,4 +39,5 @@ export const ICON = {
   RESTART: mdiRestart,
   GRID: mdiGrid,
   EYE: mdiEye,
+  COG: mdiCog,
 };

@@ -361,6 +361,10 @@ span.info-alert {
 	margin-block: var(--vic-gutter-gap);
 }
 
+.sub-panel-config.button-card:first-child {
+	margin-top: 0;
+}
+
 .sub-panel-config.button-card:last-child {
 	margin-bottom: 0;
 }

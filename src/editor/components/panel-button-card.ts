@@ -1,4 +1,4 @@
-import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
+import { html, TemplateResult, CSSResultGroup, PropertyValues, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -40,18 +40,7 @@ export class PanelButtonCard extends BaseEditor {
   @query(PANEL.DEFAULT_CARD) _panelDefaultCard?: ELEMENT.PanelDefaultCard;
 
   static get styles(): CSSResultGroup {
-    return [
-      super.styles,
-      css`
-        *[hidden],
-        .hidden {
-          display: none !important;
-        }
-        *[active] {
-          color: var(--primary-color);
-        }
-      `,
-    ];
+    return [super.styles];
   }
 
   constructor() {
@@ -93,18 +82,13 @@ export class PanelButtonCard extends BaseEditor {
   }
 
   protected render(): TemplateResult {
-    const mainButtonCard = this._renderButtonList();
-    const buttonConfig = this._renderButtonCardConfig();
+    if (this._buttonIndex !== null) {
+      return this._renderButtonCardConfig();
+    }
 
-    return this._buttonIndex === null ? mainButtonCard : buttonConfig;
-  }
-
-  private _renderButtonList(): TemplateResult {
-    const buttons = this.config.button_card || [];
     return html`
       <panel-button-list
         .hass=${this._hass}
-        ._buttonListConfig=${buttons}
         ._store=${this._store}
         .config=${this.config}
         @button-list-action=${this._handleButtonListAction}
@@ -128,11 +112,7 @@ export class PanelButtonCard extends BaseEditor {
   }
 
   private _renderButtonCardConfig(): TemplateResult {
-    if (this._buttonIndex === null) {
-      return html``;
-    }
-
-    const buttonIndex = this._buttonIndex;
+    const buttonIndex = this._buttonIndex!;
 
     const buttonCard = this.config.button_card[buttonIndex];
     const button = buttonCard.button;

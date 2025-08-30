@@ -1,8 +1,9 @@
-import { css, CSSResultGroup, LitElement } from 'lit';
+import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import editorcss from '../css/editor.css';
 import { fireEvent, HomeAssistant } from '../ha';
+import { VehicleStatusCardConfig } from '../types/config';
 import { EditorPreviewTypes } from '../utils/editor/types';
 import { Store } from '../utils/store';
 import { VehicleStatusCardEditor } from './editor';
@@ -33,13 +34,24 @@ declare global {
 }
 
 export class BaseEditor extends LitElement {
-  @property({ attribute: false }) _hass!: HomeAssistant;
+  @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _store!: Store;
+
   constructor() {
     super();
   }
 
-  get _editor(): VehicleStatusCardEditor | undefined {
+  set hass(hass: HomeAssistant) {
+    this._hass = hass;
+    if (this._store && !this._store.hass) {
+      this._store.hass = hass;
+    }
+  }
+  get hass(): HomeAssistant {
+    return this._hass;
+  }
+
+  protected get _editor(): VehicleStatusCardEditor | undefined {
     return this._store._editor;
   }
 
@@ -48,6 +60,61 @@ export class BaseEditor extends LitElement {
     return config
       ? config.hasOwnProperty('row_group_preview') && config.row_group_preview?.group_index !== null
       : false;
+  }
+
+  protected get _cardConfig(): VehicleStatusCardConfig | undefined {
+    return this._editor?._config as VehicleStatusCardConfig;
+  }
+
+  /**
+   * Create a vsc-editor-form element
+   * @param data config data
+   * @param schema HA form schema
+   * @param key vsc config key
+   * @param subKey sub key for nested objects
+   * @value-changed event handler _changed or _onValueChanged
+   */
+  protected _createVscForm(data: any, schema: any, key?: string, subKey?: string): TemplateResult {
+    const currentConfig = this._store?.config;
+    return html`
+      <vsc-editor-form
+        ._hass=${this._hass}
+        .data=${data}
+        .schema=${schema}
+        .currentConfig=${currentConfig}
+        .key=${key}
+        .subKey=${subKey}
+        @value-changed=${this._onValueChanged}
+      ></vsc-editor-form>
+    `;
+  }
+
+  protected _onValueChanged(ev: CustomEvent): void {
+    console.debug('onValueChanged (BaseEditor):', ev);
+    ev.stopPropagation();
+    const { key, subKey, currentConfig } = ev.target as any;
+    const value = { ...ev.detail.value };
+    if (!currentConfig || typeof currentConfig !== 'object') return;
+    console.debug('incoming:', { key, subKey, currentConfig, value });
+
+    const updates: Partial<VehicleStatusCardConfig> = {};
+    if (key && subKey) {
+      if (typeof currentConfig[key] !== 'object' || currentConfig[key] === null) {
+        currentConfig[key] = {};
+      }
+      currentConfig[key][subKey] = value;
+      updates[key] = currentConfig[key];
+    } else if (key) {
+      updates[key] = value;
+    } else {
+      Object.assign(updates, value);
+    }
+    console.debug('updates:', updates);
+    if (Object.keys(updates).length > 0) {
+      const newConfig = { ...currentConfig, ...updates };
+      fireEvent(this, 'config-changed', { config: newConfig });
+    }
+    return;
   }
 
   public _cleanConfig(): void {
@@ -96,11 +163,28 @@ export class BaseEditor extends LitElement {
     return;
   };
 
+  protected _cardConfigChanged(changedConfig: Partial<VehicleStatusCardConfig>): void {
+    if (!this._store) return;
+    const config = this._store.config;
+    if (!config || typeof config !== 'object') return;
+
+    // Update config
+    const newConfig = { ...config, ...changedConfig };
+    console.debug('Card config changed:', changedConfig, newConfig);
+  }
+
   static get styles(): CSSResultGroup {
     return [
       css`
         :host {
           --ha-button-border-radius: var(--ha-border-radius-md, 8px);
+        }
+        *[hidden],
+        .hidden {
+          display: none !important;
+        }
+        *[active] {
+          color: var(--primary-color);
         }
       `,
 
