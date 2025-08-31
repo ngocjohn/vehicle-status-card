@@ -1,8 +1,7 @@
-import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues } from 'lit';
+import { html, TemplateResult, CSSResultGroup, PropertyValues, css } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import editorcss from '../../css/editor.css';
-import { fireEvent, HomeAssistant, LovelaceCardConfig, LovelaceConfig } from '../../ha';
+import { fireEvent, LovelaceCardConfig } from '../../ha';
 import {
   EntityConfig,
   ExtraMapCardConfig,
@@ -12,29 +11,33 @@ import {
 } from '../../types/config';
 import { Create } from '../../utils';
 import { processConfigEntities } from '../../utils';
-import { _convertToExtraMapConfig } from '../../utils/lovelace/create-map-card';
-import { VehicleStatusCardEditor } from '../editor';
-import { ALERT_INFO } from '../editor-const';
-import { BASE_MAP_SCHEMA, MINI_MAP_LAYOUT_SCHEMA } from '../form';
+import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
+import { selectTree } from '../../utils/helpers-dom';
+import { _convertToExtraMapConfig, convertLovelaceMapToBaseConfig } from '../../utils/lovelace/create-map-card';
+import { BaseEditor } from '../base-editor';
+import { BASE_MAP_CONFIG_SCHEMA } from '../form';
 
 @customElement('panel-map-editor')
-export class PanelMapEditor extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) public lovelace?: LovelaceConfig;
-  @property({ attribute: false }) editor!: VehicleStatusCardEditor;
+export class PanelMapEditor extends BaseEditor {
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
   @state() _mapCardConfig?: MiniMapConfig;
   @state() _mapEntitiesConfig?: EntityConfig[];
   @state() _yamlMode: boolean = false;
   @state() _useSingleMapCard: boolean = false;
 
-  @state() private _tabIndex: number = 0;
   @state() private _tmpYamlConfig?: ExtraMapCardConfig;
 
   @query('hui-card-element-editor') private _mapCardEditor?: HTMLElement;
 
   static get styles(): CSSResultGroup {
-    return [editorcss];
+    return [
+      super.styles,
+      css`
+        .sub-panel-config {
+          margin-block-end: 1em;
+        }
+      `,
+    ];
   }
 
   private get _mapConfig(): MiniMapConfig {
@@ -83,9 +86,11 @@ export class PanelMapEditor extends LitElement {
       this._mapCardConfig = {
         ...(this._config.mini_map || {}),
       };
+
       this._mapEntitiesConfig = this._mapCardConfig.extra_entities
         ? processConfigEntities<MapEntityConfig>(this._mapCardConfig.extra_entities, false)
         : processConfigEntities<MapEntityConfig>([this._deviceTrackerEntity], false);
+
       this._useSingleMapCard = this._mapCardConfig.single_map_card ?? false;
       if (!this._mapCardConfig.maptiler_api_key && this._mapCardConfig.single_map_card) {
         this._useSingleMapCard = false;
@@ -104,7 +109,17 @@ export class PanelMapEditor extends LitElement {
       const oldYamlMode = _changedProperties.get('_yamlMode') as boolean;
       if (oldYamlMode === true && this._yamlMode === false) {
         if (this._tmpYamlConfig) {
-          const mapConfig = this._convertToBaseMapConfig(this._tmpYamlConfig);
+          const oldTmp = _changedProperties.get('_tmpYamlConfig') as ExtraMapCardConfig | undefined;
+          const newTmp = this._tmpYamlConfig;
+          console.log('Old Tmp:', oldTmp);
+          console.log('New Tmp:', newTmp);
+          if (JSON.stringify(oldTmp) === JSON.stringify(newTmp)) {
+            // No changes in YAML, do nothing
+            console.log('No changes in YAML, skipping update.');
+            this._tmpYamlConfig = undefined;
+            return;
+          }
+          const mapConfig = convertLovelaceMapToBaseConfig(this._tmpYamlConfig, this._deviceTrackerEntity);
           const miniMapConfig = { ...(this._config.mini_map || {}) };
           this._config = {
             ...this._config,
@@ -128,7 +143,6 @@ export class PanelMapEditor extends LitElement {
     const needsUpdate =
       _changedProperties.has('_useSingleMapCard') ||
       _changedProperties.has('_yamlMode') ||
-      (_changedProperties.has('_tabIndex') && this._tabIndex !== 0) ||
       _changedProperties.has('_mapCardConfig');
 
     if (needsUpdate) {
@@ -140,72 +154,63 @@ export class PanelMapEditor extends LitElement {
     if (!this.hass || !this._config) {
       return html``;
     }
+    const DATA = { ...(this._config.mini_map || {}) };
 
-    const baseMapSection = this._renderBaseMapSection();
-    const singleCardSchema = [
-      {
-        name: 'single_map_card',
-        label: 'Mini Map as Single Card',
-        helper: '(MapTiler API Key is required)',
-        type: 'boolean',
-        default: false,
-        disabled: !this._useMapTiler,
-      },
-    ];
-    const useSingleMap = html`<div style="opacity: ${this._useMapTiler ? 1 : 0.5};">
-      ${this._createHaForm(singleCardSchema)}
-    </div>`;
+    const editorHeader = html`
+      <sub-editor-header
+        .hidePrimaryAction=${true}
+        .secondaryAction=${createSecondaryCodeLabel(this._yamlMode)}
+        @secondary-action=${() => (this._yamlMode = !this._yamlMode)}
+      ></sub-editor-header>
+    `;
 
-    const content = this._yamlMode
-      ? this._renderYamlEditor()
-      : html` <div class="tip-content">
-          ${baseMapSection} ${useSingleMap}
-          ${!this._useSingleMapCard ? this._renderLayoutPopupTabs() : this._renderSingleMapConfig()}
-        </div>`;
+    const baseMapWrapper = this._createVscForm(DATA, BASE_MAP_CONFIG_SCHEMA(DATA), 'mini_map');
 
     return html`
-      <div class="card-config">
-        ${content}
-        <div style="justify-content: flex-end; display: flex; margin-top: 1rem;">
-          <ha-button
-            size="small"
-            variant="neutral"
-            appearance="filled"
-            @click=${() => (this._yamlMode = !this._yamlMode)}
-            >${this._yamlMode ? 'Show UI editor' : 'Show Code editor'}</ha-button
-          >
-        </div>
+      <div class="sub-panel-config">
+        ${this._yamlMode ? this._renderYamlEditor() : html` ${baseMapWrapper} ${this._renderLayoutPopupTabs()} `}
       </div>
+      ${editorHeader}
     `;
   }
 
   private _renderLayoutPopupTabs(): TemplateResult {
-    const miniMapLayout = this._createHaForm(MINI_MAP_LAYOUT_SCHEMA);
-    const popupContent = this._renderSingleMapConfig();
+    const isSingleMapCard = this._useSingleMapCard;
+    const header = isSingleMapCard ? 'Single Map Card Configuration' : 'Popup Card Configuration';
+    const expanded = isSingleMapCard;
 
-    const tabsConfig = [
-      { label: 'Mini Map', content: miniMapLayout, key: 'mini-map' },
-      { label: 'Popup', content: popupContent, key: 'popup' },
-    ];
-
-    return Create.VicTab({
-      activeTabIndex: this._tabIndex || 0,
-      onTabChange: (index: number) => (this._tabIndex = index),
-      tabs: tabsConfig,
+    const content = this._renderSingleMapConfig();
+    return Create.ExpansionPanel({
+      options: { header, icon: 'mdi:earth', expanded },
+      content: content,
     });
   }
 
-  private _hideEditorElements(): void {
+  private _renderSingleMapConfig(): TemplateResult {
+    if (!this._mapCardConfig?.device_tracker) {
+      return this._createAlert('Device tracker entity is required to use popup');
+    }
+    return html`
+      <hui-card-element-editor
+        .hass=${this.hass}
+        .value=${this._extraMapCardConfig}
+        @config-changed=${this._mapCardConfigChanged}
+      ></hui-card-element-editor>
+    `;
+  }
+
+  private _hideEditorElements = async (): Promise<void> => {
     const editorRoot = this._mapCardEditor?.shadowRoot;
     if (!editorRoot) return;
 
     if (this._useMapTiler) {
       // Hide extra-map-editor selectors
-      const formRoot = editorRoot.querySelector('extra-map-editor')?.shadowRoot?.querySelector('ha-form')?.shadowRoot;
-
-      if (!formRoot) return;
-
-      const selectors = formRoot.querySelectorAll('.root > ha-selector') as NodeListOf<HTMLElement>;
+      const selectors = (await selectTree(
+        editorRoot,
+        'extra-map-editor$ha-form$ha-selector',
+        true
+      )) as NodeListOf<HTMLElement>;
+      if (!selectors) return;
       selectors.forEach((el) => (el.style.display = 'none'));
     } else {
       // Hide default map config selectors
@@ -227,14 +232,17 @@ export class PanelMapEditor extends LitElement {
         entitiesHeader.textContent = 'Extra Entities';
       }
     }
-  }
+  };
 
   private _mapCardConfigChanged(ev: CustomEvent) {
     ev.stopPropagation();
     if (!this._config) return;
     const config = ev.detail.config;
-    const mapConfig = this._convertToBaseMapConfig(config);
-    // console.log('Map Config:', mapConfig);
+    console.debug('map card config changed:', config);
+
+    const mapConfig = convertLovelaceMapToBaseConfig(config, this._deviceTrackerEntity);
+    // const mapConfig = this._convertToBaseMapConfig(config);
+    console.log('Map Config:', mapConfig);
     const miniMapConfig = { ...(this._config.mini_map || {}) };
     this._config = {
       ...this._config,
@@ -243,75 +251,9 @@ export class PanelMapEditor extends LitElement {
         ...mapConfig,
       },
     };
-
+    console.debug('New Config:', this._config.mini_map);
     fireEvent(this, 'config-changed', {
       config: this._config,
-    });
-  }
-
-  private _convertToBaseMapConfig(config: ExtraMapCardConfig | LovelaceCardConfig): Partial<MiniMapConfig> {
-    const map_styles = config.custom_styles;
-    let extra_entities: MapEntityConfig[] = [];
-    const entities = config.entities ? processConfigEntities<MapEntityConfig>(config.entities) : [];
-    if (entities.length === 0) {
-      extra_entities = [this._deviceTrackerEntity];
-    } else {
-      extra_entities = entities;
-    }
-    const {
-      fit_zones,
-      default_zoom,
-      hours_to_show,
-      theme_mode,
-      history_period,
-      auto_fit,
-      aspect_ratio,
-      use_more_info,
-    } = config;
-    return {
-      map_styles,
-      extra_entities,
-      fit_zones,
-      default_zoom,
-      hours_to_show,
-      theme_mode,
-      history_period,
-      auto_fit,
-      aspect_ratio,
-      use_more_info,
-    };
-  }
-
-  private _renderSingleMapConfig() {
-    return html`
-      ${Create.HaAlert({
-        message: ALERT_INFO.MAP_SINGLE_CARD,
-        options: {
-          action: [
-            {
-              callback: () => window.open(ALERT_INFO.MAP_SINGLE_LINK),
-            },
-          ],
-        },
-      })}
-      <hui-card-element-editor
-        .hass=${this.hass}
-        .value=${this._extraMapCardConfig}
-        @config-changed=${this._mapCardConfigChanged}
-      ></hui-card-element-editor>
-    `;
-  }
-
-  private _valueChanged(ev: CustomEvent): void {
-    ev.stopPropagation();
-    const config = ev.detail.value;
-    fireEvent(this, 'config-changed', {
-      config: {
-        ...this._config,
-        mini_map: {
-          ...config,
-        },
-      },
     });
   }
 
@@ -354,64 +296,6 @@ export class PanelMapEditor extends LitElement {
     this._config = { ...this._config, mini_map: value };
     fireEvent(this, 'config-changed', { config: this._config });
   }
-
-  private _renderBaseMapSection(): TemplateResult {
-    const baseContent = html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${this._mapConfig}
-        .schema=${BASE_MAP_SCHEMA}
-        .computeLabel=${this._computeLabel}
-        .computeHelper=${this._computeHelper}
-        @value-changed=${this._valueChanged}
-      >
-      </ha-form>
-
-      ${Create.HaAlert({
-        message: ALERT_INFO.MAPTILER_GET,
-        options: {
-          action: [
-            {
-              callback: () => window.open(ALERT_INFO.MAPTILER_DOC_LINK),
-            },
-          ],
-        },
-      })}
-    `;
-    return Create.ExpansionPanel({
-      options: { header: 'Base Map Configuration' },
-      content: baseContent,
-    });
-  }
-
-  private _createHaForm(schema: any): TemplateResult {
-    const data = this._mapConfig;
-    return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${data}
-        .schema=${schema}
-        .computeLabel=${this._computeLabel}
-        .computeHelper=${this._computeHelper}
-        @value-changed=${this._valueChanged}
-      >
-      </ha-form>
-    `;
-  }
-
-  private _computeLabel = (schema: any) => {
-    let label = this.hass?.localize(`ui.panel.lovelace.editor.card.generic.${schema.name}`);
-    if (label) return label;
-    label = this.hass?.localize(`ui.panel.lovelace.editor.card.${schema.label}`);
-    if (label) return label;
-    return schema.label;
-  };
-
-  private _computeHelper = (schema: any) => {
-    if (schema.helper) {
-      return schema.helper;
-    }
-  };
 }
 
 declare global {

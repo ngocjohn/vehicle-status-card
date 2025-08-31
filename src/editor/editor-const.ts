@@ -190,7 +190,7 @@ enum ALERT_INFO {
   MAP_SINGLE_CARD = 'Configuration is same as for HA Default Map Card',
   MAP_SINGLE_LINK = 'https://www.home-assistant.io/dashboards/map/',
   IDICATOR_LEGACY = 'More info in the wiki. Or migrate to the new format.',
-  INDICATOR_ROW_URL = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup',
+  INDICATOR_ROW_URL = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Indicators-Configuration',
 }
 
 export {

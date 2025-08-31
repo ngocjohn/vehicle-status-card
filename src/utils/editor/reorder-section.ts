@@ -35,6 +35,6 @@ export const reorderSection = (hide: HideConfig, currentOrder: string[]): Sectio
 
   // Remove duplicates while maintaining order
   sectionOrder = [...new Set(sectionOrder)].filter((s) => SECTION_KEYS.includes(s)) as SectionOrder[];
-  console.log('Final reordered sections:', sectionOrder);
+  // console.log('Final reordered sections:', sectionOrder);
   return sectionOrder as SectionOrder[];
 };

@@ -1,6 +1,12 @@
-import type { ImageConfig, LayoutConfig, MiniMapConfig, VehicleStatusCardConfig } from '../../types/config';
-
 import { getEntitiesByDomain, HomeAssistant } from '../../ha';
+import {
+  SECTION_KEYS,
+  type ImageConfig,
+  type LayoutConfig,
+  type MiniMapConfig,
+  type SectionOrder,
+  type VehicleStatusCardConfig,
+} from '../../types/config';
 import { createButtonCard, generateButtonCardConfig } from './stub-config_button';
 import { getIndicatorRows } from './stub-config_idicators';
 import { getRangeInfoConfig } from './stub-config_range';
@@ -31,14 +37,7 @@ const DEFAULT_CONFIG: Partial<VehicleStatusCardConfig> = {
       transparent: false,
       hide_notify_badge: false,
     },
-    hide: {
-      buttons: false,
-      images: false,
-      indicators: true,
-      range_info: true,
-      mini_map: true,
-      card_name: false,
-    },
+    section_order: SECTION_KEYS,
   },
 };
 
@@ -47,7 +46,7 @@ export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStat
   const buttonCardConfig = generateButtonCardConfig(hass);
   const indicatorRows = getIndicatorRows(hass);
   const rangeInfo = getRangeInfoConfig(hass);
-
+  const sectionOrder: SectionOrder[] = [];
   let clonedConfig = { ...DEFAULT_CONFIG } as VehicleStatusCardConfig;
 
   if (deviceTracker.length) {
@@ -56,7 +55,6 @@ export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStat
     miniMap.device_tracker = deviceTracker[0];
     miniMap.enable_popup = true;
     clonedConfig.mini_map = miniMap;
-    layoutConfig.hide.mini_map = false;
     clonedConfig.layout_config = layoutConfig;
   }
   if (buttonCardConfig.length) {
@@ -64,22 +62,18 @@ export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStat
   }
   if (indicatorRows) {
     clonedConfig.indicator_rows = [indicatorRows];
-    clonedConfig.layout_config.hide.indicators = false;
   }
   if (rangeInfo) {
     let layoutConfig: LayoutConfig = { ...(clonedConfig.layout_config || {}) };
     clonedConfig.range_info = rangeInfo;
     layoutConfig = {
       ...layoutConfig,
-      hide: {
-        ...layoutConfig.hide,
-        range_info: false,
-      },
       range_info_config: {
         layout: 'row',
       },
     };
     clonedConfig.layout_config = layoutConfig;
+    sectionOrder.push('range_info');
   }
 
   saveStubConfig(clonedConfig);

@@ -30,6 +30,7 @@ import {
   DIMENSION_KEYS,
   PROGRESS_BAR_SCHEMA,
   RANGE_ITEM_SCHEMA,
+  RANGE_LAYOUT,
 } from '../form';
 
 type ITEM_ACTION = 'add' | 'delete-item' | 'edit-item' | 'edit-yaml' | 'back-to-list';
@@ -54,6 +55,9 @@ export class PanelRangeInfo extends BaseEditor {
   @state() private _overValue?: number;
   @state() private _overValueTimeout?: number;
 
+  constructor() {
+    super();
+  }
   static get styles(): CSSResultGroup {
     return [
       super.styles,
@@ -576,8 +580,14 @@ export class PanelRangeInfo extends BaseEditor {
         class: 'delete',
       },
     ];
+    const LAYOUT_DATA = {
+      layout: this.config.layout_config?.range_info_config?.layout,
+    };
+    const layoutForm = this._createVscForm(LAYOUT_DATA, RANGE_LAYOUT, 'layout_config', 'range_info_config');
+
     return html`${!this._yamlEditorActive && this.config.range_info
         ? html`
+            ${layoutForm}
             <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
               <div class="range-info-list">
                 ${repeat(
@@ -1345,5 +1355,32 @@ export class PanelRangeInfo extends BaseEditor {
     fireEvent(this, 'config-changed', { config: this.config });
     // console.log('Range item changed', rangeItem);
     this.requestUpdate();
+  }
+  protected _onValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    if (!this.config) return;
+    const value = ev.detail.value;
+    const config = { ...(this.config || {}) };
+    const layoutConfigRange = { ...(config.layout_config?.range_info_config || {}) };
+    if (value && value.layout) {
+      layoutConfigRange.layout = value.layout;
+    } else {
+      delete layoutConfigRange.layout;
+    }
+    if (Object.keys(layoutConfigRange).length === 0) {
+      if (config.layout_config && config.layout_config.range_info_config) {
+        delete config.layout_config.range_info_config;
+      }
+    } else {
+      config.layout_config = { ...(config.layout_config || {}), range_info_config: layoutConfigRange };
+    }
+    this.config = config;
+    fireEvent(this, 'config-changed', { config: this.config });
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'panel-range-info': PanelRangeInfo;
   }
 }

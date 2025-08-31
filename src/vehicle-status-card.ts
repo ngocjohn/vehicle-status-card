@@ -42,6 +42,23 @@ import { _setUpPreview, previewHandler } from './utils/lovelace/preview-helper';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
 
+export const migrateLegacySectionOrder = (config: VehicleStatusCardConfig): VehicleStatusCardConfig => {
+  const newConfig = { ...config };
+  if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
+    const hideConfig = config.layout_config.hide;
+    if (hideConfig.card_name) {
+      newConfig.layout_config.hide_card_name = hideConfig.card_name;
+    } // Migrate hide_card_name if present
+    const currentOrder = newConfig.layout_config.section_order || SECTION_KEYS;
+    const updatedOrder = reorderSection(hideConfig, currentOrder);
+    newConfig.layout_config.section_order = updatedOrder;
+  }
+  // Remove the deprecated 'hide' property
+  delete newConfig.layout_config.hide;
+  // console.debug('Final layout_config after migration:', newConfig.layout_config);
+  return newConfig;
+};
+
 @customElement(CARD_NAME)
 export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -56,26 +73,16 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   };
 
   public setConfig(config: VehicleStatusCardConfig): void {
-    const layoutConfig = config.layout_config || {};
-    const hasHeaderInfo = layoutConfig.section_order?.includes(SECTION.HEADER_INFO);
-
-    if (hasHeaderInfo || !layoutConfig.section_order) {
-      console.debug('has header info, removing it from section order');
-      const hideConfig = layoutConfig.hide || {};
-      const currentOrder = layoutConfig?.section_order || [];
-      const updatedOrder = reorderSection(hideConfig, currentOrder);
-      // console.debug('Updated section order:', updatedOrder);
-      config = {
-        ...config,
-        layout_config: {
-          ...layoutConfig,
-          section_order: updatedOrder,
-        },
-      };
+    if (!config) {
+      throw new Error('Invalid configuration');
     }
 
     const newConfig = JSON.parse(JSON.stringify(config)) as VehicleStatusCardConfig;
-    this._config = newConfig;
+    // this._config = newConfig;
+    this._config = {
+      ...newConfig,
+      ...migrateLegacySectionOrder(newConfig),
+    };
     if (this._config.button_card && this._config.button_card.length) {
       this._buttonCardConfigItem = this._config.button_card as ButtonCardConfig[];
     }
@@ -120,6 +127,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @query(COMPONENT.INDICATORS, true) _indicators!: VscIndicators;
   @query(COMPONENT.MINI_MAP, true) _miniMap!: MiniMapBox;
   @queryAll(COMPONENT.INDICATOR_ROW) _indicatorRows!: VscIndicatorRow[];
+  @query('ha-card', true) _haCard!: HTMLElement;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -210,7 +218,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _isSectionHidden(section: SECTION): boolean {
-    return this._config.layout_config?.hide?.[section] || false;
+    return !this._config.layout_config?.section_order?.includes(section);
   }
 
   protected render(): TemplateResult {
@@ -230,7 +238,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     const headerHidden =
-      this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '' || !this._config.name;
+      this._config.layout_config?.hide_card_name || this._config.name?.trim() === '' || !this._config.name;
     return html`
       <ha-card class=${this._computeClasses()} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>
         ${!headerHidden ? html`<div class="card-header" id="name">${this._config.name}</div>` : nothing}
@@ -267,6 +275,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const hasRows = this._config.indicator_rows && this._config.indicator_rows.length > 0;
     const hasBoth = this._config.indicators && hasRows;
     const inFirstSection = this._config.layout_config?.section_order![0] === SECTION.INDICATORS;
+    if (!hasRows && !this._config.indicators) return html``;
     return html`<div class="header-info-box" id=${SECTION.INDICATORS} ?noMargin=${inFirstSection}>
       ${hasBoth
         ? html`${this._renderIndicatorRows()} ${this._renderIndicatorsLegacy()}`
@@ -723,6 +732,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
   }
 
+  public _peekBorder(): void {
+    this._haCard.classList.add('peek-border');
+    setTimeout(() => {
+      this._haCard.classList.remove('peek-border');
+    }, 2000);
+  }
   static get styles(): CSSResultGroup {
     return [super.styles];
   }

@@ -113,10 +113,11 @@ export const SectionPanel = (
     title: string;
     content: TemplateResult;
     expansion?: boolean;
+    headerToggle?: string | TemplateResult;
   }[]
 ): TemplateResult => {
   return html`
-    ${sections.map(({ title, content, expansion }) => {
+    ${sections.map(({ title, content, expansion, headerToggle }) => {
       if (expansion) {
         return ExpansionPanel({
           content,
@@ -128,7 +129,9 @@ export const SectionPanel = (
       } else {
         return html`
           <div class="sub-panel-config button-card">
-            ${title !== '' ? html`<div class="sub-header">${title}</div>` : nothing}
+            <div class="sub-header">
+              ${title !== '' ? title : nothing} ${headerToggle ? html`<div>${headerToggle}</div>` : nothing}
+            </div>
             <div class="sub-panel">${content}</div>
           </div>
         `;

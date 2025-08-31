@@ -1,35 +1,31 @@
 // External
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import { repeat } from 'lit/directives/repeat.js';
 
 // Import styles
 import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
 // Import all components
 import './components/';
 import { VehicleStatusCardConfig } from '../types/config';
-import { SectionOrder } from '../types/config/card/layout';
-import { SECTION } from '../types/section';
-import { loadHaComponents, Create, ICON, refactorEditDialog } from '../utils';
+import { loadHaComponents, Create, refactorEditDialog } from '../utils';
 import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
-import { reorderSection } from '../utils/editor/reorder-section';
-import { Store } from '../utils/store';
-import { BaseEditor } from './base-editor';
+import { selectTree } from '../utils/helpers-dom';
 import '../utils/editor/menu-element';
+import { Store } from '../utils/store';
+import { migrateLegacySectionOrder, VehicleStatusCard } from '../vehicle-status-card';
+import { BaseEditor } from './base-editor';
 import * as ELEMENT from './components';
 import { ALERT_INFO, EDITOR_NAME, PANEL } from './editor-const';
-import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA, NAME_SCHEMA, RANGE_LAYOUT_SCHEMA, THEME_CONFIG_SCHEMA } from './form';
+import { CARD_NAME_SCHEMA, CARD_THEME_SCHEMA, SECTION_ORDER_SCHEMA, BUTTON_GRID_LAYOUT_SCHEMA } from './form';
 
 @customElement(EDITOR_NAME)
 export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardEditor {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public lovelace?: LovelaceConfig;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
-
+  @property({ attribute: false }) public _vscElem?: VehicleStatusCard;
   @state() _selectedConfigType: null | string = null;
 
-  @state() private _reloadSectionList: boolean = false;
-  @state() private _layoutTabIndex: number = 0;
   @state() private _indicatorTabIndex: number = 0;
 
   public _migratedIndicatorsConfig: boolean = false;
@@ -60,16 +56,17 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
-    if (
-      config.layout_config?.section_order === undefined ||
-      config.layout_config?.section_order.length === 0 ||
-      config.layout_config?.section_order.includes(SECTION.HEADER_INFO)
-    ) {
-      const sectionOrder = reorderSection(config.layout_config?.hide || {}, config.layout_config?.section_order || []);
-      config.layout_config = {
-        ...config.layout_config,
-        section_order: sectionOrder as SectionOrder[],
+    let needUpdate = false;
+    if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
+      console.debug('Migrating legacy layout_config.hide to section_order');
+      config = {
+        ...config,
+        ...migrateLegacySectionOrder(config),
       };
+      needUpdate = true;
+    }
+
+    if (needUpdate) {
       fireEvent(this, 'config-changed', { config });
       return;
     }
@@ -98,6 +95,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
   protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);
+
     const oldSelectedConfigType = changedProps.get('_selectedConfigType') as string | null;
     const shouldUpdate =
       (this._selectedConfigType === null && oldSelectedConfigType !== null) ||
@@ -169,7 +167,11 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   private _renderImages(): TemplateResult {
-    return html`<panel-images-editor ._hass=${this._hass} .config=${this._config}></panel-images-editor>`;
+    return html`<panel-images-editor
+      ._hass=${this._hass}
+      .config=${this._config}
+      ._store=${this._store}
+    ></panel-images-editor>`;
   }
 
   private _renderIndicators(): TemplateResult {
@@ -243,117 +245,45 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   private _renderLayoutConfig(): TemplateResult {
-    const layout = this._config.layout_config || {};
+    const config = { ...(this._config || {}) };
+    const LAYOUT_DATA = {
+      section_order: config.layout_config?.section_order,
+      theme_config: config.layout_config?.theme_config,
+    };
+    const NAME_GRID_DATA = {
+      name: config?.name,
+      hide_card_name: config.layout_config?.hide_card_name,
+    };
+    const BUTTON_GRID_DATA = { ...config.layout_config?.button_grid };
 
-    const HIDE_CONFIG_DATA = { ...layout.hide };
-    const BUTTON_GRID_DATA = { ...layout.button_grid };
-    const THEME_DATA = { ...layout.theme_config };
-    const NAME_DATA = { name: this._config.name || '' };
+    const nameGrid = this._createHaForm(NAME_GRID_DATA, CARD_NAME_SCHEMA(NAME_GRID_DATA), 'card_name_config');
 
-    const buttonGridWrapper = Create.SectionPanel([
-      {
-        title: 'Button Grid Configuration',
-        content: this._createHaForm(
-          BUTTON_GRID_DATA,
-          BUTTON_GRID_SCHEMA(!BUTTON_GRID_DATA.swipe),
-          'layout_config',
-          'button_grid'
-        ),
-      },
-    ]);
+    const sectionOrderWrapper = this._createHaForm(LAYOUT_DATA, SECTION_ORDER_SCHEMA, 'layout_config');
 
-    // Hide configuration wrapper
-    const hideWrapper = Create.SectionPanel([
-      {
-        title: 'Choose the items / sections to hide',
-        content: this._createHaForm(HIDE_CONFIG_DATA, HIDE_SCHEMA, 'layout_config', 'hide'),
-      },
-      {
-        title: 'Section Order Configuration',
-        content: this._renderSectionOrder(),
-        expansion: true,
-      },
-    ]);
+    const themeWrapper = this._createHaForm(LAYOUT_DATA, CARD_THEME_SCHEMA, 'layout_config');
 
-    // Theme configuration wrapper
-    const themeWrapper = Create.SectionPanel([
-      {
-        title: 'Select the name for card',
-        content: this._createHaForm(NAME_DATA, NAME_SCHEMA),
-      },
-      {
-        title: 'Theme Configuration',
-        content: this._createHaForm(THEME_DATA, THEME_CONFIG_SCHEMA, 'layout_config', 'theme_config'),
-      },
-    ]);
-
-    const tabsConfig = [
-      { content: hideWrapper, key: 'hide', label: 'Appearance' },
-      { content: buttonGridWrapper, key: 'button_grid', label: 'Button Grid' },
-      { content: themeWrapper, key: 'theme_config', label: 'Theme' },
-    ];
+    const buttonGridWrapper = this._createVscForm(
+      BUTTON_GRID_DATA,
+      BUTTON_GRID_LAYOUT_SCHEMA(!BUTTON_GRID_DATA.swipe),
+      'layout_config',
+      'button_grid'
+    );
 
     return html`
-      <div class="card-config">
-        ${Create.VicTab({
-          activeTabIndex: this._layoutTabIndex || 0,
-          onTabChange: (index: number) => (this._layoutTabIndex = index),
-          tabs: tabsConfig,
-        })}
-      </div>
+      <div class="sub-panel-config">${sectionOrderWrapper} ${buttonGridWrapper} ${nameGrid} ${themeWrapper}</div>
     `;
-  }
-
-  private _renderSectionOrder(): TemplateResult {
-    if (this._reloadSectionList) return html` <ha-spinner .size=${'small'}></ha-spinner> `;
-
-    const sectionList = this._config.layout_config?.section_order || [];
-    return html` <ha-sortable handle-selector=".handle" @item-moved=${this._sectionMoved}>
-      <div id="section-order-list">
-        ${repeat(
-          sectionList,
-          (section: string) => section,
-          (section: string, index: number) => html` <div class="item-config-row" data-index="${index}">
-            <div class="handle">
-              <ha-icon-button .path=${ICON.DRAG}></ha-icon-button>
-            </div>
-            <div class="item-content">
-              <div class="primary">${section.replace(/_/g, ' ').toUpperCase()}</div>
-            </div>
-          </div>`
-        )}
-      </div>
-    </ha-sortable>`;
   }
 
   private _renderMiniMap(): TemplateResult {
     return html`<panel-map-editor
       .hass=${this._hass}
-      .editor=${this as any}
       ._config=${this._config}
+      ._store=${this._store}
     ></panel-map-editor>`;
   }
 
   private _renderRangeInfo(): TemplateResult {
-    const RANGE_INFO_LAYOUT_DATA = { ...(this._config.layout_config?.range_info_config || {}) };
-    const rangeLayout = this._createHaForm(
-      RANGE_INFO_LAYOUT_DATA,
-      RANGE_LAYOUT_SCHEMA,
-      'layout_config',
-      'range_info_config'
-    );
-    const rangeItemContent = html`<panel-range-info ._hass=${this._hass} .config=${this._config}></panel-range-info>`;
-
-    const tabsConfig = [
-      { content: rangeItemContent, key: 'range_info', label: 'Range Info Items' },
-      { content: rangeLayout, key: 'range_info_layout', label: 'Layout appearance' },
-    ];
-
-    return Create.VicTab({
-      activeTabIndex: this._layoutTabIndex || 0,
-      onTabChange: (index: number) => (this._layoutTabIndex = index),
-      tabs: tabsConfig,
-    });
+    return html`<panel-range-info ._hass=${this._hass} .config=${this._config}></panel-range-info>`;
   }
 
   /* ---------------------------- PANEL TEMPLATE ---------------------------- */
@@ -394,19 +324,24 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
     // Ensure we handle the boolean value correctly
     const newValue = ev.detail.value;
+    console.debug('Value changed:', { configType, configIndex, newValue });
 
-    let hiddenChanged = false;
     const updates: Partial<VehicleStatusCardConfig> = {};
     if (configType === 'layout_config' && configIndex) {
       let layoutConfig = { ...(this._config.layout_config || {}) };
       layoutConfig[configIndex] = newValue;
-      if (configIndex === 'hide') {
-        const sectionOrder = [...(this._config.layout_config?.section_order || [])];
-        const updatedOrder = reorderSection(newValue, sectionOrder);
-        layoutConfig.section_order = updatedOrder as SectionOrder[];
-        hiddenChanged = true;
-      }
       updates.layout_config = layoutConfig;
+    } else if (configType === 'layout_config' && !configIndex) {
+      updates.layout_config = {
+        ...(this._config.layout_config || {}),
+        ...newValue,
+      };
+    } else if (configType === 'card_name_config') {
+      updates.name = newValue.name;
+      updates.layout_config = {
+        ...(this._config.layout_config || {}),
+        hide_card_name: newValue.hide_card_name,
+      };
     } else {
       this._config = {
         ...this._config,
@@ -420,40 +355,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     if (Object.keys(updates).length > 0) {
       this._config = { ...this._config, ...updates };
       fireEvent(this, 'config-changed', { config: this._config });
-      if (hiddenChanged) {
-        this._reloadSectionList = true;
-        setTimeout(() => {
-          this._reloadSectionList = false;
-        }, 200);
-      }
-    }
-  }
-
-  protected _onValueChanged(ev: CustomEvent): void {
-    console.debug('onValueChanged (Editor):');
-    const { key, subKey, currentConfig } = ev.target as any;
-    const newValue = { ...ev.detail.value };
-
-    console.debug('incoming:', { key, subKey, currentConfig, newValue });
-    if (!currentConfig || typeof currentConfig !== 'object') return;
-
-    const updates: Partial<VehicleStatusCardConfig> = {};
-    if (key && subKey) {
-      if (typeof currentConfig[key] !== 'object' || currentConfig[key] === null) {
-        currentConfig[key] = {};
-      }
-      currentConfig[key][subKey] = newValue;
-      updates[key] = currentConfig[key];
-    } else if (key) {
-      updates[key] = newValue;
-    } else {
-      Object.assign(updates, newValue);
-    }
-    console.debug('updates:', updates);
-    if (Object.keys(updates).length > 0) {
-      const newConfig = { ...currentConfig, ...updates };
-      console.debug('newConfig:', newConfig);
-      fireEvent(this, 'config-changed', { config: newConfig });
     }
   }
 
@@ -492,6 +393,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   private createStore(): void {
     this._store = new Store(this, this._config);
     // console.debug('Store created:', this, this._config);
+    this._getCardInPreview();
     super.requestUpdate();
   }
 
@@ -510,6 +412,16 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     };
     fireEvent(this, 'config-changed', { config: this._config });
     console.log('Converted:', { oldConfig, newConfig });
+  }
+
+  private async _getCardInPreview(): Promise<VehicleStatusCard | undefined> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const cardElement = await selectTree(document.body, 'home-assistant$hui-dialog-edit-card$vehicle-status-card');
+    if (cardElement) {
+      this._vscElem = cardElement as VehicleStatusCard;
+      // console.debug('Found card in preview:', this._vscElem);
+    }
+    return this._vscElem;
   }
 }
 

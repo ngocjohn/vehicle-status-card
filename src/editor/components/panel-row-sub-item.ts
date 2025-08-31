@@ -1,4 +1,4 @@
-import { html, TemplateResult, CSSResultGroup, PropertyValues, css } from 'lit';
+import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { computeStateName, fireEvent } from '../../ha';
@@ -99,6 +99,7 @@ export class PanelRowSubItem extends BaseEditor {
     }
     const name = this._computeItemLabel(this._subItemConfig);
     const headerLabel = `Row ${this.rowIndex + 1} › ${this.isGroup ? 'Group' : 'Entity'}`;
+    const previewBtn = this._renderPreviewBtn();
     return html`
       <sub-editor-header
         ?hidden=${this._groupItemIndex !== null}
@@ -106,6 +107,7 @@ export class PanelRowSubItem extends BaseEditor {
         .secondary=${name}
         .primaryIcon=${ICON.CLOSE}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
+        .thirdAction=${previewBtn}
         @primary-action=${this._goBack}
         @secondary-action=${this._toggleYaml}
       ></sub-editor-header>
@@ -161,12 +163,6 @@ export class PanelRowSubItem extends BaseEditor {
     const DATA_BASE = { ...config };
     const groupBaseForm = this._createHaForm(DATA_BASE, ROW_GROUP_BASE_SCHEMA(config.entity));
 
-    const previewBtn = Create.HaButton({
-      label: this._isPreviewGroup ? 'CLOSE PREVIEW' : 'SHOW ITEMS PREVIEW',
-      onClick: () => this._handleGroupPreviewToggle(),
-      option: { appearance: 'outlined', variant: this._isPreviewGroup ? 'warning' : '' },
-    });
-
     const itemsWrapper = Create.ExpansionPanel({
       options: { header: 'Group Items', icon: 'mdi:format-list-bulleted' },
       content: html` <panel-row-sub-group-item
@@ -186,7 +182,7 @@ export class PanelRowSubItem extends BaseEditor {
         ? yamlEditor
         : html`<div class="card-config">
             <div id="groupbaseform">${groupBaseForm}</div>
-            ${itemsWrapper} ${previewBtn}
+            ${itemsWrapper}
           </div>`}
     `;
   }
@@ -235,6 +231,16 @@ export class PanelRowSubItem extends BaseEditor {
           `
         : yamlEditor}
     `;
+  }
+
+  private _renderPreviewBtn(): TemplateResult | typeof nothing {
+    if (!this.isGroup || this._groupItemIndex !== null) return nothing;
+    const previewBtn = Create.HaButton({
+      label: this._isPreviewGroup ? 'CLOSE PREVIEW' : 'PREVIEW',
+      onClick: () => this._handleGroupPreviewToggle(),
+      option: { appearance: 'outlined', variant: this._isPreviewGroup ? 'warning' : '' },
+    });
+    return previewBtn;
   }
 
   private _editGroupItem(event: CustomEvent): void {

@@ -1,5 +1,6 @@
 import memoizeOne from 'memoize-one';
 
+import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
 import { computeOptionalActionSchemaFull } from './actions-config';
 
 const DIMENSION_KEYS = ['bar_height', 'bar_width', 'bar_radius'];
@@ -241,5 +242,23 @@ export const RANGE_LAYOUT_SCHEMA = [
     default: 'column',
     required: false,
     options: RANGE_LAYOUTS.map((layout) => [layout, layout.charAt(0).toUpperCase() + layout.slice(1)]),
+  },
+] as const;
+
+export const RANGE_LAYOUT = [
+  {
+    name: 'layout',
+    label: 'Choose Range Info Layout',
+    default: 'column',
+    required: false,
+    selector: {
+      select: {
+        mode: 'dropdown',
+        options: RANGE_LAYOUTS.map((layout) => ({
+          value: layout,
+          label: capitalizeFirstLetter(layout),
+        })),
+      },
+    },
   },
 ] as const;

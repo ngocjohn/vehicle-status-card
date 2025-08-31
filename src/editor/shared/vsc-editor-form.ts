@@ -1,4 +1,4 @@
-import { html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
@@ -38,10 +38,21 @@ export class VscEditorForm extends BaseEditor {
     return capitalizeFirstLetter(label.trim());
   };
 
-  private computeHelper = (schema: any): string | undefined => {
+  private computeHelper = (schema: any): string | TemplateResult | undefined => {
     return schema.helper || undefined;
   };
 
+  static get styles() {
+    return css`
+      #haForm {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        box-sizing: border-box;
+        /* margin-block-end: 8px; */
+      }
+    `;
+  }
   private _changeStyle(): void {
     if (this._haForm.shadowRoot) {
       const root = this._haForm.shadowRoot.querySelector('div.root');

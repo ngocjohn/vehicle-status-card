@@ -203,8 +203,7 @@ export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined) =>
         ...(groupEntity && groupEntity
           ? [
               {
-                title: 'Display Options',
-                name: 'Display Options',
+                flatten: true,
                 type: 'grid',
                 schema: [
                   ...DISPLAY_ELEMENTS.map((element) => ({

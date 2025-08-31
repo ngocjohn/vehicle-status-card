@@ -28,6 +28,7 @@ export class SubEditorHeader extends LitElement {
   @property({ type: Boolean, attribute: 'hide-primary', reflect: true }) public hidePrimaryAction = false;
   @property({ type: Boolean, attribute: 'hide-secondary', reflect: true }) public hideSecondaryAction = false;
   @property({ attribute: false }) public secondaryAction?: TemplateResult;
+  @property({ attribute: false }) public thirdAction?: TemplateResult;
 
   @property() public defaultAction?: string;
   @property() public primaryIcon?: string;
@@ -62,6 +63,7 @@ export class SubEditorHeader extends LitElement {
           ${this.hideSecondaryAction
             ? nothing
             : html`
+                ${this.thirdAction ? this.thirdAction : nothing}
                 <span @click=${this._handleSecondaryAction}>
                   ${this.secondaryAction
                     ? this.secondaryAction

@@ -4,8 +4,11 @@ import { property } from 'lit/decorators.js';
 import editorcss from '../css/editor.css';
 import { fireEvent, HomeAssistant } from '../ha';
 import { VehicleStatusCardConfig } from '../types/config';
+import { Create } from '../utils';
 import { EditorPreviewTypes } from '../utils/editor/types';
+import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
+import { VehicleStatusCard } from '../vehicle-status-card';
 import { VehicleStatusCardEditor } from './editor';
 import { PREVIEW_CONFIG_TYPES } from './editor-const';
 
@@ -37,10 +40,14 @@ export class BaseEditor extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _store!: Store;
 
+  @property() _domHelper = selectTree;
   constructor() {
     super();
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+  }
   set hass(hass: HomeAssistant) {
     this._hass = hass;
     if (this._store && !this._store.hass) {
@@ -51,8 +58,12 @@ export class BaseEditor extends LitElement {
     return this._hass;
   }
 
-  protected get _editor(): VehicleStatusCardEditor | undefined {
-    return this._store._editor;
+  protected get _cardInPreview(): VehicleStatusCard | undefined {
+    return this._store?._editor?._vscElem;
+  }
+
+  protected get _editor(): VehicleStatusCardEditor {
+    return this._store._editor!;
   }
 
   get _isPreviewGroup(): boolean {
@@ -66,6 +77,11 @@ export class BaseEditor extends LitElement {
     return this._editor?._config as VehicleStatusCardConfig;
   }
 
+  protected _createAlert(message: string): TemplateResult {
+    return Create.HaAlert({
+      message,
+    });
+  }
   /**
    * Create a vsc-editor-form element
    * @param data config data
@@ -90,10 +106,11 @@ export class BaseEditor extends LitElement {
   }
 
   protected _onValueChanged(ev: CustomEvent): void {
-    console.debug('onValueChanged (BaseEditor):', ev);
+    console.debug('onValueChanged (BaseEditor)');
     ev.stopPropagation();
     const { key, subKey, currentConfig } = ev.target as any;
     const value = { ...ev.detail.value };
+    console.debug('onValueChanged:', { key, subKey, value });
     if (!currentConfig || typeof currentConfig !== 'object') return;
     console.debug('incoming:', { key, subKey, currentConfig, value });
 

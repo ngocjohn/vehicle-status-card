@@ -1,3 +1,8 @@
+import { mdiButtonCursor, mdiListBox, mdiPalette, mdiTextShort } from '@mdi/js';
+
+import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
+import { SECTION_KEYS } from '../../types/config/card/layout';
+
 export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
   [
     {
@@ -67,7 +72,16 @@ export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
       },
     },
   ] as const;
-
+export const BUTTON_GRID_LAYOUT_SCHEMA = (swipeDisabled: boolean = false) =>
+  [
+    {
+      title: 'Button Grid Options',
+      type: 'expandable',
+      flatten: true,
+      iconPath: mdiButtonCursor,
+      schema: BUTTON_GRID_SCHEMA(swipeDisabled),
+    },
+  ] as const;
 const HIDE_OPTIONS = ['card_name', 'indicators', 'range_info', 'images', 'mini_map', 'buttons'] as const;
 
 export const HIDE_SCHEMA = [
@@ -82,6 +96,50 @@ export const HIDE_SCHEMA = [
         type: 'boolean',
         default: false,
       })),
+    ],
+  },
+] as const;
+
+export const HIDE_ELEMENT_SCHEMA = [
+  {
+    name: 'hide_elements',
+    label: 'Hide Elements',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        multiple: true,
+        options: HIDE_OPTIONS.map((option) => ({
+          value: option,
+          label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
+        })),
+      },
+    },
+  },
+] as const;
+
+export const SECTION_ORDER_SCHEMA = [
+  {
+    title: 'Sections Order',
+    type: 'expandable',
+    flatten: true,
+    iconPath: mdiListBox,
+    schema: [
+      {
+        name: 'section_order',
+        label: 'Choose section to display',
+        helper: 'Drag to reorder the sections as you want them to appear on the card.',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            multiple: true,
+            reorder: true,
+            options: SECTION_KEYS.map((option) => ({
+              value: option,
+              label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
+            })),
+          },
+        },
+      },
     ],
   },
 ] as const;
@@ -126,3 +184,73 @@ export const NAME_SCHEMA = [
     type: 'string',
   },
 ] as const;
+
+export const CARD_NAME_SCHEMA = (data: any) =>
+  [
+    {
+      title: 'Card Name',
+      type: 'expandable',
+      flatten: true,
+      iconPath: mdiTextShort,
+      schema: [
+        {
+          name: 'name',
+          label: 'Card Name',
+          type: 'string',
+          required: false,
+          default: '',
+        },
+        {
+          name: 'hide_card_name',
+          label: 'Hide Card Name',
+          type: 'boolean',
+          default: false,
+          disabled: !data?.name || data?.name === '',
+        },
+      ] as const,
+    },
+  ] as const;
+
+export const CARD_THEME_SCHEMA = [
+  {
+    title: 'Theme Options',
+    type: 'expandable',
+    flatten: true,
+    iconPath: mdiPalette,
+    schema: [
+      {
+        name: 'theme_config',
+        flatten: false,
+        type: 'grid',
+        schema: [
+          {
+            name: 'theme',
+            label: 'Theme',
+            default: 'default',
+            required: false,
+            selector: { theme: { include_default: true } },
+          },
+          {
+            name: 'mode',
+            label: 'Theme Mode',
+            required: false,
+            default: 'auto',
+            selector: {
+              select: {
+                mode: 'dropdown',
+                options: THEME_MODE_OPTIONS.map((mode) => ({
+                  value: mode,
+                  label: capitalizeFirstLetter(mode),
+                })),
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+] as const;
+
+export const LAYOUT_COMBINED_SCHEMA = () => {
+  return [...SECTION_ORDER_SCHEMA, ...CARD_THEME_SCHEMA] as const;
+};
