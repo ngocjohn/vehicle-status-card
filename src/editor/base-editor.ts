@@ -138,37 +138,65 @@ export class BaseEditor extends LitElement {
     if (!this._store) return;
     const config = this._store.config;
     if (!config || typeof config !== 'object') return;
-    let hasPreviewProperties = false;
 
+    const newConfig = { ...config };
+
+    let hasChanges = false;
     // Check if any of the preview config types exist in the config
     PREVIEW_CONFIG_TYPES.forEach((key) => {
-      if (config.hasOwnProperty(key) && (config[key] === null || config[key] !== null)) {
-        hasPreviewProperties = true;
+      if (newConfig.hasOwnProperty(key)) {
+        delete newConfig[key];
+        hasChanges = true;
+        console.debug(`Removed preview config key: ${key}`);
       }
     });
 
-    if (hasPreviewProperties) {
-      PREVIEW_CONFIG_TYPES.forEach((key) => {
-        if (config.hasOwnProperty(key)) {
-          delete config[key];
-          console.debug(`Removed preview config key: ${key}`);
-        }
-      });
-
+    if (hasChanges) {
       // Update config
-      fireEvent(this, 'config-changed', { config });
+      fireEvent(this, 'config-changed', { config: newConfig });
       return;
     } else {
       return;
     }
   }
+  // public _cleanConfig(): void {
+  //   if (!this._store) return;
+  //   const config = this._store.config;
+  //   if (!config || typeof config !== 'object') return;
+  //   let hasPreviewProperties = false;
+
+  //   // Check if any of the preview config types exist in the config
+  //   PREVIEW_CONFIG_TYPES.forEach((key) => {
+  //     if (config.hasOwnProperty(key) && (config[key] === null || config[key] !== null)) {
+  //       hasPreviewProperties = true;
+  //     }
+  //   });
+
+  //   if (hasPreviewProperties) {
+  //     PREVIEW_CONFIG_TYPES.forEach((key) => {
+  //       if (config.hasOwnProperty(key)) {
+  //         delete config[key];
+  //         console.debug(`Removed preview config key: ${key}`);
+  //       }
+  //     });
+
+  //     // Update config
+  //     fireEvent(this, 'config-changed', { config });
+  //     return;
+  //   } else {
+  //     return;
+  //   }
+  // }
 
   public _dispatchEditorEvent(type: EditorCommandTypes, data?: any): void {
     console.debug(`sent editor command: ${type}`, data);
     fireEvent(this, 'editor-event', { type, data });
   }
 
-  public _setPreviewConfig = <T extends keyof EditorPreviewTypes>(previewKey: T, value: EditorPreviewTypes[T]) => {
+  public _setPreviewConfig = <T extends keyof EditorPreviewTypes>(
+    previewKey: T,
+    value: EditorPreviewTypes[T]['config']
+  ) => {
     if (!this._store) return;
     const config = this._store.config;
     if (!config || typeof config !== 'object') return;

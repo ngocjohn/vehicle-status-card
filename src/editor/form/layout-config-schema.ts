@@ -3,11 +3,12 @@ import { mdiButtonCursor, mdiListBox, mdiPalette, mdiTextShort } from '@mdi/js';
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
 import { SECTION_KEYS } from '../../types/config/card/layout';
 
-export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
+export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false, name: string = '') =>
   [
     {
       name: '',
       type: 'grid',
+      flatten: name === '' ? true : false,
       column_min_width: '140px',
       schema: [
         {
@@ -72,50 +73,17 @@ export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
       },
     },
   ] as const;
-export const BUTTON_GRID_LAYOUT_SCHEMA = (swipeDisabled: boolean = false) =>
+export const BUTTON_GRID_LAYOUT_SCHEMA = (swipeDisabled: boolean = false, name: string = '') =>
   [
     {
+      name,
       title: 'Button Grid Options',
       type: 'expandable',
-      flatten: true,
+      flatten: name === '' ? true : false,
       iconPath: mdiButtonCursor,
-      schema: BUTTON_GRID_SCHEMA(swipeDisabled),
+      schema: BUTTON_GRID_SCHEMA(swipeDisabled, name),
     },
   ] as const;
-const HIDE_OPTIONS = ['card_name', 'indicators', 'range_info', 'images', 'mini_map', 'buttons'] as const;
-
-export const HIDE_SCHEMA = [
-  {
-    name: '',
-    type: 'grid',
-    column_min_width: '140px',
-    schema: [
-      ...HIDE_OPTIONS.map((option) => ({
-        label: option.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-        name: option,
-        type: 'boolean',
-        default: false,
-      })),
-    ],
-  },
-] as const;
-
-export const HIDE_ELEMENT_SCHEMA = [
-  {
-    name: 'hide_elements',
-    label: 'Hide Elements',
-    selector: {
-      select: {
-        mode: 'dropdown',
-        multiple: true,
-        options: HIDE_OPTIONS.map((option) => ({
-          value: option,
-          label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
-        })),
-      },
-    },
-  },
-] as const;
 
 export const SECTION_ORDER_SCHEMA = [
   {
@@ -145,45 +113,6 @@ export const SECTION_ORDER_SCHEMA = [
 ] as const;
 
 const THEME_MODE_OPTIONS = ['auto', 'light', 'dark'] as const;
-
-export const THEME_CONFIG_SCHEMA = [
-  {
-    name: '',
-    type: 'grid',
-    schema: [
-      {
-        name: 'theme',
-        label: 'Theme',
-        default: 'default',
-        required: false,
-        selector: { theme: { include_default: true } },
-      },
-      {
-        name: 'mode',
-        label: 'Theme Mode',
-        default: 'auto',
-        selector: {
-          select: {
-            mode: 'dropdown',
-            options: THEME_MODE_OPTIONS.map((mode) => ({
-              value: mode,
-              label: mode.charAt(0).toUpperCase() + mode.slice(1),
-            })),
-          },
-        },
-      },
-    ],
-  },
-] as const;
-
-export const NAME_SCHEMA = [
-  {
-    name: 'name',
-    label: 'Card Name',
-    required: false,
-    type: 'string',
-  },
-] as const;
 
 export const CARD_NAME_SCHEMA = (data: any) =>
   [
@@ -248,6 +177,38 @@ export const CARD_THEME_SCHEMA = [
         ],
       },
     ],
+  },
+] as const;
+
+export const CARD_NAME_COMBINED_SCHEMA = (schemasForms: any[]) => {
+  return [
+    {
+      title: 'Card Name',
+      type: 'expandable',
+      iconPath: mdiTextShort,
+      schema: [...schemasForms] as const,
+    },
+  ];
+};
+
+export const HIDE_CARD_NAME_SCHEMA = (disabled: boolean = false) => {
+  return [
+    {
+      name: 'hide_card_name',
+      label: 'Hide Card Name',
+      type: 'boolean',
+      default: false,
+      disabled,
+    },
+  ] as const;
+};
+
+export const NAME_SCHEMA = [
+  {
+    name: 'name',
+    label: 'Card Name',
+    required: false,
+    type: 'string',
   },
 ] as const;
 

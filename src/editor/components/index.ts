@@ -11,6 +11,7 @@ export * from './panel-indicator-group';
 export * from './panel-indicator-rows';
 export * from './panel-yaml-editor';
 export * from './panel-button-list';
+export * from './panel-layout-editor';
 
 // TAB components
 export * from '../../utils/editor/vic-tab';

@@ -222,4 +222,5 @@ export enum PANEL {
   TIRE_CONFIG = `${PANEL_PREFIX}tire-config`,
   YAML_EDITOR = `${PANEL_PREFIX}yaml-editor`,
   BUTTON_LIST = `${PANEL_PREFIX}button-list`,
+  LAYOUT_EDITOR = `${PANEL_PREFIX}layout-editor`,
 }
