@@ -4,7 +4,6 @@ import { html, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import memoizeOne from 'memoize-one';
 
-import { HomeAssistant } from '../ha';
 import { computeCssColor } from '../ha/common/color/compute-color';
 import { computeDomain } from '../ha/common/entity/compute_domain';
 import { computeStateDomain } from '../ha/common/entity/compute_state_domain';
@@ -39,7 +38,6 @@ export const DEFAULT_SHOW_CONFIG = {
 };
 
 export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) protected _config!: T;
 
   @state() protected _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};

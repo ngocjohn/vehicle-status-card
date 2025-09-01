@@ -83,10 +83,17 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       ...newConfig,
       ...migrateLegacySectionOrder(newConfig),
     };
+
     if (this._config.button_card && this._config.button_card.length) {
       this._buttonCardConfigItem = this._config.button_card as ButtonCardConfig[];
     }
-    this._createStore();
+    if (this._store) {
+      console.debug('Updating store config');
+      this._store._config = this._config;
+    } else {
+      console.debug('Store not found, will create on first update');
+      this._createStore();
+    }
   }
 
   set hass(hass: HomeAssistant) {
@@ -117,6 +124,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   @state() _connected = false;
 
+  @state() private _singleMapMode: boolean = false;
   @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
 
   @state() _buttonCardConfigItem!: ButtonCardConfig[]; // Button card configuration items
@@ -295,7 +303,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
           (row: IndicatorRowConfig) => row.row_items.map((item) => item.type).join('-'),
           (row: IndicatorRowConfig, index: number) => {
             return html`
-              <vsc-indicator-row data-index=${index} .hass=${this._hass} .rowConfig=${row}></vsc-indicator-row>
+              <vsc-indicator-row
+                data-index=${index}
+                .hass=${this._hass}
+                .rowConfig=${row}
+                ._store=${this._store}
+              ></vsc-indicator-row>
             `;
           }
         )}
@@ -344,7 +357,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
     return html`
       <div id=${SECTION.IMAGES}>
-        <vsc-images-slide .hass=${this._hass} .config=${this._config}> </vsc-images-slide>
+        <vsc-images-slide .hass=${this._hass} .config=${this._config} ._store=${this._store}> </vsc-images-slide>
       </div>
     `;
   }
@@ -369,6 +382,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
           .mapConfig=${miniMapConfig}
           .mapData=${mapData}
           .isDark=${this.isDark}
+          ._store=${this._store}
         ></vsc-mini-map>
       </div>
     `;
@@ -379,7 +393,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (this._isSectionHidden(SECTION.RANGE_INFO) || !range_info) return html``;
     const rangeLayout = this._config.layout_config?.range_info_config?.layout || 'column';
     return html`<div id="${SECTION.RANGE_INFO}">
-      <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info} ?row=${rangeLayout === 'row'}></vsc-range-info>
+      <vsc-range-info
+        .hass=${this._hass}
+        .rangeConfig=${range_info}
+        ._store=${this._store}
+        ._store=${this._store}
+        ?row=${rangeLayout === 'row'}
+      ></vsc-range-info>
     </div>`;
   }
 
@@ -452,11 +472,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
-    return html` <vsc-default-card .hass=${this._hass} ._data=${data}></vsc-default-card> `;
+    return html` <vsc-default-card .hass=${this._hass} ._data=${data} ._store=${this._store}></vsc-default-card> `;
   }
 
   private _renderTireCard(tireCardConfig: TireEntity): TemplateResult {
-    return html` <vsc-tire-card .hass=${this._hass} .tireConfig=${tireCardConfig}> </vsc-tire-card> `;
+    return html`
+      <vsc-tire-card .hass=${this._hass} .tireConfig=${tireCardConfig} ._store=${this._store}> </vsc-tire-card>
+    `;
   }
 
   private _showWarning(warning: string): TemplateResult {
@@ -726,7 +748,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _createStore() {
     if (!this._store) {
-      // console.log('Creating store for VehicleStatusCard', this._config.name);
+      console.log('Creating store for VehicleStatusCard', this._config.name);
       this._store = new Store(this, this._config);
       super.requestUpdate();
     }

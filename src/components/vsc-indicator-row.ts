@@ -7,7 +7,6 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { VscIndicatorItem } from '../components/shared/vsc-indicator-item';
 import { COMPONENT } from '../constants/const';
-import { HomeAssistant } from '../ha';
 import { getGroupEntities, GroupEntity, isGroupEntity } from '../ha/data/group';
 import {
   IndicatorRowGroupConfig,
@@ -30,7 +29,6 @@ const ALIGNS: Record<Alignment, string> = {
 
 @customElement(COMPONENT.INDICATOR_ROW)
 export class VscIndicatorRow extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private rowConfig!: IndicatorRowConfig;
   @property({ type: Boolean, reflect: true }) private active = false;
 
@@ -186,6 +184,7 @@ export class VscIndicatorRow extends BaseElement {
                 <vsc-indicator-item
                   .hass=${this.hass}
                   ._config=${item}
+                  ._store=${this._store}
                   .active=${active}
                   ?disabled=${disabled}
                   data-index=${index}
@@ -230,7 +229,9 @@ export class VscIndicatorRow extends BaseElement {
     });
 
     return html`${subItems.map((item) => {
-      return html` <vsc-indicator-item .hass=${this.hass} ._config=${item}></vsc-indicator-item> `;
+      return html`
+        <vsc-indicator-item .hass=${this.hass} ._config=${item} ._store=${this._store}></vsc-indicator-item>
+      `;
     })}`;
   }
 

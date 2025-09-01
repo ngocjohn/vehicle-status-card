@@ -5,7 +5,6 @@ import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } 
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { COMPONENT } from '../constants/const';
-import { HomeAssistant } from '../ha';
 import { Address, MapData, MiniMapConfig } from '../types/config';
 import { BaseElement } from '../utils/base-element';
 import { _getMapAddress } from '../utils/lovelace/create-map-card';
@@ -16,7 +15,6 @@ export const DEFAULT_ZOOM = 14;
 
 @customElement(COMPONENT.MINI_MAP)
 export class MiniMapBox extends BaseElement {
-  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) mapConfig!: MiniMapConfig;
   @property({ attribute: 'is-dark', type: Boolean, reflect: true })
   isDark!: boolean;

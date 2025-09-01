@@ -3,7 +3,7 @@ import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { COMPONENT } from '../../constants/const';
-import { computeStateName, fireEvent, HomeAssistant } from '../../ha';
+import { computeStateName, fireEvent } from '../../ha';
 import { computeCssColor } from '../../ha/common/color/compute-color';
 import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
 import { handleAction } from '../../ha/panels/common/handle-actions';
@@ -22,7 +22,6 @@ declare global {
 
 @customElement(COMPONENT.INDICATOR_ITEM)
 export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig | IndicatorRowGroupConfig> {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public active = false;
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
 
