@@ -1,4 +1,5 @@
 import { LovelaceViewConfig, ShowViewConfig, LovelaceCardConfig, ActionConfig } from '../../ha';
+import { ButtonCardConfig } from '../../types/config/card/button';
 import { LovelaceRowItemConfig } from '../../types/config/card/row-indicators';
 
 export interface YamlChangedEvent extends Event {
@@ -83,14 +84,27 @@ export interface SubElementEditorConfig {
 export interface EditSubElementEvent {
   subElementConfig: SubElementEditorConfig;
 }
-
+export interface RowGroupPreviewConfig {
+  row_index?: number | null;
+  group_index?: number | null;
+  entity_index?: number | null;
+}
 export interface EditorPreviewTypes {
   row_group_preview: {
-    row_index?: number | null;
-    group_index?: number | null;
-    entity_index?: number | null;
-  } | null;
+    config: RowGroupPreviewConfig | null;
+  };
+  default_card_preview: {
+    config: ButtonCardConfig['default_card'];
+  };
+  card_preview: {
+    config: ButtonCardConfig['custom_card'];
+  };
+  tire_preview: {
+    config: ButtonCardConfig['tire_card'];
+  };
 }
+
+export type EditorPreviewType = keyof EditorPreviewTypes;
 
 export const enum EDITOR_PREVIEW {
   ROW_GROUP = 'row_group_preview',
