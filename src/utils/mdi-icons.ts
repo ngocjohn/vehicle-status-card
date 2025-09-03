@@ -18,6 +18,7 @@ import {
   mdiGrid,
   mdiEye,
   mdiCog,
+  mdiCursorMove,
 } from '@mdi/js';
 
 export const ICON = {
@@ -40,4 +41,5 @@ export const ICON = {
   GRID: mdiGrid,
   EYE: mdiEye,
   COG: mdiCog,
+  CURSOR_MOVE: mdiCursorMove,
 };
