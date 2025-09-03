@@ -3,12 +3,12 @@ import { html, TemplateResult, CSSResultGroup, nothing, css } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { fireEvent } from '../../ha';
-import { getGroupEntities, GroupEntity } from '../../ha/data/group';
-import { IndicatorBaseItemConfig, IndicatorRowGroupConfig } from '../../types/config/card/row-indicators';
-import { Create } from '../../utils';
-import { ICON } from '../../utils/mdi-icons';
-import { BaseEditor } from '../base-editor';
+import { fireEvent } from '../../../ha';
+import { getGroupEntities, GroupEntity } from '../../../ha/data/group';
+import { IndicatorBaseItemConfig, IndicatorRowGroupConfig } from '../../../types/config/card/row-indicators';
+import { Create } from '../../../utils';
+import { ICON } from '../../../utils/mdi-icons';
+import { BaseEditor } from '../../base-editor';
 
 declare global {
   interface HASSDomEvents {
@@ -242,5 +242,11 @@ export class PanelRowSubGroupItem extends BaseEditor {
         }
       `,
     ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'panel-row-sub-group-item': PanelRowSubGroupItem;
   }
 }

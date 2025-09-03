@@ -1,20 +1,20 @@
 import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import { computeStateName, fireEvent } from '../../ha';
-import { isGroupEntity } from '../../ha/data/group';
+import { computeStateName, fireEvent } from '../../../ha';
+import { isGroupEntity } from '../../../ha/data/group';
 import {
   IndicatorBaseItemConfig,
   IndicatorEntityConfig,
   IndicatorRowGroupConfig,
   IndicatorRowItem,
-} from '../../types/config/card/row-indicators';
-import { Create } from '../../utils';
-import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
-import { ICON } from '../../utils/mdi-icons';
-import '../shared/vsc-editor-form';
+} from '../../../types/config/card/row-indicators';
+import { Create } from '../../../utils';
+import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
+import { ICON } from '../../../utils/mdi-icons';
+import '../../shared/vsc-editor-form';
 import './panel-row-sub-group-item';
-import { BaseEditor } from '../base-editor';
+import { BaseEditor } from '../../base-editor';
 import {
   SUBGROUP_ENTITY_SCHEMA,
   ROW_ENTITY_SCHEMA,
@@ -22,7 +22,7 @@ import {
   ROW_INTERACTON_BASE_SCHEMA,
   ROW_ITEM_CONTENT_SCHEMA,
   ROW_ITEM_TEMPLATE_SCHEMA,
-} from '../form';
+} from '../../form';
 
 declare global {
   interface HASSDomEvents {

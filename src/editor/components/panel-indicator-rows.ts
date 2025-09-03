@@ -3,7 +3,7 @@ import { html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import './panel-row-item';
+import './indicators/panel-row-item';
 import '../shared/badge-editor-item';
 import '../../utils/editor/sub-editor-header';
 import { computeStateName, fireEvent } from '../../ha';
@@ -15,7 +15,7 @@ import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
 import { ICON } from '../../utils/mdi-icons';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
-import { PanelIndicatorItem } from './panel-row-item';
+import { PanelIndicatorItem } from './indicators/panel-row-item';
 
 type RowAction = 'edit' | 'delete' | 'add' | 'peek';
 @customElement(PANEL.INDICATOR_ROWS)
@@ -101,18 +101,18 @@ export class PanelIndicatorRows extends BaseEditor {
                   leftChevron: true,
                 };
                 const slotIcons = html` <div class="item-actions" slot="icons">
-                  ${actions.map(
-                    (action) => html`
+                  ${actions.map((action) => {
+                    const { label, path, callback } = action;
+                    return html`
                       <ha-svg-icon
-                        .label=${action.label}
-                        .path=${action.path}
-                        @click=${(ev: Event) => {
-                          ev.stopPropagation();
-                          this._handleRowAction(action.callback as RowAction, index);
-                        }}
+                        .label=${label}
+                        .path=${path}
+                        .action=${callback}
+                        .index=${index}
+                        @click=${this._handleRowAction}
                       ></ha-svg-icon>
-                    `
-                  )}
+                    `;
+                  })}
                   <ha-svg-icon class="handle" .path=${ICON.DRAG}></ha-svg-icon>
                 </div>`;
                 const content = this._renderRowListItem(row.row_items, index);
@@ -273,7 +273,19 @@ export class PanelIndicatorRows extends BaseEditor {
     this._configChanged(newRows);
   }
 
-  private _handleRowAction(action: RowAction, index?: number): void {
+  private _handleRowAction(ev: Event | RowAction): void {
+    console.debug('Handle row action:', ev, typeof ev);
+    let action: RowAction;
+    let index: number | null = null;
+    if (ev instanceof Event) {
+      ev.stopPropagation();
+      const target = ev.currentTarget as any;
+      action = target.action;
+      index = target.index !== undefined ? Number(target.index) : null;
+    } else {
+      action = ev;
+    }
+
     let currentRows = [...(this._rows || [])];
     const handleAction = async () => {
       switch (action) {

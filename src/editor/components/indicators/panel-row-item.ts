@@ -2,19 +2,19 @@ import { html, TemplateResult, CSSResultGroup, PropertyValues, css } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { computeStateName, fireEvent, getEntitiesByDomain } from '../../ha';
-import '../../utils/editor/alignment-selector';
+import { computeStateName, fireEvent, getEntitiesByDomain } from '../../../ha';
+import '../../../utils/editor/alignment-selector';
 import './panel-row-sub-item';
-import '../shared/vsc-editor-form';
-import { IndicatorEntityConfig, IndicatorRowConfig, IndicatorRowItem } from '../../types/config/card/row-indicators';
-import { Create, showConfirmDialog } from '../../utils';
-import { ensureRowItemConfig } from '../../utils/editor/migrate-indicator';
-import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
-import { EDITOR_PREVIEW } from '../../utils/editor/types';
-import { ICON } from '../../utils/mdi-icons';
-import { BaseEditor } from '../base-editor';
-import { PANEL } from '../editor-const';
-import { ROW_ICON_SIZE_NO_WRAP_SCHEMA } from '../form/indicator-row-schema';
+import '../../shared/vsc-editor-form';
+import { IndicatorEntityConfig, IndicatorRowConfig, IndicatorRowItem } from '../../../types/config/card/row-indicators';
+import { Create, showConfirmDialog } from '../../../utils';
+import { ensureRowItemConfig } from '../../../utils/editor/migrate-indicator';
+import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
+import { EDITOR_PREVIEW } from '../../../utils/editor/types';
+import { ICON } from '../../../utils/mdi-icons';
+import { BaseEditor } from '../../base-editor';
+import { PANEL } from '../../editor-const';
+import { ROW_ICON_SIZE_NO_WRAP_SCHEMA } from '../../form/indicator-row-schema';
 import { PanelRowSubItem } from './panel-row-sub-item';
 
 declare global {
