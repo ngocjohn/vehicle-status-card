@@ -1,3 +1,4 @@
+import { HomeAssistantStylesManager } from 'home-assistant-styles-manager';
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -41,8 +42,15 @@ export class BaseEditor extends LitElement {
   @property({ attribute: false }) protected _store!: Store;
 
   @property() _domHelper = selectTree;
+
+  protected _stylesManager: HomeAssistantStylesManager;
+
   constructor() {
     super();
+    this._stylesManager = new HomeAssistantStylesManager({
+      prefix: 'vsc-editor',
+      throwWarnings: true,
+    });
   }
 
   connectedCallback(): void {
@@ -159,34 +167,6 @@ export class BaseEditor extends LitElement {
       return;
     }
   }
-  // public _cleanConfig(): void {
-  //   if (!this._store) return;
-  //   const config = this._store.config;
-  //   if (!config || typeof config !== 'object') return;
-  //   let hasPreviewProperties = false;
-
-  //   // Check if any of the preview config types exist in the config
-  //   PREVIEW_CONFIG_TYPES.forEach((key) => {
-  //     if (config.hasOwnProperty(key) && (config[key] === null || config[key] !== null)) {
-  //       hasPreviewProperties = true;
-  //     }
-  //   });
-
-  //   if (hasPreviewProperties) {
-  //     PREVIEW_CONFIG_TYPES.forEach((key) => {
-  //       if (config.hasOwnProperty(key)) {
-  //         delete config[key];
-  //         console.debug(`Removed preview config key: ${key}`);
-  //       }
-  //     });
-
-  //     // Update config
-  //     fireEvent(this, 'config-changed', { config });
-  //     return;
-  //   } else {
-  //     return;
-  //   }
-  // }
 
   public _dispatchEditorEvent(type: EditorCommandTypes, data?: any): void {
     console.debug(`sent editor command: ${type}`, data);

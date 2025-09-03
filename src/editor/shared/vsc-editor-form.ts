@@ -1,4 +1,4 @@
-import { css, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
@@ -31,7 +31,7 @@ export class VscEditorForm extends BaseEditor {
   }
 
   private computeLabel = (schema: any): string | undefined => {
-    if (schema.name === 'entity') {
+    if (schema.name === 'entity' && !schema.context?.group_entity) {
       return undefined;
     }
     const label = schema.label || schema.name || schema.title || '';
@@ -42,7 +42,7 @@ export class VscEditorForm extends BaseEditor {
     return schema.helper || undefined;
   };
 
-  static get styles() {
+  static get styles(): CSSResultGroup {
     return css`
       #haForm {
         display: flex;
@@ -55,19 +55,17 @@ export class VscEditorForm extends BaseEditor {
   }
   private _changeStyle(): void {
     if (this._haForm.shadowRoot) {
-      const root = this._haForm.shadowRoot.querySelector('div.root');
-      if (root) {
-        const rootChildren = root.children;
-        for (let i = 0; i < rootChildren.length; i++) {
-          const isLast = i === rootChildren.length - 1;
-          if (isLast) {
-            break;
-          }
-          // add margin bottom to all child except the last one
-          const child = rootChildren[i] as HTMLElement;
-          child.style.marginBottom = '8px';
+      const addedStyles = css`
+        .root > :not([own-margin]):not(:last-child) {
+          margin-bottom: 8px !important;
+          margin-block-end: 8px !important;
         }
-      }
+        .root > ha-form-grid {
+          gap: 14px 8px !important;
+        }
+      `;
+      // Apply the styles to the shadow root of ha-form
+      this._stylesManager.addStyle([addedStyles.toString()], this._haForm.shadowRoot);
     }
   }
 }
