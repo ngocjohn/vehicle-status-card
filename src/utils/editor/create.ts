@@ -7,6 +7,7 @@ import { ICON } from '../mdi-icons';
 export const ExpansionPanel = ({
   content,
   options,
+  slotIcons,
 }: {
   content: TemplateResult[] | TemplateResult;
   options: {
@@ -16,7 +17,9 @@ export const ExpansionPanel = ({
     secondary?: string;
     outlined?: boolean;
     noCollapse?: boolean;
+    leftChevron?: boolean;
   };
+  slotIcons?: TemplateResult | TemplateResult[];
 }): TemplateResult => {
   return html`
     <ha-expansion-panel
@@ -25,10 +28,11 @@ export const ExpansionPanel = ({
       .noCollapse=${options?.noCollapse || false}
       .header=${options.header}
       .secondary=${options?.secondary || ''}
-      .leftChevron=${false}
+      .leftChevron=${options?.leftChevron || false}
       style="border-radius: 6px;  --ha-card-border-radius: 6px;"
     >
       ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
+      ${slotIcons ? slotIcons : nothing}
       <div class="card-config" style="margin-block: var(--vic-gutter-gap);">${content}</div>
     </ha-expansion-panel>
   `;
