@@ -4,7 +4,9 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { fireEvent } from '../../ha';
-import { IndicatorBaseItemConfig } from '../../types/config/card/row-indicators';
+import { getGroupEntities, GroupEntity } from '../../ha/data/group';
+import { IndicatorBaseItemConfig, IndicatorRowGroupConfig } from '../../types/config/card/row-indicators';
+import { Create } from '../../utils';
 import { ICON } from '../../utils/mdi-icons';
 import { BaseEditor } from '../base-editor';
 
@@ -18,15 +20,20 @@ declare global {
 @customElement('panel-row-sub-group-item')
 export class PanelRowSubGroupItem extends BaseEditor {
   @property({ attribute: false }) public _groupItems?: IndicatorBaseItemConfig[];
+  @property({ attribute: false }) public _groupEntityObj?: GroupEntity;
+  @property({ attribute: false }) public _groupConfig!: IndicatorRowGroupConfig;
 
   @query('.add-container', true) private _addContainer?: HTMLDivElement;
   @query('#entity-picker') private _entityPicker?: any;
 
+  @state() private _excludeEntities: string[] = [];
   @state() private _addMode = false;
-
   private _opened = false;
 
   protected render(): TemplateResult {
+    const config = this._groupConfig;
+    const ignoreGroupMenbers = !!config.ignore_group_members;
+
     const actionMap = [
       { title: 'Edit', icon: mdiPencil, action: (index: number) => this._editItem(index) },
       {
@@ -36,6 +43,7 @@ export class PanelRowSubGroupItem extends BaseEditor {
       },
     ];
     return html`
+      ${ignoreGroupMenbers ? nothing : this._renderAutoAddedMembers()}
       <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
         <div class="indicator-list">
           ${repeat(
@@ -77,6 +85,36 @@ export class PanelRowSubGroupItem extends BaseEditor {
         ${this._renderPicker()}
       </div>
     `;
+  }
+
+  private _renderAutoAddedMembers(): TemplateResult | typeof nothing {
+    if (!this._groupEntityObj) {
+      return nothing;
+    }
+
+    const members = getGroupEntities(this._groupEntityObj);
+    if (!members || members.length === 0) {
+      return nothing;
+    }
+    this._excludeEntities = [...(this._groupConfig.exclude_entities || [])];
+    // show members
+    const content = html`
+      <ha-chip-set>
+        ${members.map(
+          (ent) =>
+            html`<ha-assist-chip
+              .label=${ent}
+              .selected=${!this._excludeEntities.includes(ent)}
+              @click=${() => {
+                console.log('click', ent);
+              }}
+              >${ent}</ha-assist-chip
+            >`
+        )}
+      </ha-chip-set>
+    `;
+
+    return Create.SectionPanel([{ title: 'Auto-added members from entity', content, expansion: true }]);
   }
 
   private _renderPicker() {
@@ -159,25 +197,6 @@ export class PanelRowSubGroupItem extends BaseEditor {
 
     fireEvent(this, 'group-items-changed', { items: newEntities });
   }
-  // private async _addItem(event: CustomEvent): Promise<void> {
-  //   event.stopPropagation();
-  //   const value = event.detail.value;
-  //   if (value === undefined || value === null || value === '') {
-  //     return;
-  //   }
-  //   const newEntityConfig = {
-  //     entity: value as string,
-  //     show_state: true,
-  //     show_name: true,
-  //     show_icon: true,
-  //     tap_action: { action: 'more-info' },
-  //   } as IndicatorBaseItemConfig;
-
-  //   const newEntities = this._groupItems!.concat([newEntityConfig]);
-  //   (event.target as any).value = '';
-
-  //   fireEvent(this, 'group-items-changed', { items: newEntities });
-  // }
 
   private _deleteItem(index: number): void {
     const newEntities = this._groupItems!.concat();
@@ -205,6 +224,8 @@ export class PanelRowSubGroupItem extends BaseEditor {
       css`
         .indicator-list {
           border: none;
+          padding: 0;
+          margin-block: 1em;
         }
         .add-container {
           position: relative;

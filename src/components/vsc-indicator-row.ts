@@ -47,7 +47,7 @@ export class VscIndicatorRow extends BaseElement {
   connectedCallback(): void {
     super.connectedCallback();
     if (this.rowConfig.no_wrap && this._rowEl) {
-      console.debug('Binding row events with connectedCallback');
+      // console.debug('Binding row events with connectedCallback');
       this._bindRowEvents();
       this._updateArrows();
     }
@@ -148,8 +148,10 @@ export class VscIndicatorRow extends BaseElement {
     const rowItems = this._rowItems || [];
     const active = this.active;
     const noWrap = this.rowConfig.no_wrap;
+    const iconSize = this.rowConfig?.icon_size ?? undefined;
     const alignment = this.rowConfig.alignment || 'default';
     const align = ALIGNS[alignment as Alignment] || ALIGNS.default;
+
     const groupActive = this._selectedGroupId !== null;
     const showLeftArrow = this._showLeftArrow;
     const showRightArrow = this._showRightArrow;
@@ -161,6 +163,9 @@ export class VscIndicatorRow extends BaseElement {
       style['--vsc-arrow-fade'] = overlayFade;
     } else {
       style['justifyContent'] = align;
+    }
+    if (iconSize) {
+      style['--badge-icon-size'] = `${iconSize}px`;
     }
 
     // Set CSS variable for fade overlay, if showing either arrow left or right

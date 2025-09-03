@@ -2,6 +2,7 @@ import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } fr
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { computeStateName, fireEvent } from '../../ha';
+import { isGroupEntity } from '../../ha/data/group';
 import {
   IndicatorBaseItemConfig,
   IndicatorEntityConfig,
@@ -11,16 +12,16 @@ import {
 import { Create } from '../../utils';
 import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
 import { ICON } from '../../utils/mdi-icons';
-import { BaseEditor } from '../base-editor';
 import '../shared/vsc-editor-form';
 import './panel-row-sub-group-item';
+import { BaseEditor } from '../base-editor';
 import {
-  ROW_ENTITY_ITEM_SCHEMA,
+  SUBGROUP_ENTITY_SCHEMA,
   ROW_ENTITY_SCHEMA,
   ROW_GROUP_BASE_SCHEMA,
   ROW_INTERACTON_BASE_SCHEMA,
   ROW_ITEM_CONTENT_SCHEMA,
-  ROW_ITEM_TEMPATE_SCHEMA,
+  ROW_ITEM_TEMPLATE_SCHEMA,
 } from '../form';
 
 declare global {
@@ -40,8 +41,10 @@ export class PanelRowSubItem extends BaseEditor {
   @state() private _computedStateContent?: string[];
 
   @state() private _groupItemIndex: number | null = null;
+
   @query('ha-expansion-panel') private _expansionPanel?: any;
   @query('#groupbaseform') private _groupBaseFormDiv?: HTMLDivElement;
+  @state() private _previevDone = false;
 
   constructor() {
     super();
@@ -85,12 +88,19 @@ export class PanelRowSubItem extends BaseEditor {
     return this._subItemConfig?.type === 'group' || false;
   }
 
-  private _onExpandChanged(event: CustomEvent): void {
+  private _onExpandChanged(event: any): void {
     event.stopPropagation();
     if (!this.isGroup) return;
-    const expanded = event.detail.expanded as boolean;
+    const target = event.target;
+    const expanded = target.expanded;
+    if (expanded === undefined) return;
     console.debug('Group expansion changed:', expanded);
     this._groupBaseFormDiv?.classList.toggle('rolled-up', expanded);
+    if (expanded && !this._previevDone && !this._isPreviewGroup) {
+      // if this is the first time expanding, then do preview
+      this._previevDone = true;
+      this._handleGroupPreviewToggle();
+    }
   }
 
   protected render(): TemplateResult {
@@ -132,21 +142,18 @@ export class PanelRowSubItem extends BaseEditor {
       entity: config.entity,
     } as Pick<IndicatorEntityConfig, 'entity'>;
 
-    const baseForm = this._createHaForm(config, ROW_ITEM_CONTENT_SCHEMA(config.entity || ''));
+    const baseForm = this._createHaForm(config, ROW_ITEM_CONTENT_SCHEMA());
     const stateContentForm = this._renderContentPicker();
-
+    const templateWraper = this._createHaForm(config, ROW_ITEM_TEMPLATE_SCHEMA);
     const baseContentWraper = Create.ExpansionPanel({
-      options: { header: 'Content', icon: 'mdi:text-short' },
-      content: html`${baseForm} ${stateContentForm}`,
+      options: { header: 'Appearance & Content', icon: 'mdi:text-short' },
+      content: html`${baseForm} ${stateContentForm} ${templateWraper}`,
     });
 
     const entityForm = this._createHaForm(ENTITY_DATA, ROW_ENTITY_SCHEMA);
     const actionForm = this._createHaForm(config, ROW_INTERACTON_BASE_SCHEMA);
-    const templateWraper = this._createHaForm(config, ROW_ITEM_TEMPATE_SCHEMA);
 
-    const entityForms = html`<div class="card-config">
-      ${entityForm} ${baseContentWraper} ${templateWraper} ${actionForm}
-    </div>`;
+    const entityForms = html`<div class="card-config">${entityForm} ${baseContentWraper} ${actionForm}</div>`;
 
     const yamlEditor = this._createYamlEditor(config, 'sub-item');
 
@@ -161,14 +168,20 @@ export class PanelRowSubItem extends BaseEditor {
     const config = this._subItemConfig as IndicatorRowGroupConfig;
     const groupItems = config.items;
     const DATA_BASE = { ...config };
-    const groupBaseForm = this._createHaForm(DATA_BASE, ROW_GROUP_BASE_SCHEMA(config.entity));
+    const isGroupEntityType = !!(config.entity && isGroupEntity(this._hass.states[config.entity]));
+    const groupBaseForm = this._createHaForm(DATA_BASE, ROW_GROUP_BASE_SCHEMA(config.entity, isGroupEntityType));
+
+    const groupEntity = isGroupEntityType ? this._hass.states[config.entity!] : undefined;
 
     const itemsWrapper = Create.ExpansionPanel({
-      options: { header: 'Group Items', icon: 'mdi:format-list-bulleted' },
+      options: { header: 'Items', icon: 'mdi:format-list-bulleted' },
       content: html` <panel-row-sub-group-item
+        id="group-items-editor"
         ._hass=${this._hass}
         ._store=${this._store}
         ._groupItems=${groupItems}
+        ._groupEntityObj=${groupEntity}
+        ._groupConfig=${config}
         .configType=${'group-items'}
         @edit-group-item=${this._editGroupItem}
         @group-items-changed=${this._groupItemsChanged}
@@ -192,7 +205,7 @@ export class PanelRowSubItem extends BaseEditor {
     const subItemData = {
       ...groupItems![this._groupItemIndex!],
     } as IndicatorBaseItemConfig;
-    const schema = [...ROW_ENTITY_ITEM_SCHEMA, ...ROW_INTERACTON_BASE_SCHEMA];
+    const schema = [...SUBGROUP_ENTITY_SCHEMA, ...ROW_INTERACTON_BASE_SCHEMA];
     const yamlEditor = this._createYamlEditor(subItemData, 'group-item');
 
     const groupName = this._subItemConfig.name || `Group ${this.itemIndex + 1}`;
@@ -218,18 +231,7 @@ export class PanelRowSubItem extends BaseEditor {
         @secondary-action=${this._toggleYaml}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
       ></sub-editor-header>
-      ${!this._yamlActive
-        ? html`
-            <vsc-editor-form
-              ._hass=${this._hass}
-              ._store=${this._store}
-              .data=${subItemData}
-              .schema=${schema}
-              .configType=${'sub-group-item'}
-              @value-changed=${this._handleSubGroupItemChanged}
-            ></vsc-editor-form>
-          `
-        : yamlEditor}
+      ${!this._yamlActive ? this._createVscForm(subItemData, schema, 'sub-group-item') : yamlEditor}
     `;
   }
 
@@ -260,6 +262,20 @@ export class PanelRowSubItem extends BaseEditor {
     this._rowChanged(newConfig);
   }
 
+  // Sub-group item value changed handler
+  protected _onValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    console.debug('onValueChanged (SubItem)');
+    const { key, subKey } = ev.target as any;
+    console.debug('Key:', key, 'SubKey:', subKey);
+    switch (key) {
+      case 'sub-group-item':
+        this._handleSubGroupItemChanged(ev);
+        break;
+      default:
+        console.warn('Unhandled value-changed event for key:', key);
+    }
+  }
   private _handleSubGroupItemChanged(event: CustomEvent): void {
     event.stopPropagation();
     if (!this._subItemConfig || this._groupItemIndex === null) return;
@@ -527,7 +543,7 @@ export class PanelRowSubItem extends BaseEditor {
         #groupbaseform {
           transition: all 0.3s ease-in-out;
           overflow: hidden;
-          max-height: 1000px;
+          max-height: fit-content;
         }
         #groupbaseform.rolled-up {
           max-height: 0;

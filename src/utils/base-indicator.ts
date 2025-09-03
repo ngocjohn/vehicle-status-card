@@ -17,6 +17,7 @@ import {
   IndicatorEntityConfig,
   IndicatorRowGroupConfig,
   IndicatorBaseItemConfig,
+  IndicatorCommon,
 } from '../types/config/card/row-indicators';
 import '../components/shared/vsc-state-display';
 import { toCommon, isEntity } from '../types/config/card/row-indicators';
@@ -26,7 +27,7 @@ import { BaseElement } from './base-element';
 const cameraUrlWithWidthHeight = (base_url: string, width: number, height: number) =>
   `${base_url}&width=${width}&height=${height}`;
 
-const TEMPLATE_KEYS = ['state_template', 'visibility'] as const;
+const TEMPLATE_KEYS = ['state_template', 'visibility', 'icon_template', 'color_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 export const DEFAULT_SHOW_CONFIG = {
@@ -126,6 +127,10 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     return this._config.type;
   }
 
+  protected get commonConfig(): IndicatorCommon {
+    return toCommon(this._config);
+  }
+
   protected get _stateObj(): HassEntity | undefined {
     const config = toCommon(this._config);
     if (!config || !this.hass || !config.entity) {
@@ -158,6 +163,12 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     const stateObj = this.hass.states[entity];
     if (!stateObj) return false;
     return isGroupEntity(stateObj);
+  }
+
+  protected get _hasGroupEntity(): boolean {
+    const config = this._config as IndicatorRowGroupConfig;
+    const entity = config?.entity;
+    return config.type === 'group' && !!entity;
   }
 
   protected get _hasAction(): boolean {
@@ -226,15 +237,9 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     return stateColorCss(stateObj);
   });
 
-  protected _renderIcon(stateObj: HassEntity, icon?: string): TemplateResult {
-    return html`
-      <ha-state-icon
-        slot="icon"
-        .hass=${this.hass}
-        .stateObj=${stateObj}
-        .icon=${icon || this._config.icon}
-      ></ha-state-icon>
-    `;
+  protected _renderIcon(stateObj: HassEntity): TemplateResult {
+    const icon = this._getTemplateResult('icon_template') ?? this._config.icon;
+    return html` <ha-state-icon slot="icon" .hass=${this.hass} .stateObj=${stateObj} .icon=${icon}></ha-state-icon> `;
   }
 
   protected _renderStateDisplay(): TemplateResult {
