@@ -1,16 +1,19 @@
+import { HomeAssistantStylesManager } from 'home-assistant-styles-manager';
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import editorcss from '../css/editor.css';
-import { fireEvent, HomeAssistant } from '../ha';
+import { computeEntityName, fireEvent, HomeAssistant } from '../ha';
 import { VehicleStatusCardConfig } from '../types/config';
 import { Create } from '../utils';
+import * as MIGRATE from '../utils/editor/migrate-indicator';
 import { EditorPreviewTypes } from '../utils/editor/types';
 import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import { VehicleStatusCardEditor } from './editor';
 import { PREVIEW_CONFIG_TYPES } from './editor-const';
+import './shared/vsc-yaml-editor';
 
 const EditorCommandTypes = [
   'show-button',
@@ -41,8 +44,18 @@ export class BaseEditor extends LitElement {
   @property({ attribute: false }) protected _store!: Store;
 
   @property() _domHelper = selectTree;
+
+  @property({ attribute: false }) _migrate = MIGRATE;
+  @property() _computeEntityName = computeEntityName;
+
+  protected _stylesManager: HomeAssistantStylesManager;
+
   constructor() {
     super();
+    this._stylesManager = new HomeAssistantStylesManager({
+      prefix: 'vsc-editor',
+      throwWarnings: true,
+    });
   }
 
   connectedCallback(): void {
@@ -134,29 +147,66 @@ export class BaseEditor extends LitElement {
     return;
   }
 
+  /**
+   * Create YAML editor
+   * @param configValue current config value
+   * @param key attribute key
+   * @param subKey sub key for nested objects
+   * @param extraAction show close editor button, default false
+   */
+  protected _createVscYamlEditor(
+    configValue: any,
+    key?: string | number,
+    subKey?: string | number,
+    extraAction = true
+  ): TemplateResult {
+    return html`
+      <vsc-yaml-editor
+        .hass=${this._hass}
+        .configDefault=${configValue}
+        .key=${key}
+        .subKey=${subKey}
+        .extraAction=${extraAction}
+        @yaml-value-changed=${this._onYamlChanged}
+        @yaml-editor-closed=${this._onYamlEditorClosed}
+      ></vsc-yaml-editor>
+    `;
+  }
+
+  protected _onYamlChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    console.debug('YAML changed (BaseEditor)');
+    const { key, subKey } = ev.target as any;
+    const value = ev.detail;
+    console.debug('YAML changed:', { key, subKey, value });
+  }
+  protected _onYamlEditorClosed(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { key, subKey } = ev.target as any;
+    console.debug('YAML editor closed:', { key, subKey });
+    fireEvent(this, 'yaml-editor-closed', undefined);
+  }
+
   public _cleanConfig(): void {
     if (!this._store) return;
     const config = this._store.config;
     if (!config || typeof config !== 'object') return;
-    let hasPreviewProperties = false;
 
+    const newConfig = { ...config };
+
+    let hasChanges = false;
     // Check if any of the preview config types exist in the config
     PREVIEW_CONFIG_TYPES.forEach((key) => {
-      if (config.hasOwnProperty(key) && (config[key] === null || config[key] !== null)) {
-        hasPreviewProperties = true;
+      if (newConfig.hasOwnProperty(key)) {
+        delete newConfig[key];
+        hasChanges = true;
+        console.debug(`Removed preview config key: ${key}`);
       }
     });
 
-    if (hasPreviewProperties) {
-      PREVIEW_CONFIG_TYPES.forEach((key) => {
-        if (config.hasOwnProperty(key)) {
-          delete config[key];
-          console.debug(`Removed preview config key: ${key}`);
-        }
-      });
-
+    if (hasChanges) {
       // Update config
-      fireEvent(this, 'config-changed', { config });
+      fireEvent(this, 'config-changed', { config: newConfig });
       return;
     } else {
       return;
@@ -168,7 +218,10 @@ export class BaseEditor extends LitElement {
     fireEvent(this, 'editor-event', { type, data });
   }
 
-  public _setPreviewConfig = <T extends keyof EditorPreviewTypes>(previewKey: T, value: EditorPreviewTypes[T]) => {
+  public _setPreviewConfig = <T extends keyof EditorPreviewTypes>(
+    previewKey: T,
+    value: EditorPreviewTypes[T]['config']
+  ) => {
     if (!this._store) return;
     const config = this._store.config;
     if (!config || typeof config !== 'object') return;

@@ -3,7 +3,7 @@ import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { COMPONENT } from '../../constants/const';
-import { computeStateName, fireEvent, HomeAssistant } from '../../ha';
+import { computeEntityName, computeStateName, fireEvent } from '../../ha';
 import { computeCssColor } from '../../ha/common/color/compute-color';
 import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
 import { handleAction } from '../../ha/panels/common/handle-actions';
@@ -22,7 +22,6 @@ declare global {
 
 @customElement(COMPONENT.INDICATOR_ITEM)
 export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig | IndicatorRowGroupConfig> {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public active = false;
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
 
@@ -38,11 +37,16 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
       return nothing;
     }
     const isGroup = this.type === 'group';
-    const isGroupEntity = this._isGroupEntity;
+    const hasGroupEntity = this._hasGroupEntity;
+    const commonConfig = this.commonConfig;
     const stateObj = this._stateObj;
+    if (!isGroup && !stateObj) {
+      return this._renderNoEntity();
+    }
+    let style: Record<string, string> = {};
 
     let color: string | undefined;
-    if (isGroup && !isGroupEntity) {
+    if (isGroup && !hasGroupEntity) {
       const configColor = (this._config as IndicatorRowGroupConfig).color;
       if (configColor) {
         color = computeCssColor(configColor);
@@ -50,14 +54,20 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     } else {
       color = this._computeStateColor(stateObj!, this._config.color);
     }
+    color = this._getTemplateResult('color_template') ?? color;
 
-    const style = {
-      '--badge-color': color,
-    };
+    if (color) {
+      style['--badge-color'] = color;
+    }
+
+    const iconSize = this._config?.icon_size ?? undefined;
+    if (iconSize) {
+      style['--badge-icon-size'] = `${iconSize}px`;
+    }
 
     const stateDisplay = this._renderStateDisplay();
 
-    const name = this._config.name || (stateObj ? computeStateName(stateObj) : '');
+    const name = this._config.name || computeEntityName(stateObj!, this.hass) || computeStateName(stateObj!);
 
     const showConfig = this._showConfig;
     const showName = showConfig.show_name;
@@ -72,15 +82,15 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     const content = showState ? stateDisplay : showName ? name : undefined;
 
     const hasAction = this._hasAction;
-
     return html`
       <vsc-indicator-badge
         .type=${this.type}
-        .label=${!isGroup || isGroupEntity ? label : undefined}
+        .label=${label}
         .hidden=${!Boolean(this._visibility)}
         .active=${this.active}
         .buttonRole=${Boolean(hasAction)}
         .iconOnly=${!isGroup && !content}
+        .reverse=${commonConfig.column_reverse ?? false}
         @action=${this._handleAction}
         .actionHandler=${actionHandler({
           hasHold: true,
@@ -91,9 +101,9 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
         ${showIcon !== false
           ? imageUrl
             ? html`<img slot="icon" src=${imageUrl} />`
-            : this._renderIcon(stateObj!, this._config.icon)
+            : this._renderIcon(stateObj!)
           : nothing}
-        ${isGroup && !isGroupEntity ? this._config.name : content}
+        ${content}
       </vsc-indicator-badge>
     `;
   }
@@ -142,6 +152,9 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
         border: 1px solid var(--accent-color);
         border-radius: var(--ha-badge-border-radius, calc(var(--ha-badge-size, 36px) / 2));
         background-color: rgba(var(--rgb-primary-color), 0.1);
+      }
+      vsc-indicator-badge.error {
+        --badge-color: var(--red-color);
       }
     `;
   }

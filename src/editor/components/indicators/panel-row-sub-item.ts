@@ -1,27 +1,26 @@
 import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import { computeStateName, fireEvent } from '../../ha';
+import { computeStateName, fireEvent } from '../../../ha';
+import { isGroupEntity } from '../../../ha/data/group';
 import {
   IndicatorBaseItemConfig,
   IndicatorEntityConfig,
   IndicatorRowGroupConfig,
   IndicatorRowItem,
-} from '../../types/config/card/row-indicators';
-import { Create } from '../../utils';
-import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
-import { ICON } from '../../utils/mdi-icons';
-import { BaseEditor } from '../base-editor';
-import '../shared/vsc-editor-form';
+} from '../../../types/config/card/row-indicators';
+import { Create } from '../../../utils';
+import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
+import { ICON } from '../../../utils/mdi-icons';
+import '../../shared/vsc-editor-form';
 import './panel-row-sub-group-item';
+import { BaseEditor } from '../../base-editor';
 import {
-  ROW_ENTITY_ITEM_SCHEMA,
-  ROW_ENTITY_SCHEMA,
+  SUBGROUP_ENTITY_SCHEMA,
   ROW_GROUP_BASE_SCHEMA,
   ROW_INTERACTON_BASE_SCHEMA,
-  ROW_ITEM_CONTENT_SCHEMA,
-  ROW_ITEM_TEMPATE_SCHEMA,
-} from '../form';
+  ENTITY_SINGLE_TYPE_SCHEMA,
+} from '../../form';
 
 declare global {
   interface HASSDomEvents {
@@ -37,11 +36,12 @@ export class PanelRowSubItem extends BaseEditor {
   @property({ type: Number, attribute: 'item-index', reflect: true }) itemIndex!: number;
 
   @state() private _yamlActive = false;
-  @state() private _computedStateContent?: string[];
 
   @state() private _groupItemIndex: number | null = null;
+
   @query('ha-expansion-panel') private _expansionPanel?: any;
   @query('#groupbaseform') private _groupBaseFormDiv?: HTMLDivElement;
+  @state() private _previevDone = false;
 
   constructor() {
     super();
@@ -51,15 +51,6 @@ export class PanelRowSubItem extends BaseEditor {
     super.firstUpdated(_changedProperties);
     if (this._expansionPanel && this.isGroup && this._groupItemIndex === null) {
       this._expansionPanel.addEventListener('expanded-changed', this._onExpandChanged.bind(this));
-    }
-  }
-
-  protected willUpdate(changedProperties: PropertyValues): void {
-    super.willUpdate(changedProperties);
-    if (changedProperties.has('_subItemConfig')) {
-      const sc = this._subItemConfig?.state_content;
-      const include = !!this._subItemConfig?.include_state_template;
-      this._computedStateContent = this._computeStateContent(sc, include);
     }
   }
 
@@ -85,12 +76,19 @@ export class PanelRowSubItem extends BaseEditor {
     return this._subItemConfig?.type === 'group' || false;
   }
 
-  private _onExpandChanged(event: CustomEvent): void {
+  private _onExpandChanged(event: any): void {
     event.stopPropagation();
     if (!this.isGroup) return;
-    const expanded = event.detail.expanded as boolean;
+    const target = event.target;
+    const expanded = target.expanded;
+    if (expanded === undefined) return;
     console.debug('Group expansion changed:', expanded);
     this._groupBaseFormDiv?.classList.toggle('rolled-up', expanded);
+    if (expanded && !this._previevDone && !this._isPreviewGroup) {
+      // if this is the first time expanding, then do preview
+      this._previevDone = true;
+      this._handleGroupPreviewToggle();
+    }
   }
 
   protected render(): TemplateResult {
@@ -127,30 +125,12 @@ export class PanelRowSubItem extends BaseEditor {
     const config = {
       ...this._subItemConfig,
     } as IndicatorEntityConfig;
-
-    const ENTITY_DATA = {
-      entity: config.entity,
-    } as Pick<IndicatorEntityConfig, 'entity'>;
-
-    const baseForm = this._createHaForm(config, ROW_ITEM_CONTENT_SCHEMA(config.entity || ''));
-    const stateContentForm = this._renderContentPicker();
-
-    const baseContentWraper = Create.ExpansionPanel({
-      options: { header: 'Content', icon: 'mdi:text-short' },
-      content: html`${baseForm} ${stateContentForm}`,
-    });
-
-    const entityForm = this._createHaForm(ENTITY_DATA, ROW_ENTITY_SCHEMA);
-    const actionForm = this._createHaForm(config, ROW_INTERACTON_BASE_SCHEMA);
-    const templateWraper = this._createHaForm(config, ROW_ITEM_TEMPATE_SCHEMA);
-
-    const entityForms = html`<div class="card-config">
-      ${entityForm} ${baseContentWraper} ${templateWraper} ${actionForm}
-    </div>`;
-
-    const yamlEditor = this._createYamlEditor(config, 'sub-item');
-
-    return html` ${this._yamlActive ? yamlEditor : entityForms} `;
+    if (this._yamlActive) {
+      return this._createVscYamlEditor(config, 'sub-item');
+    }
+    const SINGLE_ENTITY_SCHEMA = ENTITY_SINGLE_TYPE_SCHEMA(config);
+    // const entityForm = this._createHaForm(config, SINGLE_ENTITY_SCHEMA);
+    return this._createHaForm(config, SINGLE_ENTITY_SCHEMA);
   }
 
   private _renderGroupEditor(): TemplateResult {
@@ -161,14 +141,20 @@ export class PanelRowSubItem extends BaseEditor {
     const config = this._subItemConfig as IndicatorRowGroupConfig;
     const groupItems = config.items;
     const DATA_BASE = { ...config };
-    const groupBaseForm = this._createHaForm(DATA_BASE, ROW_GROUP_BASE_SCHEMA(config.entity));
+    const isGroupEntityType = !!(config.entity && isGroupEntity(this._hass.states[config.entity]));
+    const groupBaseForm = this._createHaForm(DATA_BASE, ROW_GROUP_BASE_SCHEMA(config.entity, isGroupEntityType));
+
+    const groupEntity = isGroupEntityType ? this._hass.states[config.entity!] : undefined;
 
     const itemsWrapper = Create.ExpansionPanel({
-      options: { header: 'Group Items', icon: 'mdi:format-list-bulleted' },
+      options: { header: 'Items', icon: 'mdi:format-list-bulleted' },
       content: html` <panel-row-sub-group-item
+        id="group-items-editor"
         ._hass=${this._hass}
         ._store=${this._store}
         ._groupItems=${groupItems}
+        ._groupEntityObj=${groupEntity}
+        ._groupConfig=${config}
         .configType=${'group-items'}
         @edit-group-item=${this._editGroupItem}
         @group-items-changed=${this._groupItemsChanged}
@@ -192,7 +178,7 @@ export class PanelRowSubItem extends BaseEditor {
     const subItemData = {
       ...groupItems![this._groupItemIndex!],
     } as IndicatorBaseItemConfig;
-    const schema = [...ROW_ENTITY_ITEM_SCHEMA, ...ROW_INTERACTON_BASE_SCHEMA];
+    const schema = [...SUBGROUP_ENTITY_SCHEMA(subItemData), ...ROW_INTERACTON_BASE_SCHEMA];
     const yamlEditor = this._createYamlEditor(subItemData, 'group-item');
 
     const groupName = this._subItemConfig.name || `Group ${this.itemIndex + 1}`;
@@ -218,18 +204,7 @@ export class PanelRowSubItem extends BaseEditor {
         @secondary-action=${this._toggleYaml}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
       ></sub-editor-header>
-      ${!this._yamlActive
-        ? html`
-            <vsc-editor-form
-              ._hass=${this._hass}
-              ._store=${this._store}
-              .data=${subItemData}
-              .schema=${schema}
-              .configType=${'sub-group-item'}
-              @value-changed=${this._handleSubGroupItemChanged}
-            ></vsc-editor-form>
-          `
-        : yamlEditor}
+      ${!this._yamlActive ? this._createVscForm(subItemData, schema, 'sub-group-item') : yamlEditor}
     `;
   }
 
@@ -260,6 +235,25 @@ export class PanelRowSubItem extends BaseEditor {
     this._rowChanged(newConfig);
   }
 
+  // Sub-group item value changed handler
+  protected _onValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    console.debug('onValueChanged (SubItem)');
+    const { key, subKey } = ev.target as any;
+    const value = { ...ev.detail.value };
+    console.debug('Key:', key, 'SubKey:', subKey, 'Value:', value);
+    switch (key) {
+      case 'sub-group-item':
+        this._handleSubGroupItemChanged(ev);
+        break;
+      case 'test-templates':
+        // templates changed
+        console.debug('Template values changed:', value);
+        break;
+      default:
+        console.warn('Unhandled value-changed event for key:', key);
+    }
+  }
   private _handleSubGroupItemChanged(event: CustomEvent): void {
     event.stopPropagation();
     if (!this._subItemConfig || this._groupItemIndex === null) return;
@@ -287,15 +281,9 @@ export class PanelRowSubItem extends BaseEditor {
     dataConfig: IndicatorRowItem | IndicatorBaseItemConfig,
     configKey?: string | number
   ): TemplateResult {
-    return html`
-      <panel-yaml-editor
-        .hass=${this._hass}
-        .configDefault=${dataConfig}
-        .configKey=${configKey}
-        @yaml-config-changed=${this._handleYamlConfigChanged}
-      ></panel-yaml-editor>
-    `;
+    return this._createVscYamlEditor(dataConfig, configKey);
   }
+
   private _createHaForm(data: any, schema: any, configType?: string | number): TemplateResult {
     return html`
       <vsc-editor-form
@@ -345,7 +333,7 @@ export class PanelRowSubItem extends BaseEditor {
       console.warn('Entity cannot be empty for entity type row item');
       return;
     }
-
+    // console.debug('Merging incoming changes into current config:', { currentConfig, incoming });
     let changed = this.mergeWithCleanup(currentConfig, incoming);
 
     // ---- normalize state_content against include_state_template ----
@@ -373,12 +361,12 @@ export class PanelRowSubItem extends BaseEditor {
     this._rowChanged(currentConfig); // willUpdate can recompute any derived @state
   }
 
-  private _handleYamlConfigChanged(ev: CustomEvent): void {
+  protected _onYamlChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const { isValid, value, key } = ev.detail;
-    if (!isValid) {
-      return;
-    }
+    console.debug('YAML changed (Row Sub Item)');
+    const { key, subKey } = ev.target as any;
+    const value = ev.detail;
+    console.debug('YAML changed:', { key, subKey, value });
     const configKey = key as string | number | undefined;
     console.debug('detail', ev.detail, configKey);
     if (configKey === 'group-item' && this._groupItemIndex !== null) {
@@ -397,61 +385,6 @@ export class PanelRowSubItem extends BaseEditor {
       this._rowChanged(newConfig);
       return;
     }
-  }
-
-  private _renderContentPicker(): TemplateResult {
-    const config = this._subItemConfig ?? {};
-    const selector = { ui_state_content: { entity_id: config.entity, allow_name: false } };
-
-    return html`
-      <ha-selector
-        .hass=${this._hass}
-        .entityId=${config.entity}
-        .value=${this._computedStateContent as string[] | undefined}
-        .label=${'State Content'}
-        .required=${false}
-        .allowName=${false}
-        .selector=${selector}
-        @value-changed=${this._handleStateContentChanged}
-      ></ha-selector>
-    `;
-  }
-  private _handleStateContentChanged(event: CustomEvent): void {
-    event.stopPropagation();
-    if (!this._subItemConfig || !this._hass) return;
-
-    const raw = event.detail?.value as string | string[] | undefined;
-    const normalized = this._dedupeKeepFirst(this._toArray(raw).filter(Boolean));
-
-    const hadTemplate = !!this._subItemConfig.include_state_template;
-    const hasTemplateNow = normalized.includes('state_template');
-
-    const next = { ...this._subItemConfig } as IndicatorEntityConfig;
-    let changed = false;
-
-    // Update state_content
-    const prevArray = Array.isArray(this._subItemConfig.state_content)
-      ? (this._subItemConfig.state_content as string[])
-      : this._toArray(this._subItemConfig.state_content as string | undefined);
-
-    if (normalized.length === 0) {
-      if ('state_content' in next) {
-        delete next.state_content;
-        changed = true;
-      }
-    } else if (!this._arrayEq(prevArray, normalized)) {
-      next.state_content = normalized;
-      changed = true;
-    }
-
-    // Sync the include_state_template flag with current selection
-    if (hadTemplate !== hasTemplateNow) {
-      next.include_state_template = hasTemplateNow;
-      changed = true;
-    }
-
-    if (!changed) return;
-    this._rowChanged(next); // willUpdate recomputes _computedStateContent
   }
 
   // helpers
@@ -489,11 +422,6 @@ export class PanelRowSubItem extends BaseEditor {
     return base;
   }
 
-  private _computeStateContent(raw: string | string[] | undefined, include: boolean): string[] | undefined {
-    const next = this._applyTemplateFlagStable(this._toArray(raw), include);
-    return next.length ? next : undefined;
-  }
-
   private _arrayEq(a?: string[], b?: string[]): boolean {
     if (!a || !b) return a === b;
     if (a.length !== b.length) return false;
@@ -527,7 +455,7 @@ export class PanelRowSubItem extends BaseEditor {
         #groupbaseform {
           transition: all 0.3s ease-in-out;
           overflow: hidden;
-          max-height: 1000px;
+          max-height: fit-content;
         }
         #groupbaseform.rolled-up {
           max-height: 0;

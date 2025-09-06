@@ -4,7 +4,7 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import editorcss from '../../css/editor.css';
 import { fireEvent, HomeAssistant } from '../../ha';
-import './panel-yaml-editor';
+import '../shared/panel-yaml-editor';
 import { IndicatorItemConfig } from '../../types/config';
 import { ICON } from '../../utils';
 import { VehicleStatusCardEditor } from '../editor';

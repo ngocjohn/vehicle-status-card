@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 // swiper
 import Swiper from 'swiper';
@@ -8,14 +8,11 @@ import swipercss from 'swiper/swiper-bundle.css';
 
 import './shared/vsc-button-single';
 import { COMPONENT } from '../constants/const';
-import { HomeAssistant } from '../ha';
 import { ButtonCardConfig } from '../types/config';
 import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {
-  @property({ attribute: false }) private hass!: HomeAssistant;
-
   @state() private buttons!: ButtonCardConfig[];
   @state() private useSwiper!: boolean;
 

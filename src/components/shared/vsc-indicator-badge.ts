@@ -18,6 +18,7 @@ export class VscIndicatorBadge extends LitElement {
   @property({ type: Boolean, reflect: true }) public active = false;
   @property({ type: Boolean, attribute: 'icon-only' }) iconOnly = false;
   @property({ type: Boolean, reflect: true }) public hidden = false;
+  @property({ type: Boolean, reflect: true }) public reverse = false;
 
   @query('.badge', true) _badge!: HTMLElement;
 
@@ -36,7 +37,7 @@ export class VscIndicatorBadge extends LitElement {
         <slot name="icon"></slot>
         ${this.iconOnly
           ? nothing
-          : html`<span class="info">
+          : html`<span class="info" ?reverse=${this.reverse}>
               ${label ? html`<span class="label">${label}</span>` : nothing}
               <span class="content"><slot></slot></span>
             </span>`}
@@ -70,7 +71,7 @@ export class VscIndicatorBadge extends LitElement {
         gap: 8px;
         height: var(--ha-badge-size, 36px);
         min-width: var(--ha-badge-size, 36px);
-        padding: 0px 8px;
+        padding: 0px 12px;
         box-sizing: border-box;
         width: auto;
         border-radius: var(--ha-card-border-radius, 12px);
@@ -107,6 +108,9 @@ export class VscIndicatorBadge extends LitElement {
         padding-inline-start: initial;
         text-align: center;
       }
+      .info[reverse] {
+        flex-direction: column-reverse;
+      }
       .label {
         font-size: calc(10px * 1);
         font-style: normal;
@@ -142,7 +146,7 @@ export class VscIndicatorBadge extends LitElement {
       }
 
       ::slotted([slot='icon']) {
-        --mdc-icon-size: 18px;
+        --mdc-icon-size: var(--badge-icon-size, 21px);
         color: var(--badge-color);
         line-height: 0;
         margin-left: -4px;
@@ -152,8 +156,8 @@ export class VscIndicatorBadge extends LitElement {
       }
 
       ::slotted(img[slot='icon']) {
-        width: 18px;
-        height: 18px;
+        width: var(--badge-icon-size, 21px);
+        height: var(--badge-icon-size, 21px);
         border-radius: 50%;
         object-fit: cover;
         overflow: hidden;

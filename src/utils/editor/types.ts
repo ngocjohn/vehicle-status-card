@@ -1,5 +1,42 @@
 import { LovelaceViewConfig, ShowViewConfig, LovelaceCardConfig, ActionConfig } from '../../ha';
+import { ButtonCardConfig } from '../../types/config/card/button';
 import { LovelaceRowItemConfig } from '../../types/config/card/row-indicators';
+
+declare global {
+  var __DEV__: boolean;
+  var __DEMO__: boolean;
+  var __BUILD__: 'latest' | 'es5';
+  var __VERSION__: string;
+  var __STATIC_PATH__: string;
+  var __BACKWARDS_COMPAT__: boolean;
+  var __SUPERVISOR__: boolean;
+
+  interface Window {
+    // Custom panel entry point url
+    customPanelJS: string;
+    ShadyCSS: {
+      nativeCss: boolean;
+      nativeShadow: boolean;
+      prepareTemplate(templateElement, elementName, elementExtension);
+      styleElement(element);
+      styleSubtree(element, overrideProperties);
+      styleDocument(overrideProperties);
+      getComputedStyleValue(element, propertyName);
+    };
+  }
+  // for fire event
+  interface HASSDomEvents {
+    'value-changed': {
+      value: unknown;
+    };
+    change: undefined;
+  }
+
+  // For loading workers in webpack
+  interface ImportMeta {
+    url: string;
+  }
+}
 
 export interface YamlChangedEvent extends Event {
   detail: {
@@ -83,14 +120,27 @@ export interface SubElementEditorConfig {
 export interface EditSubElementEvent {
   subElementConfig: SubElementEditorConfig;
 }
-
+export interface RowGroupPreviewConfig {
+  row_index?: number | null;
+  group_index?: number | null;
+  entity_index?: number | null;
+}
 export interface EditorPreviewTypes {
   row_group_preview: {
-    row_index?: number | null;
-    group_index?: number | null;
-    entity_index?: number | null;
-  } | null;
+    config: RowGroupPreviewConfig | null;
+  };
+  default_card_preview: {
+    config: ButtonCardConfig['default_card'];
+  };
+  card_preview: {
+    config: ButtonCardConfig['custom_card'];
+  };
+  tire_preview: {
+    config: ButtonCardConfig['tire_card'];
+  };
 }
+
+export type EditorPreviewType = keyof EditorPreviewTypes;
 
 export const enum EDITOR_PREVIEW {
   ROW_GROUP = 'row_group_preview',

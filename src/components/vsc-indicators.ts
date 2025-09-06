@@ -5,7 +5,7 @@ import { repeat } from 'lit/directives/repeat.js';
 
 // components items
 import { COMPONENT } from '../constants/const';
-import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../ha';
 import { VehicleStatusCardConfig } from '../types/config/card/card-config';
 import { IndicatorGroupConfig } from '../types/config/card/indicators';
 import './shared/vsc-indicator-single';
@@ -18,7 +18,6 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement(COMPONENT.INDICATORS)
 export class VscIndicators extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() public _activeGroupIndicator: number | null = null;
@@ -161,6 +160,7 @@ export class VscIndicators extends BaseElement {
           return html`
             <vsc-indicator-group-item
               .hass=${this.hass}
+              ._store=${this._store}
               .item=${item}
               ?hidden=${item.entity === ''}
             ></vsc-indicator-group-item>
@@ -175,7 +175,9 @@ export class VscIndicators extends BaseElement {
     const singleIndicators = this.config.indicators.single;
     if (!singleIndicators || singleIndicators.length === 0) return html``;
     const indicator = singleIndicators.map((indicator) => {
-      return html` <vsc-indicator-single .hass=${this.hass} .indicator=${indicator}></vsc-indicator-single> `;
+      return html`
+        <vsc-indicator-single .hass=${this.hass} .indicator=${indicator} ._store=${this._store}></vsc-indicator-single>
+      `;
     });
 
     return html`${indicator}`;

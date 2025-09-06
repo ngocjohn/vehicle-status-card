@@ -3,7 +3,7 @@ import { debounce } from 'es-toolkit';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
 
-import './panel-yaml-editor';
+import '../shared/panel-yaml-editor';
 
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';

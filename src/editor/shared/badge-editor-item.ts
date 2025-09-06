@@ -1,26 +1,34 @@
-import { LitElement, html, css, TemplateResult, CSSResultGroup } from 'lit';
+import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
 import { fireEvent } from '../../ha';
+import { MenuItemConfig, DefaultActions, ActionType } from '../../utils/editor/create-actions-menu';
 import { ICON } from '../../utils/mdi-icons';
-import { BaseEditor } from '../base-editor';
-import { ACTIONS } from '../editor-const';
 
 declare global {
   interface HASSDomEvents {
-    'button-grid-item-action': { action: string; buttonIndex: number };
+    'badge-action-item': { action: string };
   }
 }
+const OVERLAY_ICON: Record<ActionType | string, string> = {
+  'edit-item': ICON.PENCIL,
+  'show-item': ICON.EYE,
+  'delete-item': ICON.DELETE,
+};
 
-@customElement('panel-button-grid-item')
-export class PanelButtonGridItem extends LitElement {
-  @property({ attribute: false }) public primary!: string | number;
-  @property({ attribute: false }) public secondary?: string | number;
-  @property({ type: Number, attribute: 'button-index' })
-  public buttonIndex!: number;
+@customElement('badge-editor-item')
+export class BadgeEditorItem extends LitElement {
+  @property({ attribute: false }) public _menuAction: MenuItemConfig[] = [];
+  @property({ attribute: false }) public defaultAction: string | ActionType = 'edit-item';
   @property({ type: Boolean, attribute: 'hidden-overlay' })
   public hiddenOverlay = false;
+
+  @property({ type: Boolean, attribute: 'no-edit' })
+  public noEdit = false;
+
+  @property({ type: Boolean, attribute: 'more-only' })
+  public moreOnly = false;
 
   @state()
   public _menuOpened = false;
@@ -75,30 +83,30 @@ export class PanelButtonGridItem extends LitElement {
     document.removeEventListener('click', this._documentClicked);
   };
 
-  private _menuAction = [
-    { title: 'Edit', action: ACTIONS.EDIT_BUTTON, icon: 'mdi:pencil' },
-    { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
-    { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
-    { title: 'Hide on card', action: ACTIONS.HIDE_BUTTON, icon: 'mdi:eye-off' },
-    {
-      title: 'Delete',
-      action: ACTIONS.DELETE_BUTTON,
-      icon: 'mdi:delete',
-      color: 'var(--error-color)',
-    },
-  ];
-
   protected render(): TemplateResult {
     const showOverlay = (this._hover || this._menuOpened || this._focused) && !this.hiddenOverlay;
+    this._menuAction = this._menuAction.length ? this._menuAction : DefaultActions;
 
     return html`
       <div class="button-wrapper"><slot></slot></div>
       <div class="button-overlay ${classMap({ visible: showOverlay })}">
-        <div class="control" @click="${this._handleOverlayClick}">
-          <div class="control-overlay">
-            <ha-svg-icon .path=${ICON.PENCIL}></ha-svg-icon>
-          </div>
-        </div>
+        ${this.moreOnly
+          ? nothing
+          : this.noEdit
+          ? html`
+              <div class="control">
+                <div class="control-overlay">
+                  <ha-svg-icon .path=${ICON.CURSOR_MOVE}></ha-svg-icon>
+                </div>
+              </div>
+            `
+          : html`
+              <div class="control" @click="${this._handleOverlayClick}" .action=${this.defaultAction}>
+                <div class="control-overlay">
+                  <ha-svg-icon .path=${OVERLAY_ICON[this.defaultAction] || ICON.PENCIL}></ha-svg-icon>
+                </div>
+              </div>
+            `}
         <ha-button-menu
           class="more"
           corner="TOP_LEFT"
@@ -141,28 +149,28 @@ export class PanelButtonGridItem extends LitElement {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    this._editCard();
+    this._overlayClick(ev);
   }
 
-  private _editCard(): void {
-    fireEvent(this, 'button-grid-item-action', { action: ACTIONS.EDIT_BUTTON, buttonIndex: this.buttonIndex });
+  private _overlayClick(ev): void {
+    const action = (ev.currentTarget as any).action || this.defaultAction;
+    fireEvent(this, 'badge-action-item', { action });
   }
 
   private _handleAction(ev): void {
     ev.stopPropagation();
-    const action = ev.currentTarget.action;
-    fireEvent(this, 'button-grid-item-action', { action, buttonIndex: this.buttonIndex });
+    const action = (ev.currentTarget as any).action;
+    fireEvent(this, 'badge-action-item', { action });
   }
 
   static get styles(): CSSResultGroup {
     return [
-      BaseEditor.styles,
       css`
         :host {
           display: block;
           position: relative;
           height: 100%;
-          width: 100%;
+          --badge-border-radius: calc(var(--ha-badge-size, 36px) / 2);
         }
 
         .button-overlay {
@@ -183,6 +191,7 @@ export class PanelButtonGridItem extends LitElement {
           position: relative;
           height: 100%;
           z-index: 0;
+          width: inherit;
         }
 
         .control {
@@ -193,7 +202,7 @@ export class PanelButtonGridItem extends LitElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: var(--ha-card-border-radius, 12px);
+          border-radius: var(--badge-border-radius);
           z-index: 0;
         }
 
@@ -203,7 +212,7 @@ export class PanelButtonGridItem extends LitElement {
           opacity: 0.8;
           background-color: var(--primary-background-color);
           border: 1px solid var(--divider-color);
-          border-radius: var(--ha-card-border-radius, 12px);
+          border-radius: var(--badge-border-radius);
           z-index: 0;
           /* center the icon inside */
           display: flex;
@@ -217,7 +226,7 @@ export class PanelButtonGridItem extends LitElement {
           border-radius: 50%;
           padding: 8px;
           background: var(--secondary-background-color);
-          --mdc-icon-size: 20px;
+          --mdc-icon-size: 18px;
         }
         .more {
           position: absolute;
@@ -230,10 +239,16 @@ export class PanelButtonGridItem extends LitElement {
           cursor: pointer;
           border-radius: 50%;
           background: var(--secondary-background-color);
-          --mdc-icon-button-size: 32px;
+          --mdc-icon-button-size: 24px;
           --mdc-icon-size: 20px;
         }
       `,
     ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'badge-editor-item': BadgeEditorItem;
   }
 }

@@ -7,7 +7,6 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { VscIndicatorItem } from '../components/shared/vsc-indicator-item';
 import { COMPONENT } from '../constants/const';
-import { HomeAssistant } from '../ha';
 import { getGroupEntities, GroupEntity, isGroupEntity } from '../ha/data/group';
 import {
   IndicatorRowGroupConfig,
@@ -30,7 +29,6 @@ const ALIGNS: Record<Alignment, string> = {
 
 @customElement(COMPONENT.INDICATOR_ROW)
 export class VscIndicatorRow extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private rowConfig!: IndicatorRowConfig;
   @property({ type: Boolean, reflect: true }) private active = false;
 
@@ -49,7 +47,7 @@ export class VscIndicatorRow extends BaseElement {
   connectedCallback(): void {
     super.connectedCallback();
     if (this.rowConfig.no_wrap && this._rowEl) {
-      console.debug('Binding row events with connectedCallback');
+      // console.debug('Binding row events with connectedCallback');
       this._bindRowEvents();
       this._updateArrows();
     }
@@ -150,8 +148,10 @@ export class VscIndicatorRow extends BaseElement {
     const rowItems = this._rowItems || [];
     const active = this.active;
     const noWrap = this.rowConfig.no_wrap;
+    const iconSize = this.rowConfig?.icon_size ?? undefined;
     const alignment = this.rowConfig.alignment || 'default';
     const align = ALIGNS[alignment as Alignment] || ALIGNS.default;
+
     const groupActive = this._selectedGroupId !== null;
     const showLeftArrow = this._showLeftArrow;
     const showRightArrow = this._showRightArrow;
@@ -163,6 +163,9 @@ export class VscIndicatorRow extends BaseElement {
       style['--vsc-arrow-fade'] = overlayFade;
     } else {
       style['justifyContent'] = align;
+    }
+    if (iconSize) {
+      style['--badge-icon-size'] = `${iconSize}px`;
     }
 
     // Set CSS variable for fade overlay, if showing either arrow left or right
@@ -184,8 +187,9 @@ export class VscIndicatorRow extends BaseElement {
               const disabled = !active && this._selectedGroupId !== null;
               return html`
                 <vsc-indicator-item
-                  .hass=${this.hass}
+                  ._hass=${this._hass}
                   ._config=${item}
+                  ._store=${this._store}
                   .active=${active}
                   ?disabled=${disabled}
                   data-index=${index}
@@ -230,7 +234,9 @@ export class VscIndicatorRow extends BaseElement {
     });
 
     return html`${subItems.map((item) => {
-      return html` <vsc-indicator-item .hass=${this.hass} ._config=${item}></vsc-indicator-item> `;
+      return html`
+        <vsc-indicator-item .hass=${this.hass} ._config=${item} ._store=${this._store}></vsc-indicator-item>
+      `;
     })}`;
   }
 

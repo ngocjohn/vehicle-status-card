@@ -1,18 +1,21 @@
+import { capitalize } from 'es-toolkit';
 import { html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { fireEvent } from '../../ha';
-import './panel-row-item';
+import './indicators/panel-row-item';
+import '../shared/badge-editor-item';
 import '../../utils/editor/sub-editor-header';
-import { IndicatorRowConfig, VehicleStatusCardConfig } from '../../types/config';
+import { computeStateName, fireEvent } from '../../ha';
+import { IndicatorRowConfig, IndicatorRowItem, toCommon, VehicleStatusCardConfig } from '../../types/config';
 import { Create, showConfirmDialog } from '../../utils';
+import { ActionType } from '../../utils/editor/create-actions-menu';
 import { computeNewRow } from '../../utils/editor/migrate-indicator';
 import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
 import { ICON } from '../../utils/mdi-icons';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
-import { PanelIndicatorItem } from './panel-row-item';
+import { PanelIndicatorItem } from './indicators/panel-row-item';
 
 type RowAction = 'edit' | 'delete' | 'add' | 'peek';
 @customElement(PANEL.INDICATOR_ROWS)
@@ -89,38 +92,64 @@ export class PanelIndicatorRows extends BaseEditor {
       ? html`<span>No indicator rows configured.</span>`
       : html`
           <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
-            <div class="range-info-list">
+            <div class="card-config">
               ${repeat(rows, (row, index) => {
-                const icon = `mdi:numeric-${index + 1}-circle`;
-                const primary = `ROW #${index + 1}`;
-                const secondary = `${row.row_items.length} items`;
-                return html`
-                  <div class="item-config-row" data-index="${index}">
-                    <div class="handle">
-                      <ha-svg-icon .path=${ICON.DRAG}></ha-svg-icon>
-                    </div>
-                    <ha-icon icon=${icon}></ha-icon>
-                    <div class="item-content" @click=${() => (this._selectedRowIndex = index)}>
-                      <div class="primary">${primary}</div>
-                      <div class="secondary">${secondary}</div>
-                    </div>
-                    <div class="item-actions">
-                      ${actions.map(
-                        (action) => html`
-                          <ha-icon-button
-                            .label=${action.label}
-                            .path=${action.path}
-                            @click=${() => this._handleRowAction(action.callback as RowAction, index)}
-                          ></ha-icon-button>
-                        `
-                      )}
-                    </div>
-                  </div>
-                `;
+                const expansionOps = {
+                  icon: `mdi:numeric-${index + 1}-circle`,
+                  header: `ROW #${index + 1}`,
+                  secondary: `${row.row_items.length} items`,
+                  leftChevron: true,
+                };
+                const slotIcons = html` <div class="item-actions" slot="icons">
+                  ${actions.map((action) => {
+                    const { label, path, callback } = action;
+                    return html`
+                      <ha-svg-icon
+                        .label=${label}
+                        .path=${path}
+                        .action=${callback}
+                        .index=${index}
+                        @click=${this._handleRowAction}
+                      ></ha-svg-icon>
+                    `;
+                  })}
+                  <ha-svg-icon class="handle" .path=${ICON.DRAG}></ha-svg-icon>
+                </div>`;
+                const content = this._renderRowListItem(row.row_items, index);
+                return Create.ExpansionPanel({
+                  content,
+                  slotIcons,
+                  options: expansionOps,
+                });
               })}
             </div>
           </ha-sortable>
         `;
+  }
+
+  private _renderRowListItem(items: IndicatorRowItem[], rowIndex: number): TemplateResult {
+    return html` <div class="row-items">
+      ${repeat(items, (item, index) => {
+        const { name, icon, entity } = toCommon(item);
+        const iconSlot = icon ?? `mdi:numeric-${index + 1}-circle`;
+        let content: string | undefined = name;
+        if (!content && entity) {
+          const stateObj = this._hass.states[entity];
+          content = computeStateName(stateObj);
+        }
+        const label = capitalize(item.type);
+        return html` <badge-editor-item
+          .rowIndex=${rowIndex}
+          .itemIndex=${index}
+          @badge-action-item=${this._handleSubRowPeekEdit}
+        >
+          <ha-badge .label=${label} .iconOnly=${!content}>
+            <ha-icon slot="icon" .icon=${iconSlot}></ha-icon>
+            ${content ? html`<span>${capitalize(content)}</span>` : ''}
+          </ha-badge>
+        </badge-editor-item>`;
+      })}
+    </div>`;
   }
 
   private _renderYamlEditor(): TemplateResult {
@@ -153,6 +182,70 @@ export class PanelIndicatorRows extends BaseEditor {
     ></panel-indicator-item>`;
   }
 
+  private _handleSubRowPeekEdit = async (ev: Event) => {
+    ev.stopPropagation();
+    const target = ev.currentTarget as any;
+    const { rowIndex, itemIndex } = target;
+    console.debug('Peek/Edit sub-row item:', rowIndex, itemIndex);
+    const { action } = (ev as CustomEvent).detail;
+    console.debug('Action:', action);
+
+    switch (action as ActionType) {
+      case 'edit-item':
+        this._selectedRowIndex = rowIndex;
+        this.requestUpdate();
+        await this.updateComplete;
+        if (this._rowEditor && this._rowEditor.updateComplete) {
+          await this._rowEditor.updateComplete;
+          this._rowEditor._editIndex = itemIndex;
+          this._rowEditor.requestUpdate();
+        }
+        break;
+      case 'show-item':
+        const previewConfig = {
+          rowIndex,
+          itemIndex,
+          peek: true,
+        };
+        this._dispatchEditorEvent('toggle-highlight-row-item', previewConfig);
+        break;
+      case 'delete-item':
+        let confirm = await showConfirmDialog(this, 'Are you sure you want to delete this item?', 'Delete');
+        if (!confirm) return;
+        let currentRows = [...(this._rows || [])];
+        let row = [...currentRows[rowIndex].row_items];
+        row.splice(itemIndex, 1);
+        currentRows[rowIndex].row_items = row;
+        this._configChanged(currentRows);
+        break;
+      case 'duplicate-item':
+        let currentRowsDup = [...(this._rows || [])];
+        let rowDup = [...currentRowsDup[rowIndex].row_items];
+        const itemToDuplicate = { ...rowDup[itemIndex] };
+        rowDup.splice(itemIndex + 1, 0, itemToDuplicate);
+        currentRowsDup[rowIndex].row_items = rowDup;
+        this._configChanged(currentRowsDup);
+        break;
+    }
+  };
+
+  private _handleSubRowAdd = async (rowIndex: number) => {
+    console.debug('Add sub-row item to row:', rowIndex);
+    let currentRows = [...(this._rows || [])];
+    const row = currentRows[rowIndex];
+    if (!row) {
+      console.error('Row not found at index:', rowIndex);
+      return;
+    }
+    // For simplicity, we add a new entity item. In a real scenario, you might want to show a selection dialog.
+    const newItem: IndicatorRowItem = computeNewRow(this._hass).row_items[0];
+    console.debug('New item to add:', newItem);
+    row.row_items.push(newItem);
+    currentRows[rowIndex] = row;
+    console.debug('Updated rows after adding item:', currentRows);
+    this._configChanged(currentRows);
+  };
+
   private _handleConfigChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     const { isValid, value } = ev.detail;
@@ -180,7 +273,19 @@ export class PanelIndicatorRows extends BaseEditor {
     this._configChanged(newRows);
   }
 
-  private _handleRowAction(action: RowAction, index?: number): void {
+  private _handleRowAction(ev: Event | RowAction): void {
+    // console.debug('Handle row action:', ev, typeof ev);
+    let action: RowAction;
+    let index: number | null = null;
+    if (ev instanceof Event) {
+      ev.stopPropagation();
+      const target = ev.currentTarget as any;
+      action = target.action;
+      index = target.index !== undefined ? Number(target.index) : null;
+    } else {
+      action = ev;
+    }
+
     let currentRows = [...(this._rows || [])];
     const handleAction = async () => {
       switch (action) {
@@ -247,6 +352,28 @@ export class PanelIndicatorRows extends BaseEditor {
         .item-config-row > ha-icon {
           color: var(--secondary-text-color);
           margin-right: var(--vic-card-padding);
+        }
+        .item-actions {
+          gap: 1em;
+          display: flex;
+          align-items: center;
+        }
+        .item-actions > .handle {
+          margin-inline-start: 12px;
+        }
+        .row-items {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          width: -webkit-fill-available;
+          flex-direction: row;
+          height: auto;
+          box-sizing: border-box;
+          align-items: center;
+        }
+
+        .row-items ha-badge {
+          --badge-color: var(--primary-color);
         }
       `,
     ];

@@ -2,19 +2,19 @@ import { html, TemplateResult, CSSResultGroup, PropertyValues, css } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { computeStateName, fireEvent, getEntitiesByDomain } from '../../ha';
-import '../../utils/editor/alignment-selector';
+import { computeStateName, fireEvent, getEntitiesByDomain } from '../../../ha';
+import '../../../utils/editor/alignment-selector';
 import './panel-row-sub-item';
-import '../shared/vsc-editor-form';
-import { IndicatorEntityConfig, IndicatorRowConfig, IndicatorRowItem } from '../../types/config/card/row-indicators';
-import { Create, showConfirmDialog } from '../../utils';
-import { ensureRowItemConfig } from '../../utils/editor/migrate-indicator';
-import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
-import { EDITOR_PREVIEW } from '../../utils/editor/types';
-import { ICON } from '../../utils/mdi-icons';
-import { BaseEditor } from '../base-editor';
-import { PANEL } from '../editor-const';
-import { ROW_NO_WRAP_SCHEMA } from '../form/indicator-row-schema';
+import '../../shared/vsc-editor-form';
+import { IndicatorEntityConfig, IndicatorRowConfig, IndicatorRowItem } from '../../../types/config/card/row-indicators';
+import { Create, showConfirmDialog } from '../../../utils';
+import { ensureRowItemConfig } from '../../../utils/editor/migrate-indicator';
+import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
+import { EDITOR_PREVIEW } from '../../../utils/editor/types';
+import { ICON } from '../../../utils/mdi-icons';
+import { BaseEditor } from '../../base-editor';
+import { PANEL } from '../../editor-const';
+import { ROW_ICON_SIZE_NO_WRAP_SCHEMA } from '../../form/indicator-row-schema';
 import { PanelRowSubItem } from './panel-row-sub-item';
 
 declare global {
@@ -26,10 +26,10 @@ declare global {
 export class PanelIndicatorItem extends BaseEditor {
   @property({ attribute: false }) private _rowConfig!: IndicatorRowConfig;
   @property({ type: Number, attribute: 'row-index', reflect: true }) rowIndex!: number;
+  @property({ attribute: false }) public _editIndex: number | null = null;
 
   @state() private _items: IndicatorRowItem[] = [];
   @state() private _yamlActive = false;
-  @state() private _editIndex: number | null = null;
   @query('panel-row-sub-item') _subItemEditor!: PanelRowSubItem;
 
   constructor() {
@@ -57,7 +57,7 @@ export class PanelIndicatorItem extends BaseEditor {
       const newIndex = this._editIndex;
       if (oldIndex !== newIndex) {
         const itemType = this._editingItemType;
-        this._toggleGroupPreview(itemType === 'group' ? newIndex : null, itemType === 'entity' ? newIndex : null);
+        this._toggleGroupPreview(null, itemType === 'entity' ? newIndex : null);
       }
     }
   }
@@ -67,6 +67,12 @@ export class PanelIndicatorItem extends BaseEditor {
       return this._renderSubItemEditor();
     }
     const indexLabel = `ROW ${this.rowIndex + 1}`;
+
+    const iconSizeNoWrapData = {
+      no_wrap: this._rowConfig?.no_wrap,
+      icon_size: this._rowConfig?.icon_size,
+    };
+
     return html`
       <sub-editor-header
         ._label=${indexLabel}
@@ -84,18 +90,17 @@ export class PanelIndicatorItem extends BaseEditor {
         ? html`
             <vsc-alignment-selector
               label="Alignment (optional)"
-              .value=${this._rowConfig?.alignment || 'default'}
+              .value=${this._rowConfig?.alignment}
               .configValue=${'alignment'}
               @value-changed=${this._handleRowChanged}
             ></vsc-alignment-selector>
             <vsc-editor-form
               ._hass=${this._hass}
-              .data=${{ no_wrap: this._rowConfig?.no_wrap ?? false }}
-              .schema=${[...ROW_NO_WRAP_SCHEMA]}
-              .configValue=${'no_wrap'}
+              .data=${iconSizeNoWrapData}
+              .schema=${ROW_ICON_SIZE_NO_WRAP_SCHEMA}
+              .configValue=${'icon_size_no_wrap'}
               @value-changed=${this._handleRowChanged}
             ></vsc-editor-form>
-
             ${this._renderRowItems()} ${this._renderFooterActions()}
           `
         : html` <panel-yaml-editor
@@ -226,7 +231,7 @@ export class PanelIndicatorItem extends BaseEditor {
     `;
   }
 
-  private _addItem(type: 'entity' | 'group'): void {
+  public _addItem(type: 'entity' | 'group'): void {
     const entity = getEntitiesByDomain(this._hass.states, 1, ['sensor'])[0];
 
     const newItemSingle: IndicatorEntityConfig = ensureRowItemConfig(entity) as IndicatorEntityConfig;
@@ -269,7 +274,7 @@ export class PanelIndicatorItem extends BaseEditor {
     }
   }
 
-  private async _handleItemAction(action: 'edit' | 'peek' | 'delete', index: number): Promise<void> {
+  public async _handleItemAction(action: 'edit' | 'peek' | 'delete', index: number): Promise<void> {
     switch (action) {
       case 'edit':
         this._editIndex = index;
@@ -324,17 +329,33 @@ export class PanelIndicatorItem extends BaseEditor {
     fireEvent(this, 'go-back');
   }
 
+  protected _onValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { key, subKey } = ev.target as any;
+    const value = ev.detail?.value;
+    console.debug('Value changed', key, subKey, value);
+    console.debug('event', ev);
+  }
   private _handleRowChanged(event: CustomEvent): void {
     event.stopPropagation();
     const config = { ...(this._rowConfig || {}) } as IndicatorRowConfig;
     if (!config) return;
     const configValue = (event.target as any).configValue;
-    if (configValue && configValue === 'no_wrap') {
+    const value = event.detail?.value;
+    console.debug('Row config changed', configValue, value);
+    if (configValue && configValue === 'icon_size_no_wrap') {
       const noWrap = event.detail?.value.no_wrap as boolean;
       console.debug('No Wrap changed to', noWrap);
       config.no_wrap = noWrap;
       if (!noWrap) {
         delete config.no_wrap;
+      }
+      const iconSize = event.detail?.value.icon_size as number | undefined;
+      console.debug('Icon Size changed to', iconSize);
+      if (!iconSize) {
+        delete config.icon_size;
+      } else {
+        config.icon_size = iconSize;
       }
       this._rowConfigChanged(config);
       return;

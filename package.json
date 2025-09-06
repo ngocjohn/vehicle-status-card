@@ -21,6 +21,7 @@
     "@mdi/js": "^7.4.47",
     "debug-es": "^3.0.1",
     "home-assistant-js-websocket": "^9.5.0",
+    "home-assistant-styles-manager": "^3.1.0",
     "lit": "^3.3.0",
     "memoize-one": "^6.0.0",
     "object-hash": "^3.0.0",
