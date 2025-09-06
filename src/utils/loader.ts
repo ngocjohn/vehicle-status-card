@@ -52,6 +52,8 @@ export const stickyPreview = () => {
   });
 };
 
+let mql = window.matchMedia('(min-width: 1000px) and (max-width: 1440px)');
+
 export const refactorEditDialog = async () => {
   const editorDialog = await selectTree(document.body, 'home-assistant$hui-dialog-edit-card');
 
@@ -76,6 +78,9 @@ export const refactorEditDialog = async () => {
   if (!editorDialog.shadowRoot?.querySelector('style[refactored]')) {
     styleEl.setAttribute('refactored', 'true');
     editorDialog.shadowRoot?.appendChild(styleEl);
+  }
+  if (mql.matches) {
+    editorDialog.large = true;
   }
   // console.debug('Appended new styles to editor dialog', styleEl);
 };

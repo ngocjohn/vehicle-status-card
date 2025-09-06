@@ -72,6 +72,7 @@ export class PanelIndicatorItem extends BaseEditor {
       no_wrap: this._rowConfig?.no_wrap,
       icon_size: this._rowConfig?.icon_size,
     };
+
     return html`
       <sub-editor-header
         ._label=${indexLabel}
@@ -89,7 +90,7 @@ export class PanelIndicatorItem extends BaseEditor {
         ? html`
             <vsc-alignment-selector
               label="Alignment (optional)"
-              .value=${this._rowConfig?.alignment || 'default'}
+              .value=${this._rowConfig?.alignment}
               .configValue=${'alignment'}
               @value-changed=${this._handleRowChanged}
             ></vsc-alignment-selector>
@@ -100,7 +101,6 @@ export class PanelIndicatorItem extends BaseEditor {
               .configValue=${'icon_size_no_wrap'}
               @value-changed=${this._handleRowChanged}
             ></vsc-editor-form>
-
             ${this._renderRowItems()} ${this._renderFooterActions()}
           `
         : html` <panel-yaml-editor
@@ -329,6 +329,13 @@ export class PanelIndicatorItem extends BaseEditor {
     fireEvent(this, 'go-back');
   }
 
+  protected _onValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { key, subKey } = ev.target as any;
+    const value = ev.detail?.value;
+    console.debug('Value changed', key, subKey, value);
+    console.debug('event', ev);
+  }
   private _handleRowChanged(event: CustomEvent): void {
     event.stopPropagation();
     const config = { ...(this._rowConfig || {}) } as IndicatorRowConfig;

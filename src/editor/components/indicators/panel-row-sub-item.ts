@@ -17,11 +17,9 @@ import './panel-row-sub-group-item';
 import { BaseEditor } from '../../base-editor';
 import {
   SUBGROUP_ENTITY_SCHEMA,
-  ROW_ENTITY_SCHEMA,
   ROW_GROUP_BASE_SCHEMA,
   ROW_INTERACTON_BASE_SCHEMA,
-  ROW_ITEM_CONTENT_SCHEMA,
-  ROW_ITEM_TEMPLATE_SCHEMA,
+  ENTITY_SINGLE_TYPE_SCHEMA,
 } from '../../form';
 
 declare global {
@@ -38,7 +36,6 @@ export class PanelRowSubItem extends BaseEditor {
   @property({ type: Number, attribute: 'item-index', reflect: true }) itemIndex!: number;
 
   @state() private _yamlActive = false;
-  @state() private _computedStateContent?: string[];
 
   @state() private _groupItemIndex: number | null = null;
 
@@ -54,15 +51,6 @@ export class PanelRowSubItem extends BaseEditor {
     super.firstUpdated(_changedProperties);
     if (this._expansionPanel && this.isGroup && this._groupItemIndex === null) {
       this._expansionPanel.addEventListener('expanded-changed', this._onExpandChanged.bind(this));
-    }
-  }
-
-  protected willUpdate(changedProperties: PropertyValues): void {
-    super.willUpdate(changedProperties);
-    if (changedProperties.has('_subItemConfig')) {
-      const sc = this._subItemConfig?.state_content;
-      const include = !!this._subItemConfig?.include_state_template;
-      this._computedStateContent = this._computeStateContent(sc, include);
     }
   }
 
@@ -137,27 +125,12 @@ export class PanelRowSubItem extends BaseEditor {
     const config = {
       ...this._subItemConfig,
     } as IndicatorEntityConfig;
-
-    const ENTITY_DATA = {
-      entity: config.entity,
-    } as Pick<IndicatorEntityConfig, 'entity'>;
-
-    const baseForm = this._createHaForm(config, ROW_ITEM_CONTENT_SCHEMA());
-    const stateContentForm = this._renderContentPicker();
-    const templateWraper = this._createHaForm(config, ROW_ITEM_TEMPLATE_SCHEMA);
-    const baseContentWraper = Create.ExpansionPanel({
-      options: { header: 'Appearance & Content', icon: 'mdi:text-short' },
-      content: html`${baseForm} ${stateContentForm} ${templateWraper}`,
-    });
-
-    const entityForm = this._createHaForm(ENTITY_DATA, ROW_ENTITY_SCHEMA);
-    const actionForm = this._createHaForm(config, ROW_INTERACTON_BASE_SCHEMA);
-
-    const entityForms = html`<div class="card-config">${entityForm} ${baseContentWraper} ${actionForm}</div>`;
-
-    const yamlEditor = this._createYamlEditor(config, 'sub-item');
-
-    return html` ${this._yamlActive ? yamlEditor : entityForms} `;
+    if (this._yamlActive) {
+      return this._createVscYamlEditor(config, 'sub-item');
+    }
+    const SINGLE_ENTITY_SCHEMA = ENTITY_SINGLE_TYPE_SCHEMA(config);
+    // const entityForm = this._createHaForm(config, SINGLE_ENTITY_SCHEMA);
+    return this._createHaForm(config, SINGLE_ENTITY_SCHEMA);
   }
 
   private _renderGroupEditor(): TemplateResult {
@@ -205,7 +178,7 @@ export class PanelRowSubItem extends BaseEditor {
     const subItemData = {
       ...groupItems![this._groupItemIndex!],
     } as IndicatorBaseItemConfig;
-    const schema = [...SUBGROUP_ENTITY_SCHEMA, ...ROW_INTERACTON_BASE_SCHEMA];
+    const schema = [...SUBGROUP_ENTITY_SCHEMA(subItemData), ...ROW_INTERACTON_BASE_SCHEMA];
     const yamlEditor = this._createYamlEditor(subItemData, 'group-item');
 
     const groupName = this._subItemConfig.name || `Group ${this.itemIndex + 1}`;
@@ -267,10 +240,15 @@ export class PanelRowSubItem extends BaseEditor {
     ev.stopPropagation();
     console.debug('onValueChanged (SubItem)');
     const { key, subKey } = ev.target as any;
-    console.debug('Key:', key, 'SubKey:', subKey);
+    const value = { ...ev.detail.value };
+    console.debug('Key:', key, 'SubKey:', subKey, 'Value:', value);
     switch (key) {
       case 'sub-group-item':
         this._handleSubGroupItemChanged(ev);
+        break;
+      case 'test-templates':
+        // templates changed
+        console.debug('Template values changed:', value);
         break;
       default:
         console.warn('Unhandled value-changed event for key:', key);
@@ -303,15 +281,9 @@ export class PanelRowSubItem extends BaseEditor {
     dataConfig: IndicatorRowItem | IndicatorBaseItemConfig,
     configKey?: string | number
   ): TemplateResult {
-    return html`
-      <panel-yaml-editor
-        .hass=${this._hass}
-        .configDefault=${dataConfig}
-        .configKey=${configKey}
-        @yaml-config-changed=${this._handleYamlConfigChanged}
-      ></panel-yaml-editor>
-    `;
+    return this._createVscYamlEditor(dataConfig, configKey);
   }
+
   private _createHaForm(data: any, schema: any, configType?: string | number): TemplateResult {
     return html`
       <vsc-editor-form
@@ -361,7 +333,7 @@ export class PanelRowSubItem extends BaseEditor {
       console.warn('Entity cannot be empty for entity type row item');
       return;
     }
-
+    // console.debug('Merging incoming changes into current config:', { currentConfig, incoming });
     let changed = this.mergeWithCleanup(currentConfig, incoming);
 
     // ---- normalize state_content against include_state_template ----
@@ -389,12 +361,12 @@ export class PanelRowSubItem extends BaseEditor {
     this._rowChanged(currentConfig); // willUpdate can recompute any derived @state
   }
 
-  private _handleYamlConfigChanged(ev: CustomEvent): void {
+  protected _onYamlChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const { isValid, value, key } = ev.detail;
-    if (!isValid) {
-      return;
-    }
+    console.debug('YAML changed (Row Sub Item)');
+    const { key, subKey } = ev.target as any;
+    const value = ev.detail;
+    console.debug('YAML changed:', { key, subKey, value });
     const configKey = key as string | number | undefined;
     console.debug('detail', ev.detail, configKey);
     if (configKey === 'group-item' && this._groupItemIndex !== null) {
@@ -413,61 +385,6 @@ export class PanelRowSubItem extends BaseEditor {
       this._rowChanged(newConfig);
       return;
     }
-  }
-
-  private _renderContentPicker(): TemplateResult {
-    const config = this._subItemConfig ?? {};
-    const selector = { ui_state_content: { entity_id: config.entity, allow_name: false } };
-
-    return html`
-      <ha-selector
-        .hass=${this._hass}
-        .entityId=${config.entity}
-        .value=${this._computedStateContent as string[] | undefined}
-        .label=${'State Content'}
-        .required=${false}
-        .allowName=${false}
-        .selector=${selector}
-        @value-changed=${this._handleStateContentChanged}
-      ></ha-selector>
-    `;
-  }
-  private _handleStateContentChanged(event: CustomEvent): void {
-    event.stopPropagation();
-    if (!this._subItemConfig || !this._hass) return;
-
-    const raw = event.detail?.value as string | string[] | undefined;
-    const normalized = this._dedupeKeepFirst(this._toArray(raw).filter(Boolean));
-
-    const hadTemplate = !!this._subItemConfig.include_state_template;
-    const hasTemplateNow = normalized.includes('state_template');
-
-    const next = { ...this._subItemConfig } as IndicatorEntityConfig;
-    let changed = false;
-
-    // Update state_content
-    const prevArray = Array.isArray(this._subItemConfig.state_content)
-      ? (this._subItemConfig.state_content as string[])
-      : this._toArray(this._subItemConfig.state_content as string | undefined);
-
-    if (normalized.length === 0) {
-      if ('state_content' in next) {
-        delete next.state_content;
-        changed = true;
-      }
-    } else if (!this._arrayEq(prevArray, normalized)) {
-      next.state_content = normalized;
-      changed = true;
-    }
-
-    // Sync the include_state_template flag with current selection
-    if (hadTemplate !== hasTemplateNow) {
-      next.include_state_template = hasTemplateNow;
-      changed = true;
-    }
-
-    if (!changed) return;
-    this._rowChanged(next); // willUpdate recomputes _computedStateContent
   }
 
   // helpers
@@ -503,11 +420,6 @@ export class PanelRowSubItem extends BaseEditor {
     if (include && !has) return [...base, 'state_template'];
     if (!include && has) return base.filter((v) => v !== 'state_template');
     return base;
-  }
-
-  private _computeStateContent(raw: string | string[] | undefined, include: boolean): string[] | undefined {
-    const next = this._applyTemplateFlagStable(this._toArray(raw), include);
-    return next.length ? next : undefined;
   }
 
   private _arrayEq(a?: string[], b?: string[]): boolean {

@@ -1,9 +1,11 @@
+import { mdiAlertCircle } from '@mdi/js';
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { html, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import memoizeOne from 'memoize-one';
 
+import { HomeAssistant } from '../ha';
 import { computeCssColor } from '../ha/common/color/compute-color';
 import { computeDomain } from '../ha/common/entity/compute_domain';
 import { computeStateDomain } from '../ha/common/entity/compute_state_domain';
@@ -11,6 +13,8 @@ import { stateActive } from '../ha/common/entity/state_active';
 import { stateColorCss } from '../ha/common/entity/state_color';
 import { isGroupEntity } from '../ha/data/group';
 import { RenderTemplateResult, hasTemplate, subscribeRenderTemplate } from '../ha/data/ws-templates';
+import '../components/shared/vsc-state-display';
+import '../components/shared/vsc-indicator-badge';
 import { hasItemAction } from '../types/config/actions-config';
 import {
   IndicatorRowItem,
@@ -19,7 +23,6 @@ import {
   IndicatorBaseItemConfig,
   IndicatorCommon,
 } from '../types/config/card/row-indicators';
-import '../components/shared/vsc-state-display';
 import { toCommon, isEntity } from '../types/config/card/row-indicators';
 import { rgb2hex, rgb2hsv, hsv2rgb } from '../utils/colors';
 import { BaseElement } from './base-element';
@@ -39,6 +42,7 @@ export const DEFAULT_SHOW_CONFIG = {
 };
 
 export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElement {
+  @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _config!: T;
 
   @state() protected _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
@@ -64,7 +68,6 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     if (this._unsubSingleRenderTemplates.get(key) !== undefined || !this.hass || !hasTemplate(this._config[key])) {
       return;
     }
-
     try {
       const sub = subscribeRenderTemplate(
         this.hass.connection,
@@ -202,7 +205,7 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
 
     let imageUrl = this.hass!.hassUrl(entityPicture);
     if (computeStateDomain(stateObj) === 'camera') {
-      imageUrl = cameraUrlWithWidthHeight(imageUrl, 32, 32);
+      imageUrl = cameraUrlWithWidthHeight(imageUrl, 36, 36);
     }
 
     return imageUrl;
@@ -244,20 +247,35 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
 
   protected _renderStateDisplay(): TemplateResult {
     const stateObj = this._stateObj;
+    const stateTemplate = this._getTemplateResult('state_template') ?? undefined;
+
+    const { include_state_template } = this._showConfig;
+    if (this.type === 'group' && !this._hasGroupEntity && include_state_template && stateTemplate) {
+      // For group without entity, we show the state template as the main content
+      return html`<span>${stateTemplate}</span>`;
+    }
+
     if (!stateObj) {
       return html`<span style="color: var(--error-color)">${this.hass.localize('ui.badge.entity.not_found')}</span>`;
     }
-
-    const stateTemplate = this._getTemplateResult('state_template') ?? undefined;
 
     return html`
       <vsc-state-display
         .stateObj=${stateObj}
         .hass=${this.hass}
-        .content=${this._config.state_content || ['state']}
+        .content=${this._config.state_content}
         .name=${this._config.name}
         .template=${stateTemplate}
       ></vsc-state-display>
+    `;
+  }
+
+  protected _renderNoEntity(): TemplateResult {
+    return html`
+      <vsc-indicator-badge class="error" .label=${this._config.entity}>
+        <ha-svg-icon slot="icon" .hass=${this.hass} .path=${mdiAlertCircle}></ha-svg-icon>
+        ${this.hass.localize('ui.badge.entity.not_found')}
+      </vsc-indicator-badge>
     `;
   }
 }

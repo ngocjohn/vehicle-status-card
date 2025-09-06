@@ -11,6 +11,12 @@ declare global {
     'badge-action-item': { action: string };
   }
 }
+const OVERLAY_ICON: Record<ActionType | string, string> = {
+  'edit-item': ICON.PENCIL,
+  'show-item': ICON.EYE,
+  'delete-item': ICON.DELETE,
+};
+
 @customElement('badge-editor-item')
 export class BadgeEditorItem extends LitElement {
   @property({ attribute: false }) public _menuAction: MenuItemConfig[] = [];
@@ -80,6 +86,7 @@ export class BadgeEditorItem extends LitElement {
   protected render(): TemplateResult {
     const showOverlay = (this._hover || this._menuOpened || this._focused) && !this.hiddenOverlay;
     this._menuAction = this._menuAction.length ? this._menuAction : DefaultActions;
+
     return html`
       <div class="button-wrapper"><slot></slot></div>
       <div class="button-overlay ${classMap({ visible: showOverlay })}">
@@ -96,7 +103,7 @@ export class BadgeEditorItem extends LitElement {
           : html`
               <div class="control" @click="${this._handleOverlayClick}" .action=${this.defaultAction}>
                 <div class="control-overlay">
-                  <ha-svg-icon .path=${ICON.PENCIL}></ha-svg-icon>
+                  <ha-svg-icon .path=${OVERLAY_ICON[this.defaultAction] || ICON.PENCIL}></ha-svg-icon>
                 </div>
               </div>
             `}

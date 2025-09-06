@@ -6,7 +6,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 // utils
 import tinycolor from 'tinycolor2';
 
-import './panel-yaml-editor';
+import '../shared/panel-yaml-editor';
 import { findBatteryChargingEntity, findPowerEntities, fireEvent, getEntitiesByDomain, hasPercent } from '../../ha';
 import { RangeInfoConfig, RangeItemConfig, Threshold, VehicleStatusCardConfig } from '../../types/config';
 import { ICON } from '../../utils';

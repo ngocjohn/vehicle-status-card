@@ -224,3 +224,14 @@ export enum PANEL {
   BUTTON_LIST = `${PANEL_PREFIX}button-list`,
   LAYOUT_EDITOR = `${PANEL_PREFIX}layout-editor`,
 }
+
+export enum ELEMENT {
+  FORM_BOOLEAN = 'ha-form-boolean',
+  FORM_GRID = 'ha-form-grid',
+  FORM_EXPANDABLE = 'ha-form-expandable',
+  FORM_OPTIONAL_ACTIONS = 'ha-form-optional_actions',
+}
+
+export enum SELECTOR {
+  OPTIONAL_BUTTON_TRIGGER = 'ha-form-optional_actions$ha-button[slot="trigger"]',
+}

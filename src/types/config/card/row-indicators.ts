@@ -16,18 +16,17 @@ export interface IndicatorVisual {
   color_template?: string;
   column_reverse?: boolean;
   icon_template?: string;
+  state_template?: string;
 }
 export interface IndicatorShowConfig {
   show_name?: boolean;
   show_state?: boolean;
   show_icon?: boolean;
   show_entity_picture?: boolean;
-
   include_state_template?: boolean;
+  state_content?: string[];
 }
 export interface IndicatorEntityBehavior extends IndicatorShowConfig {
-  state_template?: string;
-  state_content?: string[];
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;
   double_tap_action?: ActionConfig;
@@ -38,7 +37,7 @@ export interface IndicatorEntityBehavior extends IndicatorShowConfig {
 //   entity: string;
 // }
 
-export interface IndicatorBaseItemConfig extends LovelaceRowItemConfig, IndicatorVisual, IndicatorEntityBehavior {
+export interface IndicatorBaseItemConfig extends IndicatorVisual, IndicatorEntityBehavior {
   type?: 'entity';
   entity: string;
 }
@@ -109,6 +108,7 @@ export function toCommon(i: IndicatorRowItem): IndicatorCommon {
     icon_template: i.icon_template,
     icon_size: i.icon_size,
     column_reverse: i.column_reverse,
+    state_template: i.state_template,
     // Safe because entity is required for entities and optional for groups:
     entity: (i as any).entity, // ok as read-only helper
   };

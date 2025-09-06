@@ -274,7 +274,7 @@ export class PanelIndicatorRows extends BaseEditor {
   }
 
   private _handleRowAction(ev: Event | RowAction): void {
-    console.debug('Handle row action:', ev, typeof ev);
+    // console.debug('Handle row action:', ev, typeof ev);
     let action: RowAction;
     let index: number | null = null;
     if (ev instanceof Event) {

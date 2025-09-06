@@ -9,10 +9,11 @@ export * from './panel-default-card';
 export * from './panel-indicator-single';
 export * from './panel-indicator-group';
 export * from './panel-indicator-rows';
-export * from './panel-yaml-editor';
+
 export * from './panel-button-list';
 export * from './panel-layout-editor';
 
-// TAB components
+// Shared components
 export * from '../../utils/editor/vic-tab';
 export * from '../../utils/editor/vic-tab-bar';
+export * from '../shared/panel-yaml-editor';

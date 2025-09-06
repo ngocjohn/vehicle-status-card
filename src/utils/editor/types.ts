@@ -2,6 +2,42 @@ import { LovelaceViewConfig, ShowViewConfig, LovelaceCardConfig, ActionConfig } 
 import { ButtonCardConfig } from '../../types/config/card/button';
 import { LovelaceRowItemConfig } from '../../types/config/card/row-indicators';
 
+declare global {
+  var __DEV__: boolean;
+  var __DEMO__: boolean;
+  var __BUILD__: 'latest' | 'es5';
+  var __VERSION__: string;
+  var __STATIC_PATH__: string;
+  var __BACKWARDS_COMPAT__: boolean;
+  var __SUPERVISOR__: boolean;
+
+  interface Window {
+    // Custom panel entry point url
+    customPanelJS: string;
+    ShadyCSS: {
+      nativeCss: boolean;
+      nativeShadow: boolean;
+      prepareTemplate(templateElement, elementName, elementExtension);
+      styleElement(element);
+      styleSubtree(element, overrideProperties);
+      styleDocument(overrideProperties);
+      getComputedStyleValue(element, propertyName);
+    };
+  }
+  // for fire event
+  interface HASSDomEvents {
+    'value-changed': {
+      value: unknown;
+    };
+    change: undefined;
+  }
+
+  // For loading workers in webpack
+  interface ImportMeta {
+    url: string;
+  }
+}
+
 export interface YamlChangedEvent extends Event {
   detail: {
     yaml: string;

@@ -91,7 +91,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       console.debug('Updating store config');
       this._store._config = this._config;
     } else {
-      console.debug('Store not found, will create on first update');
+      // console.debug('Store not found, will create on first update');
       this._createStore();
     }
   }
@@ -143,7 +143,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     window.VehicleCard = this;
     this._connected = true;
     if (this.isEditorPreview) {
-      console.log('Card in preview', this._config.name);
       window.addEventListener('editor-event', this._handleEditorEvent.bind(this));
     }
   }
@@ -284,7 +283,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const hasBoth = this._config.indicators && hasRows;
     const inFirstSection = this._config.layout_config?.section_order![0] === SECTION.INDICATORS;
     if (!hasRows && !this._config.indicators) return html``;
-    return html`<div class="header-info-box" id=${SECTION.INDICATORS} ?noMargin=${inFirstSection}>
+    return html`<div id=${SECTION.INDICATORS} ?noMargin=${inFirstSection}>
       ${hasBoth
         ? html`${this._renderIndicatorRows()} ${this._renderIndicatorsLegacy()}`
         : hasRows
@@ -305,7 +304,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
             return html`
               <vsc-indicator-row
                 data-index=${index}
-                .hass=${this._hass}
+                ._hass=${this._hass}
                 .rowConfig=${row}
                 ._store=${this._store}
               ></vsc-indicator-row>
@@ -318,7 +317,11 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _renderIndicatorsLegacy(): TemplateResult | typeof nothing {
     if (!this._config.indicators) return nothing;
-    return html` <vsc-indicators .hass=${this._hass} .config=${this._config} ._store=${this._store}></vsc-indicators> `;
+    return html`
+      <div class="header-info-box">
+        <vsc-indicators .hass=${this._hass} .config=${this._config} ._store=${this._store}></vsc-indicators>
+      </div>
+    `;
   }
 
   private _renderButtons(): TemplateResult | typeof nothing {
@@ -748,7 +751,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _createStore() {
     if (!this._store) {
-      console.log('Creating store for VehicleStatusCard', this._config.name);
+      // console.log('Creating store for VehicleStatusCard', this._config.name);
       this._store = new Store(this, this._config);
       super.requestUpdate();
     }

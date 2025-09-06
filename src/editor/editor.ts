@@ -55,24 +55,24 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
-    let needUpdate = false;
     if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
       console.debug('Migrating legacy layout_config.hide to section_order');
       config = {
         ...config,
         ...migrateLegacySectionOrder(config),
       };
-      needUpdate = true;
-    }
-
-    if (needUpdate) {
-      fireEvent(this, 'config-changed', { config });
+      fireEvent(this, 'config-changed', { config: config });
+      console.log('Migrated layout_config.hide:', config);
       return;
     }
 
-    const newConfig = JSON.parse(JSON.stringify(config)); // Deep copy the config
+    const newConfig = { ...config };
     this._config = newConfig;
-    this.createStore();
+    if (this._store !== undefined) {
+      this._store._config = this._config;
+    } else {
+      this.createStore();
+    }
   }
 
   connectedCallback() {
@@ -178,13 +178,16 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   private _renderIndicators() {
-    if (!this._hasLegacyIndicatorsConfig) {
-      return this._renderIndicatorRows();
+    if (!this._migratedIndicatorsConfig) {
+      return this._renderIndicatorsLegacy();
     }
-    return this._renderIndicatorsLegacy();
+    return this._renderIndicatorRows();
   }
 
   private _renderIndicatorRows(): TemplateResult {
+    if (!this._config.indicator_rows || this._config.indicator_rows.length === 0) {
+      return html``;
+    }
     return html` <panel-indicator-rows
       ._store=${this._store}
       ._hass=${this._hass}
@@ -197,7 +200,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
    *  Use _renderIndicatorRows() for the new indicator rows configuration.
    */
   private _renderIndicatorsLegacy(): TemplateResult | typeof nothing {
-    if (!this._hasLegacyIndicatorsConfig) {
+    if (!this._config.indicators || Object.keys(this._config.indicators).length === 0) {
       return nothing;
     }
     const alertMigration = html`${Create.HaAlert({
@@ -294,19 +297,27 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
   // convert the legacy indicators config to the new format
   private _convertLegacyIndicatorsConfig(): void {
-    if (!this._config.indicators || Object.keys(this._config.indicators).length === 0) {
+    if (!this._hasLegacyIndicatorsConfig) {
       return;
     }
-    const oldConfig = this._config.indicators;
-    const newConfig = migrateLegacyIndicatorsConfig(oldConfig);
-    delete this._config.indicators; // Remove old indicators config
-    const indicatorRows = (this._config.indicator_rows || []).concat(newConfig);
-    this._config = {
-      ...this._config,
-      indicator_rows: indicatorRows,
-    };
-    fireEvent(this, 'config-changed', { config: this._config });
-    console.log('Converted:', { oldConfig, newConfig });
+    if (!this._config) {
+      console.error('No config found to migrate.');
+      return;
+    }
+    const newConfig = { ...(this._config as VehicleStatusCardConfig) };
+    if (newConfig.indicators) {
+      console.log('Migrating legacy indicators config:', newConfig.indicators);
+      const migratedIndicators = migrateLegacyIndicatorsConfig(newConfig.indicators);
+      if (!newConfig.indicator_rows) {
+        newConfig.indicator_rows = [];
+      }
+      newConfig.indicator_rows.push(migratedIndicators);
+      delete newConfig.indicators;
+      this._migratedIndicatorsConfig = true;
+      this._config = newConfig;
+      fireEvent(this, 'config-changed', { config: this._config });
+      console.log('Migrated indicators config:', this._config);
+    }
   }
 
   private async _getCardInPreview(): Promise<VehicleStatusCard | undefined> {
