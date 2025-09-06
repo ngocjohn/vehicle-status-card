@@ -72,6 +72,7 @@ export const computeNewRow = (hass: HomeAssistant): IndicatorRowConfig => {
     rowItems.push({
       type: 'group',
       name: 'Group',
+      show_name: true,
       icon: `mdi:numeric-${baseEntities.length}-circle`,
       items: [
         ...baseEntities.map((entity) => ({
@@ -87,6 +88,8 @@ export const computeNewRow = (hass: HomeAssistant): IndicatorRowConfig => {
       type: 'group',
       entity: entityStateObj.entity_id,
       show_name: true,
+      show_icon: true,
+      show_state: true,
       name: capitalizeFirstLetter(computeGroupDomain(entityStateObj)!) || 'Group Entity',
     };
     rowItems.push(groupConfig);

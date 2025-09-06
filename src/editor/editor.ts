@@ -178,16 +178,13 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   private _renderIndicators() {
-    if (!this._migratedIndicatorsConfig) {
-      return this._renderIndicatorsLegacy();
+    if (this._migratedIndicatorsConfig) {
+      return this._renderIndicatorRows();
     }
-    return this._renderIndicatorRows();
+    return this._renderIndicatorsLegacy();
   }
 
   private _renderIndicatorRows(): TemplateResult {
-    if (!this._config.indicator_rows || this._config.indicator_rows.length === 0) {
-      return html``;
-    }
     return html` <panel-indicator-rows
       ._store=${this._store}
       ._hass=${this._hass}
