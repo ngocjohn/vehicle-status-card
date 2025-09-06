@@ -187,7 +187,7 @@ export class VscIndicatorRow extends BaseElement {
               const disabled = !active && this._selectedGroupId !== null;
               return html`
                 <vsc-indicator-item
-                  .hass=${this.hass}
+                  ._hass=${this._hass}
                   ._config=${item}
                   ._store=${this._store}
                   .active=${active}

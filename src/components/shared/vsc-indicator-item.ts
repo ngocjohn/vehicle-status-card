@@ -3,7 +3,7 @@ import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { COMPONENT } from '../../constants/const';
-import { computeStateName, fireEvent } from '../../ha';
+import { computeEntityName, computeStateName, fireEvent } from '../../ha';
 import { computeCssColor } from '../../ha/common/color/compute-color';
 import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
 import { handleAction } from '../../ha/panels/common/handle-actions';
@@ -40,7 +40,9 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     const hasGroupEntity = this._hasGroupEntity;
     const commonConfig = this.commonConfig;
     const stateObj = this._stateObj;
-
+    if (!isGroup && !stateObj) {
+      return this._renderNoEntity();
+    }
     let style: Record<string, string> = {};
 
     let color: string | undefined;
@@ -65,7 +67,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
 
     const stateDisplay = this._renderStateDisplay();
 
-    const name = this._config.name || (stateObj ? computeStateName(stateObj) : '');
+    const name = this._config.name || computeEntityName(stateObj!, this.hass) || computeStateName(stateObj!);
 
     const showConfig = this._showConfig;
     const showName = showConfig.show_name;
@@ -101,7 +103,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
             ? html`<img slot="icon" src=${imageUrl} />`
             : this._renderIcon(stateObj!)
           : nothing}
-        ${isGroup && !hasGroupEntity ? this._config.name : content}
+        ${content}
       </vsc-indicator-badge>
     `;
   }
@@ -150,6 +152,9 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
         border: 1px solid var(--accent-color);
         border-radius: var(--ha-badge-border-radius, calc(var(--ha-badge-size, 36px) / 2));
         background-color: rgba(var(--rgb-primary-color), 0.1);
+      }
+      vsc-indicator-badge.error {
+        --badge-color: var(--red-color);
       }
     `;
   }
