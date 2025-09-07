@@ -1,6 +1,5 @@
 import { mdiCodeJson, mdiGestureTap, mdiPalette, mdiTextShort } from '@mdi/js';
 
-import { UiAction } from '../../ha';
 import { computeOptionalActionSchemaFull } from './actions-config';
 
 const DISPLAY_ELEMENTS = ['show_name', 'show_state', 'show_icon'] as const;
@@ -43,22 +42,6 @@ export const DISPLAY_OPTIONS_SCHEMA = (stateContentAllowed: boolean = true, enti
       ],
     },
   ] as const;
-// export const DISPLAY_OPTIONS_SCHEMA = [
-//   {
-//     type: 'constant',
-//     label: 'Display Options',
-//   },
-//   {
-//     type: 'grid',
-//     schema: [
-//       ...DISPLAY_ELEMENTS.map((element) => ({
-//         label: element.replace(/_/g, ' ').replace('show', ''),
-//         name: element,
-//         type: 'boolean',
-//       })),
-//     ] as const,
-//   },
-// ] as const;
 
 export const ROW_NO_WRAP_SCHEMA = [
   {
@@ -86,23 +69,36 @@ export const ICON_SIZE_SCHEMA = (helper?: string) => {
   ] as const;
 };
 
-export const ROW_ICON_SIZE_NO_WRAP_SCHEMA = [
-  {
-    type: 'grid',
-    flatten: true,
-    schema: [...ROW_NO_WRAP_SCHEMA, ...ICON_SIZE_SCHEMA()],
-  },
-] as const;
+export interface BooleanItemSchema {
+  type: 'boolean';
+  name: string;
+  label?: string;
+  helper?: string;
+  default?: boolean;
+}
 
 interface BooleanItem<T = string> {
   name: T;
   label?: string;
   helper?: string;
   type: 'boolean';
-  default: false;
+  default?: boolean;
+}
+
+interface TemplateItem<T = string> {
+  name: T;
+  label?: string;
+  helper?: string;
+  selector: {
+    template: {};
+  };
 }
 
 const BaseBooleanConfig: Record<string, Partial<BooleanItem>> = {
+  ignore_global: {
+    label: 'Ignore Global Config',
+    helper: 'Ignore global appearance configuration for this item.',
+  },
   show_entity_picture: {
     label: 'Show Entity Picture',
   },
@@ -110,60 +106,112 @@ const BaseBooleanConfig: Record<string, Partial<BooleanItem>> = {
     label: 'Column Reverse',
     helper: 'Reverse the order of name and state',
   },
+  row_reverse: {
+    label: 'Row Reverse',
+    helper: 'Reverse the order of icon and content',
+  },
   include_state_template: {
     label: 'Include State Template',
-    helper: 'Add state template result to the state display.',
+    helper: 'Add state template result to content',
   },
 };
 
-const BOOLEAN_KEYS = Object.keys(BaseBooleanConfig) as string[];
-type BooleanKey = (typeof BOOLEAN_KEYS)[number];
+const GlobalBooleanConfig: Record<string, Partial<BooleanItem>> = {
+  global_column_reverse: {
+    label: 'Global Column Reverse',
+    helper: 'Reverse the order of name and state for all items in the row',
+  },
+  global_row_reverse: {
+    label: 'Global Row Reverse',
+    helper: 'Reverse the order of icon and content for all items in the row',
+  },
+};
+
+const COMBINED_BOOLEAN_CONFIG = { ...BaseBooleanConfig, ...GlobalBooleanConfig };
+
+const SINGLE_BOOLEAN_KEYS = [
+  'ignore_global',
+  'show_entity_picture',
+  'column_reverse',
+  'row_reverse',
+  'include_state_template',
+] as const;
+export const GLOBAL_BOOLEAN_KEYS = [...Object.keys(GlobalBooleanConfig)] as string[];
+
+const BOOLEAN_KEYS = [...SINGLE_BOOLEAN_KEYS, ...GLOBAL_BOOLEAN_KEYS];
+
+// eslint-disable-next-line unused-imports/no-unused-vars
+const BooleanTypes = [...BOOLEAN_KEYS] as const;
+type BooleanKey = (typeof BooleanTypes)[number];
+
+const DEFAULT_BOLEAN_CONFIG = [
+  ...BOOLEAN_KEYS.map((key) => ({
+    name: key,
+    type: 'boolean',
+    default: false,
+    ...(COMBINED_BOOLEAN_CONFIG[key] || {}),
+  })),
+] as BooleanItemSchema[];
+
+export const createBooleanSchema = (overrides?: Partial<BooleanItemSchema>[]): BooleanItemSchema[] => {
+  const defaultConfig = DEFAULT_BOLEAN_CONFIG;
+
+  if (!overrides) {
+    return defaultConfig;
+  }
+  const merged = defaultConfig.map((item) => {
+    const override = overrides.find((o) => o.name === item.name);
+    if (override) {
+      return { ...item, ...override };
+    }
+    return item;
+  });
+  // Add any additional items that are not in the default list
+  overrides.forEach((override) => {
+    if (!merged.find((m) => m.name === override.name)) {
+      merged.push(override as BooleanItemSchema);
+    }
+  });
+  return merged;
+};
+
+export const computeBooleanSchema = (keys: BooleanKey[]): BooleanItemSchema[] => {
+  return createBooleanSchema().filter((item) => keys.includes(item.name as BooleanKey));
+};
 
 export const computeBooleanList = (keys?: BooleanKey[]) => {
   if (!keys) {
     keys = BOOLEAN_KEYS;
   }
+  const baseConfig = { ...BaseBooleanConfig, ...GlobalBooleanConfig };
   const list: BooleanItem[] = [];
   keys.forEach((key) => {
-    if (BaseBooleanConfig[key]) {
+    if (baseConfig[key]) {
       list.push({
         name: key,
         type: 'boolean',
         default: false,
-        label: BaseBooleanConfig[key].label || key.replace(/_/g, ' ').replace('show', ''),
-        helper: BaseBooleanConfig[key].helper || '',
+        label: baseConfig[key].label || key.replace(/_/g, ' ').replace('show', ''),
+        helper: baseConfig[key].helper || '',
       });
     }
   });
   return list;
 };
 
-export const INCLUDE_STATE_TEMPLATE_SCHEMA = [
+export const ROW_ICON_SIZE_NO_WRAP_SCHEMA = [
   {
-    name: 'include_state_template',
-    label: 'Include State Template',
-    type: 'boolean',
-    helper: 'Add state template result to the state display.',
-    default: false,
-  },
-] as const;
-
-export const COLUMN_REVERSE_SCHEMA = [
-  {
-    name: 'column_reverse',
-    label: 'Column Reverse',
-    helper: 'Reverse the order of name and state',
-    type: 'boolean',
-    default: false,
-  },
-] as const;
-
-export const SHOW_ENTITY_PICTURE_SCHEMA = [
-  {
-    name: 'show_entity_picture',
-    label: 'Show Entity Picture',
-    type: 'boolean',
-    default: false,
+    title: 'Global Appearance (optional)',
+    type: 'expandable',
+    iconPath: mdiPalette,
+    helper: 'These options affect all items, unless overridden on the item itself.',
+    flatten: true,
+    schema: [
+      {
+        type: 'grid',
+        schema: [...ICON_SIZE_SCHEMA(), ...computeBooleanSchema(GLOBAL_BOOLEAN_KEYS as BooleanKey[])],
+      },
+    ],
   },
 ] as const;
 
@@ -200,22 +248,28 @@ const TEMPLATES = [
   },
 ];
 
-// eslint-disable-next-line unused-imports/no-unused-vars
 const TemplateKeys = TEMPLATES.map((t) => t.name);
 type TemplateKey = (typeof TemplateKeys)[number];
 
-export const computeTemplateSchema = (type: TemplateKey) => {
-  const t = TEMPLATES.find((tt) => tt.name === type);
-  return [
-    {
-      name: type,
-      label: t?.label || '',
-      helper: t?.helper || '',
-      selector: {
-        template: {},
-      },
-    },
-  ] as const;
+export const computeTemplateSchema = (type?: TemplateKey[]) => {
+  if (!type) {
+    type = TemplateKeys;
+  }
+  const list: TemplateItem[] = [];
+  type.forEach((key) => {
+    const t = TEMPLATES.find((tt) => tt.name === key);
+    if (t) {
+      list.push({
+        name: t.name,
+        label: t.label,
+        helper: t.helper,
+        selector: {
+          template: {},
+        },
+      });
+    }
+  });
+  return list;
 };
 
 // SINGLE ENTITY TYPE SCHEMA
@@ -251,7 +305,7 @@ export const ROW_ITEM_CONTENT_SCHEMA = () =>
           },
         },
         ...ICON_SIZE_SCHEMA('Will override the row icon size for this item only.'),
-        ...computeBooleanList(),
+        ...computeBooleanSchema([...SINGLE_BOOLEAN_KEYS]),
       ],
     },
   ] as const;
@@ -271,8 +325,6 @@ export const ENTITY_SINGLE_TYPE_SCHEMA = (data: any) => {
     ...ROW_INTERACTON_BASE_SCHEMA,
   ] as const;
 };
-
-const groupActions: UiAction[] = ['navigate', 'url', 'perform-action', 'assist', 'none'];
 
 export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined, isGroupEntityType: boolean = false) =>
   [
@@ -344,7 +396,7 @@ export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined, isGroupE
         {
           name: '',
           type: 'grid',
-          schema: [...computeBooleanList(['column_reverse', 'include_state_template'])],
+          schema: [...computeBooleanSchema(['column_reverse', 'row_reverse', 'include_state_template'])],
         },
         ...DISPLAY_OPTIONS_SCHEMA(!!groupEntity, groupEntity),
       ],
@@ -356,7 +408,7 @@ export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined, isGroupE
       type: 'expandable',
       flatten: true,
       iconPath: mdiGestureTap,
-      schema: [...computeOptionalActionSchemaFull(true, !groupEntity ? groupActions : undefined)],
+      schema: [...computeOptionalActionSchemaFull(!!groupEntity)],
     },
   ] as const;
 
@@ -399,7 +451,7 @@ export const SUBGROUP_ENTITY_SCHEMA = (data: any) => {
                 icon_entity: 'entity',
               },
             },
-            ...computeBooleanList(),
+            ...computeBooleanSchema([...SINGLE_BOOLEAN_KEYS]),
           ],
         },
         ...DISPLAY_OPTIONS_SCHEMA(!!entity, entity),
@@ -423,14 +475,7 @@ export const OPTIONAL_TEMPLATE_SCHEMA = [
         type: 'optional_actions',
         flatten: true,
         context: { isTemplate: true },
-        schema: TEMPLATES.map((t) => ({
-          name: t.name,
-          label: t.label,
-          helper: t.helper,
-          selector: {
-            template: {},
-          },
-        })),
+        schema: [...computeTemplateSchema()],
       },
     ],
   },

@@ -69,11 +69,14 @@ export const computeOptionalActionSchema = () => {
     },
   ] as const;
 };
+const groupActions: UiAction[] = ['navigate', 'url', 'perform-action', 'assist', 'none'];
 
-export const computeOptionalActionSchemaFull = (noTap: boolean = false, actions?: UiAction[]) => {
+export const computeOptionalActionSchemaFull = (noTap: boolean = false) => {
   const tapGestureActions = noTap
     ? (['hold_action', 'double_tap_action'] as const)
     : (['tap_action', 'hold_action', 'double_tap_action'] as const);
+  const actions = noTap ? groupActions : DEFAULT_ACTIONS;
+
   return [
     {
       name: '',
