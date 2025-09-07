@@ -15,6 +15,8 @@ const OVERLAY_ICON: Record<ActionType | string, string> = {
   'edit-item': ICON.PENCIL,
   'show-item': ICON.EYE,
   'delete-item': ICON.DELETE,
+  'add-exclude-entity': ICON.CLOSE_CIRCLE,
+  'remove-exclude-entity': ICON.CHECK_CIRCLE,
 };
 
 @customElement('badge-editor-item')
@@ -30,6 +32,9 @@ export class BadgeEditorItem extends LitElement {
   @property({ type: Boolean, attribute: 'more-only' })
   public moreOnly = false;
 
+  @property({ type: Boolean, attribute: 'show-tooltip' })
+  public showTooltip = false;
+
   @state()
   public _menuOpened = false;
 
@@ -44,6 +49,7 @@ export class BadgeEditorItem extends LitElement {
   protected firstUpdated(): void {
     this.addEventListener('focus', () => {
       this._focused = true;
+      console.log('focus on badge item', this.ELEMENT_NODE);
     });
     this.addEventListener('blur', () => {
       this._focused = false;
@@ -89,7 +95,12 @@ export class BadgeEditorItem extends LitElement {
 
     return html`
       <div class="button-wrapper"><slot></slot></div>
-      <div class="button-overlay ${classMap({ visible: showOverlay })}">
+      <div
+        class=${classMap({
+          'button-overlay': true,
+          visible: showOverlay,
+        })}
+      >
         ${this.moreOnly
           ? nothing
           : this.noEdit
@@ -104,38 +115,51 @@ export class BadgeEditorItem extends LitElement {
               <div class="control" @click="${this._handleOverlayClick}" .action=${this.defaultAction}>
                 <div class="control-overlay">
                   <ha-svg-icon .path=${OVERLAY_ICON[this.defaultAction] || ICON.PENCIL}></ha-svg-icon>
+                  ${this.showTooltip
+                    ? html`<span class="tooltip"
+                        >${this._menuAction.find((a) => a.action === this.defaultAction)?.title}</span
+                      >`
+                    : nothing}
                 </div>
               </div>
             `}
-        <ha-button-menu
-          class="more"
-          corner="TOP_LEFT"
-          menu-corner="END"
-          .fixed=${true}
-          .naturalMenuWidth=${true}
-          .activatable=${true}
-          @closed=${(ev: Event) => {
-            ev.stopPropagation();
-            this._menuOpened = false;
-          }}
-          @opened=${(ev: Event) => {
-            ev.stopPropagation();
-            this._menuOpened = true;
-          }}
-        >
-          <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}> </ha-icon-button>
-          ${this._menuAction.map(
-            (item) => html`<ha-list-item
-              graphic="icon"
-              .action=${item.action}
-              @click=${this._handleAction}
-              style="z-index: 6; ${item.color ? `color: ${item.color}` : ''}"
-            >
-              <ha-icon icon=${item.icon} slot="graphic" style="${item.color ? `color: ${item.color}` : ''}"></ha-icon>
-              ${item.title}
-            </ha-list-item>`
-          )}
-        </ha-button-menu>
+        ${this._menuAction.length === 1
+          ? nothing
+          : html`
+              <ha-button-menu
+                class="more"
+                corner="TOP_LEFT"
+                menu-corner="END"
+                .fixed=${true}
+                .naturalMenuWidth=${true}
+                .activatable=${true}
+                @closed=${(ev: Event) => {
+                  ev.stopPropagation();
+                  this._menuOpened = false;
+                }}
+                @opened=${(ev: Event) => {
+                  ev.stopPropagation();
+                  this._menuOpened = true;
+                }}
+              >
+                <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}> </ha-icon-button>
+                ${this._menuAction.map(
+                  (item) => html`<ha-list-item
+                    graphic="icon"
+                    .action=${item.action}
+                    @click=${this._handleAction}
+                    style="z-index: 6; ${item.color ? `color: ${item.color}` : ''}"
+                  >
+                    <ha-icon
+                      icon=${item.icon}
+                      slot="graphic"
+                      style="${item.color ? `color: ${item.color}` : ''}"
+                    ></ha-icon>
+                    ${item.title}
+                  </ha-list-item>`
+                )}
+              </ha-button-menu>
+            `}
       </div>
     `;
   }
@@ -228,6 +252,20 @@ export class BadgeEditorItem extends LitElement {
           background: var(--secondary-background-color);
           --mdc-icon-size: 18px;
         }
+        .control .tooltip {
+          flex: none;
+          position: absolute;
+          bottom: -28px;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          white-space: nowrap;
+          z-index: 1;
+        }
+
         .more {
           position: absolute;
           right: -6px;

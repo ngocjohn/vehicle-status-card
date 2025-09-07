@@ -214,7 +214,7 @@ export class BaseEditor extends LitElement {
   }
 
   public _dispatchEditorEvent(type: EditorCommandTypes, data?: any): void {
-    console.debug(`sent editor command: ${type}`, data);
+    // console.debug(`sent editor command: ${type}`, data);
     fireEvent(this, 'editor-event', { type, data });
   }
 

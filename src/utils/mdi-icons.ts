@@ -19,6 +19,8 @@ import {
   mdiEye,
   mdiCog,
   mdiCursorMove,
+  mdiCloseCircle,
+  mdiCheckCircle,
 } from '@mdi/js';
 
 export const ICON = {
@@ -42,4 +44,6 @@ export const ICON = {
   EYE: mdiEye,
   COG: mdiCog,
   CURSOR_MOVE: mdiCursorMove,
+  CLOSE_CIRCLE: mdiCloseCircle,
+  CHECK_CIRCLE: mdiCheckCircle,
 };

@@ -225,6 +225,12 @@ export enum PANEL {
   LAYOUT_EDITOR = `${PANEL_PREFIX}layout-editor`,
 }
 
+export enum SUB_PANEL {
+  ROW_SUB_ITEM = `${PANEL_PREFIX}row-sub-item`,
+  ROW_ITEM = `${PANEL_PREFIX}row-item`,
+  ROW_SUB_GROUP_ITEM = `${PANEL_PREFIX}row-sub-group-item`,
+}
+
 export enum ELEMENT {
   FORM_BOOLEAN = 'ha-form-boolean',
   FORM_GRID = 'ha-form-grid',

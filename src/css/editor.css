@@ -167,6 +167,10 @@
 	/* gap: var(--vic-gutter-gap); */
 }
 
+.base-config.gap {
+	gap: var(--vic-gutter-gap);
+}
+
 .indicator-config {
 	display: flex;
 	flex-direction: column;
