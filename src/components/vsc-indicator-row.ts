@@ -13,9 +13,10 @@ import {
   IndicatorRowConfig,
   IndicatorRowItem,
   IndicatorEntityConfig,
+  GlobalAppearanceConfig,
 } from '../types/config/card/row-indicators';
 import { BaseElement } from '../utils/base-element';
-import { ensureRowItemConfig } from '../utils/editor/migrate-indicator';
+import { ensureEntityConfig } from '../utils/editor/migrate-indicator';
 import { ICON } from '../utils/mdi-icons';
 
 type Alignment = 'default' | 'start' | 'center' | 'end' | 'justify';
@@ -148,10 +149,12 @@ export class VscIndicatorRow extends BaseElement {
     const rowItems = this._rowItems || [];
     const active = this.active;
     const noWrap = this.rowConfig.no_wrap;
-    const iconSize = this.rowConfig?.icon_size ?? undefined;
+
     const alignment = this.rowConfig.alignment || 'default';
     const align = ALIGNS[alignment as Alignment] || ALIGNS.default;
-
+    const globalAppearance = {
+      ...this.rowConfig,
+    } as GlobalAppearanceConfig;
     const groupActive = this._selectedGroupId !== null;
     const showLeftArrow = this._showLeftArrow;
     const showRightArrow = this._showRightArrow;
@@ -164,8 +167,8 @@ export class VscIndicatorRow extends BaseElement {
     } else {
       style['justifyContent'] = align;
     }
-    if (iconSize) {
-      style['--badge-icon-size'] = `${iconSize}px`;
+    if (globalAppearance.global_icon_size) {
+      style['--badge-icon-size'] = `${globalAppearance.global_icon_size}px`;
     }
 
     // Set CSS variable for fade overlay, if showing either arrow left or right
@@ -190,6 +193,7 @@ export class VscIndicatorRow extends BaseElement {
                   ._hass=${this._hass}
                   ._config=${item}
                   ._store=${this._store}
+                  .globalAppearance=${globalAppearance}
                   .active=${active}
                   ?disabled=${disabled}
                   data-index=${index}
@@ -220,18 +224,19 @@ export class VscIndicatorRow extends BaseElement {
     const subItems: IndicatorEntityConfig[] = [];
 
     const config = rowItems[activeIndex] as IndicatorRowGroupConfig;
-    if (config.entity && isGroupEntity(this.hass.states[config.entity])) {
+    const ignore_group_members = config.ignore_group_members ?? false;
+    const exclude_entities = new Set(config.exclude_entities || []);
+    const items = config.items || [];
+    if (!ignore_group_members && config.entity && isGroupEntity(this.hass.states[config.entity])) {
       const stateObj = this.hass.states[config.entity] as GroupEntity;
-      const groupEntities = getGroupEntities(stateObj) || [];
-      groupEntities.forEach((entity) => {
-        const itemConfig = ensureRowItemConfig(entity);
-        subItems.push(itemConfig as IndicatorEntityConfig);
-      });
+      const groupEntities =
+        getGroupEntities(stateObj)
+          ?.filter((e) => !exclude_entities.has(e))
+          .filter((e) => !items.map((i) => i.entity || i).includes(e)) || [];
+
+      subItems.push(...ensureEntityConfig(groupEntities));
     }
-    config.items?.forEach((item) => {
-      const itemConfig = ensureRowItemConfig(item);
-      subItems.push(itemConfig as IndicatorEntityConfig);
-    });
+    subItems.push(...ensureEntityConfig(items as (IndicatorEntityConfig | string)[]));
 
     return html`${subItems.map((item) => {
       return html`
@@ -277,7 +282,7 @@ export class VscIndicatorRow extends BaseElement {
     } else {
       arg.stopPropagation();
       const { index, type } = arg.detail;
-      console.debug('Toggling group indicator', { index, type });
+      // console.debug('Toggling group indicator', { index, type });
       if (type !== 'group' || index === undefined || isNaN(Number(index))) {
         // Not a group, ignore
         return;

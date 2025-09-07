@@ -10,7 +10,11 @@ import { handleAction } from '../../ha/panels/common/handle-actions';
 import '../shared/vsc-indicator-badge';
 import '../shared/vsc-state-display';
 import { hasAction } from '../../types/config/actions-config';
-import { IndicatorEntityConfig, IndicatorRowGroupConfig } from '../../types/config/card/row-indicators';
+import {
+  GlobalAppearanceConfig,
+  IndicatorEntityConfig,
+  IndicatorRowGroupConfig,
+} from '../../types/config/card/row-indicators';
 import { VscIndicatorItemBase } from '../../utils/base-indicator';
 import { VscIndicatorBadge } from '../shared/vsc-indicator-badge';
 
@@ -23,6 +27,7 @@ declare global {
 @customElement(COMPONENT.INDICATOR_ITEM)
 export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig | IndicatorRowGroupConfig> {
   @property({ type: Boolean, reflect: true }) public active = false;
+  @property({ attribute: false }) private globalAppearance?: GlobalAppearanceConfig;
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
 
   private get _visibility(): boolean {
@@ -67,7 +72,8 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
 
     const stateDisplay = this._renderStateDisplay();
 
-    const name = this._config.name || computeEntityName(stateObj!, this.hass) || computeStateName(stateObj!);
+    const name =
+      this._config.name || (stateObj ? computeEntityName(stateObj!, this.hass) || computeStateName(stateObj!) : '');
 
     const showConfig = this._showConfig;
     const showName = showConfig.show_name;
@@ -82,6 +88,18 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     const content = showState ? stateDisplay : showName ? name : undefined;
 
     const hasAction = this._hasAction;
+
+    let rowReverse = false;
+    let colReverse = false;
+    if (this.globalAppearance) {
+      if (!this._config.ignore_global) {
+        rowReverse = this.globalAppearance.global_row_reverse ?? false;
+        colReverse = this.globalAppearance.global_column_reverse ?? false;
+      }
+    }
+    rowReverse = commonConfig.row_reverse ?? rowReverse;
+    colReverse = commonConfig.column_reverse ?? colReverse;
+
     return html`
       <vsc-indicator-badge
         .type=${this.type}
@@ -89,8 +107,9 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
         .hidden=${!Boolean(this._visibility)}
         .active=${this.active}
         .buttonRole=${Boolean(hasAction)}
-        .iconOnly=${!isGroup && !content}
-        .reverse=${commonConfig.column_reverse ?? false}
+        .iconOnly=${!content}
+        .rowReverse=${rowReverse}
+        .columnReverse=${colReverse}
         @action=${this._handleAction}
         .actionHandler=${actionHandler({
           hasHold: true,
