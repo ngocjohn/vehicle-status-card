@@ -1,5 +1,6 @@
 import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 
 import { computeStateName, fireEvent } from '../../../ha';
 import { isGroupEntity } from '../../../ha/data/group';
@@ -11,16 +12,17 @@ import {
 } from '../../../types/config/card/row-indicators';
 import { Create } from '../../../utils';
 import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
-import { ICON } from '../../../utils/mdi-icons';
 import '../../shared/vsc-editor-form';
 import './panel-row-sub-group-item';
 import { BaseEditor } from '../../base-editor';
+import { SUB_PANEL } from '../../editor-const';
 import {
   SUBGROUP_ENTITY_SCHEMA,
   ROW_GROUP_BASE_SCHEMA,
   ROW_INTERACTON_BASE_SCHEMA,
   ENTITY_SINGLE_TYPE_SCHEMA,
 } from '../../form';
+import { PanelRowSubGroupItem } from './panel-row-sub-group-item';
 
 declare global {
   interface HASSDomEvents {
@@ -29,29 +31,31 @@ declare global {
   }
 }
 
-@customElement('panel-row-sub-item')
+@customElement(SUB_PANEL.ROW_SUB_ITEM)
 export class PanelRowSubItem extends BaseEditor {
   @property({ attribute: false }) private _subItemConfig!: IndicatorRowItem;
   @property({ type: Number, attribute: 'row-index', reflect: true }) rowIndex!: number;
   @property({ type: Number, attribute: 'item-index', reflect: true }) itemIndex!: number;
 
   @state() private _yamlActive = false;
+  @state() private _subItemExpanded: boolean = false;
 
   @state() private _groupItemIndex: number | null = null;
 
   @query('ha-expansion-panel') private _expansionPanel?: any;
-  @query('#groupbaseform') private _groupBaseFormDiv?: HTMLDivElement;
-  @state() private _previevDone = false;
+  @query(SUB_PANEL.ROW_SUB_GROUP_ITEM) _subGroupItemEditor?: PanelRowSubGroupItem;
 
   constructor() {
     super();
   }
 
-  protected firstUpdated(_changedProperties: PropertyValues): void {
+  connectedCallback(): void {
+    super.connectedCallback();
+  }
+
+  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
     super.firstUpdated(_changedProperties);
-    if (this._expansionPanel && this.isGroup && this._groupItemIndex === null) {
-      this._expansionPanel.addEventListener('expanded-changed', this._onExpandChanged.bind(this));
-    }
+    await this.updateComplete;
   }
 
   protected updated(_changedProperties: PropertyValues): void {
@@ -63,11 +67,8 @@ export class PanelRowSubItem extends BaseEditor {
         // when closing sub-group item editor, expand the group editor panel again
         if (!this._expansionPanel.expanded) {
           this._expansionPanel.expanded = true;
-          this._groupBaseFormDiv?.classList.toggle('rolled-up', true);
+          // this._groupBaseFormDiv?.classList.toggle('rolled-up', true);
         }
-
-        // re-attach listener
-        this._expansionPanel.addEventListener('expanded-changed', this._onExpandChanged.bind(this));
       }
     }
   }
@@ -78,17 +79,11 @@ export class PanelRowSubItem extends BaseEditor {
 
   private _onExpandChanged(event: any): void {
     event.stopPropagation();
-    if (!this.isGroup) return;
-    const target = event.target;
-    const expanded = target.expanded;
-    if (expanded === undefined) return;
-    console.debug('Group expansion changed:', expanded);
-    this._groupBaseFormDiv?.classList.toggle('rolled-up', expanded);
-    if (expanded && !this._previevDone && !this._isPreviewGroup) {
-      // if this is the first time expanding, then do preview
-      this._previevDone = true;
-      this._handleGroupPreviewToggle();
-    }
+    const target = event.target as any;
+    if (target !== this._expansionPanel) return;
+    const expanded = event.detail.expanded;
+    this._subItemExpanded = expanded;
+    // console.debug('Group:', target.id, 'expansion changed:', expanded);
   }
 
   protected render(): TemplateResult {
@@ -103,7 +98,6 @@ export class PanelRowSubItem extends BaseEditor {
         ?hidden=${this._groupItemIndex !== null}
         ._label=${headerLabel}
         .secondary=${name}
-        .primaryIcon=${ICON.CLOSE}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
         .thirdAction=${previewBtn}
         @primary-action=${this._goBack}
@@ -137,6 +131,7 @@ export class PanelRowSubItem extends BaseEditor {
     if (this._groupItemIndex !== null) {
       return this._renderSubGroupEntityEditor();
     }
+    // this._subItemExpanded = this._expansionPanel?.expanded ?? false;
 
     const config = this._subItemConfig as IndicatorRowGroupConfig;
     const groupItems = config.items;
@@ -147,7 +142,8 @@ export class PanelRowSubItem extends BaseEditor {
     const groupEntity = isGroupEntityType ? this._hass.states[config.entity!] : undefined;
 
     const itemsWrapper = Create.ExpansionPanel({
-      options: { header: 'Items', icon: 'mdi:format-list-bulleted' },
+      options: { header: 'Items', icon: 'mdi:format-list-bulleted', elId: 'itemsWrapper' },
+      expandedWillChange: (ev: any) => this._onExpandChanged(ev),
       content: html` <panel-row-sub-group-item
         id="group-items-editor"
         ._hass=${this._hass}
@@ -167,7 +163,14 @@ export class PanelRowSubItem extends BaseEditor {
       ${this._yamlActive
         ? yamlEditor
         : html`<div class="card-config">
-            <div id="groupbaseform">${groupBaseForm}</div>
+            <div
+              id="groupbaseform"
+              class=${classMap({
+                'rolled-up': this._subItemExpanded,
+              })}
+            >
+              ${groupBaseForm}
+            </div>
             ${itemsWrapper}
           </div>`}
     `;
@@ -199,7 +202,6 @@ export class PanelRowSubItem extends BaseEditor {
       <sub-editor-header
         ._label=${labels.primary}
         .secondary=${labels.secondary}
-        .primaryIcon=${ICON.CLOSE}
         @primary-action=${primaryAction}
         @secondary-action=${this._toggleYaml}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
@@ -229,9 +231,9 @@ export class PanelRowSubItem extends BaseEditor {
   private _groupItemsChanged(event: CustomEvent): void {
     event.stopPropagation();
     if (!this._subItemConfig || this._subItemConfig.type !== 'group') return;
-    const items = event.detail.items as IndicatorBaseItemConfig[];
-    const newConfig = { ...(this._subItemConfig as IndicatorRowGroupConfig), items };
-    console.debug('Group items changed:', items);
+    const updatedConfig = { ...event.detail } as Partial<IndicatorRowGroupConfig>;
+    console.debug('Received group items changed event:', updatedConfig);
+    const newConfig = { ...(this._subItemConfig as IndicatorRowGroupConfig), ...updatedConfig };
     this._rowChanged(newConfig);
   }
 
@@ -299,7 +301,7 @@ export class PanelRowSubItem extends BaseEditor {
 
   // === helpers ===
   private _handleGroupPreviewToggle(): void {
-    console.debug('Toggling group preview');
+    // console.debug('Toggling group preview');
     const isPreview = this._isPreviewGroup;
     this._setPreviewConfig('row_group_preview', {
       row_index: this.rowIndex,

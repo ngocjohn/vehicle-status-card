@@ -13,8 +13,8 @@ import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-heade
 import { EDITOR_PREVIEW } from '../../../utils/editor/types';
 import { ICON } from '../../../utils/mdi-icons';
 import { BaseEditor } from '../../base-editor';
-import { PANEL } from '../../editor-const';
-import { ROW_ICON_SIZE_NO_WRAP_SCHEMA } from '../../form/indicator-row-schema';
+import { SUB_PANEL } from '../../editor-const';
+import { GLOBAL_BOOLEAN_KEYS, ROW_ICON_SIZE_NO_WRAP_SCHEMA, ROW_NO_WRAP_SCHEMA } from '../../form/indicator-row-schema';
 import { PanelRowSubItem } from './panel-row-sub-item';
 
 declare global {
@@ -22,7 +22,7 @@ declare global {
     'row-item-changed': { rowConfig: IndicatorRowConfig };
   }
 }
-@customElement(PANEL.INDICATOR_ITEM)
+@customElement(SUB_PANEL.ROW_ITEM)
 export class PanelIndicatorItem extends BaseEditor {
   @property({ attribute: false }) private _rowConfig!: IndicatorRowConfig;
   @property({ type: Number, attribute: 'row-index', reflect: true }) rowIndex!: number;
@@ -30,10 +30,14 @@ export class PanelIndicatorItem extends BaseEditor {
 
   @state() private _items: IndicatorRowItem[] = [];
   @state() private _yamlActive = false;
-  @query('panel-row-sub-item') _subItemEditor!: PanelRowSubItem;
+  @query(SUB_PANEL.ROW_SUB_ITEM) _rowSubItemEditor?: PanelRowSubItem;
 
   constructor() {
     super();
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
   }
 
   get _editingItemType(): 'entity' | 'group' | null {
@@ -41,6 +45,10 @@ export class PanelIndicatorItem extends BaseEditor {
     const item = this._items?.[this._editIndex];
     if (!item) return null;
     return item.type === 'group' ? 'group' : 'entity';
+  }
+
+  get _hasGlobalConfig(): boolean {
+    return [...GLOBAL_BOOLEAN_KEYS].some((key) => (this._rowConfig as any)[key] !== undefined);
   }
 
   protected willUpdate(changedProperties: PropertyValues): void {
@@ -67,47 +75,50 @@ export class PanelIndicatorItem extends BaseEditor {
       return this._renderSubItemEditor();
     }
     const indexLabel = `ROW ${this.rowIndex + 1}`;
+    const ROW_DATA = { ...(this._rowConfig || {}) };
 
     const iconSizeNoWrapData = {
-      no_wrap: this._rowConfig?.no_wrap,
-      icon_size: this._rowConfig?.icon_size,
+      global_icon_size: ROW_DATA?.global_icon_size,
+      global_column_reverse: ROW_DATA?.global_column_reverse,
+      global_row_reverse: ROW_DATA?.global_row_reverse,
     };
 
-    return html`
-      <sub-editor-header
-        ._label=${indexLabel}
-        .secondary=${'Configure row items'}
-        .hidePrimaryAction=${this._yamlActive}
-        .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
-        @primary-action=${this._goBack}
-        @secondary-action=${() => {
-          this._yamlActive = !this._yamlActive;
-        }}
-      >
-      </sub-editor-header>
+    const noWrapEl = this._createVscForm({ no_wrap: ROW_DATA?.no_wrap }, ROW_NO_WRAP_SCHEMA, 'icon_size_no_wrap');
+    const globalAppearance = this._createVscForm(iconSizeNoWrapData, ROW_ICON_SIZE_NO_WRAP_SCHEMA, 'icon_size_no_wrap');
 
-      ${!this._yamlActive
-        ? html`
-            <vsc-alignment-selector
-              label="Alignment (optional)"
-              .value=${this._rowConfig?.alignment}
-              .configValue=${'alignment'}
-              @value-changed=${this._handleRowChanged}
-            ></vsc-alignment-selector>
-            <vsc-editor-form
-              ._hass=${this._hass}
-              .data=${iconSizeNoWrapData}
-              .schema=${ROW_ICON_SIZE_NO_WRAP_SCHEMA}
-              .configValue=${'icon_size_no_wrap'}
-              @value-changed=${this._handleRowChanged}
-            ></vsc-editor-form>
-            ${this._renderRowItems()} ${this._renderFooterActions()}
-          `
-        : html` <panel-yaml-editor
-            .hass=${this._hass}
-            .configDefault=${this._rowConfig}
-            @yaml-config-changed=${this._handleYamlConfigChanged}
-          ></panel-yaml-editor>`}
+    return html`
+      <div class="base-config gap">
+        <sub-editor-header
+          ._label=${indexLabel}
+          .hidePrimaryAction=${this._yamlActive}
+          .primaryIcon=${'close'}
+          .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
+          @primary-action=${this._goBack}
+          @secondary-action=${() => {
+            this._yamlActive = !this._yamlActive;
+          }}
+        >
+        </sub-editor-header>
+
+        ${!this._yamlActive
+          ? html`
+              <div class="row-appearance">
+                <vsc-alignment-selector
+                  label="Alignment (optional)"
+                  .value=${this._rowConfig?.alignment}
+                  .key=${'alignment'}
+                  @value-changed=${this._onValueChanged}
+                ></vsc-alignment-selector>
+                ${noWrapEl}
+              </div>
+              ${globalAppearance} ${this._renderRowItems()} ${this._renderFooterActions()}
+            `
+          : html` <panel-yaml-editor
+              .hass=${this._hass}
+              .configDefault=${this._rowConfig}
+              @yaml-config-changed=${this._handleYamlConfigChanged}
+            ></panel-yaml-editor>`}
+      </div>
     `;
   }
 
@@ -198,8 +209,8 @@ export class PanelIndicatorItem extends BaseEditor {
           .fixed=${true}
           .activatable=${true}
           .naturalMenuWidth=${true}
-          @closed=${(ev) => ev.stopPropagation()}
-          @opened=${(ev) => ev.stopPropagation()}
+          @closed=${(ev: Event) => ev.stopPropagation()}
+          @opened=${(ev: Event) => ev.stopPropagation()}
         >
           <span slot="trigger"> ${Create.HaButton(actions[0])} </span>
           ${actions.slice(1).map((action) => {
@@ -214,7 +225,6 @@ export class PanelIndicatorItem extends BaseEditor {
 
   private _renderSubItemEditor(): TemplateResult {
     const item = this._items[this._editIndex!];
-
     return html`
       <panel-row-sub-item
         ._subItemConfig=${item}
@@ -331,50 +341,38 @@ export class PanelIndicatorItem extends BaseEditor {
 
   protected _onValueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const { key, subKey } = ev.target as any;
+    const { key } = ev.target as any;
     const value = ev.detail?.value;
-    console.debug('Value changed', key, subKey, value);
-    console.debug('event', ev);
-  }
-  private _handleRowChanged(event: CustomEvent): void {
-    event.stopPropagation();
+    // console.debug('Value changed', key, subKey, value);
     const config = { ...(this._rowConfig || {}) } as IndicatorRowConfig;
     if (!config) return;
-    const configValue = (event.target as any).configValue;
-    const value = event.detail?.value;
-    console.debug('Row config changed', configValue, value);
-    if (configValue && configValue === 'icon_size_no_wrap') {
-      const noWrap = event.detail?.value.no_wrap as boolean;
-      console.debug('No Wrap changed to', noWrap);
-      config.no_wrap = noWrap;
-      if (!noWrap) {
-        delete config.no_wrap;
+    if (key === 'alignment') {
+      // If the alignment is not set, and the config has no alignment, we should not do anything
+      if (!value && !config.alignment) {
+        return;
       }
-      const iconSize = event.detail?.value.icon_size as number | undefined;
-      console.debug('Icon Size changed to', iconSize);
-      if (!iconSize) {
-        delete config.icon_size;
+      // If the alignment is not set, and the config has an alignment, we should remove it
+      if (!value && config.alignment) {
+        delete config.alignment;
       } else {
-        config.icon_size = iconSize;
+        config.alignment = value;
       }
       this._rowConfigChanged(config);
       return;
     }
-    const newAlignment = event.detail?.value as string | undefined;
-
-    // If the alignment is not set, and the config has no alignment, we should not do anything
-    if (!newAlignment && !config.alignment) {
+    if (key === 'icon_size_no_wrap') {
+      const keys = Object.keys(value || {});
+      keys.forEach((k) => {
+        const v = (value as any)[k];
+        if (v === undefined || v === null || v === false) {
+          delete (config as any)[k];
+        } else {
+          (config as any)[k] = v;
+        }
+      });
+      this._rowConfigChanged(config);
       return;
     }
-    // If the alignment is not set, and the config has an alignment, we should remove it
-    // If the alignment is set, we should update it
-    if (!newAlignment && config.alignment) {
-      delete config.alignment;
-    } else {
-      config.alignment = newAlignment;
-    }
-
-    this._rowConfigChanged(config);
   }
 
   private _rowSubItemChanged(event: CustomEvent): void {
@@ -407,6 +405,14 @@ export class PanelIndicatorItem extends BaseEditor {
     return [
       super.styles,
       css`
+        .row-appearance {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-direction: row;
+          margin-bottom: 8px;
+        }
+
         .action-footer {
           margin-top: 0;
           justify-content: flex-start;
@@ -448,6 +454,6 @@ export class PanelIndicatorItem extends BaseEditor {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'panel-indicator-item': PanelIndicatorItem;
+    'panel-row-item': PanelIndicatorItem;
   }
 }

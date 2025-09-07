@@ -14,10 +14,11 @@ import { computeNewRow } from '../../utils/editor/migrate-indicator';
 import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
 import { ICON } from '../../utils/mdi-icons';
 import { BaseEditor } from '../base-editor';
-import { PANEL } from '../editor-const';
-import { PanelIndicatorItem } from './indicators/panel-row-item';
+import { PANEL, SUB_PANEL } from '../editor-const';
+import * as ROW_SUB from './indicators';
 
 type RowAction = 'edit' | 'delete' | 'add' | 'peek';
+
 @customElement(PANEL.INDICATOR_ROWS)
 export class PanelIndicatorRows extends BaseEditor {
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
@@ -26,12 +27,17 @@ export class PanelIndicatorRows extends BaseEditor {
   @state() private _selectedRowIndex: number | null = null;
   @state() private _yamlActive = false;
 
-  @query(PANEL.INDICATOR_ITEM) _rowEditor?: PanelIndicatorItem;
+  @query(SUB_PANEL.ROW_ITEM) _rowItemEditor?: ROW_SUB.PanelIndicatorItem;
 
   constructor() {
     super();
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.IndicatorRowsEditor = this;
+    console.debug('IndicatorRowsEditor:', this as any);
+  }
   protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);
     if (changedProps.has('_config') && this._config.indicator_rows) {
@@ -132,18 +138,22 @@ export class PanelIndicatorRows extends BaseEditor {
       ${repeat(items, (item, index) => {
         const { name, icon, entity } = toCommon(item);
         const iconSlot = icon ?? `mdi:numeric-${index + 1}-circle`;
+        const itemType = item.type || 'entity';
+        let label: string = itemType;
         let content: string | undefined = name;
-        if (!content && entity) {
+        if (!content && !entity) {
+          content = itemType;
+          label = `Item ${index + 1}`;
+        } else if (!content && entity) {
           const stateObj = this._hass.states[entity];
-          content = computeStateName(stateObj);
+          content = stateObj ? computeStateName(stateObj) : entity;
         }
-        const label = capitalize(item.type);
         return html` <badge-editor-item
           .rowIndex=${rowIndex}
           .itemIndex=${index}
           @badge-action-item=${this._handleSubRowPeekEdit}
         >
-          <ha-badge .label=${label} .iconOnly=${!content}>
+          <ha-badge .label=${capitalize(label)}>
             <ha-icon slot="icon" .icon=${iconSlot}></ha-icon>
             ${content ? html`<span>${capitalize(content)}</span>` : ''}
           </ha-badge>
@@ -169,7 +179,7 @@ export class PanelIndicatorRows extends BaseEditor {
   private _renderRowEditor(): TemplateResult {
     const row = this._rows[this._selectedRowIndex!];
 
-    return html` <panel-indicator-item
+    return html` <panel-row-item
       ._hass=${this._hass}
       ._store=${this._store}
       ._config=${this._config}
@@ -179,7 +189,7 @@ export class PanelIndicatorRows extends BaseEditor {
         this._selectedRowIndex = null;
       }}
       @row-item-changed=${this._handleRowChanged}
-    ></panel-indicator-item>`;
+    ></panel-row-item>`;
   }
 
   private _handleSubRowPeekEdit = async (ev: Event) => {
@@ -195,10 +205,10 @@ export class PanelIndicatorRows extends BaseEditor {
         this._selectedRowIndex = rowIndex;
         this.requestUpdate();
         await this.updateComplete;
-        if (this._rowEditor && this._rowEditor.updateComplete) {
-          await this._rowEditor.updateComplete;
-          this._rowEditor._editIndex = itemIndex;
-          this._rowEditor.requestUpdate();
+        if (this._rowItemEditor && this._rowItemEditor.updateComplete) {
+          await this._rowItemEditor.updateComplete;
+          this._rowItemEditor._editIndex = itemIndex;
+          this._rowItemEditor.requestUpdate();
         }
         break;
       case 'show-item':
@@ -227,23 +237,6 @@ export class PanelIndicatorRows extends BaseEditor {
         this._configChanged(currentRowsDup);
         break;
     }
-  };
-
-  private _handleSubRowAdd = async (rowIndex: number) => {
-    console.debug('Add sub-row item to row:', rowIndex);
-    let currentRows = [...(this._rows || [])];
-    const row = currentRows[rowIndex];
-    if (!row) {
-      console.error('Row not found at index:', rowIndex);
-      return;
-    }
-    // For simplicity, we add a new entity item. In a real scenario, you might want to show a selection dialog.
-    const newItem: IndicatorRowItem = computeNewRow(this._hass).row_items[0];
-    console.debug('New item to add:', newItem);
-    row.row_items.push(newItem);
-    currentRows[rowIndex] = row;
-    console.debug('Updated rows after adding item:', currentRows);
-    this._configChanged(currentRows);
   };
 
   private _handleConfigChanged(ev: CustomEvent): void {
@@ -383,5 +376,8 @@ export class PanelIndicatorRows extends BaseEditor {
 declare global {
   interface HTMLElementTagNameMap {
     'panel-indicator-rows': PanelIndicatorRows;
+  }
+  interface Window {
+    IndicatorRowsEditor: PanelIndicatorRows;
   }
 }
