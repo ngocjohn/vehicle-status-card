@@ -59,3 +59,8 @@ export const BUTTON_ACTION_MENU: MenuItemConfig[] = [
     color: 'var(--error-color)',
   },
 ];
+
+export const GROUP_ENTITY_ADDED_ACTIONS: MenuItemConfig[] = [
+  { title: 'Add to exclude list', action: 'add-exclude-entity', icon: 'mdi:close-circle' },
+  { title: 'Remove from exclude list', action: 'remove-exclude-entity', icon: 'mdi:check-circle' },
+];

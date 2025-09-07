@@ -1,4 +1,5 @@
 import { html, nothing, TemplateResult } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 import './vic-tab';
 import './vic-tab-bar';
@@ -8,6 +9,8 @@ export const ExpansionPanel = ({
   content,
   options,
   slotIcons,
+  expandedWillChange,
+  expandedChangedCallback,
 }: {
   content: TemplateResult[] | TemplateResult;
   options: {
@@ -18,8 +21,11 @@ export const ExpansionPanel = ({
     outlined?: boolean;
     noCollapse?: boolean;
     leftChevron?: boolean;
+    elId?: string;
   };
   slotIcons?: TemplateResult | TemplateResult[];
+  expandedWillChange?: (ev?: any) => void;
+  expandedChangedCallback?: (ev?: any) => void;
 }): TemplateResult => {
   return html`
     <ha-expansion-panel
@@ -29,6 +35,9 @@ export const ExpansionPanel = ({
       .header=${options.header}
       .secondary=${options?.secondary || ''}
       .leftChevron=${options?.leftChevron || false}
+      @expanded-will-change=${expandedWillChange}
+      @expanded-changed=${expandedChangedCallback}
+      id=${ifDefined(options?.elId)}
       style="border-radius: 6px;  --ha-card-border-radius: 6px;"
     >
       ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}

@@ -66,7 +66,6 @@ export class AlignmentSelector extends LitElement {
     return css`
       :host {
         display: block;
-        margin-bottom: 8px;
         width: 100%;
       }
       ha-select {
