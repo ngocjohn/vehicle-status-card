@@ -11,13 +11,11 @@ type BadgeType = 'entity' | 'group';
 @customElement(COMPONENT.INDICATOR_BADGE)
 export class VscIndicatorBadge extends LitElement {
   @property({ type: String, reflect: true }) public type: BadgeType = 'entity';
-
   @property() public label?: string;
   @property({ attribute: false }) public buttonRole?: boolean = false;
-
   @property({ type: Boolean, reflect: true }) public active = false;
-  @property({ type: Boolean, attribute: 'icon-only' }) iconOnly = false;
   @property({ type: Boolean, reflect: true }) public hidden = false;
+  @property({ type: Boolean, attribute: 'icon-only' }) iconOnly = false;
   @property({ type: Boolean, attribute: 'col-reverse', reflect: true }) public colReverse = false;
   @property({ type: Boolean, attribute: 'row-reverse', reflect: true }) public rowReverse = false;
 
@@ -44,7 +42,7 @@ export class VscIndicatorBadge extends LitElement {
               ${label ? html`<span class="label">${label}</span>` : nothing}
               <span class="content"><slot></slot></span>
             </span>`}
-        ${this.type === 'entity'
+        ${this.type !== 'group'
           ? nothing
           : html` <ha-svg-icon slot="icon" class="toggle-icon" .path=${ICON.CHEVRON_DOWN}></ha-svg-icon> `}
       </div>
@@ -77,7 +75,8 @@ export class VscIndicatorBadge extends LitElement {
         padding: 0px 12px;
         box-sizing: border-box;
         width: auto;
-        border-radius: var(--ha-card-border-radius, 12px);
+        border-radius: var(--ha-badge-border-radius, calc(var(--ha-badge-size, 36px) / 2));
+        /* border-radius: var(--ha-card-border-radius, 12px); */
         background: none;
         -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
         backdrop-filter: var(--ha-card-backdrop-filter, none);

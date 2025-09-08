@@ -1,4 +1,4 @@
-import { mdiCodeJson, mdiGestureTap, mdiPalette, mdiTextShort } from '@mdi/js';
+import { mdiCodeJson, mdiDotsHexagon, mdiGestureTap, mdiPalette, mdiTextShort } from '@mdi/js';
 
 import { computeOptionalActionSchemaFull } from './actions-config';
 
@@ -53,21 +53,30 @@ export const ROW_NO_WRAP_SCHEMA = [
   },
 ] as const;
 
-export const ICON_SIZE_SCHEMA = (helper?: string) => {
-  if (!helper) {
-    helper = 'Size for all icons in the row.';
-  }
-  return [
-    {
-      name: 'icon_size',
-      label: 'Icon Size (px)',
-      helper: helper,
-      required: false,
-      default: 21,
-      selector: { number: { min: 14, step: 1, mode: 'box', unit_of_measurement: 'px' } },
-    },
-  ] as const;
-};
+export const ICON_SIZE_SCHEMA = [
+  {
+    name: 'icon_size',
+    label: 'Icon Size (px)',
+    required: false,
+    default: 21,
+    selector: { number: { min: 14, step: 1, mode: 'box', unit_of_measurement: 'px' } },
+  },
+] as const;
+// export const ICON_SIZE_SCHEMA = (helper?: string) => {
+//   if (!helper) {
+//     helper = 'Size for all icons in the row.';
+//   }
+//   return [
+//     {
+//       name: 'icon_size',
+//       label: 'Icon Size (px)',
+//       helper: helper,
+//       required: false,
+//       default: 21,
+//       selector: { number: { min: 14, step: 1, mode: 'box', unit_of_measurement: 'px' } },
+//     },
+//   ] as const;
+// };
 
 export interface BooleanItemSchema {
   type: 'boolean';
@@ -209,7 +218,18 @@ export const ROW_ICON_SIZE_NO_WRAP_SCHEMA = [
     schema: [
       {
         type: 'grid',
-        schema: [...ICON_SIZE_SCHEMA(), ...computeBooleanSchema(GLOBAL_BOOLEAN_KEYS as BooleanKey[])],
+        schema: [
+          {
+            name: 'global_icon_size',
+            label: 'Icon Size (px)',
+            helper: 'Size for all icons in the row.',
+            required: false,
+            default: 21,
+            selector: { number: { min: 14, step: 1, mode: 'box', unit_of_measurement: 'px' } },
+          },
+          ,
+          ...computeBooleanSchema(GLOBAL_BOOLEAN_KEYS as BooleanKey[]),
+        ],
       },
     ],
   },
@@ -304,7 +324,7 @@ export const ROW_ITEM_CONTENT_SCHEMA = () =>
             icon_entity: 'entity',
           },
         },
-        ...ICON_SIZE_SCHEMA('Will override the row icon size for this item only.'),
+        ...ICON_SIZE_SCHEMA,
         ...computeBooleanSchema([...SINGLE_BOOLEAN_KEYS]),
       ],
     },
@@ -333,6 +353,7 @@ export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined, isGroupE
       type: 'expandable',
       flatten: true,
       expanded: false,
+      iconPath: mdiDotsHexagon,
       schema: [
         {
           name: 'name',
@@ -390,13 +411,15 @@ export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined, isGroupE
               },
               context: { icon_entity: 'entity' },
             },
-            ...ICON_SIZE_SCHEMA('Will override the row icon size for this item only.'),
+            ...ICON_SIZE_SCHEMA,
           ],
         },
         {
           name: '',
           type: 'grid',
-          schema: [...computeBooleanSchema(['column_reverse', 'row_reverse', 'include_state_template'])],
+          schema: [
+            ...computeBooleanSchema(['ignore_global', 'column_reverse', 'row_reverse', 'include_state_template']),
+          ],
         },
         ...DISPLAY_OPTIONS_SCHEMA(!!groupEntity, groupEntity),
       ],

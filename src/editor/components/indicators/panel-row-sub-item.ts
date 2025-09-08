@@ -306,6 +306,7 @@ export class PanelRowSubItem extends BaseEditor {
     this._setPreviewConfig('row_group_preview', {
       row_index: this.rowIndex,
       group_index: isPreview ? null : this.itemIndex,
+      entity_index: this.itemIndex,
     });
   }
 
@@ -359,7 +360,7 @@ export class PanelRowSubItem extends BaseEditor {
     // ---------------------------------------------------------------
 
     if (!changed) return;
-    console.debug('config changed:', changed);
+    // console.debug('config changed:', changed);
     this._rowChanged(currentConfig); // willUpdate can recompute any derived @state
   }
 

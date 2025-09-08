@@ -167,9 +167,6 @@ export class VscIndicatorRow extends BaseElement {
     } else {
       style['justifyContent'] = align;
     }
-    if (globalAppearance.global_icon_size) {
-      style['--badge-icon-size'] = `${globalAppearance.global_icon_size}px`;
-    }
 
     // Set CSS variable for fade overlay, if showing either arrow left or right
     return html`
@@ -193,6 +190,7 @@ export class VscIndicatorRow extends BaseElement {
                   ._hass=${this._hass}
                   ._config=${item}
                   ._store=${this._store}
+                  .itemIndex=${index}
                   .globalAppearance=${globalAppearance}
                   .active=${active}
                   ?disabled=${disabled}
@@ -350,7 +348,8 @@ export class VscIndicatorRow extends BaseElement {
         }
 
         :host(.peek) {
-          border-block: inset 2px var(--accent-color);
+          border-block: inset 1px var(--accent-color);
+          transition: border-block 0.3s ease-in-out;
         }
 
         .row-wrapper {

@@ -64,8 +64,8 @@ export class PanelIndicatorItem extends BaseEditor {
       const oldIndex = _changedProperties.get('_editIndex') as number | null;
       const newIndex = this._editIndex;
       if (oldIndex !== newIndex) {
-        const itemType = this._editingItemType;
-        this._toggleGroupPreview(null, itemType === 'entity' ? newIndex : null);
+        // const itemType = this._editingItemType;
+        this._toggleGroupPreview(null, newIndex);
       }
     }
   }

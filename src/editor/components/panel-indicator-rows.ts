@@ -1,20 +1,23 @@
 import { capitalize } from 'es-toolkit';
 import { html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
-import { repeat } from 'lit/directives/repeat.js';
+import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 
 import './indicators/panel-row-item';
 import '../shared/badge-editor-item';
 import '../../utils/editor/sub-editor-header';
+import { repeat } from 'lit/directives/repeat.js';
+
 import { computeStateName, fireEvent } from '../../ha';
 import { IndicatorRowConfig, IndicatorRowItem, toCommon, VehicleStatusCardConfig } from '../../types/config';
 import { Create, showConfirmDialog } from '../../utils';
-import { ActionType } from '../../utils/editor/create-actions-menu';
+import { ExpansionPanelParams } from '../../utils/editor/create';
+import { _renderActionItem, ActionType, ROW_MAIN_ACTIONS } from '../../utils/editor/create-actions-menu';
 import { computeNewRow } from '../../utils/editor/migrate-indicator';
 import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
+import { preventDefault, stopAndPrevent, stopPropagation } from '../../utils/helpers-dom';
 import { ICON } from '../../utils/mdi-icons';
 import { BaseEditor } from '../base-editor';
-import { PANEL, SUB_PANEL } from '../editor-const';
+import { ELEMENT, PANEL, SUB_PANEL } from '../editor-const';
 import * as ROW_SUB from './indicators';
 
 type RowAction = 'edit' | 'delete' | 'add' | 'peek';
@@ -28,6 +31,7 @@ export class PanelIndicatorRows extends BaseEditor {
   @state() private _yamlActive = false;
 
   @query(SUB_PANEL.ROW_ITEM) _rowItemEditor?: ROW_SUB.PanelIndicatorItem;
+  @queryAll(ELEMENT.HA_EXPANSION_PANEL) _expansionPanels?: Element[];
 
   constructor() {
     super();
@@ -36,7 +40,7 @@ export class PanelIndicatorRows extends BaseEditor {
   connectedCallback(): void {
     super.connectedCallback();
     window.IndicatorRowsEditor = this;
-    console.debug('IndicatorRowsEditor:', this as any);
+    console.debug('IndicatorRowsEditor connected');
   }
   protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);
@@ -50,10 +54,10 @@ export class PanelIndicatorRows extends BaseEditor {
       const oldIndex = _changedProperties.get('_selectedRowIndex') as number | null;
       const newIndex = this._selectedRowIndex;
       if (oldIndex !== newIndex) {
-        this._setPreviewConfig('row_group_preview', { row_index: this._selectedRowIndex, group_index: null });
+        this._setPreviewConfig('row_group_preview', { row_index: newIndex, group_index: null });
         if (newIndex !== null) {
           setTimeout(() => {
-            this._dispatchEditorEvent('toggle-indicator-row', { rowIndex: newIndex, peek: true });
+            this._showRow(newIndex, true);
           }, 500);
         }
       }
@@ -88,49 +92,99 @@ export class PanelIndicatorRows extends BaseEditor {
   private _renderRowList(): TemplateResult {
     const rows = this._rows;
 
-    const actions = [
-      { label: 'Edit Row', path: ICON.PENCIL, callback: 'edit' },
-      { label: 'Show Row', path: ICON.EYE, callback: 'peek' },
-      { label: 'Delete Row', path: ICON.DELETE, callback: 'delete' },
-    ];
-
     return !rows.length
       ? html`<span>No indicator rows configured.</span>`
       : html`
           <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
-            <div class="card-config">
+            <div class="card-config" id="rowList">
               ${repeat(rows, (row, index) => {
                 const expansionOps = {
                   icon: `mdi:numeric-${index + 1}-circle`,
                   header: `ROW #${index + 1}`,
                   secondary: `${row.row_items.length} items`,
                   leftChevron: true,
-                };
-                const slotIcons = html` <div class="item-actions" slot="icons">
-                  ${actions.map((action) => {
-                    const { label, path, callback } = action;
-                    return html`
-                      <ha-svg-icon
-                        .label=${label}
-                        .path=${path}
-                        .action=${callback}
-                        .index=${index}
-                        @click=${this._handleRowAction}
-                      ></ha-svg-icon>
-                    `;
-                  })}
-                  <ha-svg-icon class="handle" .path=${ICON.DRAG}></ha-svg-icon>
-                </div>`;
+                  elId: `row-${index}`,
+                } as ExpansionPanelParams['options'];
+                const slotIcons = this._renderRowActions(index);
                 const content = this._renderRowListItem(row.row_items, index);
                 return Create.ExpansionPanel({
                   content,
                   slotIcons,
                   options: expansionOps,
+                  expandedWillChange: this._handlePanelWillChange,
                 });
               })}
             </div>
           </ha-sortable>
         `;
+  }
+
+  private _handlePanelWillChange = (ev: CustomEvent): void => {
+    ev.stopPropagation();
+    if (!this._expansionPanels) return;
+    const panel = ev.target as any;
+    const panelId = panel.id;
+    const expanded = ev.detail.expanded;
+    // console.debug('Panel will change:', panelId, expanded);
+    if (!expanded) {
+      this._showRow(null);
+      return;
+    }
+    const rowIndex = panelId?.replace('row-', '');
+    // console.debug('Row index expanded:', rowIndex);
+    this._showRow(Number(rowIndex));
+    const panels = Array.from(this._expansionPanels).filter((p) => p.id !== panelId) as any[];
+    // console.debug('Other panels:', panels);
+    panels.forEach((p) => {
+      if (p.expanded) {
+        p.expanded = false;
+      }
+    });
+  };
+
+  private _renderRowActions(rowIndex: number): TemplateResult {
+    let deleteFound = false;
+    return html` <div class="item-actions" slot="icons">
+      <ha-icon-button
+        .label=${'Edit Row'}
+        .path=${ICON.CHEVRON_RIGHT}
+        .action=${'edit'}
+        .index=${rowIndex}
+        @click=${this._handleRowAction}
+      ></ha-icon-button>
+      <div class="separator"></div>
+      <ha-button-menu
+        corner="BOTTOM_START"
+        menu-corner="END"
+        .fixed=${true}
+        .naturalMenuWidth=${true}
+        .activatable=${true}
+        @closed=${stopPropagation}
+        @opened=${stopAndPrevent}
+      >
+        <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL} @click=${preventDefault}> </ha-icon-button>
+        ${ROW_MAIN_ACTIONS.map((item) => {
+          if (/(delete|remove)/.test(item.action) && !deleteFound) {
+            deleteFound = true;
+            return html`
+              <li divider role="separator"></li>
+              ${_renderActionItem({
+                item,
+                onClick: this._handleRowAction,
+                option: { index: rowIndex },
+              })}
+            `;
+          }
+          return _renderActionItem({
+            item,
+            onClick: this._handleRowAction,
+            option: { index: rowIndex },
+          });
+        })}
+      </ha-button-menu>
+      <div class="separator"></div>
+      <ha-svg-icon class="handle" .path=${ICON.DRAG} @click=${preventDefault}></ha-svg-icon>
+    </div>`;
   }
 
   private _renderRowListItem(items: IndicatorRowItem[], rowIndex: number): TemplateResult {
@@ -266,15 +320,17 @@ export class PanelIndicatorRows extends BaseEditor {
     this._configChanged(newRows);
   }
 
-  private _handleRowAction(ev: Event | RowAction): void {
+  private _handleRowAction(ev: any | RowAction): void {
     // console.debug('Handle row action:', ev, typeof ev);
     let action: RowAction;
     let index: number | null = null;
-    if (ev instanceof Event) {
+    if (ev && ev instanceof Event) {
       ev.stopPropagation();
-      const target = ev.currentTarget as any;
+      ev.preventDefault();
+      const target = (ev.target || ev.currentTarget) as any;
       action = target.action;
       index = target.index !== undefined ? Number(target.index) : null;
+      console.debug('Action:', action, index);
     } else {
       action = ev;
     }
@@ -327,46 +383,43 @@ export class PanelIndicatorRows extends BaseEditor {
           flex-direction: column;
           gap: var(--vic-card-padding);
         }
-        .range-info-list {
-          border-top: none;
-          padding-bottom: 0;
-          padding-top: 0;
+
+        #rowList ha-expansion-panel[expanded] {
+          border-color: rgba(var(--rgb-primary-color), 0.7);
         }
-        .item-content:hover {
-          cursor: pointer;
-          color: var(--primary-color);
-        }
-        .item-config-row {
-          border-bottom: 1px solid var(--divider-color);
-        }
-        .range-info-list > .item-config-row:last-of-type {
-          border-bottom: none;
-        }
-        .item-config-row > ha-icon {
-          color: var(--secondary-text-color);
-          margin-right: var(--vic-card-padding);
-        }
+
         .item-actions {
           gap: 1em;
           display: flex;
           align-items: center;
         }
-        .item-actions > .handle {
-          margin-inline-start: 12px;
+        .item-actions .separator {
+          width: 1px;
+          background-color: var(--divider-color);
+          height: 21px;
+          margin-inline: -4px;
         }
+        /* .item-actions > .handle {
+          margin-inline-start: 12px;
+        } */
+        .item-actions > .handle:hover {
+          cursor: move;
+          color: var(--primary-color);
+        }
+        .item-actions > .handle:active {
+          cursor: grabbing;
+        }
+
         .row-items {
           display: flex;
+          flex-direction: row;
           flex-wrap: wrap;
           gap: 8px;
           width: -webkit-fill-available;
-          flex-direction: row;
           height: auto;
           box-sizing: border-box;
           align-items: center;
-        }
-
-        .row-items ha-badge {
-          --badge-color: var(--primary-color);
+          /* background-color: var(--primary-background-color); */
         }
       `,
     ];

@@ -26,6 +26,7 @@ declare global {
 
 @customElement(COMPONENT.INDICATOR_ITEM)
 export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig | IndicatorRowGroupConfig> {
+  @property({ type: Number, attribute: 'item-index' }) public itemIndex?: number;
   @property({ type: Boolean, reflect: true }) public active = false;
   @property({ attribute: false }) private globalAppearance?: GlobalAppearanceConfig;
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
@@ -65,11 +66,6 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
       style['--badge-color'] = color;
     }
 
-    const iconSize = this._config?.icon_size ?? undefined;
-    if (iconSize) {
-      style['--badge-icon-size'] = `${iconSize}px`;
-    }
-
     const stateDisplay = this._renderStateDisplay();
 
     const name =
@@ -89,16 +85,23 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
 
     const hasAction = this._hasAction;
 
+    let iconSize = 21;
     let rowReverse = false;
     let colReverse = false;
     if (this.globalAppearance) {
       if (!this._config.ignore_global) {
         rowReverse = this.globalAppearance.global_row_reverse ?? false;
         colReverse = this.globalAppearance.global_column_reverse ?? false;
+        iconSize = this.globalAppearance.global_icon_size ?? iconSize;
       }
     }
     rowReverse = commonConfig.row_reverse ?? rowReverse;
     colReverse = commonConfig.column_reverse ?? colReverse;
+    iconSize = commonConfig.icon_size ?? iconSize;
+
+    if (iconSize !== 21) {
+      style['--badge-icon-size'] = `${iconSize}px`;
+    }
 
     return html`
       <vsc-indicator-badge
@@ -109,7 +112,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
         .buttonRole=${Boolean(hasAction)}
         .iconOnly=${!content}
         .rowReverse=${rowReverse}
-        .columnReverse=${colReverse}
+        .colReverse=${colReverse}
         @action=${this._handleAction}
         .actionHandler=${actionHandler({
           hasHold: true,
@@ -137,7 +140,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
       this.dispatchEvent(new CustomEvent('row-item-clicked', { bubbles: true, composed: true }));
       if (isGroupEntity) {
         fireEvent(this, 'group-toggle', {
-          index: Number(this.dataset.index),
+          index: this.itemIndex,
           type: this.type,
         });
         return;
@@ -161,6 +164,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     return css`
       :host(.dimmed) {
         opacity: 0.2;
+        filter: blur(1px);
       }
       :host(.dimmed:hover) {
         opacity: 1 !important;
