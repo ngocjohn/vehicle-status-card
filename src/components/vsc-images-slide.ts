@@ -14,7 +14,6 @@ import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.IMAGES_SLIDE)
 export class ImagesSlide extends BaseElement {
-  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() swiper: null | Swiper = null;

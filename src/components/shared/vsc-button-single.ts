@@ -5,13 +5,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import hash from 'object-hash/dist/object_hash.js';
 
-import {
-  RenderTemplateResult,
-  subscribeRenderTemplate,
-  hasTemplate,
-  HomeAssistant,
-  isActive,
-} from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, isActive } from '../../ha';
 import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
 import { handleAction } from '../../ha/panels/common/handle-actions';
 import { ButtonGridConfig, hasAction } from '../../types/config';
@@ -26,7 +20,6 @@ type TemplateResults = Partial<Record<ButtonTemplateKey, RenderTemplateResult | 
 
 @customElement('vsc-button-single')
 export class VehicleButtonSingle extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _buttonConfig!: ButtonCardConfig;
   @property({ attribute: false }) private gridConfig?: ButtonGridConfig;
 

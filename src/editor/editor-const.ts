@@ -190,7 +190,7 @@ enum ALERT_INFO {
   MAP_SINGLE_CARD = 'Configuration is same as for HA Default Map Card',
   MAP_SINGLE_LINK = 'https://www.home-assistant.io/dashboards/map/',
   IDICATOR_LEGACY = 'More info in the wiki. Or migrate to the new format.',
-  INDICATOR_ROW_URL = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Mini-map#maptiler-popup',
+  INDICATOR_ROW_URL = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Indicators-Configuration',
 }
 
 export {
@@ -222,4 +222,28 @@ export enum PANEL {
   TIRE_CONFIG = `${PANEL_PREFIX}tire-config`,
   YAML_EDITOR = `${PANEL_PREFIX}yaml-editor`,
   BUTTON_LIST = `${PANEL_PREFIX}button-list`,
+  LAYOUT_EDITOR = `${PANEL_PREFIX}layout-editor`,
+}
+
+export enum SUB_PANEL {
+  ROW_SUB_ITEM = `${PANEL_PREFIX}row-sub-item`,
+  ROW_ITEM = `${PANEL_PREFIX}row-item`,
+  ROW_SUB_GROUP_ITEM = `${PANEL_PREFIX}row-sub-group-item`,
+}
+
+export enum ELEMENT {
+  FORM_BOOLEAN = 'ha-form-boolean',
+  FORM_GRID = 'ha-form-grid',
+  FORM_EXPANDABLE = 'ha-form-expandable',
+  FORM_OPTIONAL_ACTIONS = 'ha-form-optional_actions',
+  HA_EXPANSION_PANEL = 'ha-expansion-panel',
+}
+
+export enum SELECTOR {
+  OPTIONAL_BUTTON_TRIGGER = 'ha-form-optional_actions$ha-button[slot="trigger"]',
+}
+
+export enum HA_EVENT {
+  EXPANSION_WILL_CHANGE = 'expanded-will-change',
+  EXPANSION_CHANGED = 'expanded-changed',
 }

@@ -1,6 +1,7 @@
 import { css, CSSResultGroup, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
+import { HomeAssistant } from '../../ha';
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
 
 const ALIGNMENT = ['default', 'start', 'center', 'end', 'justify'] as const;
@@ -16,6 +17,7 @@ const ICONS: Record<Alignment, string> = {
 
 @customElement('vsc-alignment-selector')
 export class AlignmentSelector extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public label = '';
   @property() public value?: string;
   @property() public configValue = '';
@@ -64,17 +66,11 @@ export class AlignmentSelector extends LitElement {
     return css`
       :host {
         display: block;
-        margin-bottom: 0.5em;
+        width: 100%;
       }
       ha-select {
         width: 100%;
       }
     `;
-  }
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'vsc-alignment-selector': AlignmentSelector;
   }
 }

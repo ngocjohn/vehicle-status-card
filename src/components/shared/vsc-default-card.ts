@@ -1,13 +1,11 @@
 import { css, CSSResultGroup, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import { HomeAssistant } from '../../ha';
 import { DefaultCardConfig } from '../../types/config';
 import { BaseElement } from '../../utils/base-element';
 
 @customElement('vsc-default-card')
 export class VscDefaultCard extends BaseElement {
-  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) private _data!: DefaultCardConfig;
 
   @state() private _subCardActive: boolean = false;

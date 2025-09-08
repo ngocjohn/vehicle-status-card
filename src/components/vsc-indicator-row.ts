@@ -7,16 +7,16 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { VscIndicatorItem } from '../components/shared/vsc-indicator-item';
 import { COMPONENT } from '../constants/const';
-import { HomeAssistant } from '../ha';
 import { getGroupEntities, GroupEntity, isGroupEntity } from '../ha/data/group';
 import {
   IndicatorRowGroupConfig,
   IndicatorRowConfig,
   IndicatorRowItem,
   IndicatorEntityConfig,
+  GlobalAppearanceConfig,
 } from '../types/config/card/row-indicators';
 import { BaseElement } from '../utils/base-element';
-import { ensureRowItemConfig } from '../utils/editor/migrate-indicator';
+import { ensureEntityConfig } from '../utils/editor/migrate-indicator';
 import { ICON } from '../utils/mdi-icons';
 
 type Alignment = 'default' | 'start' | 'center' | 'end' | 'justify';
@@ -30,7 +30,6 @@ const ALIGNS: Record<Alignment, string> = {
 
 @customElement(COMPONENT.INDICATOR_ROW)
 export class VscIndicatorRow extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private rowConfig!: IndicatorRowConfig;
   @property({ type: Boolean, reflect: true }) private active = false;
 
@@ -49,7 +48,7 @@ export class VscIndicatorRow extends BaseElement {
   connectedCallback(): void {
     super.connectedCallback();
     if (this.rowConfig.no_wrap && this._rowEl) {
-      console.debug('Binding row events with connectedCallback');
+      // console.debug('Binding row events with connectedCallback');
       this._bindRowEvents();
       this._updateArrows();
     }
@@ -150,8 +149,12 @@ export class VscIndicatorRow extends BaseElement {
     const rowItems = this._rowItems || [];
     const active = this.active;
     const noWrap = this.rowConfig.no_wrap;
+
     const alignment = this.rowConfig.alignment || 'default';
     const align = ALIGNS[alignment as Alignment] || ALIGNS.default;
+    const globalAppearance = {
+      ...this.rowConfig,
+    } as GlobalAppearanceConfig;
     const groupActive = this._selectedGroupId !== null;
     const showLeftArrow = this._showLeftArrow;
     const showRightArrow = this._showRightArrow;
@@ -184,8 +187,11 @@ export class VscIndicatorRow extends BaseElement {
               const disabled = !active && this._selectedGroupId !== null;
               return html`
                 <vsc-indicator-item
-                  .hass=${this.hass}
+                  ._hass=${this._hass}
                   ._config=${item}
+                  ._store=${this._store}
+                  .itemIndex=${index}
+                  .globalAppearance=${globalAppearance}
                   .active=${active}
                   ?disabled=${disabled}
                   data-index=${index}
@@ -216,21 +222,24 @@ export class VscIndicatorRow extends BaseElement {
     const subItems: IndicatorEntityConfig[] = [];
 
     const config = rowItems[activeIndex] as IndicatorRowGroupConfig;
-    if (config.entity && isGroupEntity(this.hass.states[config.entity])) {
+    const ignore_group_members = config.ignore_group_members ?? false;
+    const exclude_entities = new Set(config.exclude_entities || []);
+    const items = config.items || [];
+    if (!ignore_group_members && config.entity && isGroupEntity(this.hass.states[config.entity])) {
       const stateObj = this.hass.states[config.entity] as GroupEntity;
-      const groupEntities = getGroupEntities(stateObj) || [];
-      groupEntities.forEach((entity) => {
-        const itemConfig = ensureRowItemConfig(entity);
-        subItems.push(itemConfig as IndicatorEntityConfig);
-      });
+      const groupEntities =
+        getGroupEntities(stateObj)
+          ?.filter((e) => !exclude_entities.has(e))
+          .filter((e) => !items.map((i) => i.entity || i).includes(e)) || [];
+
+      subItems.push(...ensureEntityConfig(groupEntities));
     }
-    config.items?.forEach((item) => {
-      const itemConfig = ensureRowItemConfig(item);
-      subItems.push(itemConfig as IndicatorEntityConfig);
-    });
+    subItems.push(...ensureEntityConfig(items as (IndicatorEntityConfig | string)[]));
 
     return html`${subItems.map((item) => {
-      return html` <vsc-indicator-item .hass=${this.hass} ._config=${item}></vsc-indicator-item> `;
+      return html`
+        <vsc-indicator-item .hass=${this.hass} ._config=${item} ._store=${this._store}></vsc-indicator-item>
+      `;
     })}`;
   }
 
@@ -271,7 +280,7 @@ export class VscIndicatorRow extends BaseElement {
     } else {
       arg.stopPropagation();
       const { index, type } = arg.detail;
-      console.debug('Toggling group indicator', { index, type });
+      // console.debug('Toggling group indicator', { index, type });
       if (type !== 'group' || index === undefined || isNaN(Number(index))) {
         // Not a group, ignore
         return;
@@ -339,7 +348,8 @@ export class VscIndicatorRow extends BaseElement {
         }
 
         :host(.peek) {
-          border-block: inset 2px var(--accent-color);
+          border-block: inset 1px var(--accent-color);
+          transition: border-block 0.3s ease-in-out;
         }
 
         .row-wrapper {

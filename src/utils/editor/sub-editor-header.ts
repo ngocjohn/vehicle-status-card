@@ -12,6 +12,14 @@ declare global {
   }
 }
 
+const PrimaryActionTypes = ['back', 'close'] as const;
+type PrimaryActionTypes = (typeof PrimaryActionTypes)[number];
+
+const PRIMARY_ICON: Record<PrimaryActionTypes | string, string> = {
+  back: ICON.CHEVRON_LEFT,
+  close: ICON.CLOSE,
+};
+
 export const createSecondaryCodeLabel = (yamlMode: boolean): TemplateResult => {
   const icon = yamlMode ? ICON.LIST_BOX_OUTLINE : ICON.CODE_JSON;
   const label = yamlMode ? 'Show UI editor' : 'Edit YAML';
@@ -28,14 +36,16 @@ export class SubEditorHeader extends LitElement {
   @property({ type: Boolean, attribute: 'hide-primary', reflect: true }) public hidePrimaryAction = false;
   @property({ type: Boolean, attribute: 'hide-secondary', reflect: true }) public hideSecondaryAction = false;
   @property({ attribute: false }) public secondaryAction?: TemplateResult;
+  @property({ attribute: false }) public thirdAction?: TemplateResult;
 
+  @property({ attribute: false }) public primaryIcon: string | PrimaryActionTypes = 'back';
   @property() public defaultAction?: string;
-  @property() public primaryIcon?: string;
   @property() public _label?: string;
   @property() public secondary?: string;
   @property() public _secondaryLabel?: string;
 
   protected render(): TemplateResult {
+    const primaryIcon = PRIMARY_ICON[this.primaryIcon] || this.primaryIcon;
     return html`
       <div class="header">
         <slot name="primary-action">
@@ -43,10 +53,7 @@ export class SubEditorHeader extends LitElement {
             ? nothing
             : html`
                 <div class="back-title">
-                  <ha-icon-button
-                    .path=${this.primaryIcon || ICON.CHEVRON_LEFT}
-                    @click=${this._handlePrimaryAction}
-                  ></ha-icon-button>
+                  <ha-icon-button .path=${primaryIcon} @click=${this._handlePrimaryAction}></ha-icon-button>
                   <slot name="title">
                     ${this._label
                       ? html` <div class="title">
@@ -62,6 +69,7 @@ export class SubEditorHeader extends LitElement {
           ${this.hideSecondaryAction
             ? nothing
             : html`
+                ${this.thirdAction ? this.thirdAction : nothing}
                 <span @click=${this._handleSecondaryAction}>
                   ${this.secondaryAction
                     ? this.secondaryAction

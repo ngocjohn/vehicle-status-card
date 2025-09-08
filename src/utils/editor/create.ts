@@ -1,13 +1,11 @@
 import { html, nothing, TemplateResult } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 import './vic-tab';
 import './vic-tab-bar';
 import { ICON } from '../mdi-icons';
 
-export const ExpansionPanel = ({
-  content,
-  options,
-}: {
+export interface ExpansionPanelParams {
   content: TemplateResult[] | TemplateResult;
   options: {
     expanded?: boolean;
@@ -16,19 +14,35 @@ export const ExpansionPanel = ({
     secondary?: string;
     outlined?: boolean;
     noCollapse?: boolean;
+    leftChevron?: boolean;
+    elId?: string;
   };
-}): TemplateResult => {
+  slotIcons?: TemplateResult | TemplateResult[];
+  expandedWillChange?: (ev) => void;
+  expandedChangedCallback?: (ev?: any) => void;
+}
+export const ExpansionPanel = ({
+  content,
+  options,
+  slotIcons,
+  expandedWillChange,
+  expandedChangedCallback,
+}: ExpansionPanelParams): TemplateResult => {
   return html`
     <ha-expansion-panel
+      id=${ifDefined(options?.elId)}
       .outlined=${options?.outlined || true}
       .expanded=${options?.expanded || false}
       .noCollapse=${options?.noCollapse || false}
       .header=${options.header}
       .secondary=${options?.secondary || ''}
-      .leftChevron=${false}
-      style="border-radius: 6px;  --ha-card-border-radius: 6px;"
+      .leftChevron=${options?.leftChevron || false}
+      @expanded-will-change=${expandedWillChange}
+      @expanded-changed=${expandedChangedCallback}
+      style="border-radius: 6px"
     >
       ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
+      ${slotIcons ? slotIcons : nothing}
       <div class="card-config" style="margin-block: var(--vic-gutter-gap);">${content}</div>
     </ha-expansion-panel>
   `;
@@ -113,10 +127,11 @@ export const SectionPanel = (
     title: string;
     content: TemplateResult;
     expansion?: boolean;
+    headerToggle?: string | TemplateResult;
   }[]
 ): TemplateResult => {
   return html`
-    ${sections.map(({ title, content, expansion }) => {
+    ${sections.map(({ title, content, expansion, headerToggle }) => {
       if (expansion) {
         return ExpansionPanel({
           content,
@@ -128,7 +143,9 @@ export const SectionPanel = (
       } else {
         return html`
           <div class="sub-panel-config button-card">
-            ${title !== '' ? html`<div class="sub-header">${title}</div>` : nothing}
+            <div class="sub-header">
+              ${title !== '' ? title : nothing} ${headerToggle ? html`<div>${headerToggle}</div>` : nothing}
+            </div>
             <div class="sub-panel">${content}</div>
           </div>
         `;

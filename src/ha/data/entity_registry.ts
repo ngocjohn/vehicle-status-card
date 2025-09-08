@@ -1,3 +1,8 @@
+export interface RegistryEntry {
+  created_at: number;
+  modified_at: number;
+}
+
 type EntityCategory = 'config' | 'diagnostic';
 
 export interface EntityRegistryDisplayEntry {
@@ -15,7 +20,7 @@ export interface EntityRegistryDisplayEntry {
   has_entity_name?: boolean;
 }
 
-export interface EntityRegistryEntry {
+export interface EntityRegistryEntry extends RegistryEntry {
   id: string;
   entity_id: string;
   name: string | null;

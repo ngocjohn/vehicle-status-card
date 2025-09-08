@@ -3,7 +3,6 @@ import { HomeAssistant } from '../ha/types';
 import {
   ButtonCardConfig,
   ButtonGridConfig,
-  HideConfig,
   IndicatorRowConfig,
   LayoutConfig,
   MiniMapConfig,
@@ -105,10 +104,5 @@ export class Store {
       transparent: button_grid?.transparent ?? false,
       hide_notify_badge: button_grid?.hide_notify_badge ?? false,
     };
-  }
-
-  public get hiddenItemsMap(): Map<keyof HideConfig, boolean> {
-    const hideConfig = this.layoutConfig.hide || {};
-    return new Map(Object.entries(hideConfig).map(([key, value]) => [key as keyof HideConfig, value]));
   }
 }

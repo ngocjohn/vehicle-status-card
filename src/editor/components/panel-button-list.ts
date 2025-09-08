@@ -1,4 +1,4 @@
-import { html, TemplateResult, CSSResultGroup, css, nothing } from 'lit';
+import { html, TemplateResult, CSSResultGroup, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -6,9 +6,10 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { fireEvent } from '../../ha';
 import { ButtonCardConfig, VehicleStatusCardConfig } from '../../types/config';
 import { Create, ICON, isMobileClient, isTouch } from '../../utils';
+import { BUTTON_ACTION_MENU } from '../../utils/editor/create-actions-menu';
+import '../shared/badge-editor-item';
 import { BaseEditor } from '../base-editor';
 import { ACTIONS, BUTTON_CARD_ACTIONS, PANEL } from '../editor-const';
-import '../shared/button-grid-item';
 import { BUTTON_GRID_SCHEMA } from '../form';
 
 export type ButtonListEditorEventParams = {
@@ -42,11 +43,20 @@ export class PanelButtonList extends BaseEditor {
   @state() private _buttonListConfig?: ButtonCardConfig[];
   @state() private _listView: boolean = false;
   @state() private _inGridSettings: boolean = false;
+  @state() private _movingMode: boolean = false;
 
   constructor() {
     super();
   }
 
+  protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
+    if (_changedProperties.has('_listView') || _changedProperties.has('_inGridSettings')) {
+      if (this._movingMode && (this._listView || this._inGridSettings)) {
+        this._movingMode = false;
+      }
+    }
+  }
   static get styles(): CSSResultGroup {
     return [
       super.styles,
@@ -133,6 +143,47 @@ export class PanelButtonList extends BaseEditor {
         sub-editor-header [slot='secondary-action'] ha-icon-button:hover {
           color: var(--primary-color);
         }
+
+        .button-grid-list badge-editor-item.shaking:nth-child(2n) {
+          animation: shake1;
+          animation-delay: -0.25s;
+          animation-duration: 0.27s;
+          animation-iteration-count: infinite;
+          transform-origin: 50% 10%;
+        }
+
+        .button-grid-list badge-editor-item.shaking:nth-child(2n + 1) {
+          animation: shake2;
+          animation-delay: -0.5s;
+          animation-duration: 0.25s;
+          animation-iteration-count: infinite;
+          animation-direction: alternate;
+          transform-origin: 30% 5%;
+        }
+
+        @keyframes shake1 {
+          0% {
+            transform: rotate(-1deg);
+            animation-timing-function: ease-in;
+          }
+
+          50% {
+            transform: rotate(1.5deg);
+            animation-timing-function: ease-out;
+          }
+        }
+
+        @keyframes shake2 {
+          0% {
+            transform: rotate(1deg);
+            animation-timing-function: ease-in;
+          }
+
+          50% {
+            transform: rotate(-1.5deg);
+            animation-timing-function: ease-out;
+          }
+        }
       `,
     ];
   }
@@ -166,7 +217,16 @@ export class PanelButtonList extends BaseEditor {
                 >
               </span>
               <span slot="secondary-action">
-                <ha-icon-button ?active=${!isListView} .path=${ICON.GRID} @click=${() => (this._listView = false)}>
+                <ha-icon-button
+                  ?active=${this._movingMode}
+                  .path=${ICON.CURSOR_MOVE}
+                  @click=${() => this._toggleMovingMode()}
+                ></ha-icon-button>
+                <ha-icon-button
+                  ?active=${!isListView && !this._movingMode}
+                  .path=${ICON.GRID}
+                  @click=${() => (this._listView = false)}
+                >
                 </ha-icon-button>
                 <ha-icon-button
                   ?active=${isListView}
@@ -310,13 +370,17 @@ export class PanelButtonList extends BaseEditor {
     const isListView = this._listView;
     const isHidden = button.hide_button;
     const actions = this._buttonActionsMap(button.hide_button, index);
+    const gridActions = BUTTON_ACTION_MENU;
 
     const gridContent = html`
-      <panel-button-grid-item
-        class="handle"
+      <badge-editor-item
+        class=${this._movingMode ? 'handle shaking' : 'handle'}
         data-index="${index}"
         .buttonIndex=${index}
-        @button-grid-item-action=${this._handleButtonActionsMap}
+        ._menuAction=${gridActions}
+        .noEdit=${this._movingMode}
+        .defaultAction=${ACTIONS.EDIT_BUTTON}
+        @badge-action-item=${this._handleButtonActionsMap}
       >
         <div class="button-grid-item">
           <div class="item-content">
@@ -324,7 +388,7 @@ export class PanelButtonList extends BaseEditor {
             <span class="secondary">${button.button.primary}</span>
           </div>
         </div>
-      </panel-button-grid-item>
+      </badge-editor-item>
     `;
 
     const DATA = { primary: button.button.primary || '' };
@@ -356,10 +420,20 @@ export class PanelButtonList extends BaseEditor {
       : gridContent;
   }
 
+  private _toggleMovingMode(): void {
+    const isMoving = this._movingMode;
+    const isGrid = !this._listView;
+    if (!isMoving && !isGrid) {
+      this._listView = false;
+    }
+    this._movingMode = !isMoving;
+  }
+
   private _handleButtonActionsMap(ev: CustomEvent): void {
     ev.stopPropagation();
     const action = ev.detail.action;
-    const buttonIndex = ev.detail.buttonIndex;
+    const buttonIndex = (ev.currentTarget as any).buttonIndex;
+    // console.debug('Button action:', action, buttonIndex);
     this._toggleAction(action, buttonIndex);
   }
 

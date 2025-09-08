@@ -1,35 +1,30 @@
 // External
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import { repeat } from 'lit/directives/repeat.js';
 
 // Import styles
 import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
 // Import all components
 import './components/';
 import { VehicleStatusCardConfig } from '../types/config';
-import { SectionOrder } from '../types/config/card/layout';
-import { SECTION } from '../types/section';
-import { loadHaComponents, Create, ICON, refactorEditDialog } from '../utils';
+import { loadHaComponents, Create, refactorEditDialog } from '../utils';
 import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
-import { reorderSection } from '../utils/editor/reorder-section';
-import { Store } from '../utils/store';
-import { BaseEditor } from './base-editor';
+import { selectTree } from '../utils/helpers-dom';
 import '../utils/editor/menu-element';
+import { Store } from '../utils/store';
+import { migrateLegacySectionOrder, VehicleStatusCard } from '../vehicle-status-card';
+import { BaseEditor } from './base-editor';
 import * as ELEMENT from './components';
 import { ALERT_INFO, EDITOR_NAME, PANEL } from './editor-const';
-import { BUTTON_GRID_SCHEMA, HIDE_SCHEMA, NAME_SCHEMA, RANGE_LAYOUT_SCHEMA, THEME_CONFIG_SCHEMA } from './form';
 
 @customElement(EDITOR_NAME)
 export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardEditor {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public lovelace?: LovelaceConfig;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
-
+  @property({ attribute: false }) public _vscElem?: VehicleStatusCard;
   @state() _selectedConfigType: null | string = null;
 
-  @state() private _reloadSectionList: boolean = false;
-  @state() private _layoutTabIndex: number = 0;
   @state() private _indicatorTabIndex: number = 0;
 
   public _migratedIndicatorsConfig: boolean = false;
@@ -60,23 +55,24 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
-    if (
-      config.layout_config?.section_order === undefined ||
-      config.layout_config?.section_order.length === 0 ||
-      config.layout_config?.section_order.includes(SECTION.HEADER_INFO)
-    ) {
-      const sectionOrder = reorderSection(config.layout_config?.hide || {}, config.layout_config?.section_order || []);
-      config.layout_config = {
-        ...config.layout_config,
-        section_order: sectionOrder as SectionOrder[],
+    if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
+      console.debug('Migrating legacy layout_config.hide to section_order');
+      config = {
+        ...config,
+        ...migrateLegacySectionOrder(config),
       };
-      fireEvent(this, 'config-changed', { config });
+      fireEvent(this, 'config-changed', { config: config });
+      console.log('Migrated layout_config.hide:', config);
       return;
     }
 
-    const newConfig = JSON.parse(JSON.stringify(config)); // Deep copy the config
+    const newConfig = { ...config };
     this._config = newConfig;
-    this.createStore();
+    if (this._store !== undefined) {
+      this._store._config = this._config;
+    } else {
+      this.createStore();
+    }
   }
 
   connectedCallback() {
@@ -91,6 +87,10 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     super.disconnectedCallback();
   }
 
+  private get _hasLegacyIndicatorsConfig(): boolean {
+    return !!(this._config.indicators && Object.keys(this._config.indicators).length > 0);
+  }
+
   protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
     super.firstUpdated(_changedProperties);
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -98,6 +98,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
   protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);
+
     const oldSelectedConfigType = changedProps.get('_selectedConfigType') as string | null;
     const shouldUpdate =
       (this._selectedConfigType === null && oldSelectedConfigType !== null) ||
@@ -169,11 +170,36 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   private _renderImages(): TemplateResult {
-    return html`<panel-images-editor ._hass=${this._hass} .config=${this._config}></panel-images-editor>`;
+    return html`<panel-images-editor
+      ._hass=${this._hass}
+      .config=${this._config}
+      ._store=${this._store}
+    ></panel-images-editor>`;
   }
 
-  private _renderIndicators(): TemplateResult {
-    const isMigrated = this._migratedIndicatorsConfig;
+  private _renderIndicators() {
+    if (this._migratedIndicatorsConfig) {
+      return this._renderIndicatorRows();
+    }
+    return this._renderIndicatorsLegacy();
+  }
+
+  private _renderIndicatorRows(): TemplateResult {
+    return html` <panel-indicator-rows
+      ._store=${this._store}
+      ._hass=${this._hass}
+      ._config=${this._config}
+    ></panel-indicator-rows>`;
+  }
+
+  /**
+   *  @deprecated This method is kept for legacy support. It will be removed in future versions.
+   *  Use _renderIndicatorRows() for the new indicator rows configuration.
+   */
+  private _renderIndicatorsLegacy(): TemplateResult | typeof nothing {
+    if (!this._config.indicators || Object.keys(this._config.indicators).length === 0) {
+      return nothing;
+    }
     const alertMigration = html`${Create.HaAlert({
       message: html` For more info in the <a href=${ALERT_INFO.INDICATOR_ROW_URL} target="_blank">WIKI</a>. Or migrate
         to the new format.`,
@@ -190,26 +216,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
         ],
       },
     })}`;
-
-    return html` ${!isMigrated ? alertMigration : this._renderIndicatorRows()} ${this._renderIndicatorsLegacy()}`;
-  }
-
-  private _renderIndicatorRows(): TemplateResult {
-    return html` <panel-indicator-rows
-      ._store=${this._store}
-      ._hass=${this._hass}
-      ._config=${this._config}
-    ></panel-indicator-rows>`;
-  }
-
-  /**
-   *  @deprecated This method is kept for legacy support. It will be removed in future versions.
-   *  Use _renderIndicatorRows() for the new indicator rows configuration.
-   */
-  private _renderIndicatorsLegacy(): TemplateResult | typeof nothing {
-    if (this._migratedIndicatorsConfig) {
-      return nothing;
-    }
 
     const group = html`
       <panel-indicator-group
@@ -234,6 +240,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     ];
 
     return html`
+      ${alertMigration}
       ${Create.VicTab({
         activeTabIndex: this._indicatorTabIndex || 0,
         onTabChange: (index: number) => (this._indicatorTabIndex = index),
@@ -242,238 +249,27 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     `;
   }
 
-  private _renderLayoutConfig(): TemplateResult {
-    const layout = this._config.layout_config || {};
-
-    const HIDE_CONFIG_DATA = { ...layout.hide };
-    const BUTTON_GRID_DATA = { ...layout.button_grid };
-    const THEME_DATA = { ...layout.theme_config };
-    const NAME_DATA = { name: this._config.name || '' };
-
-    const buttonGridWrapper = Create.SectionPanel([
-      {
-        title: 'Button Grid Configuration',
-        content: this._createHaForm(
-          BUTTON_GRID_DATA,
-          BUTTON_GRID_SCHEMA(!BUTTON_GRID_DATA.swipe),
-          'layout_config',
-          'button_grid'
-        ),
-      },
-    ]);
-
-    // Hide configuration wrapper
-    const hideWrapper = Create.SectionPanel([
-      {
-        title: 'Choose the items / sections to hide',
-        content: this._createHaForm(HIDE_CONFIG_DATA, HIDE_SCHEMA, 'layout_config', 'hide'),
-      },
-      {
-        title: 'Section Order Configuration',
-        content: this._renderSectionOrder(),
-        expansion: true,
-      },
-    ]);
-
-    // Theme configuration wrapper
-    const themeWrapper = Create.SectionPanel([
-      {
-        title: 'Select the name for card',
-        content: this._createHaForm(NAME_DATA, NAME_SCHEMA),
-      },
-      {
-        title: 'Theme Configuration',
-        content: this._createHaForm(THEME_DATA, THEME_CONFIG_SCHEMA, 'layout_config', 'theme_config'),
-      },
-    ]);
-
-    const tabsConfig = [
-      { content: hideWrapper, key: 'hide', label: 'Appearance' },
-      { content: buttonGridWrapper, key: 'button_grid', label: 'Button Grid' },
-      { content: themeWrapper, key: 'theme_config', label: 'Theme' },
-    ];
-
-    return html`
-      <div class="card-config">
-        ${Create.VicTab({
-          activeTabIndex: this._layoutTabIndex || 0,
-          onTabChange: (index: number) => (this._layoutTabIndex = index),
-          tabs: tabsConfig,
-        })}
-      </div>
-    `;
-  }
-
-  private _renderSectionOrder(): TemplateResult {
-    if (this._reloadSectionList) return html` <ha-spinner .size=${'small'}></ha-spinner> `;
-
-    const sectionList = this._config.layout_config?.section_order || [];
-    return html` <ha-sortable handle-selector=".handle" @item-moved=${this._sectionMoved}>
-      <div id="section-order-list">
-        ${repeat(
-          sectionList,
-          (section: string) => section,
-          (section: string, index: number) => html` <div class="item-config-row" data-index="${index}">
-            <div class="handle">
-              <ha-icon-button .path=${ICON.DRAG}></ha-icon-button>
-            </div>
-            <div class="item-content">
-              <div class="primary">${section.replace(/_/g, ' ').toUpperCase()}</div>
-            </div>
-          </div>`
-        )}
-      </div>
-    </ha-sortable>`;
-  }
-
   private _renderMiniMap(): TemplateResult {
     return html`<panel-map-editor
       .hass=${this._hass}
-      .editor=${this as any}
       ._config=${this._config}
+      ._store=${this._store}
     ></panel-map-editor>`;
   }
 
   private _renderRangeInfo(): TemplateResult {
-    const RANGE_INFO_LAYOUT_DATA = { ...(this._config.layout_config?.range_info_config || {}) };
-    const rangeLayout = this._createHaForm(
-      RANGE_INFO_LAYOUT_DATA,
-      RANGE_LAYOUT_SCHEMA,
-      'layout_config',
-      'range_info_config'
-    );
-    const rangeItemContent = html`<panel-range-info ._hass=${this._hass} .config=${this._config}></panel-range-info>`;
-
-    const tabsConfig = [
-      { content: rangeItemContent, key: 'range_info', label: 'Range Info Items' },
-      { content: rangeLayout, key: 'range_info_layout', label: 'Layout appearance' },
-    ];
-
-    return Create.VicTab({
-      activeTabIndex: this._layoutTabIndex || 0,
-      onTabChange: (index: number) => (this._layoutTabIndex = index),
-      tabs: tabsConfig,
-    });
+    return html`<panel-range-info
+      ._hass=${this._hass}
+      .config=${this._config}
+      ._store=${this._store}
+    ></panel-range-info>`;
   }
-
-  /* ---------------------------- PANEL TEMPLATE ---------------------------- */
-
-  private _createHaForm(data: any, schema: any, configType?: string, configIndex?: string): TemplateResult {
-    return html`
-      <ha-form
-        .hass=${this._hass}
-        .data=${data}
-        .schema=${schema}
-        .configIndex=${configIndex}
-        .configType=${configType}
-        .computeLabel=${this._computeLabel}
-        .computeHelper=${this._computeHelper}
-        @value-changed=${this._valueChanged}
-      ></ha-form>
-    `;
-  }
-
-  private _computeLabel(schema: any) {
-    if (schema.name === 'entity') {
-      return '';
-    }
-    return schema.label || schema.name;
-  }
-  private _computeHelper(schema: any) {
-    return schema.helper || '';
-  }
-
-  public _valueChanged(ev: any): void {
-    if (!this._config || !this._hass) {
-      return;
-    }
-
-    const target = ev.target;
-    const configType = target.configType;
-    const configIndex = target.configIndex;
-
-    // Ensure we handle the boolean value correctly
-    const newValue = ev.detail.value;
-
-    let hiddenChanged = false;
-    const updates: Partial<VehicleStatusCardConfig> = {};
-    if (configType === 'layout_config' && configIndex) {
-      let layoutConfig = { ...(this._config.layout_config || {}) };
-      layoutConfig[configIndex] = newValue;
-      if (configIndex === 'hide') {
-        const sectionOrder = [...(this._config.layout_config?.section_order || [])];
-        const updatedOrder = reorderSection(newValue, sectionOrder);
-        layoutConfig.section_order = updatedOrder as SectionOrder[];
-        hiddenChanged = true;
-      }
-      updates.layout_config = layoutConfig;
-    } else {
-      this._config = {
-        ...this._config,
-        ...newValue,
-      };
-      fireEvent(this, 'config-changed', { config: this._config });
-      return;
-    }
-
-    // Apply the updates and trigger the config change event
-    if (Object.keys(updates).length > 0) {
-      this._config = { ...this._config, ...updates };
-      fireEvent(this, 'config-changed', { config: this._config });
-      if (hiddenChanged) {
-        this._reloadSectionList = true;
-        setTimeout(() => {
-          this._reloadSectionList = false;
-        }, 200);
-      }
-    }
-  }
-
-  protected _onValueChanged(ev: CustomEvent): void {
-    console.debug('onValueChanged (Editor):');
-    const { key, subKey, currentConfig } = ev.target as any;
-    const newValue = { ...ev.detail.value };
-
-    console.debug('incoming:', { key, subKey, currentConfig, newValue });
-    if (!currentConfig || typeof currentConfig !== 'object') return;
-
-    const updates: Partial<VehicleStatusCardConfig> = {};
-    if (key && subKey) {
-      if (typeof currentConfig[key] !== 'object' || currentConfig[key] === null) {
-        currentConfig[key] = {};
-      }
-      currentConfig[key][subKey] = newValue;
-      updates[key] = currentConfig[key];
-    } else if (key) {
-      updates[key] = newValue;
-    } else {
-      Object.assign(updates, newValue);
-    }
-    console.debug('updates:', updates);
-    if (Object.keys(updates).length > 0) {
-      const newConfig = { ...currentConfig, ...updates };
-      console.debug('newConfig:', newConfig);
-      fireEvent(this, 'config-changed', { config: newConfig });
-    }
-  }
-
-  /* ---------------------------- SECTION MOVED HANDLER ---------------------------- */
-  private _sectionMoved(event: CustomEvent): void {
-    event.stopPropagation();
-    if (!this._config) return;
-    const { oldIndex, newIndex } = event.detail;
-    console.log('Section moved from', oldIndex, 'to', newIndex);
-    const sections = [...(this._config.layout_config.section_order || [])];
-    sections.splice(newIndex, 0, sections.splice(oldIndex, 1)[0]);
-    this._config = {
-      ...this._config,
-      layout_config: {
-        ...this._config.layout_config,
-        section_order: sections,
-      },
-    };
-    fireEvent(this, 'config-changed', { config: this._config });
-    console.log('Updated section order:', this._config.layout_config.section_order);
+  private _renderLayoutConfig(): TemplateResult {
+    return html`<panel-layout-editor
+      ._hass=${this._hass}
+      ._config=${this._config}
+      ._store=${this._store}
+    ></panel-layout-editor>`;
   }
 
   /* ------------------------- CONFIG CHANGED HANDLER ------------------------- */
@@ -492,24 +288,43 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   private createStore(): void {
     this._store = new Store(this, this._config);
     // console.debug('Store created:', this, this._config);
+    this._getCardInPreview();
     super.requestUpdate();
   }
 
   // convert the legacy indicators config to the new format
   private _convertLegacyIndicatorsConfig(): void {
-    if (!this._config.indicators || Object.keys(this._config.indicators).length === 0) {
+    if (!this._hasLegacyIndicatorsConfig) {
       return;
     }
-    const oldConfig = this._config.indicators;
-    const newConfig = migrateLegacyIndicatorsConfig(oldConfig);
-    delete this._config.indicators; // Remove old indicators config
-    const indicatorRows = (this._config.indicator_rows || []).concat(newConfig);
-    this._config = {
-      ...this._config,
-      indicator_rows: indicatorRows,
-    };
-    fireEvent(this, 'config-changed', { config: this._config });
-    console.log('Converted:', { oldConfig, newConfig });
+    if (!this._config) {
+      console.error('No config found to migrate.');
+      return;
+    }
+    const newConfig = { ...(this._config as VehicleStatusCardConfig) };
+    if (newConfig.indicators) {
+      console.log('Migrating legacy indicators config:', newConfig.indicators);
+      const migratedIndicators = migrateLegacyIndicatorsConfig(newConfig.indicators);
+      if (!newConfig.indicator_rows) {
+        newConfig.indicator_rows = [];
+      }
+      newConfig.indicator_rows.push(migratedIndicators);
+      delete newConfig.indicators;
+      this._migratedIndicatorsConfig = true;
+      this._config = newConfig;
+      fireEvent(this, 'config-changed', { config: this._config });
+      console.log('Migrated indicators config:', this._config);
+    }
+  }
+
+  private async _getCardInPreview(): Promise<VehicleStatusCard | undefined> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const cardElement = await selectTree(document.body, 'home-assistant$hui-dialog-edit-card$vehicle-status-card');
+    if (cardElement) {
+      this._vscElem = cardElement as VehicleStatusCard;
+      // console.debug('Found card in preview:', this._vscElem);
+    }
+    return this._vscElem;
   }
 }
 

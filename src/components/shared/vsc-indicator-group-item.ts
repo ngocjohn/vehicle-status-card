@@ -5,7 +5,7 @@ import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
 // Utils
-import { hasTemplate, HomeAssistant, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
+import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
 import { hasItemAction } from '../../types/config/actions-config';
 import { IndicatorItemConfig } from '../../types/config/card/indicators';
 import { BaseElement } from '../../utils/base-element';
@@ -16,7 +16,6 @@ type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 @customElement('vsc-indicator-group-item')
 export class VscIndicatorGroupItem extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) item!: IndicatorItemConfig;
 
   @state() private _itemTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};

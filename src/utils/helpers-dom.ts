@@ -41,3 +41,10 @@ export async function selectTree(root: any, path: any, all = false, timeout = 10
     return null;
   });
 }
+
+export const stopPropagation = (ev) => ev.stopPropagation();
+export const preventDefault = (ev) => ev.preventDefault();
+export const stopAndPrevent = (ev) => {
+  ev.stopPropagation();
+  ev.preventDefault();
+};

@@ -42,6 +42,23 @@ import { _setUpPreview, previewHandler } from './utils/lovelace/preview-helper';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
 
+export const migrateLegacySectionOrder = (config: VehicleStatusCardConfig): VehicleStatusCardConfig => {
+  const newConfig = { ...config };
+  if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
+    const hideConfig = config.layout_config.hide;
+    if (hideConfig.card_name) {
+      newConfig.layout_config.hide_card_name = hideConfig.card_name;
+    } // Migrate hide_card_name if present
+    const currentOrder = newConfig.layout_config.section_order || SECTION_KEYS;
+    const updatedOrder = reorderSection(hideConfig, currentOrder);
+    newConfig.layout_config.section_order = updatedOrder;
+  }
+  // Remove the deprecated 'hide' property
+  delete newConfig.layout_config.hide;
+  // console.debug('Final layout_config after migration:', newConfig.layout_config);
+  return newConfig;
+};
+
 @customElement(CARD_NAME)
 export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -56,30 +73,27 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   };
 
   public setConfig(config: VehicleStatusCardConfig): void {
-    const layoutConfig = config.layout_config || {};
-    const hasHeaderInfo = layoutConfig.section_order?.includes(SECTION.HEADER_INFO);
-
-    if (hasHeaderInfo || !layoutConfig.section_order) {
-      console.debug('has header info, removing it from section order');
-      const hideConfig = layoutConfig.hide || {};
-      const currentOrder = layoutConfig?.section_order || [];
-      const updatedOrder = reorderSection(hideConfig, currentOrder);
-      // console.debug('Updated section order:', updatedOrder);
-      config = {
-        ...config,
-        layout_config: {
-          ...layoutConfig,
-          section_order: updatedOrder,
-        },
-      };
+    if (!config) {
+      throw new Error('Invalid configuration');
     }
 
     const newConfig = JSON.parse(JSON.stringify(config)) as VehicleStatusCardConfig;
-    this._config = newConfig;
+    // this._config = newConfig;
+    this._config = {
+      ...newConfig,
+      ...migrateLegacySectionOrder(newConfig),
+    };
+
     if (this._config.button_card && this._config.button_card.length) {
       this._buttonCardConfigItem = this._config.button_card as ButtonCardConfig[];
     }
-    this._createStore();
+    if (this._store) {
+      console.debug('Updating store config');
+      this._store._config = this._config;
+    } else {
+      // console.debug('Store not found, will create on first update');
+      this._createStore();
+    }
   }
 
   set hass(hass: HomeAssistant) {
@@ -110,6 +124,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   @state() _connected = false;
 
+  @state() private _singleMapMode: boolean = false;
   @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
 
   @state() _buttonCardConfigItem!: ButtonCardConfig[]; // Button card configuration items
@@ -120,6 +135,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @query(COMPONENT.INDICATORS, true) _indicators!: VscIndicators;
   @query(COMPONENT.MINI_MAP, true) _miniMap!: MiniMapBox;
   @queryAll(COMPONENT.INDICATOR_ROW) _indicatorRows!: VscIndicatorRow[];
+  @query('ha-card', true) _haCard!: HTMLElement;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -127,7 +143,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     window.VehicleCard = this;
     this._connected = true;
     if (this.isEditorPreview) {
-      console.log('Card in preview', this._config.name);
       window.addEventListener('editor-event', this._handleEditorEvent.bind(this));
     }
   }
@@ -210,7 +225,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _isSectionHidden(section: SECTION): boolean {
-    return this._config.layout_config?.hide?.[section] || false;
+    return !this._config.layout_config?.section_order?.includes(section);
   }
 
   protected render(): TemplateResult {
@@ -230,7 +245,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     const headerHidden =
-      this._isSectionHidden(SECTION.CARD_NAME) || this._config.name?.trim() === '' || !this._config.name;
+      this._config.layout_config?.hide_card_name || this._config.name?.trim() === '' || !this._config.name;
     return html`
       <ha-card class=${this._computeClasses()} ?no-header=${headerHidden} ?preview=${this.isEditorPreview}>
         ${!headerHidden ? html`<div class="card-header" id="name">${this._config.name}</div>` : nothing}
@@ -267,7 +282,8 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const hasRows = this._config.indicator_rows && this._config.indicator_rows.length > 0;
     const hasBoth = this._config.indicators && hasRows;
     const inFirstSection = this._config.layout_config?.section_order![0] === SECTION.INDICATORS;
-    return html`<div class="header-info-box" id=${SECTION.INDICATORS} ?noMargin=${inFirstSection}>
+    if (!hasRows && !this._config.indicators) return html``;
+    return html`<div id=${SECTION.INDICATORS} ?noMargin=${inFirstSection}>
       ${hasBoth
         ? html`${this._renderIndicatorRows()} ${this._renderIndicatorsLegacy()}`
         : hasRows
@@ -286,7 +302,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
           (row: IndicatorRowConfig) => row.row_items.map((item) => item.type).join('-'),
           (row: IndicatorRowConfig, index: number) => {
             return html`
-              <vsc-indicator-row data-index=${index} .hass=${this._hass} .rowConfig=${row}></vsc-indicator-row>
+              <vsc-indicator-row
+                data-index=${index}
+                ._hass=${this._hass}
+                .rowConfig=${row}
+                ._store=${this._store}
+              ></vsc-indicator-row>
             `;
           }
         )}
@@ -296,7 +317,11 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _renderIndicatorsLegacy(): TemplateResult | typeof nothing {
     if (!this._config.indicators) return nothing;
-    return html` <vsc-indicators .hass=${this._hass} .config=${this._config} ._store=${this._store}></vsc-indicators> `;
+    return html`
+      <div class="header-info-box">
+        <vsc-indicators .hass=${this._hass} .config=${this._config} ._store=${this._store}></vsc-indicators>
+      </div>
+    `;
   }
 
   private _renderButtons(): TemplateResult | typeof nothing {
@@ -335,7 +360,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
     return html`
       <div id=${SECTION.IMAGES}>
-        <vsc-images-slide .hass=${this._hass} .config=${this._config}> </vsc-images-slide>
+        <vsc-images-slide .hass=${this._hass} .config=${this._config} ._store=${this._store}> </vsc-images-slide>
       </div>
     `;
   }
@@ -360,6 +385,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
           .mapConfig=${miniMapConfig}
           .mapData=${mapData}
           .isDark=${this.isDark}
+          ._store=${this._store}
         ></vsc-mini-map>
       </div>
     `;
@@ -370,7 +396,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (this._isSectionHidden(SECTION.RANGE_INFO) || !range_info) return html``;
     const rangeLayout = this._config.layout_config?.range_info_config?.layout || 'column';
     return html`<div id="${SECTION.RANGE_INFO}">
-      <vsc-range-info .hass=${this._hass} .rangeConfig=${range_info} ?row=${rangeLayout === 'row'}></vsc-range-info>
+      <vsc-range-info
+        .hass=${this._hass}
+        .rangeConfig=${range_info}
+        ._store=${this._store}
+        ._store=${this._store}
+        ?row=${rangeLayout === 'row'}
+      ></vsc-range-info>
     </div>`;
   }
 
@@ -443,11 +475,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
-    return html` <vsc-default-card .hass=${this._hass} ._data=${data}></vsc-default-card> `;
+    return html` <vsc-default-card .hass=${this._hass} ._data=${data} ._store=${this._store}></vsc-default-card> `;
   }
 
   private _renderTireCard(tireCardConfig: TireEntity): TemplateResult {
-    return html` <vsc-tire-card .hass=${this._hass} .tireConfig=${tireCardConfig}> </vsc-tire-card> `;
+    return html`
+      <vsc-tire-card .hass=${this._hass} .tireConfig=${tireCardConfig} ._store=${this._store}> </vsc-tire-card>
+    `;
   }
 
   private _showWarning(warning: string): TemplateResult {
@@ -513,7 +547,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         }
         if (entity_index !== null && entity_index !== undefined) {
           // dim all items except the one at entity_index
-          console.debug('set highlight entity index:', entity_index);
+          // console.debug('set highlight entity index:', entity_index);
           const entityItem = items?.[entity_index];
           if (entityItem) {
             entityItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
@@ -723,6 +757,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
   }
 
+  public _peekBorder(): void {
+    this._haCard.classList.add('peek-border');
+    setTimeout(() => {
+      this._haCard.classList.remove('peek-border');
+    }, 2000);
+  }
   static get styles(): CSSResultGroup {
     return [super.styles];
   }

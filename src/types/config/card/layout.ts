@@ -1,19 +1,21 @@
 // List of all section keys
 export const SECTION_KEYS = ['indicators', 'range_info', 'images', 'mini_map', 'buttons'];
-
 // section order type is array of section keys, e.g. ['indicators', 'buttons', 'mini_map']
 export type SectionOrder = (typeof SECTION_KEYS)[number];
-
 /**
  * Layout configuration Interface
  */
 export interface LayoutConfig {
   button_grid: ButtonGridConfig;
   images_swipe?: ImagesSwipeConfig;
-  hide: HideConfig;
   theme_config?: ThemeConfig;
   section_order?: SectionOrder[];
   range_info_config?: RangeInfoConfig;
+  hide_card_name?: boolean;
+  /**
+   * @deprecated is replaced by 'section_order' option
+   */
+  hide?: HideConfig;
 }
 
 type SWIPE_EFFECT = 'slide' | 'fade' | 'coverflow';
@@ -29,6 +31,9 @@ type ImagesSwipeConfig = Partial<{
   hide_pagination: boolean;
 }>;
 
+/**
+ * @deprecated section 'hide' is replaced by 'section_order' option
+ */
 export type HideConfig = Partial<{
   buttons: boolean;
   images: boolean;
@@ -59,3 +64,10 @@ type ThemeConfig = Partial<{
   mode: THEME_MODE;
   theme: string;
 }>;
+
+export interface CardSectionLayout {
+  header?: SectionOrder[];
+  main?: SectionOrder[];
+  footer?: SectionOrder[];
+  main_columns?: number;
+}

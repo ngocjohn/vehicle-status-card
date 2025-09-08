@@ -1,3 +1,4 @@
+import { mdiAlertCircle } from '@mdi/js';
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { html, TemplateResult } from 'lit';
@@ -12,14 +13,16 @@ import { stateActive } from '../ha/common/entity/state_active';
 import { stateColorCss } from '../ha/common/entity/state_color';
 import { isGroupEntity } from '../ha/data/group';
 import { RenderTemplateResult, hasTemplate, subscribeRenderTemplate } from '../ha/data/ws-templates';
+import '../components/shared/vsc-state-display';
+import '../components/shared/vsc-indicator-badge';
 import { hasItemAction } from '../types/config/actions-config';
 import {
   IndicatorRowItem,
   IndicatorEntityConfig,
   IndicatorRowGroupConfig,
   IndicatorBaseItemConfig,
+  IndicatorCommon,
 } from '../types/config/card/row-indicators';
-import '../components/shared/vsc-state-display';
 import { toCommon, isEntity } from '../types/config/card/row-indicators';
 import { rgb2hex, rgb2hsv, hsv2rgb } from '../utils/colors';
 import { BaseElement } from './base-element';
@@ -27,7 +30,7 @@ import { BaseElement } from './base-element';
 const cameraUrlWithWidthHeight = (base_url: string, width: number, height: number) =>
   `${base_url}&width=${width}&height=${height}`;
 
-const TEMPLATE_KEYS = ['state_template', 'visibility'] as const;
+const TEMPLATE_KEYS = ['state_template', 'visibility', 'icon_template', 'color_template'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 export const DEFAULT_SHOW_CONFIG = {
@@ -39,7 +42,7 @@ export const DEFAULT_SHOW_CONFIG = {
 };
 
 export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _config!: T;
 
   @state() protected _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
@@ -65,7 +68,6 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     if (this._unsubSingleRenderTemplates.get(key) !== undefined || !this.hass || !hasTemplate(this._config[key])) {
       return;
     }
-
     try {
       const sub = subscribeRenderTemplate(
         this.hass.connection,
@@ -128,6 +130,10 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     return this._config.type;
   }
 
+  protected get commonConfig(): IndicatorCommon {
+    return toCommon(this._config);
+  }
+
   protected get _stateObj(): HassEntity | undefined {
     const config = toCommon(this._config);
     if (!config || !this.hass || !config.entity) {
@@ -162,6 +168,12 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     return isGroupEntity(stateObj);
   }
 
+  protected get _hasGroupEntity(): boolean {
+    const config = this._config as IndicatorRowGroupConfig;
+    const entity = config?.entity;
+    return config.type === 'group' && !!entity;
+  }
+
   protected get _hasAction(): boolean {
     if (!isEntity(this._config)) {
       return true; // For groups, we assume they have actions
@@ -193,7 +205,7 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
 
     let imageUrl = this.hass!.hassUrl(entityPicture);
     if (computeStateDomain(stateObj) === 'camera') {
-      imageUrl = cameraUrlWithWidthHeight(imageUrl, 32, 32);
+      imageUrl = cameraUrlWithWidthHeight(imageUrl, 36, 36);
     }
 
     return imageUrl;
@@ -228,33 +240,42 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
     return stateColorCss(stateObj);
   });
 
-  protected _renderIcon(stateObj: HassEntity, icon?: string): TemplateResult {
-    return html`
-      <ha-state-icon
-        slot="icon"
-        .hass=${this.hass}
-        .stateObj=${stateObj}
-        .icon=${icon || this._config.icon}
-      ></ha-state-icon>
-    `;
+  protected _renderIcon(stateObj: HassEntity): TemplateResult {
+    const icon = this._getTemplateResult('icon_template') ?? this._config.icon;
+    return html` <ha-state-icon slot="icon" .hass=${this.hass} .stateObj=${stateObj} .icon=${icon}></ha-state-icon> `;
   }
 
   protected _renderStateDisplay(): TemplateResult {
     const stateObj = this._stateObj;
+    const stateTemplate = this._getTemplateResult('state_template') ?? undefined;
+
+    const { include_state_template } = this._showConfig;
+    if (this.type === 'group' && !this._hasGroupEntity && include_state_template && stateTemplate) {
+      // For group without entity, we show the state template as the main content
+      return html`<span>${stateTemplate}</span>`;
+    }
+
     if (!stateObj) {
       return html`<span style="color: var(--error-color)">${this.hass.localize('ui.badge.entity.not_found')}</span>`;
     }
-
-    const stateTemplate = this._getTemplateResult('state_template') ?? undefined;
 
     return html`
       <vsc-state-display
         .stateObj=${stateObj}
         .hass=${this.hass}
-        .content=${this._config.state_content || ['state']}
+        .content=${this._config.state_content}
         .name=${this._config.name}
         .template=${stateTemplate}
       ></vsc-state-display>
+    `;
+  }
+
+  protected _renderNoEntity(): TemplateResult {
+    return html`
+      <vsc-indicator-badge class="error" .label=${this._config.entity}>
+        <ha-svg-icon slot="icon" .hass=${this.hass} .path=${mdiAlertCircle}></ha-svg-icon>
+        ${this.hass.localize('ui.badge.entity.not_found')}
+      </vsc-indicator-badge>
     `;
   }
 }

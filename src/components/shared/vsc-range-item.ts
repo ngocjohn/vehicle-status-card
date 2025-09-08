@@ -3,7 +3,7 @@ import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } fr
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { HomeAssistant, RenderTemplateResult, subscribeRenderTemplate, hasTemplate } from '../../ha';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate } from '../../ha';
 import {
   ActionsSharedConfig,
   hasItemAction,
@@ -18,7 +18,6 @@ import { addActions } from '../../utils/lovelace/tap-action';
 
 @customElement('vsc-range-item')
 export class VscRangeItem extends BaseElement {
-  @property({ attribute: false }) private hass!: HomeAssistant;
   @property({ attribute: false }) rangeItem!: RangeInfoConfig;
 
   @state() private _templateResults: Partial<Record<RangeInfoTemplateKey, RenderTemplateResult | undefined>> = {};

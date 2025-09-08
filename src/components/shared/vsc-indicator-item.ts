@@ -3,14 +3,18 @@ import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { COMPONENT } from '../../constants/const';
-import { computeStateName, fireEvent, HomeAssistant } from '../../ha';
+import { computeEntityName, computeStateName, fireEvent } from '../../ha';
 import { computeCssColor } from '../../ha/common/color/compute-color';
 import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
 import { handleAction } from '../../ha/panels/common/handle-actions';
 import '../shared/vsc-indicator-badge';
 import '../shared/vsc-state-display';
 import { hasAction } from '../../types/config/actions-config';
-import { IndicatorEntityConfig, IndicatorRowGroupConfig } from '../../types/config/card/row-indicators';
+import {
+  GlobalAppearanceConfig,
+  IndicatorEntityConfig,
+  IndicatorRowGroupConfig,
+} from '../../types/config/card/row-indicators';
 import { VscIndicatorItemBase } from '../../utils/base-indicator';
 import { VscIndicatorBadge } from '../shared/vsc-indicator-badge';
 
@@ -22,8 +26,9 @@ declare global {
 
 @customElement(COMPONENT.INDICATOR_ITEM)
 export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig | IndicatorRowGroupConfig> {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ type: Number, attribute: 'item-index' }) public itemIndex?: number;
   @property({ type: Boolean, reflect: true }) public active = false;
+  @property({ attribute: false }) private globalAppearance?: GlobalAppearanceConfig;
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
 
   private get _visibility(): boolean {
@@ -38,11 +43,16 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
       return nothing;
     }
     const isGroup = this.type === 'group';
-    const isGroupEntity = this._isGroupEntity;
+    const hasGroupEntity = this._hasGroupEntity;
+    const commonConfig = this.commonConfig;
     const stateObj = this._stateObj;
+    if (!isGroup && !stateObj) {
+      return this._renderNoEntity();
+    }
+    let style: Record<string, string> = {};
 
     let color: string | undefined;
-    if (isGroup && !isGroupEntity) {
+    if (isGroup && !hasGroupEntity) {
       const configColor = (this._config as IndicatorRowGroupConfig).color;
       if (configColor) {
         color = computeCssColor(configColor);
@@ -50,14 +60,16 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     } else {
       color = this._computeStateColor(stateObj!, this._config.color);
     }
+    color = this._getTemplateResult('color_template') ?? color;
 
-    const style = {
-      '--badge-color': color,
-    };
+    if (color) {
+      style['--badge-color'] = color;
+    }
 
     const stateDisplay = this._renderStateDisplay();
 
-    const name = this._config.name || (stateObj ? computeStateName(stateObj) : '');
+    const name =
+      this._config.name || (stateObj ? computeEntityName(stateObj!, this.hass) || computeStateName(stateObj!) : '');
 
     const showConfig = this._showConfig;
     const showName = showConfig.show_name;
@@ -73,14 +85,34 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
 
     const hasAction = this._hasAction;
 
+    let iconSize = 21;
+    let rowReverse = false;
+    let colReverse = false;
+    if (this.globalAppearance) {
+      if (!this._config.ignore_global) {
+        rowReverse = this.globalAppearance.global_row_reverse ?? false;
+        colReverse = this.globalAppearance.global_column_reverse ?? false;
+        iconSize = this.globalAppearance.global_icon_size ?? iconSize;
+      }
+    }
+    rowReverse = commonConfig.row_reverse ?? rowReverse;
+    colReverse = commonConfig.column_reverse ?? colReverse;
+    iconSize = commonConfig.icon_size ?? iconSize;
+
+    if (iconSize !== 21) {
+      style['--badge-icon-size'] = `${iconSize}px`;
+    }
+
     return html`
       <vsc-indicator-badge
         .type=${this.type}
-        .label=${!isGroup || isGroupEntity ? label : undefined}
+        .label=${label}
         .hidden=${!Boolean(this._visibility)}
         .active=${this.active}
         .buttonRole=${Boolean(hasAction)}
-        .iconOnly=${!isGroup && !content}
+        .iconOnly=${!content}
+        .rowReverse=${rowReverse}
+        .colReverse=${colReverse}
         @action=${this._handleAction}
         .actionHandler=${actionHandler({
           hasHold: true,
@@ -91,9 +123,9 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
         ${showIcon !== false
           ? imageUrl
             ? html`<img slot="icon" src=${imageUrl} />`
-            : this._renderIcon(stateObj!, this._config.icon)
+            : this._renderIcon(stateObj!)
           : nothing}
-        ${isGroup && !isGroupEntity ? this._config.name : content}
+        ${content}
       </vsc-indicator-badge>
     `;
   }
@@ -108,7 +140,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
       this.dispatchEvent(new CustomEvent('row-item-clicked', { bubbles: true, composed: true }));
       if (isGroupEntity) {
         fireEvent(this, 'group-toggle', {
-          index: Number(this.dataset.index),
+          index: this.itemIndex,
           type: this.type,
         });
         return;
@@ -132,6 +164,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     return css`
       :host(.dimmed) {
         opacity: 0.2;
+        filter: blur(1px);
       }
       :host(.dimmed:hover) {
         opacity: 1 !important;
@@ -142,6 +175,9 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
         border: 1px solid var(--accent-color);
         border-radius: var(--ha-badge-border-radius, calc(var(--ha-badge-size, 36px) / 2));
         background-color: rgba(var(--rgb-primary-color), 0.1);
+      }
+      vsc-indicator-badge.error {
+        --badge-color: var(--red-color);
       }
     `;
   }

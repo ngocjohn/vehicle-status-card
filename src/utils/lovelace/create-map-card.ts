@@ -10,12 +10,12 @@ import type {
 } from '../../types/config';
 
 import { HomeAssistant, LovelaceCard, LovelaceCardConfig } from '../../ha';
+import { processConfigEntities } from '../editor/process-config-entities';
 import { createCardElement } from './create-card-element';
 
 export const getMapData = (hass: HomeAssistant, config: VehicleStatusCardConfig): MapData | void => {
   const deviceTracker = config.mini_map?.device_tracker;
-  const hiddenMap = config.layout_config?.hide?.mini_map === true;
-  if (hiddenMap || !deviceTracker || deviceTracker === '') {
+  if (!deviceTracker || deviceTracker === '') {
     return;
   }
   const stateObj = hass.states[deviceTracker];
@@ -190,6 +190,25 @@ const defaultMapEntity = (config: MiniMapConfig): MapEntityConfig => ({
   icon: '',
   focus: true,
 });
+
+export const convertLovelaceMapToBaseConfig = (
+  llconfig: ExtraMapCardConfig | LovelaceCardConfig,
+  defaultDeviceTracker: MapEntityConfig
+): Partial<MiniMapConfig> => {
+  const newConfig = { ...llconfig } as any;
+  if (llconfig.entities && Array.isArray(llconfig.entities)) {
+    newConfig.extra_entities = processConfigEntities<MapEntityConfig>(llconfig.entities, false);
+    delete newConfig.entities;
+  } else {
+    newConfig.extra_entities = [defaultDeviceTracker];
+  }
+  if (llconfig.custom_styles && typeof llconfig.custom_styles === 'object' && llconfig.custom_styles !== null) {
+    newConfig.map_styles = llconfig.custom_styles;
+    delete newConfig.custom_styles;
+  }
+  delete newConfig.type;
+  return newConfig as Partial<MiniMapConfig>;
+};
 
 export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
   const useMaptiler = config?.maptiler_api_key && config?.maptiler_api_key !== '';

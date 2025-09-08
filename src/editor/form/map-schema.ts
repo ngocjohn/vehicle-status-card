@@ -1,25 +1,36 @@
+import { mdiCog, mdiMap } from '@mdi/js';
+import { html } from 'lit';
+
+import { ALERT_INFO } from '../editor-const';
+
+const mapTilerHelper = html`How to get Maptiler API Key?
+  <a href=${ALERT_INFO.MAPTILER_DOC_LINK} target="_blank" rel="noreferrer">Click here</a>`;
+
 export const BASE_MAP_SCHEMA = [
   {
     name: 'device_tracker',
+    label: 'Device Tracker Entity',
     selector: { entity: { filter: { domain: ['device_tracker', 'person'] } } },
   },
   {
     name: 'maptiler_api_key',
     label: 'MapTiler API Key (optional)',
-    selector: { text: { type: 'text' } },
+    helper: mapTilerHelper,
+    type: 'string',
+    required: false,
   },
 ] as const;
 
 export const MINI_MAP_LAYOUT_SCHEMA = [
   {
-    name: '',
     type: 'expandable',
+    flatten: true,
     title: 'Mini Map Layout',
-    expanded: true,
+    iconPath: mdiMap,
     schema: [
       {
-        name: '',
         type: 'grid',
+        flatten: true,
         schema: [
           {
             name: 'enable_popup',
@@ -63,3 +74,36 @@ export const MINI_MAP_LAYOUT_SCHEMA = [
     ],
   },
 ] as const;
+
+export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
+  const notMapTiler = !data?.maptiler_api_key || data?.maptiler_api_key === '';
+  const helperText = notMapTiler
+    ? 'MapTiler API key is required'
+    : 'If enabled, the mini map will be displayed as a single card instead of within other card sections.';
+  const notUseSingleMapCard = data?.single_map_card !== true;
+  return [
+    {
+      title: 'Base Map Configuration',
+      type: 'expandable',
+      flatten: true,
+      iconPath: mdiCog,
+      schema: [
+        ...BASE_MAP_SCHEMA,
+        ...(!notMapTiler
+          ? [
+              {
+                name: 'single_map_card',
+                label: 'Mini Map as Single Card',
+                helper: helperText,
+                type: 'boolean',
+                default: false,
+                disabled: notMapTiler,
+              },
+            ]
+          : []),
+      ],
+    },
+
+    ...(notUseSingleMapCard ? MINI_MAP_LAYOUT_SCHEMA : []),
+  ] as const;
+};
