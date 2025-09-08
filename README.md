@@ -89,6 +89,66 @@ This feature makes it easy for both new and experienced users to explore the car
 
 # Indicators Configuration
 
+The **Indicator Rows** format introduces a new way to organize and display indicators in the card.
+Instead of a flat list of items, indicators can now be grouped into rows. Each row can contain individual entities or groups of entities, allowing for more flexible layouts and better control over presentation.
+
+| Name        | Type        | Requirement | Description                                                                                    |
+| ----------- | ----------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `row_items` | Object list | Required    | An array of items with config types: `entity`, `group`.                                        |
+| `alignment` | String      | Optional    | Controls how the items in the row are aligned (`default`, `start`, `center`, `end`, `justify`) |
+| `no_wrap`   | Boolean     | Optional    | Disable wrapping of items. Items will be in a single line and can be scrolled horizontally.    |
+
+## `entity`
+
+Single indicators are used to display the state of a single entity, such as a sensor or binary sensor, on the card's header. These indicators are ideal for showcasing key information like vehicle battery level, engine status, or lock state. Each single indicator displays the current state of the entity with an optional icon for better visualization.
+
+For example, a single indicator can be used to show whether a car door is locked or unlocked, or to display the remaining battery percentage of the vehicle.
+
+## `group`
+
+This is useful when you want to track the status of related entities together, such as all door locks or all tire pressures. Group indicators display a summary view of the entities they contain, giving you a quick snapshot of their states.
+
+For instance, you could create a group indicator to monitor the lock status of all car doors, or to show the pressure levels of all tires at once. Group indicators help to keep the interface cleaner and more organized by bundling similar entities together.
+
+![Indicators Rows](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-indicators-row.gif)
+
+<details>
+<summary>Yaml Example</summary>
+
+```yaml
+row_items:
+  - type: entity
+    entity: lock.car_lock
+    tap_action:
+      action: more-info
+  - type: entity
+    entity: sensor.car_state_of_charge
+    tap_action:
+      action: more-info
+  - type: group
+    name: Tires
+    con: mdi:car-tire-alert
+    items:
+      - entity: sensor.car_tire_pressure_front_left
+        name: Front left
+      - entity: sensor.car_tire_pressure_front_right
+        name: Front right
+      - entity: sensor.car_tire_pressure_rear_left
+        name: Rear left
+      - entity: sensor.car_tire_pressure_rear_right
+        name: Rear right
+no_wrap: true
+alignment: center
+```
+
+</details>
+
+<details>
+<summary>LEGACY CONFIG</summary>
+
+> [!WARNING]
+> DEPRECATED FROM v.1.16.0 - USE 'INDICATOR_ROWS' INSTEAD
+
 ## Single Indicators
 
 Single indicators are used to display the state of a single entity, such as a sensor or binary sensor, on the card's header. These indicators are ideal for showcasing key information like vehicle battery level, engine status, or lock state. Each single indicator displays the current state of the entity with an optional icon for better visualization.
@@ -140,7 +200,11 @@ indicators:
           name: Rear Right
       icon: mdi:car-door
 ```
+
 </details>
+
+</details>
+
 
 # Range Info Bars
 
@@ -399,6 +463,7 @@ The layout configuration controls how elements within the vehicle status card ar
 ### Key Features
 
 - **Theme Configuration**: Customize the card’s overall appearance using a theme mode:
+
   - `auto`: Automatically switches based on your system or dashboard theme.
   - `light`: Use a light background and styling.
   - `dark`: Use a dark theme optimized for low-light environments.
@@ -406,6 +471,7 @@ The layout configuration controls how elements within the vehicle status card ar
   ![Config layout theme](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout-theme.gif)
 
 - **Button Grid Layout**:
+
   - Set the number of **rows** for displaying buttons.
   - Enable **swipe gestures** for smooth scrolling on mobile devices.
   - Choose between **vertical or horizontal layout** for each button using the new `layout` option.
@@ -414,13 +480,13 @@ The layout configuration controls how elements within the vehicle status card ar
   ![Config layout](https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/main/assets/config-layout-buttons.gif)
 
 - **Visibility Controls**: Toggle the display of individual card sections to match your needs:
+
   - **Card Name**
   - **Mini Map**
   - **Buttons**
   - **Indicators**
   - **Range Info**
   - **Images**
-  - **Button Notifications**
 
 - **Section Reordering**: Easily **rearrange the order** in which the main sections appear on the card. This lets you prioritize the content most relevant to your use case, whether that's vehicle status, location, or custom buttons.
 
@@ -449,10 +515,13 @@ layout_config:
     card_name: false
     map_address: false
   section_order:
-    - header_info
+    - indicators
+    - range_info
     - buttons
 ```
+
 </details>
+
 
 <!--README-CONTENT-END-->
 ---
