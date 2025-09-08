@@ -39,6 +39,7 @@ export const ExpansionPanel = ({
       .leftChevron=${options?.leftChevron || false}
       @expanded-will-change=${expandedWillChange}
       @expanded-changed=${expandedChangedCallback}
+      style="border-radius: 6px"
     >
       ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
       ${slotIcons ? slotIcons : nothing}
