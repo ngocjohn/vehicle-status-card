@@ -5,13 +5,7 @@ import './vic-tab';
 import './vic-tab-bar';
 import { ICON } from '../mdi-icons';
 
-export const ExpansionPanel = ({
-  content,
-  options,
-  slotIcons,
-  expandedWillChange,
-  expandedChangedCallback,
-}: {
+export interface ExpansionPanelParams {
   content: TemplateResult[] | TemplateResult;
   options: {
     expanded?: boolean;
@@ -24,11 +18,19 @@ export const ExpansionPanel = ({
     elId?: string;
   };
   slotIcons?: TemplateResult | TemplateResult[];
-  expandedWillChange?: (ev?: any) => void;
+  expandedWillChange?: (ev) => void;
   expandedChangedCallback?: (ev?: any) => void;
-}): TemplateResult => {
+}
+export const ExpansionPanel = ({
+  content,
+  options,
+  slotIcons,
+  expandedWillChange,
+  expandedChangedCallback,
+}: ExpansionPanelParams): TemplateResult => {
   return html`
     <ha-expansion-panel
+      id=${ifDefined(options?.elId)}
       .outlined=${options?.outlined || true}
       .expanded=${options?.expanded || false}
       .noCollapse=${options?.noCollapse || false}
@@ -37,8 +39,6 @@ export const ExpansionPanel = ({
       .leftChevron=${options?.leftChevron || false}
       @expanded-will-change=${expandedWillChange}
       @expanded-changed=${expandedChangedCallback}
-      id=${ifDefined(options?.elId)}
-      style="border-radius: 6px;  --ha-card-border-radius: 6px;"
     >
       ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
       ${slotIcons ? slotIcons : nothing}

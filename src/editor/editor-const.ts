@@ -236,8 +236,14 @@ export enum ELEMENT {
   FORM_GRID = 'ha-form-grid',
   FORM_EXPANDABLE = 'ha-form-expandable',
   FORM_OPTIONAL_ACTIONS = 'ha-form-optional_actions',
+  HA_EXPANSION_PANEL = 'ha-expansion-panel',
 }
 
 export enum SELECTOR {
   OPTIONAL_BUTTON_TRIGGER = 'ha-form-optional_actions$ha-button[slot="trigger"]',
+}
+
+export enum HA_EVENT {
+  EXPANSION_WILL_CHANGE = 'expanded-will-change',
+  EXPANSION_CHANGED = 'expanded-changed',
 }

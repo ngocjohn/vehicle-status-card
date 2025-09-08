@@ -69,13 +69,15 @@ export const computeOptionalActionSchema = () => {
     },
   ] as const;
 };
-const groupActions: UiAction[] = ['navigate', 'url', 'perform-action', 'assist', 'none'];
+// const groupActions: UiAction[] = ['navigate', 'url', 'perform-action', 'assist', 'none'];
 
 export const computeOptionalActionSchemaFull = (noTap: boolean = false) => {
-  const tapGestureActions = noTap
-    ? (['hold_action', 'double_tap_action'] as const)
-    : (['tap_action', 'hold_action', 'double_tap_action'] as const);
-  const actions = noTap ? groupActions : DEFAULT_ACTIONS;
+  const tapGestureActions = [...(noTap ? [] : (['tap_action'] as const)), 'hold_action', 'double_tap_action'] as const;
+
+  // const tapGestureActions = noTap
+  //   ? (['hold_action', 'double_tap_action'] as const)
+  //   : (['tap_action', 'hold_action', 'double_tap_action'] as const);
+  // const actions = noTap ? groupActions : DEFAULT_ACTIONS;
 
   return [
     {
@@ -87,7 +89,7 @@ export const computeOptionalActionSchemaFull = (noTap: boolean = false) => {
         label: action.replace(/_/g, ' '),
         selector: {
           ui_action: {
-            actions: actions || DEFAULT_ACTIONS,
+            actions: DEFAULT_ACTIONS,
             default_action: 'none' as const,
           },
         },

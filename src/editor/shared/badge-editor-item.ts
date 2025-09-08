@@ -19,6 +19,15 @@ const OVERLAY_ICON: Record<ActionType | string, string> = {
   'remove-exclude-entity': ICON.CHECK_CIRCLE,
 };
 
+export const DeleteAction: MenuItemConfig[] = [
+  {
+    title: 'Delete',
+    action: 'delete-item',
+    icon: 'mdi:delete',
+    color: 'var(--error-color)',
+  },
+];
+
 @customElement('badge-editor-item')
 export class BadgeEditorItem extends LitElement {
   @property({ attribute: false }) public _menuAction: MenuItemConfig[] = [];
@@ -35,6 +44,9 @@ export class BadgeEditorItem extends LitElement {
   @property({ type: Boolean, attribute: 'show-tooltip' })
   public showTooltip = false;
 
+  @property({ type: Boolean, attribute: 'no-delete' })
+  public noDelete = false;
+
   @state()
   public _menuOpened = false;
 
@@ -49,7 +61,6 @@ export class BadgeEditorItem extends LitElement {
   protected firstUpdated(): void {
     this.addEventListener('focus', () => {
       this._focused = true;
-      console.log('focus on badge item', this.ELEMENT_NODE);
     });
     this.addEventListener('blur', () => {
       this._focused = false;
@@ -77,6 +88,7 @@ export class BadgeEditorItem extends LitElement {
       this._hover = true;
       document.addEventListener('click', this._documentClicked);
     });
+    this._getElementStyle();
   }
 
   disconnectedCallback(): void {
@@ -85,14 +97,29 @@ export class BadgeEditorItem extends LitElement {
   }
 
   private _documentClicked = (ev) => {
+    // console.log('composedPath', ev.composedPath(), 'includes this:', ev.composedPath().includes(this), this);
     this._hover = ev.composedPath().includes(this);
     document.removeEventListener('click', this._documentClicked);
   };
 
+  private isDeleteAction(action: string): boolean {
+    return /(delete|remove)/.test(action);
+  }
   protected render(): TemplateResult {
     const showOverlay = (this._hover || this._menuOpened || this._focused) && !this.hiddenOverlay;
     this._menuAction = this._menuAction.length ? this._menuAction : DefaultActions;
+    const isDelete = (this.isDeleteAction as (action: string) => boolean).bind(this);
+    if (this.noDelete) {
+      this._menuAction = this._menuAction.filter((a) => !isDelete(a.action));
+    }
 
+    // set delete action item to be the last item
+    this._menuAction = [
+      ...this._menuAction.filter((a) => !isDelete(a.action)),
+      ...this._menuAction.filter((a) => isDelete(a.action)),
+    ];
+
+    let deleteFound = false;
     return html`
       <div class="button-wrapper"><slot></slot></div>
       <div
@@ -143,27 +170,46 @@ export class BadgeEditorItem extends LitElement {
                 }}
               >
                 <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}> </ha-icon-button>
-                ${this._menuAction.map(
-                  (item) => html`<ha-list-item
-                    graphic="icon"
-                    .action=${item.action}
-                    @click=${this._handleAction}
-                    style="z-index: 6; ${item.color ? `color: ${item.color}` : ''}"
-                  >
-                    <ha-icon
-                      icon=${item.icon}
-                      slot="graphic"
-                      style="${item.color ? `color: ${item.color}` : ''}"
-                    ></ha-icon>
-                    ${item.title}
-                  </ha-list-item>`
-                )}
+                ${this._menuAction.map((item) => {
+                  if (isDelete(item.action) && !deleteFound) {
+                    deleteFound = true;
+                    return this.noDelete
+                      ? nothing
+                      : html`
+                          <li divider role="separator"></li>
+                          ${this._renderActionItem(item)}
+                        `;
+                  }
+                  return this._renderActionItem(item);
+                })}
               </ha-button-menu>
             `}
       </div>
     `;
   }
 
+  private _renderActionItem(item: MenuItemConfig): TemplateResult {
+    const deleteClass = classMap({
+      error: this.isDeleteAction(item.action),
+    });
+    return html`
+      <ha-list-item
+        graphic="icon"
+        .action=${item.action}
+        @click=${this._handleAction}
+        class=${deleteClass}
+        style="z-index: 6; ${item.color ? `color: ${item.color}` : ''}"
+      >
+        <ha-icon
+          class=${deleteClass}
+          .icon=${item.icon}
+          slot="graphic"
+          style="${item.color ? `color: ${item.color}` : ''}"
+        ></ha-icon>
+        ${item.title}
+      </ha-list-item>
+    `;
+  }
   private _handleOverlayClick(ev): void {
     if (ev.defaultPrevented) {
       return;
@@ -187,6 +233,27 @@ export class BadgeEditorItem extends LitElement {
     fireEvent(this, 'badge-action-item', { action });
   }
 
+  private _getElementStyle = async () => {
+    await this.updateComplete;
+    // find style border-radius value in the slotted element
+    const slot = this.shadowRoot!.querySelector('slot');
+    const assignedElements = slot!.assignedElements({ flatten: true });
+    if (assignedElements.length === 0) return;
+    const el = assignedElements[0] as HTMLElement;
+    // check if el has style border-radius, if not, check its first child element for border-radius
+    let style = getComputedStyle(el);
+    if (!style.borderRadius || style.borderRadius === '0px') {
+      if (el.shadowRoot) {
+        const childEl = el.shadowRoot.firstElementChild as HTMLElement;
+        style = getComputedStyle(childEl);
+      }
+    }
+    // set --overlay-radius to style border-radius or 12px if not found
+    if (style.borderRadius && style.borderRadius !== '0px') {
+      this.style.setProperty('--overlay-radius', style.borderRadius);
+    }
+  };
+
   static get styles(): CSSResultGroup {
     return [
       css`
@@ -194,9 +261,25 @@ export class BadgeEditorItem extends LitElement {
           display: block;
           position: relative;
           height: 100%;
-          --badge-border-radius: calc(var(--ha-badge-size, 36px) / 2);
+          --overlay-radius: var(--ha-card-border-radius, 12px);
+          /* --badge-border-radius: calc(var(--ha-badge-size, 36px) / 2); */
+        }
+        li[divider] {
+          margin: 4px 0;
+          border-bottom: 1px solid var(--divider-color);
         }
 
+        .secondary {
+          color: var(--secondary-text-color);
+        }
+
+        .error {
+          color: var(--error-color);
+        }
+
+        .warning {
+          color: var(--error-color);
+        }
         .button-overlay {
           position: absolute;
           opacity: 0;
@@ -217,7 +300,9 @@ export class BadgeEditorItem extends LitElement {
           z-index: 0;
           width: inherit;
         }
-
+        .button-wrapper > ::slotted(ha-badge) {
+          --badge-color: var(--primary-color);
+        }
         .control {
           outline: none !important;
           cursor: pointer;
@@ -226,7 +311,7 @@ export class BadgeEditorItem extends LitElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: var(--badge-border-radius);
+          /* border-radius: var(--badge-border-radius); */
           z-index: 0;
         }
 
@@ -236,7 +321,7 @@ export class BadgeEditorItem extends LitElement {
           opacity: 0.8;
           background-color: var(--primary-background-color);
           border: 1px solid var(--divider-color);
-          border-radius: var(--badge-border-radius);
+          border-radius: var(--overlay-radius);
           z-index: 0;
           /* center the icon inside */
           display: flex;
