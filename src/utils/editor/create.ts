@@ -1,14 +1,11 @@
 import { html, nothing, TemplateResult } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 import './vic-tab';
 import './vic-tab-bar';
 import { ICON } from '../mdi-icons';
 
-export const ExpansionPanel = ({
-  content,
-  options,
-  slotIcons,
-}: {
+export interface ExpansionPanelParams {
   content: TemplateResult[] | TemplateResult;
   options: {
     expanded?: boolean;
@@ -18,18 +15,31 @@ export const ExpansionPanel = ({
     outlined?: boolean;
     noCollapse?: boolean;
     leftChevron?: boolean;
+    elId?: string;
   };
   slotIcons?: TemplateResult | TemplateResult[];
-}): TemplateResult => {
+  expandedWillChange?: (ev) => void;
+  expandedChangedCallback?: (ev?: any) => void;
+}
+export const ExpansionPanel = ({
+  content,
+  options,
+  slotIcons,
+  expandedWillChange,
+  expandedChangedCallback,
+}: ExpansionPanelParams): TemplateResult => {
   return html`
     <ha-expansion-panel
+      id=${ifDefined(options?.elId)}
       .outlined=${options?.outlined || true}
       .expanded=${options?.expanded || false}
       .noCollapse=${options?.noCollapse || false}
       .header=${options.header}
       .secondary=${options?.secondary || ''}
       .leftChevron=${options?.leftChevron || false}
-      style="border-radius: 6px;  --ha-card-border-radius: 6px;"
+      @expanded-will-change=${expandedWillChange}
+      @expanded-changed=${expandedChangedCallback}
+      style="border-radius: 6px"
     >
       ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
       ${slotIcons ? slotIcons : nothing}

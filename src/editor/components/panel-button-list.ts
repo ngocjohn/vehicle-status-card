@@ -381,7 +381,6 @@ export class PanelButtonList extends BaseEditor {
         .noEdit=${this._movingMode}
         .defaultAction=${ACTIONS.EDIT_BUTTON}
         @badge-action-item=${this._handleButtonActionsMap}
-        style="--badge-border-radius: var(--ha-card-border-radius, 12px);"
       >
         <div class="button-grid-item">
           <div class="item-content">

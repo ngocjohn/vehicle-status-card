@@ -547,7 +547,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         }
         if (entity_index !== null && entity_index !== undefined) {
           // dim all items except the one at entity_index
-          console.debug('set highlight entity index:', entity_index);
+          // console.debug('set highlight entity index:', entity_index);
           const entityItem = items?.[entity_index];
           if (entityItem) {
             entityItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });

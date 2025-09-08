@@ -11,14 +11,13 @@ type BadgeType = 'entity' | 'group';
 @customElement(COMPONENT.INDICATOR_BADGE)
 export class VscIndicatorBadge extends LitElement {
   @property({ type: String, reflect: true }) public type: BadgeType = 'entity';
-
   @property() public label?: string;
   @property({ attribute: false }) public buttonRole?: boolean = false;
-
   @property({ type: Boolean, reflect: true }) public active = false;
-  @property({ type: Boolean, attribute: 'icon-only' }) iconOnly = false;
   @property({ type: Boolean, reflect: true }) public hidden = false;
-  @property({ type: Boolean, reflect: true }) public reverse = false;
+  @property({ type: Boolean, attribute: 'icon-only' }) iconOnly = false;
+  @property({ type: Boolean, attribute: 'col-reverse', reflect: true }) public colReverse = false;
+  @property({ type: Boolean, attribute: 'row-reverse', reflect: true }) public rowReverse = false;
 
   @query('.badge', true) _badge!: HTMLElement;
 
@@ -30,18 +29,20 @@ export class VscIndicatorBadge extends LitElement {
         class=${classMap({
           badge: true,
           'icon-only': this.iconOnly,
+          'row-reverse': this.rowReverse,
+          'col-reverse': this.colReverse,
         })}
         role=${ifDefined(this.buttonRole ? 'button' : undefined)}
       >
-        <ha-ripple .disabled=${!this.buttonRole}></ha-ripple>
+        <ha-ripple .disabled=${!this.buttonRole || this.iconOnly}></ha-ripple>
         <slot name="icon"></slot>
         ${this.iconOnly
           ? nothing
-          : html`<span class="info" ?reverse=${this.reverse}>
+          : html`<span class="info">
               ${label ? html`<span class="label">${label}</span>` : nothing}
               <span class="content"><slot></slot></span>
             </span>`}
-        ${this.type === 'entity'
+        ${this.type !== 'group'
           ? nothing
           : html` <ha-svg-icon slot="icon" class="toggle-icon" .path=${ICON.CHEVRON_DOWN}></ha-svg-icon> `}
       </div>
@@ -74,7 +75,8 @@ export class VscIndicatorBadge extends LitElement {
         padding: 0px 12px;
         box-sizing: border-box;
         width: auto;
-        border-radius: var(--ha-card-border-radius, 12px);
+        border-radius: var(--ha-badge-border-radius, calc(var(--ha-badge-size, 36px) / 2));
+        /* border-radius: var(--ha-card-border-radius, 12px); */
         background: none;
         -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
         backdrop-filter: var(--ha-card-backdrop-filter, none);
@@ -89,6 +91,10 @@ export class VscIndicatorBadge extends LitElement {
         border-color: var(--badge-color);
         box-shadow: var(--shadow-default), var(--shadow-focus);
       }
+      .badge.row-reverse {
+        flex-direction: row-reverse;
+      }
+
       [role='button'] {
         cursor: pointer;
       }
@@ -108,7 +114,12 @@ export class VscIndicatorBadge extends LitElement {
         padding-inline-start: initial;
         text-align: center;
       }
-      .info[reverse] {
+      .badge.row-reverse .info {
+        align-items: flex-end;
+        padding-inline-start: initial;
+        text-align: center;
+      }
+      .badge.col-reverse .info {
         flex-direction: column-reverse;
       }
       .label {

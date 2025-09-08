@@ -47,6 +47,7 @@ export class BaseEditor extends LitElement {
 
   @property({ attribute: false }) _migrate = MIGRATE;
   @property() _computeEntityName = computeEntityName;
+  @property() _menuItemClicked!: (e: any) => void;
 
   protected _stylesManager: HomeAssistantStylesManager;
 
@@ -214,9 +215,13 @@ export class BaseEditor extends LitElement {
   }
 
   public _dispatchEditorEvent(type: EditorCommandTypes, data?: any): void {
-    console.debug(`sent editor command: ${type}`, data);
+    // console.debug(`sent editor command: ${type}`, data);
     fireEvent(this, 'editor-event', { type, data });
   }
+
+  protected _showRow = (rowIndex: number | null, peek = false): void => {
+    this._dispatchEditorEvent('toggle-indicator-row', { rowIndex, peek });
+  };
 
   public _setPreviewConfig = <T extends keyof EditorPreviewTypes>(
     previewKey: T,
@@ -255,6 +260,22 @@ export class BaseEditor extends LitElement {
         }
         *[active] {
           color: var(--primary-color);
+        }
+        .error {
+          color: var(--error-color);
+        }
+        .warning {
+          color: var(--warning-color);
+        }
+        .success {
+          color: var(--success-color);
+        }
+        .info {
+          color: var(--info-color);
+        }
+        li[divider] {
+          margin: 4px 0;
+          border-bottom: 1px solid var(--divider-color);
         }
       `,
 

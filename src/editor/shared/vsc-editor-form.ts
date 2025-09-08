@@ -84,7 +84,6 @@ export class VscEditorForm extends BaseEditor {
   private _expandableToggled = async (ev: any) => {
     ev.stopPropagation();
     const target = ev.target;
-    const targetName = target?.schema?.title || target?.schema?.name || 'unknown';
     const expandedOpen = ev.detail.expanded as boolean;
     const styledAlready = target.getAttribute('data-processed') === 'true';
 
@@ -93,7 +92,7 @@ export class VscEditorForm extends BaseEditor {
       return;
     }
 
-    console.log(targetName, 'toggled, now open:', expandedOpen);
+    // console.log(targetName, 'toggled, now open:', expandedOpen);
     // add styles to the ha-form inside the expandable
     if (target && target.shadowRoot) {
       const haFormRoot = await selectTree(target.shadowRoot, 'ha-expansion-panel ha-form');
@@ -111,7 +110,7 @@ export class VscEditorForm extends BaseEditor {
         }
       }
       // add styles
-      console.log('Adding styles to ha-form in expandable');
+      // console.log('Adding styles to ha-form in expandable');
       this._stylesManager.addStyle([HA_FORM_STYLE], haFormRoot.shadowRoot);
 
       const nestedExpandables = (await selectTree(
@@ -121,7 +120,7 @@ export class VscEditorForm extends BaseEditor {
       )) as NodeListOf<HaFormElItem>;
       if (nestedExpandables.length) {
         Array.from(nestedExpandables).forEach((el: any) => {
-          console.log('Adding event listener to nested expandable', el);
+          // console.log('Adding event listener to nested expandable', el);
           el.addEventListener('expanded-changed', this._expandableToggled.bind(this)), { once: true };
         });
       }
@@ -132,6 +131,11 @@ export class VscEditorForm extends BaseEditor {
 
   static get styles(): CSSResultGroup {
     return css`
+      :host {
+        display: block;
+        width: 100%;
+        flex: 1 1 auto;
+      }
       #haForm {
         display: flex;
         flex-direction: column;

@@ -1,3 +1,5 @@
+import { html, TemplateResult } from 'lit';
+
 import { ACTIONS } from '../../editor/editor-const';
 
 export interface MenuItemConfig {
@@ -12,14 +14,9 @@ export type ActionType = (typeof ActionTypes)[number];
 
 export const DefaultActions: MenuItemConfig[] = [
   { title: 'Edit', action: 'edit-item', icon: 'mdi:pencil' },
+  { title: 'Delete', action: 'delete-item', icon: 'mdi:delete' },
   { title: 'Show Item', action: 'show-item', icon: 'mdi:eye' },
   { title: 'Duplicate', action: 'duplicate-item', icon: 'mdi:content-duplicate' },
-  {
-    title: 'Delete',
-    action: 'delete-item',
-    icon: 'mdi:delete',
-    color: 'var(--error-color)',
-  },
 ];
 
 export const createActionsMenu = (overrides?: Partial<MenuItemConfig>[]): MenuItemConfig[] => {
@@ -59,3 +56,45 @@ export const BUTTON_ACTION_MENU: MenuItemConfig[] = [
     color: 'var(--error-color)',
   },
 ];
+
+export const GROUP_ENTITY_ADDED_ACTIONS: MenuItemConfig[] = [
+  { title: 'Add to exclude list', action: 'add-exclude-entity', icon: 'mdi:close-circle' },
+  { title: 'Remove from exclude list', action: 'remove-exclude-entity', icon: 'mdi:check-circle' },
+];
+
+export const ROW_MAIN_ACTIONS: MenuItemConfig[] = [
+  { title: 'Edit Row', action: 'edit', icon: 'mdi:pencil' },
+  { title: 'Show Row', action: 'peek', icon: 'mdi:eye' },
+  { title: 'Delete Row', action: 'delete', icon: 'mdi:delete' },
+];
+
+export const _renderActionItem = ({
+  item,
+  onClick,
+  option,
+}: {
+  item: MenuItemConfig;
+  onClick: (ev) => void;
+  option?: any;
+}): TemplateResult => {
+  const deleteClass = /(delete|remove)/.test(item.action) ? 'error' : '';
+  return html`
+    <ha-list-item
+      graphic="icon"
+      .action=${item.action}
+      @click=${onClick}
+      class=${deleteClass}
+      .index=${option?.index}
+      ?disabled=${option?.disabled}
+      style="z-index: 6; ${item.color ? `color: ${item.color}` : ''}"
+    >
+      <ha-icon
+        class=${deleteClass}
+        .icon=${item.icon}
+        slot="graphic"
+        style="${item.color ? `color: ${item.color}` : ''}"
+      ></ha-icon>
+      ${item.title}
+    </ha-list-item>
+  `;
+};

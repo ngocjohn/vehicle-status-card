@@ -15,8 +15,10 @@ export interface IndicatorVisual {
   icon_size?: number;
   color_template?: string;
   column_reverse?: boolean;
+  row_reverse?: boolean;
   icon_template?: string;
   state_template?: string;
+  ignore_global?: boolean;
 }
 export interface IndicatorShowConfig {
   show_name?: boolean;
@@ -67,17 +69,25 @@ export interface IndicatorRowGroupConfig extends IndicatorVisual, IndicatorEntit
 export type IndicatorRowItem = IndicatorEntityConfig | IndicatorRowGroupConfig;
 
 /**
+ * Interface for global appearance configuration
+ * This allows setting default visual options for all items in the row.
+ */
+export interface GlobalAppearanceConfig {
+  global_icon_size?: number; // Default icon size for items in the row
+  global_column_reverse?: boolean; // Reverse the order name and state
+  global_row_reverse?: boolean; // Reverse the order of icon and content
+}
+/**
  * Interface for indicator rows configuration
  *
  * This allows for combining single indicators and groups of indicators
  * into a single row configuration.
  */
 
-export interface IndicatorRowConfig {
+export interface IndicatorRowConfig extends GlobalAppearanceConfig {
   row_items: IndicatorRowItem[]; // Array of indicator items in the row
   alignment?: string;
   no_wrap?: boolean;
-  icon_size?: number;
 }
 
 export interface LovelaceIndicatorRowItem extends HTMLElement {
@@ -108,7 +118,9 @@ export function toCommon(i: IndicatorRowItem): IndicatorCommon {
     icon_template: i.icon_template,
     icon_size: i.icon_size,
     column_reverse: i.column_reverse,
+    row_reverse: i.row_reverse,
     state_template: i.state_template,
+    ignore_global: i.ignore_global,
     // Safe because entity is required for entities and optional for groups:
     entity: (i as any).entity, // ok as read-only helper
   };
