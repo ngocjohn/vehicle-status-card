@@ -33,6 +33,7 @@ import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
 import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
+import { migrateImages } from './utils/editor/migrate-images';
 import { reorderSection } from './utils/editor/reorder-section';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createCustomCard } from './utils/lovelace/create-custom-card';
@@ -52,9 +53,18 @@ export const migrateLegacySectionOrder = (config: VehicleStatusCardConfig): Vehi
     const currentOrder = newConfig.layout_config.section_order || SECTION_KEYS;
     const updatedOrder = reorderSection(hideConfig, currentOrder);
     newConfig.layout_config.section_order = updatedOrder;
+    // Remove the deprecated 'hide' property
   }
-  // Remove the deprecated 'hide' property
+  if (!newConfig.image_slides && (newConfig.images || newConfig.image_entities)) {
+    // Migrate images and image_entities to image_slides
+    newConfig.image_slides = migrateImages(newConfig.images, newConfig.image_entities);
+    console.debug('Migrated images to image_slides:', newConfig.image_slides);
+    newConfig.image_entities = undefined;
+    newConfig.images = undefined;
+  }
+  // Clean up old properties
   delete newConfig.layout_config.hide;
+
   // console.debug('Final layout_config after migration:', newConfig.layout_config);
   return newConfig;
 };
@@ -354,9 +364,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _renderImagesSlide(): TemplateResult {
-    const imageEntities = this._config?.image_entities || [];
-    const configImages = this._config?.images || [];
-    if ((!configImages.length && !imageEntities.length) || this._isSectionHidden(SECTION.IMAGES)) return html``;
+    if (!this._config.image_slides?.length || this._isSectionHidden(SECTION.IMAGES)) return html``;
 
     return html`
       <div id=${SECTION.IMAGES}>

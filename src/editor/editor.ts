@@ -1,16 +1,18 @@
+import { editorDebug } from '../utils/debugger';
+const debuglog = editorDebug.extend('main');
 // External
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-// Import styles
 import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
 // Import all components
 import './components/';
 import { VehicleStatusCardConfig } from '../types/config';
 import { loadHaComponents, Create, refactorEditDialog } from '../utils';
+import { migrateImages } from '../utils/editor/migrate-images';
 import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
-import { selectTree } from '../utils/helpers-dom';
 import '../utils/editor/menu-element';
+import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
 import { migrateLegacySectionOrder, VehicleStatusCard } from '../vehicle-status-card';
 import { BaseEditor } from './base-editor';
@@ -53,18 +55,45 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
+    const hasImagesItems = config.image_slides && config.image_slides.length > 0;
+    const imagesOrImageEntities =
+      (config.images && config.images.length > 0) || (config.image_entities && config.image_entities.length > 0);
+    const imagesNotMigrated = !hasImagesItems && imagesOrImageEntities;
+    const legacyHideConfig = config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0;
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
-    if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
-      console.debug('Migrating legacy layout_config.hide to section_order');
-      config = {
-        ...config,
-        ...migrateLegacySectionOrder(config),
-      };
+    if (imagesNotMigrated || legacyHideConfig) {
+      debuglog('Legacy configuration detected', { imagesNotMigrated, legacyHideConfig });
+      if (legacyHideConfig) {
+        debuglog('handle hide migration');
+        config = {
+          ...config,
+          ...migrateLegacySectionOrder(config),
+        };
+      }
+      if (imagesNotMigrated) {
+        debuglog('handle images migration');
+        const migratedImages = migrateImages(config.images, config.image_entities);
+        config = {
+          ...config,
+          image_slides: migratedImages,
+        };
+      }
+      debuglog('Migrated configuration:', config);
       fireEvent(this, 'config-changed', { config: config });
-      console.log('Migrated layout_config.hide:', config);
       return;
     }
+
+    // if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
+    //   console.debug('Migrating legacy layout_config.hide to section_order');
+    //   config = {
+    //     ...config,
+    //     ...migrateLegacySectionOrder(config),
+    //   };
+    //   fireEvent(this, 'config-changed', { config: config });
+    //   console.log('Migrated layout_config.hide:', config);
+    //   return;
+    // }
 
     const newConfig = { ...config };
     this._config = newConfig;
@@ -81,6 +110,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     void refactorEditDialog();
     window.EditorManager = this;
     this._cleanConfig();
+    debuglog('Editor connected');
   }
 
   disconnectedCallback(): void {

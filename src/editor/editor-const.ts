@@ -229,6 +229,7 @@ export enum SUB_PANEL {
   ROW_SUB_ITEM = `${PANEL_PREFIX}row-sub-item`,
   ROW_ITEM = `${PANEL_PREFIX}row-item`,
   ROW_SUB_GROUP_ITEM = `${PANEL_PREFIX}row-sub-group-item`,
+  IMAGE_PREVIEW = `${PANEL_PREFIX}image-preview`,
 }
 
 export enum ELEMENT {

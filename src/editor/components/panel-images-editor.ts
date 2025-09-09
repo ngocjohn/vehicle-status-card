@@ -11,13 +11,16 @@ import { repeat } from 'lit/directives/repeat.js';
 import { EntitiesEditorEvent, fireEvent } from '../../ha';
 import { EntityConfig, ImageConfig, VehicleStatusCardConfig } from '../../types/config';
 import { Create, ICON } from '../../utils';
+import { editorDebug } from '../../utils/debugger';
 import { VicTab } from '../../utils/editor/create';
+import { EditorImageItem, processEditorImages, revertEditorImages } from '../../utils/editor/migrate-images';
 import { processEditorEntities } from '../../utils/editor/process-editor-entities';
 import { showConfirmDialog } from '../../utils/editor/show-dialog-box';
 import { uploadImage } from '../../utils/editor/upload-image';
 import { BaseEditor } from '../base-editor';
 import { IMAGE_CONFIG_ACTIONS, IMAGE_ACTIONS, PANEL } from '../editor-const';
 import { IMAGES_SLIDE_SCHEMA } from '../form';
+const debuglog = editorDebug.extend('images');
 
 const ADD_IMAGE_TYPE = [
   { value: 'file', label: 'Upload files' },
@@ -40,6 +43,7 @@ export class PanelImagesEditor extends BaseEditor {
   @state() private _activeTabIndex: number = 0;
   @state() private _images: ImageConfig[] = [];
   @state() private _imageEntities?: EntityConfig[];
+  @state() private _editorImageItems?: EditorImageItem[];
   @state() private _uploading = false;
   @state() private _uploadedImages?: ImageConfig[] = [];
   @state() private _imageAddType: ADD_TYPE = ADD_TYPE.FILE;
@@ -181,6 +185,7 @@ export class PanelImagesEditor extends BaseEditor {
     if (_changedProperties.has('config') && this.config) {
       this._images = this.config.images || [];
       this._imageEntities = this.config.image_entities ? processEditorEntities(this.config.image_entities) : [];
+      this._editorImageItems = this.config.image_slides ? processEditorImages(this.config.image_slides) : [];
     }
     if (_changedProperties.has('_uploadedImages') && this._uploadedImages) {
       // If new images are uploaded, merge them with existing images
@@ -513,7 +518,65 @@ export class PanelImagesEditor extends BaseEditor {
           </div>
         </ha-sortable>
       </div>
+      ${this._renderTestImageObj()}
     `;
+  }
+
+  private _renderTestImageObj(): TemplateResult {
+    if (!this._editorImageItems) return html``;
+    const IMAGES_DATA = {
+      image_items: this._editorImageItems,
+    };
+
+    const selectorSchema = [
+      {
+        name: 'image_items',
+        label: 'Images',
+        selector: {
+          object: {
+            label_field: 'type',
+            description_field: 'value',
+            multiple: true,
+            fields: {
+              type: {
+                selector: {
+                  type: 'string',
+                },
+              },
+              value: {
+                selector: { type: 'string' },
+              },
+              image: {
+                label: 'Image',
+                selector: { image: {} },
+                required: false,
+              },
+              image_entity: {
+                label: 'Image Entity',
+                selector: { entity: { domain: ['image'] } },
+                required: false,
+              },
+            },
+          },
+        },
+      },
+    ] as const;
+
+    return this._createVscForm(IMAGES_DATA, selectorSchema, 'images');
+  }
+
+  protected _onValueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const { key, subKey } = ev.target as any;
+    const value = { ...ev.detail.value };
+    console.debug('Value changed:', key, subKey, value);
+    const editorItems = processEditorImages(value.image_items || []);
+    debuglog('Processed editor items:', editorItems);
+    this._editorImageItems = [...editorItems];
+    const updatedImages = revertEditorImages(value.image_items || []);
+    debuglog('Reverted images:', updatedImages);
+    this.config = { ...this.config, image_slides: updatedImages };
+    fireEvent(this, 'config-changed', { config: this.config });
   }
 
   private _deletePreviewImage(index: number): void {

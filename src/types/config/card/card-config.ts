@@ -1,7 +1,7 @@
 import { LovelaceCardConfig } from '../../../ha';
 import { EntityConfig } from '../entity-config';
 import { ButtonCardConfig } from './button';
-import { ImageConfig } from './images';
+import { ImageConfig, ImageItem } from './images';
 import { IndicatorsConfig } from './indicators';
 import { LayoutConfig } from './layout';
 import { MiniMapConfig } from './mini-map';
@@ -15,15 +15,22 @@ export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   name?: string;
   button_card: ButtonCardConfig[];
   range_info: RangeInfoConfig[];
-  images?: ImageConfig[];
   mini_map: MiniMapConfig;
   indicator_rows?: IndicatorRowConfig[];
   layout_config: LayoutConfig;
-  image_entities?: (EntityConfig | string)[];
+  image_slides?: ImageItem[];
   /**
    * @deprecated Use `indicator_rows` instead.
    */
   indicators?: IndicatorsConfig;
+  /**
+   * @deprecated Use `image_slides` instead.
+   */
+  images?: ImageConfig[];
+  /**
+   * @deprecated Use `image_slides` instead.
+   */
+  image_entities?: (EntityConfig | string)[];
 }
 
 export enum PREVIEW_TYPE {

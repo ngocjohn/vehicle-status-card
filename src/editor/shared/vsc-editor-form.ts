@@ -1,4 +1,5 @@
-import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
+import { HomeAssistantStylesManager } from 'home-assistant-styles-manager';
+import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
@@ -19,12 +20,21 @@ const HA_FORM_STYLE = css`
 `.toString();
 
 @customElement('vsc-editor-form')
-export class VscEditorForm extends BaseEditor {
+export class VscEditorForm extends LitElement {
+  @property({ attribute: false }) public _hass!: BaseEditor['_hass'];
   @property({ attribute: false }) data!: unknown;
   @property({ attribute: false }) schema!: unknown;
   @property() changed!: (ev: CustomEvent) => void;
-
   @query('#haForm') _haForm!: HaFormElement;
+
+  protected _stylesManager: HomeAssistantStylesManager;
+  constructor() {
+    super();
+    this._stylesManager = new HomeAssistantStylesManager({
+      prefix: 'vsc-editor',
+      throwWarnings: true,
+    });
+  }
 
   protected async firstUpdated(_changedProperties: PropertyValues) {
     super.firstUpdated(_changedProperties);
@@ -34,15 +44,6 @@ export class VscEditorForm extends BaseEditor {
     }
     this._addEventListeners();
   }
-
-  private get _formRoot(): HTMLElement {
-    return this._haForm.shadowRoot!.querySelector('.root') as HTMLElement;
-  }
-
-  private _getNestedHaForm = async (root: ShadowRoot | HTMLElement): Promise<HaFormElement | null> => {
-    const haForm = await selectTree(root, 'ha-form');
-    return haForm || null;
-  };
 
   protected render(): TemplateResult {
     return html`<ha-form

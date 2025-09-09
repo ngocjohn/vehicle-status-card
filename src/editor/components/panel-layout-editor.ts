@@ -29,8 +29,7 @@ export class PanelLayoutEditor extends BaseEditor {
       {
         name: config?.name,
       },
-      NAME_SCHEMA,
-      'name'
+      NAME_SCHEMA
     );
 
     const LAYOUT_DATA = {

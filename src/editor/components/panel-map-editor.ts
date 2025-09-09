@@ -238,11 +238,11 @@ export class PanelMapEditor extends BaseEditor {
     ev.stopPropagation();
     if (!this._config) return;
     const config = ev.detail.config;
-    console.debug('map card config changed:', config);
+    // console.debug('map card config changed:', config);
 
     const mapConfig = convertLovelaceMapToBaseConfig(config, this._deviceTrackerEntity);
     // const mapConfig = this._convertToBaseMapConfig(config);
-    console.log('Map Config:', mapConfig);
+    // console.log('Map Config:', mapConfig);
     const miniMapConfig = { ...(this._config.mini_map || {}) };
     this._config = {
       ...this._config,
@@ -251,7 +251,7 @@ export class PanelMapEditor extends BaseEditor {
         ...mapConfig,
       },
     };
-    console.debug('New Config:', this._config.mini_map);
+    // console.debug('New Config:', this._config.mini_map);
     fireEvent(this, 'config-changed', {
       config: this._config,
     });

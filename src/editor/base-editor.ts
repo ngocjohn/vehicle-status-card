@@ -1,3 +1,5 @@
+import { editorDebug } from '../utils/debugger';
+const debuglog = editorDebug.extend('base-editor');
 import { HomeAssistantStylesManager } from 'home-assistant-styles-manager';
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -48,7 +50,6 @@ export class BaseEditor extends LitElement {
   @property({ attribute: false }) _migrate = MIGRATE;
   @property() _computeEntityName = computeEntityName;
   @property() _menuItemClicked!: (e: any) => void;
-
   protected _stylesManager: HomeAssistantStylesManager;
 
   constructor() {
@@ -61,6 +62,7 @@ export class BaseEditor extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    debuglog(this.tagName, 'connected');
   }
   set hass(hass: HomeAssistant) {
     this._hass = hass;
@@ -120,13 +122,13 @@ export class BaseEditor extends LitElement {
   }
 
   protected _onValueChanged(ev: CustomEvent): void {
-    console.debug('onValueChanged (BaseEditor)');
+    debuglog('onValueChanged (BaseEditor)');
     ev.stopPropagation();
     const { key, subKey, currentConfig } = ev.target as any;
     const value = { ...ev.detail.value };
-    console.debug('onValueChanged:', { key, subKey, value });
+    debuglog('onValueChanged:', { key, subKey, value });
     if (!currentConfig || typeof currentConfig !== 'object') return;
-    console.debug('incoming:', { key, subKey, currentConfig, value });
+    debuglog('incoming:', { key, subKey, currentConfig, value });
 
     const updates: Partial<VehicleStatusCardConfig> = {};
     if (key && subKey) {
@@ -140,7 +142,7 @@ export class BaseEditor extends LitElement {
     } else {
       Object.assign(updates, value);
     }
-    console.debug('updates:', updates);
+    debuglog('updates:', updates);
     if (Object.keys(updates).length > 0) {
       const newConfig = { ...currentConfig, ...updates };
       fireEvent(this, 'config-changed', { config: newConfig });
@@ -176,15 +178,15 @@ export class BaseEditor extends LitElement {
 
   protected _onYamlChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    console.debug('YAML changed (BaseEditor)');
+    debuglog('YAML changed (BaseEditor)');
     const { key, subKey } = ev.target as any;
     const value = ev.detail;
-    console.debug('YAML changed:', { key, subKey, value });
+    debuglog('YAML changed:', { key, subKey, value });
   }
   protected _onYamlEditorClosed(ev: CustomEvent): void {
     ev.stopPropagation();
     const { key, subKey } = ev.target as any;
-    console.debug('YAML editor closed:', { key, subKey });
+    debuglog('YAML editor closed:', { key, subKey });
     fireEvent(this, 'yaml-editor-closed', undefined);
   }
 
@@ -201,7 +203,7 @@ export class BaseEditor extends LitElement {
       if (newConfig.hasOwnProperty(key)) {
         delete newConfig[key];
         hasChanges = true;
-        console.debug(`Removed preview config key: ${key}`);
+        debuglog(`Removed preview config key: ${key}`);
       }
     });
 
@@ -215,7 +217,7 @@ export class BaseEditor extends LitElement {
   }
 
   public _dispatchEditorEvent(type: EditorCommandTypes, data?: any): void {
-    // console.debug(`sent editor command: ${type}`, data);
+    // debuglog(`sent editor command: ${type}`, data);
     fireEvent(this, 'editor-event', { type, data });
   }
 
@@ -233,7 +235,7 @@ export class BaseEditor extends LitElement {
 
     // Update config
     const newConfig = { ...config, [previewKey]: value };
-    // console.debug(`Set preview config key: ${previewKey}`, value);
+    // debuglog(`Set preview config key: ${previewKey}`, value);
     fireEvent(this, 'config-changed', { config: newConfig });
     return;
   };
@@ -245,7 +247,7 @@ export class BaseEditor extends LitElement {
 
     // Update config
     const newConfig = { ...config, ...changedConfig };
-    console.debug('Card config changed:', changedConfig, newConfig);
+    debuglog('Card config changed:', changedConfig, newConfig);
   }
 
   static get styles(): CSSResultGroup {

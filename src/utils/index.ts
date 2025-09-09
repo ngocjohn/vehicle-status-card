@@ -1,4 +1,5 @@
 export * as Create from './editor/create';
+export * as Dialog from './editor/show-dialog-box';
 export * from './helpers';
 export * from './loader';
 export * from './lovelace/tap-action';

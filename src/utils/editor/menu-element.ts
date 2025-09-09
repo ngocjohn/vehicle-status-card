@@ -1,8 +1,7 @@
-import { TemplateResult, css, html, nothing } from 'lit';
+import { LitElement, TemplateResult, css, html, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { CARD_VERSION } from '../../constants/const';
-import { BaseEditor } from '../../editor/base-editor';
 import { CONFIG_TYPES } from '../../editor/editor-const';
 import { fireEvent } from '../../ha/common/dom/fire_event';
 
@@ -32,7 +31,7 @@ declare global {
 }
 
 @customElement('vsc-menu-element')
-export class MenuElement extends BaseEditor {
+export class MenuElement extends LitElement {
   @property({ attribute: false }) public legacyIndicators: boolean = false;
   @property() public value?: string;
   @state() private _open = false;
@@ -137,7 +136,7 @@ export class MenuElement extends BaseEditor {
   }
 
   private _handleHelpClick() {
-    this._dispatchEditorEvent('toggle-helper', { value: this.value });
+    fireEvent(this, 'editor-event', { type: 'toggle-helper', data: this.value });
   }
 
   static get styles() {

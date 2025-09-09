@@ -2,15 +2,12 @@ import { CSSResultGroup, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import cardstyles from '../css/card.css';
-import * as SensorUtils from '../ha/data/sensor';
 import { HomeAssistant } from '../ha/types';
 import { Store } from './store';
 
 export class BaseElement extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _store!: Store;
-
-  protected _sensorUtils = SensorUtils;
 
   constructor() {
     super();
