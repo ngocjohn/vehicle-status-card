@@ -1,16 +1,15 @@
 import memoizeOne from 'memoize-one';
 
-import type {
-  VehicleStatusCardConfig,
-  MapData,
-  Address,
-  MiniMapConfig,
-  ExtraMapCardConfig,
-  MapEntityConfig,
-} from '../../types/config';
-
 import { HomeAssistant, LovelaceCard, LovelaceCardConfig } from '../../ha';
-import { processConfigEntities } from '../editor/process-config-entities';
+import {
+  type VehicleStatusCardConfig,
+  type MapData,
+  type Address,
+  type MiniMapConfig,
+  type ExtraMapCardConfig,
+  type MapEntityConfig,
+  computePopupCardConfig,
+} from '../../types/config';
 import { createCardElement } from './create-card-element';
 
 export const getMapData = (hass: HomeAssistant, config: VehicleStatusCardConfig): MapData | void => {
@@ -184,42 +183,14 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string): P
 
 const defaultMapEntity = (config: MiniMapConfig): MapEntityConfig => ({
   entity: config.device_tracker,
-  color: config.path_color || '',
   label_mode: config.label_mode,
   attribute: config.attribute || '',
-  icon: '',
   focus: true,
 });
 
-export const convertLovelaceMapToBaseConfig = (
-  llconfig: ExtraMapCardConfig | LovelaceCardConfig,
-  defaultDeviceTracker: MapEntityConfig
-): Partial<MiniMapConfig> => {
-  const newConfig = { ...llconfig } as any;
-  if (llconfig.entities && Array.isArray(llconfig.entities)) {
-    newConfig.extra_entities = processConfigEntities<MapEntityConfig>(llconfig.entities, false);
-    delete newConfig.entities;
-  } else {
-    newConfig.extra_entities = [defaultDeviceTracker];
-  }
-  if (llconfig.custom_styles && typeof llconfig.custom_styles === 'object' && llconfig.custom_styles !== null) {
-    newConfig.map_styles = llconfig.custom_styles;
-    delete newConfig.custom_styles;
-  }
-  delete newConfig.type;
-  return newConfig as Partial<MiniMapConfig>;
-};
-
 export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
-  const useMaptiler = config?.maptiler_api_key && config?.maptiler_api_key !== '';
   const mapConfig = config as MiniMapConfig;
-  let extra_entities = mapConfig.extra_entities || [];
-
-  let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(
-    mapConfig,
-    [...(extra_entities as MapEntityConfig[])],
-    Boolean(useMaptiler)
-  ) as ExtraMapCardConfig;
+  const extraMapConfig = computePopupCardConfig(mapConfig);
 
   const mapElement = (await createCardElement(hass, [extraMapConfig])) as LovelaceCardConfig[];
   if (!mapElement) {
@@ -228,39 +199,24 @@ export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssis
   }
   return mapElement;
 }
+// export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
+//   const useMaptiler = config?.maptiler_api_key && config?.maptiler_api_key !== '';
+//   const mapConfig = config as MiniMapConfig;
+//   let extra_entities = mapConfig.extra_entities || [];
 
-export const _convertToExtraMapConfig = (
-  config: MiniMapConfig,
-  entities: (MapEntityConfig | string)[] = [],
-  useMaptiler: boolean = false
-): ExtraMapCardConfig | LovelaceCardConfig => {
-  if (!entities.length) {
-    entities = [defaultMapEntity(config)];
-  }
-  const sharedConfig = {
-    entities: entities,
-    aspect_ratio: config.aspect_ratio,
-    auto_fit: config.auto_fit,
-    fit_zones: config.fit_zones,
-    default_zoom: config.default_zoom,
-    hours_to_show: config.hours_to_show,
-    theme_mode: config.theme_mode,
-  };
-  const defaultMapConfig = {
-    type: 'map',
-    ...sharedConfig,
-  } as LovelaceCardConfig;
-  const maptilerConfig = {
-    type: 'custom:extra-map-card',
-    api_key: config.maptiler_api_key,
-    custom_styles: config.map_styles,
-    history_period: config.history_period,
-    use_more_info: config.use_more_info,
-    ...sharedConfig,
-  } as ExtraMapCardConfig;
+//   let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(
+//     mapConfig,
+//     [...(extra_entities as MapEntityConfig[])],
+//     Boolean(useMaptiler)
+//   ) as ExtraMapCardConfig;
 
-  return useMaptiler ? maptilerConfig : defaultMapConfig;
-};
+//   const mapElement = (await createCardElement(hass, [extraMapConfig])) as LovelaceCardConfig[];
+//   if (!mapElement) {
+//     console.error('Failed to create map element');
+//     return [];
+//   }
+//   return mapElement;
+// }
 
 export const createMapCard = (config: MiniMapConfig): LovelaceCard | undefined => {
   if (!config || !config.device_tracker) {
@@ -273,8 +229,7 @@ export const createMapCard = (config: MiniMapConfig): LovelaceCard | undefined =
     return;
   }
 
-  const extraEntities = config.extra_entities || [];
-  const mapConfig = _convertToExtraMapConfig(config, extraEntities, useMapTiler) as ExtraMapCardConfig;
+  const mapConfig = computePopupCardConfig(config) as ExtraMapCardConfig;
   console.log('Creating map element...');
   try {
     const tag = 'extra-map-card';

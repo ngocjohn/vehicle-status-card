@@ -1,4 +1,5 @@
 import { LovelaceViewConfig, ShowViewConfig, LovelaceCardConfig, ActionConfig } from '../../ha';
+import { LovelaceMapPopupConfig } from '../../types/config';
 import { ButtonCardConfig } from '../../types/config/card/button';
 import { LovelaceRowItemConfig } from '../../types/config/card/row-indicators';
 
@@ -113,7 +114,7 @@ export interface CardPickTarget extends EventTarget {
 
 export interface SubElementEditorConfig {
   index?: number;
-  elementConfig?: LovelaceRowItemConfig;
+  elementConfig?: LovelaceCardConfig | LovelaceRowItemConfig | LovelaceMapPopupConfig;
   type: string;
 }
 

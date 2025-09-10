@@ -3,8 +3,9 @@ import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import editorcss from '../css/editor.css';
-import { computeEntityName, fireEvent, HomeAssistant } from '../ha';
+import { fireEvent, HomeAssistant } from '../ha';
 import { VehicleStatusCardConfig } from '../types/config';
+import { computePopupCardConfig, mapCommonPopupConfig, computeExtraMapConfig } from '../types/config/card/mini-map';
 import { Create } from '../utils';
 import * as MIGRATE from '../utils/editor/migrate-indicator';
 import { EditorPreviewTypes } from '../utils/editor/types';
@@ -43,10 +44,12 @@ export class BaseEditor extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _store!: Store;
 
-  @property() _domHelper = selectTree;
-
   @property({ attribute: false }) _migrate = MIGRATE;
-  @property() _computeEntityName = computeEntityName;
+  @property() _domHelper = selectTree;
+  @property() _computeMapPopupConfig = computePopupCardConfig;
+  @property() _computeExtraMapConfig = computeExtraMapConfig;
+  @property() _mapCommonPopupConfig = mapCommonPopupConfig;
+
   @property() _menuItemClicked!: (e: any) => void;
 
   protected _stylesManager: HomeAssistantStylesManager;
