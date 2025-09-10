@@ -53,9 +53,10 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
+    const hasExtraEntities = config.mini_map && config.mini_map.extra_entities?.length;
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
-    if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
+    if ((config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) || hasExtraEntities) {
       console.debug('Migrating legacy layout_config.hide to section_order');
       config = {
         ...config,

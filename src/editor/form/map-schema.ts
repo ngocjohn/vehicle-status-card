@@ -10,14 +10,9 @@ export const BASE_MAP_SCHEMA = [
   {
     name: 'device_tracker',
     label: 'Device Tracker Entity',
+    helper: 'Entity is required to configure the map',
+    required: true,
     selector: { entity: { filter: { domain: ['device_tracker', 'person'] } } },
-  },
-  {
-    name: 'maptiler_api_key',
-    label: 'MapTiler API Key (optional)',
-    helper: mapTilerHelper,
-    type: 'string',
-    required: false,
   },
 ] as const;
 
@@ -76,6 +71,7 @@ export const MINI_MAP_LAYOUT_SCHEMA = [
 ] as const;
 
 export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
+  const noEntity = !data?.device_tracker || data?.device_tracker === '';
   const notMapTiler = !data?.maptiler_api_key || data?.maptiler_api_key === '';
   const helperText = notMapTiler
     ? 'MapTiler API key is required'
@@ -89,6 +85,14 @@ export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
       iconPath: mdiCog,
       schema: [
         ...BASE_MAP_SCHEMA,
+        {
+          name: 'maptiler_api_key',
+          label: 'MapTiler API Key (optional)',
+          helper: mapTilerHelper,
+          type: 'string',
+          disabled: noEntity,
+          required: false,
+        },
         ...(!notMapTiler
           ? [
               {
@@ -104,6 +108,6 @@ export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
       ],
     },
 
-    ...(notUseSingleMapCard ? MINI_MAP_LAYOUT_SCHEMA : []),
+    ...(!noEntity && notUseSingleMapCard ? MINI_MAP_LAYOUT_SCHEMA : []),
   ] as const;
 };

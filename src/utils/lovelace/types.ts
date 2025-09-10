@@ -1,5 +1,9 @@
 import { HomeAssistant, LovelaceConfig } from '../../ha';
-import { IndicatorRowItem } from '../../types/config';
+import { IndicatorRowItem, LovelaceMapPopupConfig } from '../../types/config';
+
+export interface LovelaceMapPopupEditor extends LovelaceGenericElementEditor {
+  setConfig(config: LovelaceMapPopupConfig): void;
+}
 
 export interface LovelaceIndicatorRowEditor extends LovelaceGenericElementEditor {
   setConfig(config: IndicatorRowItem): void;

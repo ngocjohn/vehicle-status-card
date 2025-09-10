@@ -15,15 +15,19 @@ export const DEFAULT_ZOOM = 14;
 
 @customElement(COMPONENT.MINI_MAP)
 export class MiniMapBox extends BaseElement {
+  constructor() {
+    super();
+  }
+
   @property({ attribute: false }) mapConfig!: MiniMapConfig;
   @property({ attribute: 'is-dark', type: Boolean, reflect: true })
   isDark!: boolean;
-  @property({ attribute: false }) private mapData?: MapData;
+  @state() private mapData?: MapData;
 
   @state() private map: L.Map | null = null;
 
-  private latLon: L.LatLng | null = null;
-  private marker: L.Marker | null = null;
+  @state() private latLon: L.LatLng | null = null;
+  @state() private marker: L.Marker | null = null;
 
   @state() private _addressReady = false;
   @state() private _locateIconVisible = false;
@@ -47,15 +51,15 @@ export class MiniMapBox extends BaseElement {
 
   private get _deviceState(): string {
     const deviceTracker = this.mapConfig?.device_tracker;
-    const stateObj = this.hass.states[deviceTracker];
+    const stateObj = this._hass.states[deviceTracker];
     if (stateObj) {
-      return this.hass.formatEntityState(stateObj);
+      return this._hass.formatEntityState(stateObj);
     }
     return '';
   }
 
   private get _deviceNotInZone(): boolean {
-    return this.hass.states[this.mapConfig.device_tracker]?.state === 'not_home' || false;
+    return this._hass.states[this.mapConfig.device_tracker]?.state === 'not_home' || false;
   }
 
   connectedCallback() {
@@ -76,8 +80,25 @@ export class MiniMapBox extends BaseElement {
     this.resizeObserver?.disconnect();
   }
 
-  protected willUpdate(changedProperties: PropertyValues): void {
+  protected willUpdate(changedProperties: PropertyValues) {
     super.willUpdate(changedProperties);
+    if (!this.mapConfig) return;
+    if (changedProperties.has('mapConfig') && this.mapConfig) {
+      console.log('Map config changed, resetting map...');
+      const deviceTracker = this.mapConfig.device_tracker;
+      const stateObj = this._hass.states[deviceTracker];
+      if (stateObj) {
+        this.mapData = {
+          lat: stateObj.attributes.latitude,
+          lon: stateObj.attributes.longitude,
+        };
+        this._addressReady = false;
+        this._address = null;
+        this._mapInitialized = false;
+        this.map = null;
+        this.marker = null;
+      }
+    }
 
     if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map) {
       this.latLon = this._getTargetLatLng(this.map);
@@ -86,10 +107,11 @@ export class MiniMapBox extends BaseElement {
     }
   }
 
-  protected async updated(changedProperties: PropertyValues): Promise<void> {
+  protected updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
 
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined && !this.map) {
+      console.log('Map data changed, initializing map...');
       this.initMap();
       if (this.mapConfig?.hide_map_address !== true) {
         this._getAddress();
@@ -99,14 +121,14 @@ export class MiniMapBox extends BaseElement {
 
   protected shouldUpdate(changedProperties: PropertyValues): boolean {
     super.shouldUpdate(changedProperties);
-
-    if (changedProperties.has('hass') && this.hass && this.map && this.mapData) {
+    if (changedProperties.has('_hass') && changedProperties.get('_hass') !== undefined && this.map && this.mapData) {
       const { lat, lon } = this.mapData;
-      const stateObj = this.hass.states[this.mapConfig.device_tracker];
+      const stateObj = this._hass.states[this.mapConfig.device_tracker];
       if (stateObj) {
         const { latitude, longitude } = stateObj.attributes;
         if (lat !== latitude || lon !== longitude) {
-          console.log('Updating map position...');
+          console.log('Updating map position...', { newLat: latitude, newLon: longitude });
+          // Update map position
           this._addressReady = false;
           this.mapData.lat = latitude;
           this.mapData.lon = longitude;
@@ -136,7 +158,7 @@ export class MiniMapBox extends BaseElement {
 
   private initMap(): void {
     if (this._mapInitialized || this.map) return;
-    // console.log('Initializing map...');
+    console.log('Initializing map...');
     const { lat, lon } = this.mapData!;
     const defaultZoom = this.zoom;
     const mapOptions = {
@@ -241,7 +263,7 @@ export class MiniMapBox extends BaseElement {
 
     const address = this._address || {};
     const inZone = !this._deviceNotInZone;
-    // const inZone = this.hass.states[config.device_tracker]?.state !== 'not_home';
+    // const inZone = this._hass.states[config.device_tracker]?.state !== 'not_home';
 
     const addressContent =
       useZoneName && inZone
@@ -267,6 +289,7 @@ export class MiniMapBox extends BaseElement {
       map_config: this.mapConfig,
       use_map_tiler: this.useMapTiler,
     };
+    console.log('Opening map dialog...', params);
     showHaMapDialog(this, params);
   }
 

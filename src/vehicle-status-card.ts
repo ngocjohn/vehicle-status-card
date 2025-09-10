@@ -23,7 +23,6 @@ import {
   ButtonCardConfig,
   DefaultCardConfig,
   IndicatorRowConfig,
-  MapData,
   PREVIEW_TYPE,
   TireEntity,
   TireTemplateConfig,
@@ -53,6 +52,13 @@ export const migrateLegacySectionOrder = (config: VehicleStatusCardConfig): Vehi
     const updatedOrder = reorderSection(hideConfig, currentOrder);
     newConfig.layout_config.section_order = updatedOrder;
   }
+  if (newConfig.mini_map && newConfig.mini_map.extra_entities?.length) {
+    // Clean up extra_entities to remove duplicates and invalid entries
+    newConfig.mini_map.entities = config.mini_map.extra_entities;
+    newConfig.mini_map.extra_entities = undefined;
+    console.debug('Migrated extra_entities to entities in mini_map config');
+  }
+  delete newConfig.mini_map?.extra_entities; // Remove deprecated extra_entities property
   // Remove the deprecated 'hide' property
   delete newConfig.layout_config.hide;
   // console.debug('Final layout_config after migration:', newConfig.layout_config);
@@ -98,6 +104,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   set hass(hass: HomeAssistant) {
     this._hass = hass;
+    if (this._extraMapCard) {
+      this._extraMapCard.hass = hass;
+    }
   }
   get hass(): HomeAssistant {
     return this._hass;
@@ -134,7 +143,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @query(COMPONENT.RANGE_INFO, true) _rangeInfo!: VscRangeInfo;
   @query(COMPONENT.INDICATORS, true) _indicators!: VscIndicators;
   @query(COMPONENT.MINI_MAP, true) _miniMap!: MiniMapBox;
-  @queryAll(COMPONENT.INDICATOR_ROW) _indicatorRows!: VscIndicatorRow[];
+  @queryAll(COMPONENT.INDICATOR_ROW) _indicatorRows!: NodeListOf<VscIndicatorRow>;
   @query('ha-card', true) _haCard!: HTMLElement;
 
   connectedCallback(): void {
@@ -190,7 +199,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       element.isPanel = this.isPanel;
       element.layout = this.layout;
       this._extraMapCard = element;
-      console.log('Map element created:', this._extraMapCard);
+      // console.log('Map element created:', this._extraMapCard);
     }
   }
 
@@ -240,8 +249,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     if (this._config.mini_map?.single_map_card === true && this._extraMapCard) {
-      const mapCard = this._extraMapCard;
-      return html`${mapCard}`;
+      return html`${this._extraMapCard}`;
     }
 
     const headerHidden =
@@ -373,17 +381,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       return this._showWarning('Device tracker not available');
     }
     const miniMapConfig = this._config.mini_map;
-    const mapData: MapData = {
-      lat: stateObj.attributes.latitude,
-      lon: stateObj.attributes.longitude,
-    };
 
     return html`
       <div id=${SECTION.MINI_MAP} style=${this._computeMapStyles()}>
         <vsc-mini-map
-          .hass=${this._hass}
+          ._hass=${this._hass}
           .mapConfig=${miniMapConfig}
-          .mapData=${mapData}
           .isDark=${this.isDark}
           ._store=${this._store}
         ></vsc-mini-map>
