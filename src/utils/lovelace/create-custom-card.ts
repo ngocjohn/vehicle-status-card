@@ -22,6 +22,8 @@ export const createCustomCard = (config: LovelaceCardConfig[]): LovelaceCard | u
       // @ts-ignore
       const element = document.createElement(VERTIAL_STACK_TAG, verticalStackConfig) as LovelaceCard;
       element.setConfig(verticalStackConfig);
+      console.log('Custom card element created:', element);
+      console.debug('element hass:', element.hass);
       return element;
     }
     // @ts-ignore

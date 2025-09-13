@@ -38,7 +38,7 @@ const BUTTON_PRIMARY_SCHEMA = (label: string, disabled: boolean = false) =>
 
 @customElement(PANEL.BUTTON_LIST)
 export class PanelButtonList extends BaseEditor {
-  @property({ attribute: false }) public config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) private config!: VehicleStatusCardConfig;
 
   @state() private _buttonListConfig?: ButtonCardConfig[];
   @state() private _listView: boolean = false;
@@ -242,14 +242,10 @@ export class PanelButtonList extends BaseEditor {
   }
 
   private _renderGridLayoutSettings(): TemplateResult {
-    const BUTTON_GRID_DATA = { ...(this.config.layout_config?.button_grid || {}) };
-    const useSwiper = BUTTON_GRID_DATA.swipe;
-    const gridForm = this._createVscForm(
-      BUTTON_GRID_DATA,
-      BUTTON_GRID_SCHEMA(!useSwiper),
-      'layout_config',
-      'button_grid'
-    );
+    const config = { ...(this.config.layout_config?.button_grid || {}) };
+    const DATA = { ...config };
+
+    const gridForm = this._createVscForm(DATA, BUTTON_GRID_SCHEMA(!DATA?.swipe), 'layout_config', 'button_grid');
     return Create.SectionPanel([{ title: '', content: gridForm }]);
   }
 

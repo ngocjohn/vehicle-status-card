@@ -44,14 +44,14 @@ export type HideConfig = Partial<{
 }>;
 
 type BUTTON_LAYOUT = 'horizontal' | 'vertical';
-export type ButtonGridConfig = Partial<{
-  rows: number;
-  columns: number;
-  swipe: boolean;
-  button_layout: BUTTON_LAYOUT;
-  transparent: boolean;
-  hide_notify_badge: boolean;
-}>;
+export type ButtonGridConfig = {
+  rows?: number;
+  columns?: number;
+  swipe?: boolean;
+  button_layout?: BUTTON_LAYOUT;
+  transparent?: boolean;
+  hide_notify_badge?: boolean;
+};
 
 type RANGE_INFO_LAYOUT = 'column' | 'row';
 
@@ -64,10 +64,3 @@ type ThemeConfig = Partial<{
   mode: THEME_MODE;
   theme: string;
 }>;
-
-export interface CardSectionLayout {
-  header?: SectionOrder[];
-  main?: SectionOrder[];
-  footer?: SectionOrder[];
-  main_columns?: number;
-}

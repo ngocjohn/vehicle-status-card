@@ -7,7 +7,6 @@ import {
   type Address,
   type MiniMapConfig,
   type ExtraMapCardConfig,
-  type MapEntityConfig,
   computePopupCardConfig,
 } from '../../types/config';
 import { createCardElement } from './create-card-element';
@@ -180,13 +179,6 @@ async function getAddressFromGoggle(lat: number, lon: number, apiKey: string): P
     return null;
   }
 }
-
-const defaultMapEntity = (config: MiniMapConfig): MapEntityConfig => ({
-  entity: config.device_tracker,
-  label_mode: config.label_mode,
-  attribute: config.attribute || '',
-  focus: true,
-});
 
 export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
   const mapConfig = config as MiniMapConfig;

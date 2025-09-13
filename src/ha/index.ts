@@ -17,3 +17,4 @@ export * from './data/translation';
 export * from './data/ws-templates';
 export * from './data/ws-themes';
 export * from './types';
+export * from './dialogs/dialog-manager';

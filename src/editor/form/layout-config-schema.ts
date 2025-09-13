@@ -3,12 +3,12 @@ import { mdiButtonCursor, mdiListBox, mdiPalette, mdiTextShort } from '@mdi/js';
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
 import { SECTION_KEYS } from '../../types/config/card/layout';
 
-export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false, name: string = '') =>
+export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
   [
     {
       name: '',
       type: 'grid',
-      flatten: name === '' ? true : false,
+      flatten: true,
       column_min_width: '140px',
       schema: [
         {
@@ -73,6 +73,7 @@ export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false, name: string 
       },
     },
   ] as const;
+
 export const BUTTON_GRID_LAYOUT_SCHEMA = (swipeDisabled: boolean = false, name: string = '') =>
   [
     {
@@ -81,7 +82,7 @@ export const BUTTON_GRID_LAYOUT_SCHEMA = (swipeDisabled: boolean = false, name: 
       type: 'expandable',
       flatten: name === '' ? true : false,
       iconPath: mdiButtonCursor,
-      schema: BUTTON_GRID_SCHEMA(swipeDisabled, name),
+      schema: BUTTON_GRID_SCHEMA(swipeDisabled),
     },
   ] as const;
 
