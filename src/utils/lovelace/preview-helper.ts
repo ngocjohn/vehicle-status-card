@@ -1,15 +1,15 @@
 import { DEFAULT_TIRE_CONFIG } from '../../editor/form';
 import { HomeAssistant, LovelaceCardConfig } from '../../ha';
-import {
-  DefaultCardConfig,
-  PREVIEW_TYPE,
-  TireEntity,
-  TireTemplateConfig,
-  VehicleStatusCardConfig,
-} from '../../types/config';
+import { DefaultCardConfig, TireEntity, TireTemplateConfig, VehicleStatusCardConfig } from '../../types/config';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 import { createCardElement } from './create-card-element';
 import { getTireCard } from './create-tire-card';
+
+export enum PREVIEW_TYPE {
+  CUSTOM = 'custom',
+  DEFAULT = 'default',
+  TIRE = 'tire',
+}
 
 export async function previewHandler(cardType: PREVIEW_TYPE | null, card: VehicleStatusCard): Promise<void> {
   if (!cardType && !card.isEditorPreview) return;
