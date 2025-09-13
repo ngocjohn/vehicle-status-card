@@ -81,11 +81,11 @@ export class PanelMapEditor extends BaseEditor {
     `;
 
     const DATA = { ...(this._mapCardConfig || {}) };
-
+    const noEntity = !DATA?.device_tracker || DATA?.device_tracker === '';
     const baseMapWrapper = this._createVscForm(DATA, BASE_MAP_CONFIG_SCHEMA(DATA), 'mini_map');
 
     const mapLayoutPopup = html`
-      <ha-button appearance="filled" @click=${() => this._editPopupConfig()}>${header}</ha-button>
+      <ha-button .disabled=${noEntity} appearance="filled" @click=${() => this._editPopupConfig()}>${header}</ha-button>
     `;
     return html`
       ${editorHeader}

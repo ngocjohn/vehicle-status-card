@@ -1,6 +1,4 @@
-import type { UiAction } from '../../ha';
-
-import { VscAlignmentSelector } from './custom/ha-selector-vsc-alignment';
+import type { UiAction } from '..';
 
 export type Selector =
   | ActionSelector
@@ -54,8 +52,7 @@ export type Selector =
   | UiActionSelector
   | UiColorSelector
   | UiStateContentSelector
-  | BackupLocationSelector
-  | VscAlignmentSelector;
+  | BackupLocationSelector;
 
 export interface ActionSelector {
   action: {

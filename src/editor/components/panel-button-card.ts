@@ -88,7 +88,7 @@ export class PanelButtonCard extends BaseEditor {
 
     return html`
       <panel-button-list
-        .hass=${this._hass}
+        ._hass=${this._hass}
         ._store=${this._store}
         .config=${this.config}
         @button-list-action=${this._handleButtonListAction}

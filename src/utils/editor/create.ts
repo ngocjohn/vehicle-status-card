@@ -1,8 +1,11 @@
+import { mdiClose } from '@mdi/js';
 import { html, nothing, TemplateResult } from 'lit';
-import { ifDefined } from 'lit/directives/if-defined.js';
 
 import './vic-tab';
 import './vic-tab-bar';
+import { ifDefined } from 'lit/directives/if-defined.js';
+
+import { HomeAssistant } from '../../ha/types';
 import { ICON } from '../mdi-icons';
 
 export interface ExpansionPanelParams {
@@ -181,3 +184,15 @@ export const HaButton = ({
     </ha-button>
   `;
 };
+
+export const createCloseHeading = (hass: HomeAssistant | undefined, title: string | TemplateResult) => html`
+  <div class="header_title">
+    <ha-icon-button
+      .label=${hass?.localize('ui.common.close') ?? 'Close'}
+      .path=${mdiClose}
+      dialogAction="close"
+      class="header_button"
+    ></ha-icon-button>
+    <span>${title}</span>
+  </div>
+`;

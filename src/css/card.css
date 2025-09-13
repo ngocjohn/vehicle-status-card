@@ -318,6 +318,7 @@ ha-card .card-header {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  gap: var(--vic-gutter-gap);
 }
 
 .added-card>.added-cutom {

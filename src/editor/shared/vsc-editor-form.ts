@@ -1,8 +1,8 @@
+import { capitalize } from 'es-toolkit';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 
-import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
-import { HaFormElement, HaFormElItem } from '../../utils/form/ha-form';
+import { HaFormElement } from '../../ha/panels/ha-form/types';
 import { selectTree } from '../../utils/helpers-dom';
 import { BaseEditor } from '../base-editor';
 import { ELEMENT, SELECTOR } from '../editor-const';
@@ -14,7 +14,7 @@ const HA_FORM_STYLE = css`
   }
   .root ha-form-grid,
   .root ha-expansion-panel .root ha-form-grid {
-    gap: 14px 8px !important;
+    gap: 1em !important;
   }
 `.toString();
 
@@ -35,15 +35,6 @@ export class VscEditorForm extends BaseEditor {
     this._addEventListeners();
   }
 
-  private get _formRoot(): HTMLElement {
-    return this._haForm.shadowRoot!.querySelector('.root') as HTMLElement;
-  }
-
-  private _getNestedHaForm = async (root: ShadowRoot | HTMLElement): Promise<HaFormElement | null> => {
-    const haForm = await selectTree(root, 'ha-form');
-    return haForm || null;
-  };
-
   protected render(): TemplateResult {
     return html`<ha-form
       id="haForm"
@@ -61,7 +52,7 @@ export class VscEditorForm extends BaseEditor {
       return undefined;
     }
     const label = schema.label || schema.name || schema.title || '';
-    return capitalizeFirstLetter(label.trim());
+    return capitalize(label.replace(/_/g, ' '));
   };
 
   private computeHelper = (schema: any): string | TemplateResult | undefined => {
@@ -73,7 +64,7 @@ export class VscEditorForm extends BaseEditor {
       this._haForm.shadowRoot,
       ELEMENT.FORM_EXPANDABLE,
       true
-    )) as NodeListOf<HaFormElItem>;
+    )) as NodeListOf<HaFormElement>;
     if (expandables) {
       Array.from(expandables).forEach((el: any) => {
         el.addEventListener('expanded-changed', this._expandableToggled.bind(this)), { once: true };
@@ -117,7 +108,7 @@ export class VscEditorForm extends BaseEditor {
         haFormRoot.shadowRoot,
         ELEMENT.FORM_EXPANDABLE,
         true
-      )) as NodeListOf<HaFormElItem>;
+      )) as NodeListOf<HaFormElement>;
       if (nestedExpandables.length) {
         Array.from(nestedExpandables).forEach((el: any) => {
           // console.log('Adding event listener to nested expandable', el);
