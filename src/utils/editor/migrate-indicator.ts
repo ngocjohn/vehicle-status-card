@@ -3,6 +3,7 @@ import type { IndicatorsConfig, IndicatorItemConfig, IndicatorGroupConfig } from
 import { findGroupEntity, getEntitiesByDomain, hasTemplate, HomeAssistant } from '../../ha';
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
 import { computeGroupDomain, GroupEntity } from '../../ha/data/group';
+import { VehicleStatusCardConfig } from '../../types/config';
 import {
   IndicatorEntityConfig,
   IndicatorRowItem,
@@ -11,6 +12,10 @@ import {
   IndicatorRowGroupConfig,
   LovelaceRowItemConfig,
 } from '../../types/config/card/row-indicators';
+
+export const indicatorConfigNeedsMigration = (config: VehicleStatusCardConfig): boolean => {
+  return !!(config.indicators && ('single' in config.indicators || 'group' in config.indicators));
+};
 
 const DEFAULT_ENTITY_CONFIG: Partial<IndicatorEntityConfig> = {
   type: 'entity',

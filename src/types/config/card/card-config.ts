@@ -1,4 +1,5 @@
 import { LovelaceCardConfig } from '../../../ha';
+import { reorderSection } from '../../../utils/editor/reorder-section';
 import { EntityConfig } from '../entity-config';
 import { ButtonCardConfig } from './button';
 import { ImageConfig } from './images';
@@ -26,8 +27,30 @@ export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   indicators?: IndicatorsConfig;
 }
 
-export enum PREVIEW_TYPE {
-  CUSTOM = 'custom',
-  DEFAULT = 'default',
-  TIRE = 'tire',
-}
+export const configHasDeprecatedProps = (config: VehicleStatusCardConfig): boolean => {
+  return Boolean(config.mini_map?.extra_entities || config.layout_config?.hide);
+};
+
+export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): VehicleStatusCardConfig => {
+  const newConfig = { ...config };
+  if (!!config.layout_config?.hide) {
+    const hideConfig = config.layout_config.hide;
+    if (hideConfig.card_name) {
+      newConfig.layout_config.hide_card_name = hideConfig.card_name;
+    } // Migrate hide_card_name if present
+    const currentOrder = config.layout_config?.section_order || [];
+    const updatedOrder = reorderSection(hideConfig, currentOrder);
+    newConfig.layout_config.section_order = updatedOrder;
+  }
+  if (!!config.mini_map?.extra_entities?.length) {
+    // Clean up extra_entities to remove duplicates and invalid entries
+    newConfig.mini_map.entities = config.mini_map.extra_entities;
+    newConfig.mini_map.extra_entities = undefined;
+    console.debug('Migrated extra_entities to entities in mini_map config');
+  }
+  delete newConfig.mini_map?.extra_entities; // Remove deprecated extra_entities property
+  // Remove the deprecated 'hide' property
+  delete newConfig.layout_config.hide;
+  // console.debug('Final layout_config after migration:', newConfig.layout_config);
+  return newConfig;
+};

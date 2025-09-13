@@ -6,13 +6,13 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
 // Import all components
 import './components/';
-import { VehicleStatusCardConfig } from '../types/config';
+import { configHasDeprecatedProps, updateDeprecatedConfig, VehicleStatusCardConfig } from '../types/config';
 import { loadHaComponents, Create, refactorEditDialog } from '../utils';
 import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
 import { selectTree } from '../utils/helpers-dom';
 import '../utils/editor/menu-element';
 import { Store } from '../utils/store';
-import { migrateLegacySectionOrder, VehicleStatusCard } from '../vehicle-status-card';
+import { VehicleStatusCard } from '../vehicle-status-card';
 import { BaseEditor } from './base-editor';
 import * as ELEMENT from './components';
 import { ALERT_INFO, EDITOR_NAME, PANEL } from './editor-const';
@@ -53,14 +53,12 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
 
   public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
-    const hasExtraEntities = config.mini_map && config.mini_map.extra_entities?.length;
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
-    if ((config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) || hasExtraEntities) {
-      console.debug('Migrating legacy layout_config.hide to section_order');
+    if (configHasDeprecatedProps(config)) {
       config = {
         ...config,
-        ...migrateLegacySectionOrder(config),
+        ...updateDeprecatedConfig(config),
       };
       fireEvent(this, 'config-changed', { config: config });
       console.log('Migrated layout_config.hide:', config);

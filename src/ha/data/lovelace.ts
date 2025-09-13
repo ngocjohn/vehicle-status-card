@@ -160,7 +160,9 @@ export interface LovelaceCardConfig {
   index?: number;
   view_index?: number;
   view_layout?: any;
+  /** @deprecated Use `grid_options` instead */
   layout_options?: LovelaceLayoutOptions;
+  grid_options?: LovelaceGridOptions;
   type: string;
   [key: string]: any;
   visibility?: Condition[];
@@ -178,6 +180,16 @@ export type LovelaceLayoutOptions = {
   grid_max_rows?: number;
 };
 
+export interface LovelaceGridOptions {
+  columns?: number | 'full';
+  rows?: number | 'auto';
+  max_columns?: number;
+  min_columns?: number;
+  min_rows?: number;
+  max_rows?: number;
+  fixed_rows?: boolean;
+  fixed_columns?: boolean;
+}
 /* -------------------------------------------------------------------------- */
 // HA validate-condition.ts
 /* -------------------------------------------------------------------------- */

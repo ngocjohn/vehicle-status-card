@@ -18,12 +18,20 @@ import {
 import { COMPONENT, CARD_NAME } from './constants/const';
 import { EditorEventParams } from './editor/base-editor';
 // Ha utils
-import { fireEvent, forwardHaptic, HomeAssistant, LovelaceCard, LovelaceCardConfig, LovelaceCardEditor } from './ha';
+import {
+  fireEvent,
+  forwardHaptic,
+  HomeAssistant,
+  LovelaceCard,
+  LovelaceCardConfig,
+  LovelaceCardEditor,
+  LovelaceGridOptions,
+} from './ha';
 import {
   ButtonCardConfig,
   DefaultCardConfig,
   IndicatorRowConfig,
-  PREVIEW_TYPE,
+  updateDeprecatedConfig,
   TireEntity,
   TireTemplateConfig,
   VehicleStatusCardConfig,
@@ -32,37 +40,12 @@ import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
 import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
-import { reorderSection } from './utils/editor/reorder-section';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { getTireCard } from './utils/lovelace/create-tire-card';
-import { _setUpPreview, previewHandler } from './utils/lovelace/preview-helper';
+import { _setUpPreview, PREVIEW_TYPE, previewHandler } from './utils/lovelace/preview-helper';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
-
-export const migrateLegacySectionOrder = (config: VehicleStatusCardConfig): VehicleStatusCardConfig => {
-  const newConfig = { ...config };
-  if (config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) {
-    const hideConfig = config.layout_config.hide;
-    if (hideConfig.card_name) {
-      newConfig.layout_config.hide_card_name = hideConfig.card_name;
-    } // Migrate hide_card_name if present
-    const currentOrder = newConfig.layout_config.section_order || SECTION_KEYS;
-    const updatedOrder = reorderSection(hideConfig, currentOrder);
-    newConfig.layout_config.section_order = updatedOrder;
-  }
-  if (newConfig.mini_map && newConfig.mini_map.extra_entities?.length) {
-    // Clean up extra_entities to remove duplicates and invalid entries
-    newConfig.mini_map.entities = config.mini_map.extra_entities;
-    newConfig.mini_map.extra_entities = undefined;
-    console.debug('Migrated extra_entities to entities in mini_map config');
-  }
-  delete newConfig.mini_map?.extra_entities; // Remove deprecated extra_entities property
-  // Remove the deprecated 'hide' property
-  delete newConfig.layout_config.hide;
-  // console.debug('Final layout_config after migration:', newConfig.layout_config);
-  return newConfig;
-};
 
 @customElement(CARD_NAME)
 export class VehicleStatusCard extends BaseElement implements LovelaceCard {
@@ -86,7 +69,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     // this._config = newConfig;
     this._config = {
       ...newConfig,
-      ...migrateLegacySectionOrder(newConfig),
+      ...updateDeprecatedConfig(newConfig),
     };
 
     if (this._config.button_card && this._config.button_card.length) {
@@ -736,7 +719,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     return 4;
   }
 
-  public getGridOptions() {
+  public getGridOptions(): LovelaceGridOptions {
     return {
       columns: 'full',
       rows: 'auto',
