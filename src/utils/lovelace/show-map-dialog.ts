@@ -1,4 +1,4 @@
-import { fireEvent, HASSDomEvent, ValidHassDomEvent } from '../../ha';
+import { fireEvent } from '../../ha';
 import { MiniMapConfig } from '../../types/config';
 
 export const enum DIALOG {
@@ -9,36 +9,6 @@ export const enum DIALOG {
 export interface MapDialogParams {
   map_config: MiniMapConfig;
   use_map_tiler?: boolean;
-}
-
-declare global {
-  // for fire event
-  interface HASSDomEvents {
-    'show-dialog': ShowDialogParams<unknown>;
-    'close-dialog': undefined;
-    'dialog-closed': DialogClosedParams;
-  }
-  // for add event listener
-  interface HTMLElementEventMap {
-    'show-dialog': HASSDomEvent<ShowDialogParams<unknown>>;
-    'dialog-closed': HASSDomEvent<DialogClosedParams>;
-  }
-}
-
-export interface HassDialog<T = HASSDomEvents[ValidHassDomEvent]> extends HTMLElement {
-  showDialog(params: T);
-  closeDialog?: () => boolean;
-}
-
-interface ShowDialogParams<T> {
-  dialogTag: keyof HTMLElementTagNameMap;
-  dialogImport: () => Promise<unknown>;
-  dialogParams: T;
-  addHistory?: boolean;
-}
-
-export interface DialogClosedParams {
-  dialog: string;
 }
 
 export const showHaMapDialog = (element: HTMLElement, params: MapDialogParams): void => {

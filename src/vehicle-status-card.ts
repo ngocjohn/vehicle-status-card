@@ -34,7 +34,6 @@ import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON 
 import { BaseElement } from './utils/base-element';
 import { reorderSection } from './utils/editor/reorder-section';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
-import { createCustomCard } from './utils/lovelace/create-custom-card';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { getTireCard } from './utils/lovelace/create-tire-card';
 import { _setUpPreview, previewHandler } from './utils/lovelace/preview-helper';
@@ -411,9 +410,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   /* -------------------------- CUSTOM CARD RENDERING -------------------------- */
 
-  private _renderSelectedCard() {
+  private _renderSelectedCard(): TemplateResult {
     const index = this._activeCardIndex;
-    if (index === null) return nothing;
+    if (index === null) return html``;
 
     const {
       card_type: cardType = 'default',
@@ -450,7 +449,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         : this._showWarning('Default card not found, configure it in the editor');
     } else if (cardType === 'custom') {
       selectedContent = customCard?.length
-        ? this._renderCustomCard(customCard)
+        ? customCard.map((card) => this._renderCustomCard(card))
         : this._showWarning('Custom card not found');
     } else if (cardType === 'tire') {
       const tireCardConfig = getTireCard(this.hass, tireCard) as TireEntity;
@@ -467,15 +466,20 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     `;
   }
 
-  private _renderCustomCard(cards: LovelaceCardConfig[]) {
-    const element = createCustomCard(cards);
-    if (element) {
-      if (this._hass) {
-        element.hass = this._hass;
-      }
-    }
-    return html`${element}`;
+  private _renderCustomCard(card: LovelaceCardConfig) {
+    return html`<vsc-custom-card-element .hass=${this._hass} ._config=${card} ._store=${this._store}>
+    </vsc-custom-card-element>`;
   }
+
+  // private _renderCustomCard(cards: LovelaceCardConfig[]) {
+  //   const element = createCustomCard(cards);
+  //   if (element) {
+  //     if (this._hass) {
+  //       element.hass = this._hass;
+  //     }
+  //   }
+  //   return html`${element}`;
+  // }
 
   private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
     return html` <vsc-default-card .hass=${this._hass} ._data=${data} ._store=${this._store}></vsc-default-card> `;
@@ -698,6 +702,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         if (this._currentPreview !== null) {
           this._currentPreview = null;
         }
+        console.log('Current preview cleared, showing button', data.buttonIndex);
         this.updateComplete.then(() => {
           this._vehicleButtonsGrid.showButton(data.buttonIndex);
         });

@@ -1,6 +1,6 @@
 import type { LitElement } from 'lit';
 
-import type { Selector } from './ha-selector';
+import type { Selector } from '../../data/ha-selector';
 
 export interface HaDurationData {
   days?: number;
@@ -26,9 +26,7 @@ export type HaFormSchema =
 
 export interface HaFormBaseSchema {
   name: string;
-  title?: string;
-  label?: string;
-  helper?: string;
+
   // This value is applied if no data is submitted for this field
   default?: HaFormData;
   required?: boolean;
@@ -131,13 +129,7 @@ export type HaFormMultiSelectData = string[];
 export type HaFormTimeData = HaDurationData;
 
 export interface HaFormElement extends LitElement {
-  schema: HaFormSchema | HaFormSchema[];
-  data?: HaFormDataContainer | HaFormData;
-  label?: string;
-}
-
-export interface HaFormElItem extends HTMLElement {
-  schema: HaFormSchema | HaFormSchema[];
+  schema: HaFormSchema | readonly HaFormSchema[];
   data?: HaFormDataContainer | HaFormData;
   label?: string;
 }
