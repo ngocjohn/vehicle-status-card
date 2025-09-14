@@ -58,3 +58,9 @@ export class VscRangeInfo extends BaseElement {
     return html`<div class="combined-info-box" ?row=${this.row}>${rangeInfo}</div>`;
   }
 }
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'vsc-range-info': VscRangeInfo;
+  }
+}

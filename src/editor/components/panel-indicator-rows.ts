@@ -39,8 +39,6 @@ export class PanelIndicatorRows extends BaseEditor {
 
   connectedCallback(): void {
     super.connectedCallback();
-    window.IndicatorRowsEditor = this;
-    console.debug('IndicatorRowsEditor connected');
   }
   protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);

@@ -137,7 +137,9 @@ export class MenuElement extends BaseEditor {
   }
 
   private _handleHelpClick() {
-    this._dispatchEditorEvent('toggle-helper', { value: this.value });
+    console.debug('Help clicked: ', this.value);
+    const value = this.value || 'default';
+    this._dispatchEditorEvent('toggle-helper', value);
   }
 
   static get styles() {
