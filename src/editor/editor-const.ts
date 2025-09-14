@@ -28,7 +28,7 @@ export const CONFIG_TYPES = {
         ),
       },
     },
-    range: {
+    range_info: {
       name: 'Range progress bar',
       description: 'Show progress bars for fuel, battery, or any entity with a range state.',
       doc: `${DOC_URL}range-info-bars`,

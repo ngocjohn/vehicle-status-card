@@ -148,12 +148,12 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     }
     const selected = this._selectedConfigType;
     const typeMap = {
-      buttons: this._renderButtonCard(),
-      images: this._renderImages(),
       indicators: this._renderIndicators(),
-      layout_config: this._renderLayoutConfig(),
+      range_info: this._renderRangeInfo(),
+      images: this._renderImages(),
       mini_map: this._renderMiniMap(),
-      range: this._renderRangeInfo(),
+      buttons: this._renderButtonCard(),
+      layout_config: this._renderLayoutConfig(),
     };
     return typeMap[selected];
   }
@@ -259,7 +259,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   private _renderRangeInfo(): TemplateResult {
     return html`<panel-range-info
       ._hass=${this._hass}
-      .config=${this._config}
+      ._config=${this._config}
       ._store=${this._store}
     ></panel-range-info>`;
   }
@@ -275,13 +275,16 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
   private _handleMenuValueChange(ev: CustomEvent): void {
     ev.stopPropagation();
-    const value = ev.detail.value;
-    if (value) {
-      this._selectedConfigType = value;
-      setTimeout(() => this._dispatchEditorEvent('toggle-helper', value), 200);
-    } else {
-      this._selectedConfigType = null;
-    }
+    const value = ev.detail.value || null;
+    this._selectedConfigType = value;
+    setTimeout(() => this._dispatchEditorEvent('toggle-helper', value), 200);
+
+    // if (value) {
+    //   this._selectedConfigType = value;
+    //   setTimeout(() => this._dispatchEditorEvent('toggle-helper', value), 200);
+    // } else {
+    //   this._selectedConfigType = null;
+    // }
   }
 
   private createStore(): void {
