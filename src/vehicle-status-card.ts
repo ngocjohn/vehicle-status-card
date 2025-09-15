@@ -478,16 +478,21 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   private _toggleHelper(type: string | null): void {
     if (!this.isEditorPreview) return;
     const hasFocus = this._mainWrapper.hasAttribute('focus-within');
+    const children = this._mainWrapper.children;
+
     if (SECTION_KEYS.indexOf(type as SECTION) === -1) {
       type = null;
     }
     if (SECTION_KEYS.indexOf(type as SECTION) !== -1 && hasFocus) {
       type = null;
     }
-    const mainWrapperChildren = Array.from(this._mainWrapper.children);
 
     if (type !== null) {
-      mainWrapperChildren.forEach((child) => {
+      if (!children.hasOwnProperty(type)) {
+        console.warn('Section not found:', type);
+        return;
+      }
+      Array.from(children).forEach((child) => {
         if (child.id === type) {
           child.classList.remove('dimmed');
           this._mainWrapper.setAttribute('focus-within', 'true');
@@ -497,7 +502,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       });
     } else {
       this._mainWrapper.removeAttribute('focus-within');
-      mainWrapperChildren.forEach((child) => child.classList.remove('dimmed'));
+      Array.from(children).forEach((child) => child.classList.remove('dimmed'));
     }
   }
 

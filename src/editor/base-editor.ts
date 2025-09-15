@@ -157,12 +157,12 @@ export class BaseEditor extends LitElement {
   }
 
   protected _onValueChanged(ev: CustomEvent): void {
-    console.debug('onValueChanged (BaseEditor)');
+    // console.debug('onValueChanged (BaseEditor)');
     ev.stopPropagation();
     const { key, subKey, currentConfig } = ev.target as any;
     const value = { ...ev.detail.value };
     if (!currentConfig || typeof currentConfig !== 'object') return;
-    console.debug('onValueChanged:', { key, subKey, value });
+    // console.debug('onValueChanged:', { key, subKey, value });
 
     const updates: Partial<VehicleStatusCardConfig> = {};
     if (key && subKey) {

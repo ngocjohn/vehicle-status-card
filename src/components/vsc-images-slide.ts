@@ -164,7 +164,7 @@ export class ImagesSlide extends BaseElement {
         }
         section {
           display: block;
-          padding: 8px 0;
+          padding: 1em 0px 8px;
         }
         .swiper-wrapper {
           display: flex;
