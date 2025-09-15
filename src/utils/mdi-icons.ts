@@ -3,7 +3,6 @@ import {
   mdiDrag,
   mdiPencil,
   mdiPlus,
-  mdiCodeBraces,
   mdiListBoxOutline,
   mdiDelete,
   mdiContentCopy,
@@ -22,11 +21,12 @@ import {
   mdiCloseCircle,
   mdiCheckCircle,
   mdiDotsHexagon,
+  mdiCodeBracesBox,
 } from '@mdi/js';
 
 export const ICON = {
   CLOSE: mdiClose,
-  CODE_BRACES: mdiCodeBraces,
+  CODE_BRACES: mdiCodeBracesBox,
   CONTENT_COPY: mdiContentCopy,
   CONTENT_CUT: mdiContentCut,
   DELETE: mdiDelete,

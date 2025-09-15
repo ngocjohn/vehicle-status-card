@@ -1,7 +1,7 @@
 import { getEntitiesByDomain, HomeAssistant } from '../../ha';
 import {
+  ImageItem,
   SECTION_KEYS,
-  type ImageConfig,
   type LayoutConfig,
   type MiniMapConfig,
   type SectionOrder,
@@ -17,10 +17,9 @@ const GIT_ASSETS_URL =
   'https://raw.githubusercontent.com/ngocjohn/vehicle-status-card/refs/heads/main/assets/sample-images/';
 const SAMPLE_IMAGES = ['sample-car-1.png', 'sample-car-2.png', 'sample-car-3.png'] as const;
 
-const getSampleImages = (): ImageConfig[] => {
+const getSampleImages = (): ImageItem[] => {
   return SAMPLE_IMAGES.map((image) => ({
-    title: image,
-    url: `${GIT_ASSETS_URL}${image}`,
+    image: `${GIT_ASSETS_URL}${image}`,
   }));
 };
 
@@ -36,6 +35,9 @@ const DEFAULT_CONFIG: Partial<VehicleStatusCardConfig> = {
       button_layout: 'horizontal',
       transparent: false,
       hide_notify_badge: false,
+    },
+    images_swipe: {
+      height: 150,
     },
     section_order: SECTION_KEYS,
   },

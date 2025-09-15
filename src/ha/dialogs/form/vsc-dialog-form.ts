@@ -80,7 +80,7 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
       return undefined;
     }
     const label = schema.label || schema.name || schema.title || '';
-    return capitalize(label.trim());
+    return capitalize(label.replace(/_/g, ' '));
   };
 
   private computeHelper = (schema: any): string | TemplateResult | undefined => {

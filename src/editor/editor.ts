@@ -56,17 +56,13 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
     if (configHasDeprecatedProps(config)) {
-      config = {
-        ...config,
-        ...updateDeprecatedConfig(config),
-      };
-      fireEvent(this, 'config-changed', { config: config });
-      console.log('Migrated layout_config.hide:', config);
+      const updatedConfig = updateDeprecatedConfig(config);
+      fireEvent(this, 'config-changed', { config: updatedConfig });
       return;
+    } else {
+      this._config = { ...config };
     }
 
-    const newConfig = { ...config };
-    this._config = newConfig;
     if (this._store !== undefined) {
       this._store._config = this._config;
     } else {
