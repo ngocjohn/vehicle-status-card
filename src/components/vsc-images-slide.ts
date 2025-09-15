@@ -7,82 +7,31 @@ import swipercss from 'swiper/swiper-bundle.css';
 import { SwiperOptions } from 'swiper/types';
 
 import { COMPONENT } from '../constants/const';
-import cardstyles from '../css/card.css';
-import { HomeAssistant, computeImageUrl, ImageEntity } from '../ha';
-import { VehicleStatusCardConfig, ImageConfig } from '../types/config';
+import { VehicleStatusCardConfig, ImageItem } from '../types/config';
 import { BaseElement } from '../utils/base-element';
+import './shared/vsc-image-item';
 
 @customElement(COMPONENT.IMAGES_SLIDE)
 export class ImagesSlide extends BaseElement {
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
+  @state() private _images: ImageItem[] = [];
 
   @state() swiper: null | Swiper = null;
-  @state() private _images: ImageConfig[] = [];
 
-  protected updated(_changedProperties: PropertyValues): void {
-    super.updated(_changedProperties);
-    if (_changedProperties.has('config') && (this.config.images || this.config.image_entities)) {
-      this._handleImageConfig();
-    }
-  }
   protected firstUpdated(changeProperties: PropertyValues): void {
     super.firstUpdated(changeProperties);
+    this.initSwiper();
   }
 
-  protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-    if (_changedProperties.has('config') && this.config.image_entities && this.config.image_entities.length) {
-      return true;
-    }
-    if (_changedProperties.has('hass') && this.config.image_entities && this.config.image_entities.length) {
-      return this._hasImageEntitiesChanged(_changedProperties);
-    }
-    return true;
-  }
-
-  private _hasImageEntitiesChanged(changedProps: PropertyValues): boolean {
-    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
-    const imageEntities = this.config.image_entities!;
-    let hasChanged = false;
-    if (oldHass) {
-      imageEntities.forEach((entity) => {
-        const entityId = typeof entity === 'string' ? entity : entity.entity;
-        if (oldHass.states[entityId] !== this.hass.states[entityId]) {
-          hasChanged = true;
-        }
-      });
-    }
-    if (hasChanged) {
-      this._handleImageConfig();
-    }
-    return hasChanged;
-  }
-
-  private _handleImageConfig(): void {
-    let imagesArray: ImageConfig[] = [];
-
-    const configImages = (this.config.images as ImageConfig[]) || [];
-    const imageEntities = this.config.image_entities || [];
-    if (configImages.length) {
-      imagesArray = [...configImages];
-    }
-    if (imageEntities.length) {
-      imageEntities.forEach((entity) => {
-        const entityObj = this.hass.states[typeof entity === 'string' ? entity : entity.entity] as ImageEntity;
-        if (entityObj) {
-          const imageObj = entityObj as ImageEntity;
-          const imageUrl = computeImageUrl(imageObj);
-          imagesArray.push({
-            url: imageUrl,
-            title: entityObj.attributes.friendly_name || entityObj.entity_id,
-          });
-        }
-      });
+  protected willUpdate(changedProperties: PropertyValues) {
+    super.willUpdate(changedProperties);
+    if (!this.config) {
+      return;
     }
 
-    this._images = imagesArray;
-    this.updateComplete.then(() => {
-      this.initSwiper();
-    });
+    if (changedProperties.has('config') && this.config.images) {
+      this._images = this.config.images as ImageItem[];
+    }
   }
 
   protected render(): TemplateResult {
@@ -90,14 +39,14 @@ export class ImagesSlide extends BaseElement {
       return html``;
     }
     const images = this._images;
-    const max_height = this.config.layout_config?.images_swipe?.max_height || 150;
-    const max_width = this.config.layout_config?.images_swipe?.max_width || 450;
-    const hide_pagination = this.config.layout_config?.images_swipe?.hide_pagination || false;
-
-    const styleImages = {
-      '--vic-images-slide-height': `${max_height}px`,
-      '--vic-images-slide-width': `${max_width}px`,
-    };
+    let styleImages: Record<string, string> = {};
+    const { height, width, hide_pagination } = this.config.layout_config?.images_swipe || {};
+    if (height) {
+      styleImages['--vic-images-slide-height'] = `${height}px`;
+    }
+    if (width) {
+      styleImages['--vic-images-slide-width'] = `${width}px`;
+    }
 
     return html`
       <section id="swiper" style=${styleMap(styleImages)}>
@@ -105,9 +54,13 @@ export class ImagesSlide extends BaseElement {
           <div class="swiper-wrapper">
             ${images.map(
               (image, index) => html`
-                <div class="swiper-slide" id="image-slide-${index}">
-                  <img src="${image.url}" />
-                </div>
+                <vsc-image-item
+                  class="swiper-slide"
+                  id="image-slide-${index}"
+                  .hass=${this.hass}
+                  ._imageConfig=${image}
+                >
+                </vsc-image-item>
               `
             )}
           </div>
@@ -141,7 +94,7 @@ export class ImagesSlide extends BaseElement {
           el: paginationEl,
         },
         roundLengths: true,
-        slidesPerView: 1,
+        slidesPerView: 'auto',
         spaceBetween: 12,
       };
 
@@ -199,7 +152,7 @@ export class ImagesSlide extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [
-      cardstyles,
+      super.styles,
       unsafeCSS(swipercss),
       css`
         :host {
@@ -211,7 +164,7 @@ export class ImagesSlide extends BaseElement {
         }
         section {
           display: block;
-          padding: 1rem 0;
+          padding: 1em 0px 8px;
         }
         .swiper-wrapper {
           display: flex;
@@ -225,19 +178,12 @@ export class ImagesSlide extends BaseElement {
           display: flex;
           justify-content: center;
           align-items: center;
-          width: 100%;
-          height: 100%;
+          width: var(--vic-images-slide-width, 100%);
+          height: var(--vic-images-slide-height, 100%);
           align-self: anchor-center;
         }
         .swiper-slide:active {
           scale: 1.02;
-        }
-        .swiper-slide img {
-          width: 100%;
-          height: 100%;
-          object-fit: scale-down;
-          max-height: var(--vic-images-slide-height, 150px);
-          max-width: var(--vic-images-slide-width, 450px);
         }
         .swiper-slide .image-index {
           position: absolute;

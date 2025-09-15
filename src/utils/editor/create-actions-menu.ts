@@ -68,6 +68,12 @@ export const ROW_MAIN_ACTIONS: MenuItemConfig[] = [
   { title: 'Delete Row', action: 'delete', icon: 'mdi:delete' },
 ];
 
+export const IMAGE_MENU_ACTIONS: MenuItemConfig[] = [
+  { title: 'Show Image', action: 'show-image', icon: 'mdi:eye' },
+  { title: 'Edit Image', action: 'edit-image', icon: 'mdi:pencil' },
+  { title: 'Delete Image', action: 'delete-image', icon: 'mdi:delete' },
+];
+
 export const _renderActionItem = ({
   item,
   onClick,

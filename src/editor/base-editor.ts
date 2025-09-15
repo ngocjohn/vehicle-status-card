@@ -15,6 +15,7 @@ import { VehicleStatusCard } from '../vehicle-status-card';
 import { VehicleStatusCardEditor } from './editor';
 import { PREVIEW_CONFIG_TYPES } from './editor-const';
 import './shared/vsc-yaml-editor';
+import { BUTTON_GRID_SCHEMA, SLIDE_SIZE_SCHEMA, SWIPE_BEHAVIOR_SCHEMA } from './form';
 
 const EditorCommandTypes = [
   'show-button',
@@ -99,6 +100,39 @@ export class BaseEditor extends LitElement {
       message,
     });
   }
+
+  protected _renderLayoutSection(type: 'button_grid' | 'images_swipe'): TemplateResult {
+    const createForm = (data: any, schema: any) => {
+      return this._createVscForm(data, schema, 'layout_config', type);
+    };
+    const data = {
+      button_grid: this._cardConfig?.layout_config?.button_grid || {},
+      image_swipe: this._cardConfig?.layout_config?.images_swipe || {},
+    };
+    const schemas = {
+      button_grid: BUTTON_GRID_SCHEMA(!data.button_grid?.swipe),
+      images_swipe: [...SLIDE_SIZE_SCHEMA, ...SWIPE_BEHAVIOR_SCHEMA(data.image_swipe)],
+    };
+    switch (type) {
+      case 'button_grid':
+        const buttonContent = createForm(data.button_grid, schemas.button_grid);
+        return Create.SectionPanel([
+          {
+            title: 'Button grid configuration',
+            content: buttonContent,
+          },
+        ]);
+      case 'images_swipe':
+        const imageContent = createForm(data.image_swipe, schemas.images_swipe);
+        return Create.SectionPanel([
+          {
+            title: 'Slide configuration',
+            content: imageContent,
+          },
+        ]);
+    }
+  }
+
   /**
    * Create a vsc-editor-form element
    * @param data config data
@@ -123,13 +157,12 @@ export class BaseEditor extends LitElement {
   }
 
   protected _onValueChanged(ev: CustomEvent): void {
-    console.debug('onValueChanged (BaseEditor)');
+    // console.debug('onValueChanged (BaseEditor)');
     ev.stopPropagation();
     const { key, subKey, currentConfig } = ev.target as any;
     const value = { ...ev.detail.value };
-    console.debug('onValueChanged:', { key, subKey, value });
     if (!currentConfig || typeof currentConfig !== 'object') return;
-    console.debug('incoming:', { key, subKey, currentConfig, value });
+    // console.debug('onValueChanged:', { key, subKey, value });
 
     const updates: Partial<VehicleStatusCardConfig> = {};
     if (key && subKey) {
@@ -143,6 +176,7 @@ export class BaseEditor extends LitElement {
     } else {
       Object.assign(updates, value);
     }
+
     console.debug('updates:', updates);
     if (Object.keys(updates).length > 0) {
       const newConfig = { ...currentConfig, ...updates };

@@ -20,16 +20,24 @@ export interface LayoutConfig {
 
 type SWIPE_EFFECT = 'slide' | 'fade' | 'coverflow';
 
-type ImagesSwipeConfig = Partial<{
-  max_height: number;
-  max_width: number;
-  autoplay: boolean;
-  loop: boolean;
-  delay: number;
-  speed: number;
-  effect: SWIPE_EFFECT;
-  hide_pagination: boolean;
-}>;
+interface ImagesSwipeConfig {
+  autoplay?: boolean;
+  loop?: boolean;
+  delay?: number;
+  speed?: number;
+  effect?: SWIPE_EFFECT;
+  hide_pagination?: boolean;
+  height?: number;
+  width?: number;
+  /**
+   * @deprecated use `height`instead
+   */
+  max_height?: number;
+  /**
+   * @deprecated use`width` instead
+   */
+  max_width?: number;
+}
 
 /**
  * @deprecated section 'hide' is replaced by 'section_order' option
