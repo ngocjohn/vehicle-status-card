@@ -36,12 +36,6 @@ export class PanelLayoutEditor extends BaseEditor {
     const LAYOUT_DATA = {
       ...config.layout_config,
     } as LayoutConfig;
-    // const LAYOUT_DATA = {
-    //   hide_card_name: config.layout_config?.hide_card_name,
-    //   section_order: config.layout_config?.section_order,
-    //   theme_config: config.layout_config?.theme_config,
-    //   button_grid: config.layout_config?.button_grid,
-    // } as Pick<LayoutConfig, 'section_order' | 'theme_config' | 'button_grid' | 'hide_card_name'>;
 
     const schemasForms = [
       HIDE_CARD_NAME_SCHEMA(!config?.name || config?.name === ''),
