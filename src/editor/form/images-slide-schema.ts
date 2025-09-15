@@ -63,3 +63,21 @@ export const IMAGES_SLIDE_SCHEMA = [
     ],
   },
 ] as const;
+
+export const ImageSchema = [
+  {
+    name: 'image',
+    required: false,
+    selector: { image: {} },
+  },
+  {
+    name: 'image_entity',
+    required: false,
+    selector: { entity: { domain: 'image' } },
+  },
+  {
+    name: 'title',
+    required: false,
+    selector: { text: {} },
+  },
+] as const;

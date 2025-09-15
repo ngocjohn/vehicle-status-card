@@ -351,9 +351,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _renderImagesSlide(): TemplateResult {
-    const imageEntities = this._config?.image_entities || [];
-    const configImages = this._config?.images || [];
-    if ((!configImages.length && !imageEntities.length) || this._isSectionHidden(SECTION.IMAGES)) return html``;
+    if (!this._config.images?.length || this._isSectionHidden(SECTION.IMAGES)) return html``;
 
     return html`
       <div id=${SECTION.IMAGES}>

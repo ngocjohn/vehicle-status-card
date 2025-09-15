@@ -127,9 +127,8 @@ export class BaseEditor extends LitElement {
     ev.stopPropagation();
     const { key, subKey, currentConfig } = ev.target as any;
     const value = { ...ev.detail.value };
-    console.debug('onValueChanged:', { key, subKey, value });
     if (!currentConfig || typeof currentConfig !== 'object') return;
-    console.debug('incoming:', { key, subKey, currentConfig, value });
+    console.debug('onValueChanged:', { key, subKey, value });
 
     const updates: Partial<VehicleStatusCardConfig> = {};
     if (key && subKey) {
@@ -141,8 +140,16 @@ export class BaseEditor extends LitElement {
     } else if (key) {
       updates[key] = value;
     } else {
-      Object.assign(updates, value);
+      if (typeof value === 'object' && value !== null) {
+        Object.keys(value).forEach((k) => {
+          updates[k] = value[k];
+        });
+      } else {
+        console.warn('Value is not an object, cannot merge:', value);
+        return;
+      }
     }
+
     console.debug('updates:', updates);
     if (Object.keys(updates).length > 0) {
       const newConfig = { ...currentConfig, ...updates };

@@ -1,8 +1,57 @@
-import { mdiButtonCursor, mdiListBox, mdiPalette, mdiTextShort } from '@mdi/js';
+import { mdiButtonCursor, mdiGestureSwipe, mdiImage, mdiListBox, mdiPalette } from '@mdi/js';
 
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
 import { SECTION_KEYS } from '../../types/config/card/layout';
 
+// CARD NAME OPTIONS
+export const NAME_SCHEMA = [
+  {
+    name: 'name',
+    label: 'Card Name',
+    required: false,
+    type: 'string',
+  },
+] as const;
+export const HIDE_CARD_NAME_SCHEMA = (disabled: boolean = false) => {
+  return [
+    {
+      name: 'hide_card_name',
+      label: 'Hide Card Name',
+      type: 'boolean',
+      default: false,
+      disabled,
+    },
+  ] as const;
+};
+// SECTION ORDER
+export const SECTION_ORDER_SCHEMA = [
+  {
+    title: 'Sections Order',
+    type: 'expandable',
+    flatten: true,
+    iconPath: mdiListBox,
+    schema: [
+      {
+        name: 'section_order',
+        label: 'Choose section to display',
+        helper: 'Drag to reorder the sections as you want them to appear on the card.',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            multiple: true,
+            reorder: true,
+            options: SECTION_KEYS.map((option) => ({
+              value: option,
+              label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
+            })),
+          },
+        },
+      },
+    ],
+  },
+] as const;
+
+// BUTTON GRID SECTION
 export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
   [
     {
@@ -86,61 +135,8 @@ export const BUTTON_GRID_LAYOUT_SCHEMA = (swipeDisabled: boolean = false, name: 
     },
   ] as const;
 
-export const SECTION_ORDER_SCHEMA = [
-  {
-    title: 'Sections Order',
-    type: 'expandable',
-    flatten: true,
-    iconPath: mdiListBox,
-    schema: [
-      {
-        name: 'section_order',
-        label: 'Choose section to display',
-        helper: 'Drag to reorder the sections as you want them to appear on the card.',
-        selector: {
-          select: {
-            mode: 'dropdown',
-            multiple: true,
-            reorder: true,
-            options: SECTION_KEYS.map((option) => ({
-              value: option,
-              label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
-            })),
-          },
-        },
-      },
-    ],
-  },
-] as const;
-
+// THEME OPTIONS
 const THEME_MODE_OPTIONS = ['auto', 'light', 'dark'] as const;
-
-export const CARD_NAME_SCHEMA = (data: any) =>
-  [
-    {
-      title: 'Card Name',
-      type: 'expandable',
-      flatten: true,
-      iconPath: mdiTextShort,
-      schema: [
-        {
-          name: 'name',
-          label: 'Card Name',
-          type: 'string',
-          required: false,
-          default: '',
-        },
-        {
-          name: 'hide_card_name',
-          label: 'Hide Card Name',
-          type: 'boolean',
-          default: false,
-          disabled: !data?.name || data?.name === '',
-        },
-      ] as const,
-    },
-  ] as const;
-
 export const CARD_THEME_SCHEMA = [
   {
     title: 'Theme Options',
@@ -181,38 +177,114 @@ export const CARD_THEME_SCHEMA = [
   },
 ] as const;
 
-export const CARD_NAME_COMBINED_SCHEMA = (schemasForms: any[]) => {
-  return [
-    {
-      title: 'Card Name',
-      type: 'expandable',
-      iconPath: mdiTextShort,
-      schema: [...schemasForms] as const,
-    },
-  ];
-};
+// IMAGES SWIPE SECTION
+const SWIPE_EFFECT_OPTIONS = ['slide', 'fade', 'coverflow'] as const;
 
-export const HIDE_CARD_NAME_SCHEMA = (disabled: boolean = false) => {
+export const SLIDE_SIZE_SCHEMA = [
+  {
+    type: 'expandable',
+    title: 'Slide Size',
+    helper: 'This set size for each image slide, which affects the slides per view',
+    expanded: true,
+    iconPath: mdiImage,
+    schema: [
+      {
+        type: 'grid',
+        flatten: true,
+        schema: [
+          {
+            name: 'height',
+            helper: 'Height of slide (px)',
+            default: 150,
+            selector: { number: { unit_of_measurement: 'px' } },
+          },
+          {
+            name: 'width',
+            helper: 'Width of slide (px)',
+            default: 450,
+            selector: { number: { unit_of_measurement: 'px' } },
+          },
+        ],
+      },
+    ],
+  },
+] as const;
+
+export const SWIPE_BEHAVIOR_SCHEMA = (data: any) => {
+  const isAutoplay = data?.autoplay === true;
   return [
     {
-      name: 'hide_card_name',
-      label: 'Hide Card Name',
-      type: 'boolean',
-      default: false,
-      disabled,
+      type: 'expandable',
+      title: 'Swipe Behavior',
+      expanded: false,
+      iconPath: mdiGestureSwipe,
+      schema: [
+        {
+          type: 'grid',
+          flatten: true,
+          schema: [
+            {
+              name: 'effect',
+              default: 'slide',
+              selector: {
+                select: {
+                  mode: 'dropdown',
+                  options: SWIPE_EFFECT_OPTIONS.map((value) => ({
+                    value,
+                    label: capitalizeFirstLetter(value),
+                  })),
+                },
+              },
+            },
+            {
+              name: 'speed',
+              label: 'Speed (ms)',
+              helper: 'Transition speed between images',
+              default: 500,
+              selector: { number: { min: 100, mode: 'slider', step: 50, unit_of_measurement: 'ms' } },
+            },
+            {
+              name: 'loop',
+              label: 'Loop',
+              default: false,
+              type: 'boolean',
+            },
+            {
+              name: 'hide_pagination',
+              label: 'Hide Pagination',
+              default: false,
+              type: 'boolean',
+            },
+            {
+              name: 'autoplay',
+              label: 'Autoplay',
+              helper: 'Automatically start sliding',
+              type: 'boolean',
+              default: false,
+            },
+            {
+              name: 'delay',
+              label: 'Delay (ms)',
+              helper: 'Delay between transitions',
+              default: 3000,
+              selector: { number: { min: 500, mode: 'slider', step: 50, unit_of_measurement: 'ms' } },
+              disabled: !isAutoplay,
+            },
+          ],
+        },
+      ],
     },
   ] as const;
 };
 
-export const NAME_SCHEMA = [
-  {
-    name: 'name',
-    label: 'Card Name',
-    required: false,
-    type: 'string',
-  },
-] as const;
-
-export const LAYOUT_COMBINED_SCHEMA = () => {
-  return [...SECTION_ORDER_SCHEMA, ...CARD_THEME_SCHEMA] as const;
-};
+export const IMAGES_LAYOUT_SCHEMA = (data: any, name: string = '') =>
+  [
+    {
+      name,
+      title: 'Images Section',
+      type: 'expandable',
+      flatten: name === '' ? true : false,
+      iconPath: mdiImage,
+      schema: [...SLIDE_SIZE_SCHEMA, ...SWIPE_BEHAVIOR_SCHEMA(data)],
+    },
+  ] as const;

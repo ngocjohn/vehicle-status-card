@@ -17,6 +17,7 @@ const OVERLAY_ICON: Record<ActionType | string, string> = {
   'delete-item': ICON.DELETE,
   'add-exclude-entity': ICON.CLOSE_CIRCLE,
   'remove-exclude-entity': ICON.CHECK_CIRCLE,
+  'show-image': ICON.EYE,
 };
 
 export const DeleteAction: MenuItemConfig[] = [
