@@ -140,14 +140,7 @@ export class BaseEditor extends LitElement {
     } else if (key) {
       updates[key] = value;
     } else {
-      if (typeof value === 'object' && value !== null) {
-        Object.keys(value).forEach((k) => {
-          updates[k] = value[k];
-        });
-      } else {
-        console.warn('Value is not an object, cannot merge:', value);
-        return;
-      }
+      Object.assign(updates, value);
     }
 
     console.debug('updates:', updates);
