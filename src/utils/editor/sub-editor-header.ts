@@ -1,6 +1,7 @@
 import { LitElement, html, TemplateResult, CSSResultGroup, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
+import { BaseEditor } from '../../editor/base-editor';
 import { fireEvent } from '../../ha';
 import { ICON } from '../mdi-icons';
 
@@ -94,63 +95,71 @@ export class SubEditorHeader extends LitElement {
   }
 
   static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: block;
-        overflow: hidden;
-        min-height: 42px;
-        margin-bottom: auto;
-        place-content: center;
-      }
-      :host([hide-primary]) .header {
-        justify-content: flex-end;
-      }
+    return [
+      BaseEditor.styles,
+      css`
+        :host {
+          display: block;
+          overflow: hidden;
+          min-height: 42px;
+          margin-bottom: auto;
+          place-content: center;
+        }
+        :host([hide-primary]) .header {
+          justify-content: flex-end;
+        }
 
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-block-end: 8px;
-      }
-      .back-title {
-        display: flex;
-        align-items: center;
-        margin-inline-end: auto;
-      }
-      ha-icon-button {
-        --mdc-icon-button-size: 36px;
-        margin-inline-end: 0.5em;
-      }
-      ::slotted([slot='primary-action']) {
-        margin-inline-end: auto;
-      }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-block-end: 8px;
+        }
+        .back-title {
+          display: flex;
+          align-items: center;
+          margin-inline-end: auto;
+        }
+        ha-icon-button {
+          --mdc-icon-button-size: 36px;
+          margin-inline-end: 0.5em;
+        }
+        ::slotted([slot='primary-action']) {
+          margin-inline-end: auto;
+        }
 
-      ::slotted([slot='secondary-action']) {
-        flex-shrink: 0;
-      }
-      .title,
-      ::slotted([slot='title']) {
-        flex: 1;
-        overflow-wrap: anywhere;
-        /* line-height: 36px; */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: flex-start;
-      }
-      .primary {
-        font-size: var(--ha-font-size-l);
-        color: var(--primary-text-color);
-        font-weight: 500;
-        line-height: 1.2;
-      }
-      .secondary {
-        display: block;
-        color: var(--secondary-text-color);
-        font-size: var(--ha-font-size-m);
-        line-height: 1.2;
-      }
-    `;
+        ::slotted([slot='secondary-action']) {
+          flex-shrink: 0;
+        }
+        ha-icon-button[active],
+        ha-icon-button:hover {
+          color: var(--primary-color);
+        }
+
+        .title,
+        ::slotted([slot='title']) {
+          flex: 1;
+          overflow-wrap: anywhere;
+          /* line-height: 36px; */
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: flex-start;
+        }
+        .primary {
+          font-size: var(--ha-font-size-l);
+          color: var(--primary-text-color);
+          font-weight: 500;
+          line-height: 1.2;
+        }
+        .secondary {
+          display: block;
+          color: var(--secondary-text-color);
+          font-size: var(--ha-font-size-m);
+          line-height: 1.2;
+        }
+      `,
+    ];
   }
 }
 

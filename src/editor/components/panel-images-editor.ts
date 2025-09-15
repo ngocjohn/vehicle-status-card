@@ -1,20 +1,25 @@
-import { mdiCodeBracesBox, mdiCog, mdiGrid } from '@mdi/js';
-import { html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
-
-import '../shared/panel-yaml-editor';
-import '../components/slide-images/panel-images-preview';
-
+import { html, TemplateResult, PropertyValues, CSSResultGroup } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+import '../components/slide-images/panel-images-preview';
+import '../../utils/editor/sub-editor-header';
 import { fireEvent } from '../../ha';
 import { showFormDialog } from '../../ha/dialogs/form/show-form-dialog';
 import { ImageItem, VehicleStatusCardConfig } from '../../types/config';
-import { Create, ICON } from '../../utils';
+import { ICON } from '../../utils';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
-import { ImageSchema, SLIDE_SIZE_SCHEMA, SWIPE_BEHAVIOR_SCHEMA } from '../form';
+import { ImageSchema } from '../form';
 
 type ACTIVE_VIEW = 'grid' | 'settings' | 'yaml';
+
+const ActiveViews: ACTIVE_VIEW[] = ['grid', 'settings', 'yaml'] as const;
+
+const VIEW_ICON: Record<ACTIVE_VIEW, string> = {
+  grid: ICON.GRID,
+  settings: ICON.COG,
+  yaml: ICON.CODE_BRACES,
+};
 
 @customElement(PANEL.IMAGES_EDITOR)
 export class PanelImagesEditor extends BaseEditor {
@@ -36,22 +41,7 @@ export class PanelImagesEditor extends BaseEditor {
   }
 
   static get styles(): CSSResultGroup {
-    return [
-      super.styles,
-      css`
-        *[active] {
-          color: var(--primary-color);
-        }
-
-        *[hidden],
-        .hidden {
-          display: none;
-        }
-        .action-footer {
-          margin-top: 0;
-        }
-      `,
-    ];
+    return [super.styles];
   }
 
   protected willUpdate(_changedProperties: PropertyValues): void {
@@ -63,46 +53,35 @@ export class PanelImagesEditor extends BaseEditor {
 
   protected render(): TemplateResult {
     if (!this.config || !this._hass) {
-      return html`<div class="card-config">Loading...</div>`;
+      return html`<div>Loading...</div>`;
     }
-    const isActive = (key: ACTIVE_VIEW) => this._selectedView === key;
     const viewSelected = {
       grid: this._renderPreview(),
-      settings: this._renderImageLayoutConfig(),
+      settings: this._renderLayoutSection('images_swipe'),
       yaml: this._renderYamlEditor(),
     };
 
-    const actionHeader = html`<div class="action-footer">
-      <ha-button size="small" appearance="filled" @click=${() => this._showAddImage()}
+    return html` ${this._renderHeader()} ${viewSelected[this._selectedView]} `;
+  }
+
+  private _renderHeader(): TemplateResult {
+    const isActive = (key: ACTIVE_VIEW) => this._selectedView === key;
+    return html`<sub-editor-header hide-primary hide-secondary>
+      <ha-button slot="primary-action" size="small" appearance="filled" @click=${() => this._showAddImage()}
         ><ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add image</ha-button
       >
-      <div class="item-actions">
-        <ha-icon-button
-          .viewType=${'grid'}
-          ?active=${isActive('grid')}
-          .path=${mdiGrid}
-          @click=${this._handleViewChange}
-        >
-        </ha-icon-button>
-
-        <ha-icon-button
-          .viewType=${'settings'}
-          ?active=${isActive('settings')}
-          .path=${mdiCog}
-          @click=${this._handleViewChange}
-        ></ha-icon-button>
-        <ha-icon-button
-          .viewType=${'yaml'}
-          ?active=${isActive('yaml')}
-          .path=${mdiCodeBracesBox}
-          @click=${this._handleViewChange}
-        ></ha-icon-button>
-      </div>
-    </div> `;
-    return html`
-      ${actionHeader}
-      <div class="card-config">${viewSelected[this._selectedView]}</div>
-    `;
+      <span slot="secondary-action">
+        ${ActiveViews.map(
+          (view) => html` <ha-icon-button
+            .viewType=${view}
+            ?active=${isActive(view)}
+            .path=${VIEW_ICON[view]}
+            @click=${this._handleViewChange}
+          >
+          </ha-icon-button>`
+        )}
+      </span>
+    </sub-editor-header>`;
   }
 
   private _renderPreview(): TemplateResult {
@@ -113,21 +92,6 @@ export class PanelImagesEditor extends BaseEditor {
         @images-changed=${this._handleImageChanged}
       ></panel-images-preview>
     `;
-  }
-
-  private _renderImageLayoutConfig(): TemplateResult {
-    const imagesSwipeConfig = this.config?.layout_config?.images_swipe || {};
-    const DATA = { ...imagesSwipeConfig };
-
-    const swipeSchema = [...SLIDE_SIZE_SCHEMA, ...SWIPE_BEHAVIOR_SCHEMA(DATA)];
-    const haFormEl = this._createVscForm(DATA, swipeSchema, 'layout_config', 'images_swipe');
-
-    return Create.SectionPanel([
-      {
-        title: 'Slide configuration',
-        content: haFormEl,
-      },
-    ]);
   }
 
   private _renderYamlEditor(): TemplateResult {
@@ -166,16 +130,16 @@ export class PanelImagesEditor extends BaseEditor {
     if (!newImage || newImage === null) return;
     const imagesList = [...this._images];
     imagesList.push(newImage);
-    this.config = {
-      ...this.config,
-      images: imagesList,
-    };
-    this._images = imagesList;
-    fireEvent(this, 'config-changed', { config: this.config });
+    this._configChanged(imagesList);
   }
   private _handleImageChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const images = ev.detail.images;
+    const newImages = ev.detail.images;
+    console.debug('Images changed (PanelImagesEditor):', newImages);
+    this._configChanged(newImages);
+  }
+
+  private _configChanged(images: ImageItem[]): void {
     this.config = { ...this.config, images: images };
     this._images = images;
     fireEvent(this, 'config-changed', { config: this.config });

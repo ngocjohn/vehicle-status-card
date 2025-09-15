@@ -25,7 +25,7 @@ export const hasImageLegacy = (configImages: (ImageItem | ImageConfig)[]): boole
 };
 
 export const migrateImageConfig = (images?: ImageConfig[], image_entities?: (string | EntityConfig)[]): ImageItem[] => {
-  console.debug('Migrating image configuration:', { images, image_entities });
+  // console.debug('Migrating image configuration:', { images, image_entities });
   const imageList: ImageItem[] = [];
   if (images && images.length) {
     imageList.push(
@@ -41,6 +41,6 @@ export const migrateImageConfig = (images?: ImageConfig[], image_entities?: (str
       }))
     );
   }
-  console.debug('Migrated image configuration:', imageList);
+  // console.debug('Migrated image configuration:', imageList);
   return imageList;
 };
