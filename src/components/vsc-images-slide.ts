@@ -181,8 +181,6 @@ export class ImagesSlide extends BaseElement {
           width: var(--vic-images-slide-width, 100%);
           height: var(--vic-images-slide-height, 100%);
           align-self: anchor-center;
-          /* min-height: var(--vic-images-slide-height);
-          max-width: var(--vic-images-slide-width); */
         }
         .swiper-slide:active {
           scale: 1.02;
