@@ -10,7 +10,7 @@ import { DEFAULT_TIRE_CONFIG, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TI
 
 @customElement(PANEL.TIRE_CONFIG)
 export class PanelTireConfig extends BaseEditor {
-  @property({ attribute: false }) tireConfig?: TireTemplateConfig;
+  @property({ attribute: false }) tireConfig!: TireTemplateConfig;
 
   @state() public yamlMode: boolean = false;
 

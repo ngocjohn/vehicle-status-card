@@ -4,7 +4,7 @@
  * used in the Vehicle Status Card.
  */
 
-import type { TireEntity, TireTemplateConfig } from './tire-card';
+import type { TireTemplateConfig } from './tire-card';
 
 import { LovelaceCardConfig } from '../../../ha';
 import { ActionsSharedConfig } from '../actions-config';
@@ -92,7 +92,7 @@ export interface ButtonCardEntityItem {
   custom_card: LovelaceCardConfig[];
   default_card: DefaultCardConfig[];
   hide_button: boolean;
-  tire_card?: TireEntity;
+  tire_card?: TireTemplateConfig;
 }
 export type ButtonCardEntity = ButtonCardEntityItem[];
 
