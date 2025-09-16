@@ -25,17 +25,17 @@ export interface BaseButtonConfig {
   hide_button?: boolean;
 }
 
-export type SecondaryInfoConfig = {
+export interface SecondaryInfoConfig {
   attribute?: string;
   entity?: string;
   state_template?: string;
-};
+}
 
-export type NotifyConfig = Partial<{
+export interface NotifyConfig {
   notify?: string;
   notify_color?: string;
   notify_icon?: string;
-}>;
+}
 
 export interface ButtonConfig extends NotifyConfig {
   primary: string;
@@ -50,10 +50,10 @@ export interface ButtonConfig extends NotifyConfig {
  * Default Card Config Interface
  */
 
-export type CardItemConfig = EntitySharedConfig & {
+export interface CardItemConfig extends EntitySharedConfig {
   entity: string; // Entity ID for the card item
   state_template?: string;
-};
+}
 
 export interface DefaultCardConfig {
   collapsed_items?: boolean;
