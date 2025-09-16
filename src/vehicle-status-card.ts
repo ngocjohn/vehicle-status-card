@@ -214,6 +214,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
           this._toggleIndicatorEntity({ row_index, group_index, entity_index });
         }
       }
+      if (this._config.active_button !== undefined) {
+        const buttonIndex = this._config.active_button;
+        // console.log('Active button index:', buttonIndex);
+        if (this._vehicleButtonsGrid) {
+          this._vehicleButtonsGrid._toggleButtonEditMode(buttonIndex);
+        }
+      }
     }
   }
 
@@ -479,34 +486,35 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _toggleHelper(type: string | null): void {
     if (!this.isEditorPreview) return;
+    this.updateComplete.then(() => {
+      const children = this._mainWrapper.children;
 
-    const children = this._mainWrapper.children;
-
-    if (SECTION_KEYS.indexOf(type as SECTION) === -1) {
-      type = null;
-    }
-    const hasFocus = this._mainWrapper?.hasAttribute('focus-within');
-    if (SECTION_KEYS.indexOf(type as SECTION) !== -1 && hasFocus) {
-      type = null;
-    }
-
-    if (type !== null) {
-      if (!children.hasOwnProperty(type)) {
-        console.warn('Section not found:', type);
-        return;
+      if (SECTION_KEYS.indexOf(type as SECTION) === -1) {
+        type = null;
       }
-      Array.from(children).forEach((child) => {
-        if (child.id === type) {
-          child.classList.remove('dimmed');
-          this._mainWrapper.setAttribute('focus-within', 'true');
-        } else {
-          child.classList.add('dimmed');
+      const hasFocus = this._mainWrapper?.hasAttribute('focus-within');
+      if (SECTION_KEYS.indexOf(type as SECTION) !== -1 && hasFocus) {
+        type = null;
+      }
+
+      if (type !== null) {
+        if (!children.hasOwnProperty(type)) {
+          console.warn('Section not found:', type);
+          return;
         }
-      });
-    } else {
-      this._mainWrapper.removeAttribute('focus-within');
-      Array.from(children).forEach((child) => child.classList.remove('dimmed'));
-    }
+        Array.from(children).forEach((child) => {
+          if (child.id === type) {
+            child.classList.remove('dimmed');
+            this._mainWrapper.setAttribute('focus-within', 'true');
+          } else {
+            child.classList.add('dimmed');
+          }
+        });
+      } else {
+        this._mainWrapper.removeAttribute('focus-within');
+        Array.from(children).forEach((child) => child.classList.remove('dimmed'));
+      }
+    });
   }
 
   private _toggleIndicatorRow(data: { rowIndex?: number | null; groupIndex?: number }, peek: boolean = false): void {

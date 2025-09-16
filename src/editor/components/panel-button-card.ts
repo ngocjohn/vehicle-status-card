@@ -508,15 +508,17 @@ export class PanelButtonCard extends BaseEditor {
       };
 
       const handleButtonAction = async () => {
-        console.log('Toggle action', action, buttonIndex, cardIndex);
+        // console.log('Toggle action', action, buttonIndex, cardIndex);
         let buttonCardConfig = [...(this.config.button_card || [])];
         const visibleButtons = buttonCardConfig.filter((button) => !button.hide_button);
         switch (action) {
           case 'edit-button':
             this._buttonIndex = buttonIndex!;
+            this._setPreviewConfig('active_button', buttonIndex!);
             break;
           case 'back-to-list':
             this._buttonIndex = null;
+            this._setPreviewConfig('active_button', null);
             break;
           case 'category-back':
             this._cardIndex = null;
