@@ -139,6 +139,9 @@ export interface EditorPreviewTypes {
   tire_preview: {
     config: ButtonCardConfig['tire_card'];
   };
+  active_button: {
+    config: number | null;
+  };
 }
 
 export type EditorPreviewType = keyof EditorPreviewTypes;

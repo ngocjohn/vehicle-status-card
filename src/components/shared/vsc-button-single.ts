@@ -280,6 +280,10 @@ export class VehicleButtonSingle extends BaseElement {
           -webkit-tap-highlight-color: transparent;
           --vic-ripple-color: var(--secondary-text-color);
         }
+        :host(.disabled) {
+          opacity: 0.2;
+          transition: opacity 0.3s ease-in-out;
+        }
         :host([vertical]) .click-container {
           flex-direction: column;
           text-align: center;
