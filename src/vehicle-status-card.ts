@@ -2,10 +2,13 @@ import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'l
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import './components';
 import './editor/editor';
+import './utils/custom-tire-card';
+import './components/shared/vsc-tire-item';
+import { styleMap } from 'lit/directives/style-map.js';
+
 // components
 import {
   VehicleButtonsGrid,
@@ -32,7 +35,6 @@ import {
   DefaultCardConfig,
   IndicatorRowConfig,
   updateDeprecatedConfig,
-  TireEntity,
   TireTemplateConfig,
   VehicleStatusCardConfig,
 } from './types/config';
@@ -42,7 +44,6 @@ import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON 
 import { BaseElement } from './utils/base-element';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createMapCard } from './utils/lovelace/create-map-card';
-import { getTireCard } from './utils/lovelace/create-tire-card';
 import { _setUpPreview, PREVIEW_TYPE, previewHandler } from './utils/lovelace/preview-helper';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
@@ -106,7 +107,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @state() public _currentPreview: PREVIEW_TYPE | null = null;
   @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
   @state() public _defaultCardPreview: DefaultCardConfig[] = [];
-  @state() public _tireCardPreview: TireEntity | undefined;
+  @state() public _tireCardPreview: TireTemplateConfig | undefined;
 
   @state() public _activeCardIndex: null | number | string = null;
 
@@ -213,6 +214,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
           this._toggleIndicatorEntity({ row_index, group_index, entity_index });
         }
       }
+      if (this._config.active_button !== undefined) {
+        const buttonIndex = this._config.active_button;
+        // console.log('Active button index:', buttonIndex);
+        if (this._vehicleButtonsGrid) {
+          this._vehicleButtonsGrid._toggleButtonEditMode(buttonIndex);
+        }
+      }
     }
   }
 
@@ -234,9 +242,11 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (_config.mini_map?.single_map_card === true && this._extraMapCard) {
       return html`${this._extraMapCard}`;
     }
-
-    const headerHidden = _config.layout_config?.hide_card_name || _config.name?.trim() === '' || !_config.name;
     const notMainCard = this._activeCardIndex !== null;
+
+    const headerHidden = Boolean(
+      _config.layout_config?.hide_card_name || _config.name?.trim() === '' || !_config.name || notMainCard
+    );
 
     return html`
       <ha-card
@@ -338,7 +348,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const typeMap = {
       default: this._defaultCardPreview.map((card) => this._renderDefaultCardItems(card)),
       custom: this._cardPreviewElement.map((card) => html`<div class="added-cutom">${card}</div>`),
-      tire: this._renderTireCard(this._tireCardPreview as TireEntity),
+      tire: this._renderTireCard(this._tireCardPreview as TireTemplateConfig),
     };
 
     return html`
@@ -439,8 +449,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         ? customCard.map((card) => this._renderCustomCard(card))
         : this._showWarning('Custom card not found');
     } else if (cardType === 'tire') {
-      const tireCardConfig = getTireCard(this.hass, tireCard) as TireEntity;
-      selectedContent = this._renderTireCard(tireCardConfig);
+      selectedContent = this._renderTireCard(tireCard);
     }
 
     return html`
@@ -465,7 +474,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     return html` <vsc-default-card .hass=${this._hass} ._data=${data} ._store=${this._store}></vsc-default-card> `;
   }
 
-  private _renderTireCard(tireCardConfig: TireEntity): TemplateResult {
+  private _renderTireCard(tireCardConfig: TireTemplateConfig): TemplateResult {
     return html`
       <vsc-tire-card .hass=${this._hass} .tireConfig=${tireCardConfig} ._store=${this._store}> </vsc-tire-card>
     `;
@@ -477,33 +486,35 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _toggleHelper(type: string | null): void {
     if (!this.isEditorPreview) return;
-    const hasFocus = this._mainWrapper.hasAttribute('focus-within');
-    const children = this._mainWrapper.children;
+    this.updateComplete.then(() => {
+      const children = this._mainWrapper.children;
 
-    if (SECTION_KEYS.indexOf(type as SECTION) === -1) {
-      type = null;
-    }
-    if (SECTION_KEYS.indexOf(type as SECTION) !== -1 && hasFocus) {
-      type = null;
-    }
-
-    if (type !== null) {
-      if (!children.hasOwnProperty(type)) {
-        console.warn('Section not found:', type);
-        return;
+      if (SECTION_KEYS.indexOf(type as SECTION) === -1) {
+        type = null;
       }
-      Array.from(children).forEach((child) => {
-        if (child.id === type) {
-          child.classList.remove('dimmed');
-          this._mainWrapper.setAttribute('focus-within', 'true');
-        } else {
-          child.classList.add('dimmed');
+      const hasFocus = this._mainWrapper?.hasAttribute('focus-within');
+      if (SECTION_KEYS.indexOf(type as SECTION) !== -1 && hasFocus) {
+        type = null;
+      }
+
+      if (type !== null) {
+        if (!children.hasOwnProperty(type)) {
+          console.warn('Section not found:', type);
+          return;
         }
-      });
-    } else {
-      this._mainWrapper.removeAttribute('focus-within');
-      Array.from(children).forEach((child) => child.classList.remove('dimmed'));
-    }
+        Array.from(children).forEach((child) => {
+          if (child.id === type) {
+            child.classList.remove('dimmed');
+            this._mainWrapper.setAttribute('focus-within', 'true');
+          } else {
+            child.classList.add('dimmed');
+          }
+        });
+      } else {
+        this._mainWrapper.removeAttribute('focus-within');
+        Array.from(children).forEach((child) => child.classList.remove('dimmed'));
+      }
+    });
   }
 
   private _toggleIndicatorRow(data: { rowIndex?: number | null; groupIndex?: number }, peek: boolean = false): void {

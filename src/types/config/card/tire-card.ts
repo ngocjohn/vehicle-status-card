@@ -2,59 +2,43 @@
  * TireTemplateConfig Interface
  */
 
-export type TireEntityConfig = {
+export interface TireCardLayout {
+  title?: string;
+  background?: string;
+  background_entity?: string;
+  horizontal?: boolean;
+  image_size?: number;
+  value_size?: number;
+  top?: number;
+  left?: number;
+  hide_rotation_button?: boolean;
+}
+export interface TireEntityConfig {
   entity?: string;
   attribute?: string;
   name?: string;
   color?: string;
-};
+}
 
-export type TireCardLayout = {
-  title?: string;
-  background?: string;
-  background_entity?: string;
-  horizontal: boolean;
-  image_size: number;
-  value_size: number;
-  top: number;
-  left: number;
-  hide_rotation_button?: boolean;
-};
-
-export type TireTemplateEntities = {
+export interface TireTemplateEntities {
   front_left: TireEntityConfig;
   front_right: TireEntityConfig;
   rear_left: TireEntityConfig;
   rear_right: TireEntityConfig;
-};
+}
 
 export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities {}
 
-/**
- * TireEntity type
- */
+export const TireLayoutKeys = [
+  'title',
+  'background',
+  'background_entity',
+  'horizontal',
+  'image_size',
+  'value_size',
+  'top',
+  'left',
+  'hide_rotation_button',
+] as const;
 
 export const TireItems = ['front_left', 'front_right', 'rear_left', 'rear_right'] as const;
-
-export type TireItem = {
-  state: string;
-  name: string;
-  color: string;
-};
-export type TiresConfig = {
-  front_left: TireItem;
-  front_right: TireItem;
-  rear_left: TireItem;
-  rear_right: TireItem;
-};
-
-export type TireItemKey = (keyof TiresConfig)[number];
-
-/**
- * TireCardConfig Interface
- * This interface defines the structure of the tire card configuration
- * used in the Vehicle Status Card.
- */
-export type TireEntity = TireCardLayout & {
-  tires: TiresConfig;
-};

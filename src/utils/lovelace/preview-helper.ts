@@ -1,9 +1,7 @@
-import { DEFAULT_TIRE_CONFIG } from '../../editor/form';
 import { HomeAssistant, LovelaceCardConfig } from '../../ha';
-import { DefaultCardConfig, TireEntity, TireTemplateConfig, VehicleStatusCardConfig } from '../../types/config';
+import { DefaultCardConfig, TireTemplateConfig, VehicleStatusCardConfig } from '../../types/config';
 import { VehicleStatusCard } from '../../vehicle-status-card';
 import { createCardElement } from './create-card-element';
-import { getTireCard } from './create-tire-card';
 
 export enum PREVIEW_TYPE {
   CUSTOM = 'custom',
@@ -16,7 +14,7 @@ export async function previewHandler(cardType: PREVIEW_TYPE | null, card: Vehicl
   const hass = card.hass as HomeAssistant;
   const config = card._config as VehicleStatusCardConfig;
   let cardConfig: LovelaceCardConfig[] | DefaultCardConfig[] | TireTemplateConfig;
-  let cardElement: LovelaceCardConfig[] | DefaultCardConfig[] | TireEntity | undefined;
+  let cardElement: LovelaceCardConfig[] | DefaultCardConfig[] | TireTemplateConfig | undefined;
 
   switch (cardType) {
     case PREVIEW_TYPE.CUSTOM:
@@ -34,7 +32,7 @@ export async function previewHandler(cardType: PREVIEW_TYPE | null, card: Vehicl
     case PREVIEW_TYPE.TIRE:
       cardConfig = config?.tire_preview as TireTemplateConfig;
       if (!cardConfig) return;
-      cardElement = getTireCard(hass, cardConfig ?? DEFAULT_TIRE_CONFIG) as TireEntity;
+      cardElement = cardConfig;
       card._tireCardPreview = cardElement;
       break;
     default:

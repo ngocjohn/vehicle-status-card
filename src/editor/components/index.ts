@@ -10,7 +10,7 @@ export * from './panel-indicator-single';
 export * from './panel-indicator-group';
 export * from './panel-indicator-rows';
 
-export * from './panel-button-list';
+export * from './button-card/panel-button-list';
 export * from './panel-layout-editor';
 
 // Shared components

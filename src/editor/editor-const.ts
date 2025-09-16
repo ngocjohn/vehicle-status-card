@@ -77,6 +77,7 @@ const PREVIEW_CONFIG_TYPES = [
   'tire_preview',
   'active_group',
   'row_group_preview',
+  'active_button',
 ];
 
 type BUTTON_CARD_ACTIONS =

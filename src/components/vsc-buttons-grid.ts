@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, queryAll, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 // swiper
 import Swiper from 'swiper';
@@ -10,6 +10,7 @@ import './shared/vsc-button-single';
 import { COMPONENT } from '../constants/const';
 import { ButtonCardConfig } from '../types/config';
 import { BaseElement } from '../utils/base-element';
+import { VehicleButtonSingle } from './shared/vsc-button-single';
 
 @customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {
@@ -19,6 +20,8 @@ export class VehicleButtonsGrid extends BaseElement {
   @state() private swiper?: Swiper;
   @state() private _cardCurrentSwipeIndex?: number;
   @state() activeSlideIndex: number = 0;
+
+  @queryAll('vsc-button-single') _buttonElements!: NodeListOf<VehicleButtonSingle>;
 
   constructor() {
     super();
@@ -222,6 +225,49 @@ export class VehicleButtonsGrid extends BaseElement {
         }
       } else {
         setTimeout(highlightButton, 500);
+      }
+    });
+  };
+
+  public _toggleButtonEditMode = (index: number | null): void => {
+    this.updateComplete.then(() => {
+      // remove disabled before setting new one
+      const removeDisabled = () => {
+        this._buttonElements.forEach((btn) => {
+          btn.classList.remove('disabled');
+        });
+      };
+      // If index is null, remove disabled from all buttons
+      if (index === null) {
+        removeDisabled();
+        return;
+      }
+
+      removeDisabled();
+      const btnId = `button-id-${index}`;
+      const gridBtns = this._buttonElements;
+      const btnElt = Array.from(gridBtns).find((btn) => btn.id === btnId);
+
+      if (!btnElt) return;
+
+      const setEditMode = () => {
+        const filteredBtns = Array.from(gridBtns).filter((btn) => btn.id !== btnId);
+        filteredBtns.forEach((btn) => {
+          btn.classList.add('disabled');
+        });
+      };
+
+      if (this.swiper) {
+        const targetSlide = btnElt.closest('.swiper-slide') as HTMLElement;
+        const targetSlideIndex = Array.from(targetSlide.parentElement?.children || []).indexOf(targetSlide);
+
+        if (targetSlideIndex !== -1) {
+          console.log('swiper slide to', targetSlideIndex);
+          this.swiper?.slideTo(targetSlideIndex);
+          setTimeout(setEditMode, 500);
+        }
+      } else {
+        setTimeout(setEditMode, 500);
       }
     });
   };
