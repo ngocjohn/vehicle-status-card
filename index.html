@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -14,6 +14,7 @@
         --bgColor-default: #0d1117;
         --borderColor-muted: #30363db3;
         --bgColor-neutral-muted: #6e768166;
+        --code-color: #00c11d;
       }
 
       body {
@@ -21,26 +22,19 @@
         color: var(--bright-text);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
           'Segoe UI Emoji', 'Segoe UI Symbol';
-        line-height: 1.6em;
-        margin: 0;
+        line-height: 1.6;
         letter-spacing: 0.3px;
-        background-image: url('./assets/bkg.jpg');
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-position: center;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
 
-      #markdown-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-      }
       h1 {
         letter-spacing: 1.5px;
         font-weight: 700;
+        margin-block: auto 0.5em;
       }
       li {
         margin: 0.5em 0 0 0;
@@ -97,20 +91,134 @@
         max-width: 100%;
         height: auto;
       }
+      hr {
+        border: none;
+        border-top: var(--border);
+        margin: 1em 0;
+        opacity: 0.5;
+      }
 
       .yaml {
         display: flex;
         justify-content: space-between;
         margin-bottom: 1rem;
-        background-color: var(--bgColor-muted, var(--color-canvas-subtle));
+        background-color: var(--bgColor-default);
+        color: lightgreen;
+        padding: 1em;
+      }
+      main {
+        margin: 0 auto;
+        background: rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        position: relative;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        max-width: 1000px;
+      }
+      section {
+        box-sizing: border-box;
+      }
+
+      #mainContent {
+        padding: 0 20px 2em;
+      }
+      #config-wrapper {
+        border-top: var(--border);
+        background: var(--bgColor-muted);
+        position: relative;
+      }
+      #config-menu {
+        display: flex;
+        flex-direction: row;
+        align-content: center;
+        justify-content: space-around;
+        align-items: center;
+        padding: 20px 0;
+        position: sticky;
+        top: 0;
+        background: #4c5663;
+        z-index: 10;
+        border-bottom: var(--border);
+        backdrop-filter: blur(5px);
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--borderColor-muted) transparent;
+      }
+
+      #config-menu a {
+        text-decoration: none;
+      }
+      .menu-btn {
+        background: var(--bgColor-default);
+        border: var(--border);
+        border-radius: 4px;
+        padding: 4px 8px;
+        /* margin: 0 5px; */
+        cursor: pointer;
+        text-align: center;
+        transition: background-color 0.3s, color 0.3s;
+        white-space: nowrap;
+        text-transform: none;
+        letter-spacing: 0.3px;
+        box-sizing: border-box;
+        color: var(--bright-text);
+        cursor: pointer;
+      }
+      .menu-btn:hover {
+        background: var(--bgColor-muted);
+        color: var(--bright-text);
+      }
+
+      #sections > div {
+        padding: 1em 20px;
+        border-bottom: var(--border);
+        background-image: linear-gradient(0deg, var(--bgColor-muted) 30%, var(--bgColor-default));
+        scroll-margin-top: 75px;
+      }
+      #sections p > img {
+        display: block;
+        margin: 0.5em auto;
+        border-radius: 8px;
+        box-shadow: 0 0 2 rgba(0, 0, 0, 0.5);
       }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
   </head>
   <body>
-    <div id="markdown-content"></div>
-
+    <main>
+      <section id="mainContent"></section>
+      <section id="config-wrapper">
+        <div id="config-menu"></div>
+        <div id="sections"></div>
+      </section>
+    </main>
     <script>
+      //string to camel case.
+      const camelCase = (str) => str.replace(/\s+/g, '-').toLowerCase();
+      // const camelCase = (str) =>
+      //   str
+      //     .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => (index === 0 ? word.toLowerCase() : word.toUpperCase()))
+      //     .replace(/\s+/g, '');
+
+      const createSectionDiv = (title, content) => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.id = camelCase(title);
+        sectionDiv.className = 'config-section';
+        sectionDiv.innerHTML = `<h1 class="title">${title}</h1>${content}`;
+        return sectionDiv;
+      };
+
+      const createMenuBtn = (title) => {
+        const btnId = camelCase(title);
+        const btn = document.createElement('div');
+        btn.className = 'menu-btn';
+        btn.textContent = title;
+        btn.onclick = () => {
+          document.getElementById(btnId).scrollIntoView({ behavior: 'smooth' });
+        };
+        return btn;
+      };
       const converter = new showdown.Converter();
       converter.setFlavor('github');
       const githubRepoUrl = 'README.md';
@@ -119,9 +227,29 @@
       fetch(githubRepoUrl)
         .then((response) => response.text())
         .then((markdownContent) => {
+          // console.log('Fetched Markdown content:', markdownContent);
           // Convert Markdown to HTML
           const html = converter.makeHtml(markdownContent);
-          document.getElementById('markdown-content').innerHTML = html;
+          // console.log(html);
+          const splitHtml = html.split('<!--README-CONTENT-START-->');
+          const mainContentDiv = document.getElementById('mainContent');
+          mainContentDiv.innerHTML = splitHtml[0];
+
+          const sectionsDiv = document.getElementById('sections');
+          const configMenuDiv = document.getElementById('config-menu');
+
+          // Sections
+          const sectionHtmlBlocks = splitHtml[1].split(/<h1.*?>/).filter(Boolean);
+          sectionHtmlBlocks.forEach((block, index) => {
+            const [titleLine, ...rest] = block.split('</h1>');
+            const title = titleLine.replace(/<.*?>/g, '').trim();
+            const content = rest.join('</h1>').trim();
+            if (!title) return;
+            const sectionEl = createSectionDiv(title, content);
+            sectionsDiv.appendChild(sectionEl);
+            const menuBtn = createMenuBtn(title);
+            configMenuDiv.appendChild(menuBtn);
+          });
         })
         .catch((error) => console.error('Error fetching Markdown from GitHub:', error));
     </script>

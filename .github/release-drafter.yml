@@ -11,11 +11,13 @@ categories:
       - 'bugfix'
       - 'bug'
   - title: '🧰 Maintenance'
-    label: 'chore'
+    label:
+      - 'chore'
+      - 'refactor'
   - title: Other Changes
     labels:
       - "*"
-change-template: '* $TITLE #$NUMBER (@$AUTHOR)<br>$BODY'
+change-template: '* $TITLE #$NUMBER @$AUTHOR<br>$BODY'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 
 

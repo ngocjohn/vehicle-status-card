@@ -1,4 +1,5 @@
-<a name="readme-top"></a>
+
+
 
 [![hacs][hacs-default]][hacs-default-link] [![hacs][hacs-validate]][hacs-url] ![Github last commit][git-last-commit-badge] ![git-download-all][git-download-all-badge] ![git-download-latest][git-download-latest-badge] [![forum][forum-badge]][forum-url]
 
@@ -33,7 +34,7 @@
 - [Installation](#installation)
   - [HACS Installation](#hacs-installation)
   - [Manual Installation](#manual-installation)
-- [Configuration](#configuration)
+- [Configuration](#ui-editor)
 
 </details>
 
@@ -68,7 +69,8 @@ or
 5. Force refresh the Home Assistant page `Ctrl` + `F5` / `Shift` + `⌘` + `R`.
 6. Add vehicle-status-card to your page.
 
-# Configuration
+
+
 <!--README-CONTENT-START-->
 
 # UI Editor
