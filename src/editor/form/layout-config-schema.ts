@@ -30,6 +30,7 @@ export const SECTION_ORDER_SCHEMA = [
     type: 'expandable',
     flatten: true,
     iconPath: mdiListBox,
+    context: { isSectionOrder: true },
     schema: [
       {
         name: 'section_order',
