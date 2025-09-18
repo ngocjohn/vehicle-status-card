@@ -16,6 +16,30 @@ const HA_FORM_STYLE = css`
   .root ha-expansion-panel .root ha-form-grid {
     gap: 1em !important;
   }
+  :host(.sectionOrder) .root ha-selector ha-selector-select {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+`.toString();
+
+const CHIP_CONTAINER_STYLE = css`
+  :host {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    --md-input-chip-container-height: 36px;
+    --md-input-chip-icon-size: 20px;
+    --md-input-chip-label-text-size: 1em;
+  }
+  .container {
+    display: flex;
+    justify-content: space-between;
+    padding-inline: 8px;
+    /* font-size: 1em; */
+  }
+  .container > button.primary {
+    flex: 1 1 auto;
+  }
 `.toString();
 
 @customElement('vsc-editor-form')
@@ -89,6 +113,7 @@ export class VscEditorForm extends BaseEditor {
       const haFormRoot = await selectTree(target.shadowRoot, 'ha-expansion-panel ha-form');
       if (!haFormRoot) return;
       const hasTemplate = target.schema?.context?.isTemplate;
+      const isSectionOrder = target.schema?.context?.isSectionOrder;
       if (hasTemplate) {
         const buttonTrigger = await selectTree(haFormRoot.shadowRoot!, SELECTOR.OPTIONAL_BUTTON_TRIGGER);
         if (buttonTrigger) {
@@ -100,6 +125,15 @@ export class VscEditorForm extends BaseEditor {
           }
         }
       }
+      if (isSectionOrder) {
+        console.debug('Section form detected..');
+        const haChipSet = await selectTree(haFormRoot.shadowRoot!, SELECTOR.HA_CHIP_SET);
+        if (haChipSet) {
+          haFormRoot.addEventListener('value-changed', this._chipsChanged.bind(this));
+          this._changeChipInputStyle(haChipSet);
+        }
+      }
+
       // add styles
       // console.log('Adding styles to ha-form in expandable');
       this._stylesManager.addStyle([HA_FORM_STYLE], haFormRoot.shadowRoot);
@@ -117,6 +151,28 @@ export class VscEditorForm extends BaseEditor {
       }
       target.setAttribute('data-processed', 'true');
       target.removeEventListener('expanded-changed', this._expandableToggled.bind(this));
+    }
+  };
+
+  private _changeChipInputStyle = async (haChipSet: HTMLElement) => {
+    const chipInputs = (await selectTree(haChipSet, ELEMENT.CHIP_INPUT, true)) as NodeListOf<any>;
+    if (chipInputs.length) {
+      Array.from(chipInputs).forEach((chip) => {
+        const hasStyle = chip.getAttribute('data-styled') === 'true';
+        if (!hasStyle) {
+          console.debug('adding style to chip:', chip.label);
+          this._stylesManager.addStyle([CHIP_CONTAINER_STYLE], chip.shadowRoot!);
+          chip.setAttribute('data-styled', 'true');
+        }
+      });
+    }
+  };
+
+  private _chipsChanged = async (ev: any) => {
+    const target = ev.currentTarget as any;
+    if (target) {
+      const haChipSet = await selectTree(target.shadowRoot!, SELECTOR.HA_CHIP_SET);
+      this._changeChipInputStyle(haChipSet);
     }
   };
 
