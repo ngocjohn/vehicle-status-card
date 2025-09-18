@@ -275,15 +275,69 @@ export class VehicleButtonSingle extends BaseElement {
   static get styles(): CSSResultGroup {
     return [
       css`
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
+
         :host {
           --vic-notify-icon-color: var(--white-color);
           -webkit-tap-highlight-color: transparent;
           --vic-ripple-color: var(--secondary-text-color);
+          --glow-color: rgba(var(--rgb-accent-color), 0.6);
         }
-        :host(.disabled) {
+        :host(.disabled) .grid-item {
           opacity: 0.2;
           transition: opacity 0.3s ease-in-out;
         }
+        :host(.highlight) .grid-item::before,
+        :host(.highlight) .grid-item::after {
+          display: block;
+        }
+
+        .grid-item {
+          position: relative;
+
+          &::before {
+            content: '';
+            position: absolute;
+            z-index: -2;
+            left: -50%;
+            top: -50%;
+            width: 200%;
+            height: 200%;
+            background-color: transparent;
+            background-repeat: no-repeat;
+            background-size: 50% 50%, 50% 50%;
+            background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+            background-image: linear-gradient(transparent, transparent), linear-gradient(transparent, transparent),
+              linear-gradient(transparent, transparent), linear-gradient(var(--primary-color), var(--primary-color));
+            animation: rotate 1s linear infinite;
+            animation-fill-mode: forwards;
+            animation-iteration-count: 2;
+            display: none;
+          }
+
+          &::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            left: 2px;
+            top: 2px;
+            width: calc(100% - 4px);
+            height: calc(100% - 4px);
+            background: inherit;
+            border-radius: inherit;
+            display: none;
+          }
+        }
+        @keyframes rotate {
+          100% {
+            transform: rotate(1turn);
+          }
+        }
+
         :host([vertical]) .click-container {
           flex-direction: column;
           text-align: center;
@@ -322,6 +376,7 @@ export class VehicleButtonSingle extends BaseElement {
           --ha-ripple-color: var(--vic-ripple-color);
           --ha-ripple-hover-opacity: 0.04;
           --ha-ripple-pressed-opacity: 0.12;
+          z-index: 0;
         }
 
         /* .grid-item[transparent] {
@@ -493,17 +548,18 @@ export class VehicleButtonSingle extends BaseElement {
 
         @keyframes redGlow {
           0% {
-            box-shadow: 0 0 10px 0 rgba(255, 0, 0, 0.5);
+            box-shadow: 0 0 10px 0 var(--glow-color);
           }
 
           50% {
-            box-shadow: 0 0 20px 0 rgba(255, 0, 0, 0.5);
+            box-shadow: 0 0 20px 0 var(--glow-color);
           }
 
           100% {
-            box-shadow: 0 0 10px 0 rgba(255, 0, 0, 0.5);
+            box-shadow: 0 0 10px 0 var(--glow-color);
           }
         }
+
         .zoom-in {
           animation-duration: 0.3s;
           animation-fill-mode: both;
