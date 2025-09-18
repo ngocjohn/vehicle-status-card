@@ -124,7 +124,7 @@ export class VehicleButtonsGrid extends BaseElement {
 
             return html`
               <div class="swiper-slide">
-                <div class="grid-container" style=${this._computeGridColumns()}>
+                <div class="grid-container" style=${this._computeGridColumns()} data-slide-index=${slideIndex}>
                   ${buttons.slice(start, end).map((button, index) => {
                     const realIndex = start + index;
                     return this._renderButton(button, realIndex);
@@ -196,38 +196,34 @@ export class VehicleButtonsGrid extends BaseElement {
 
   public showButton = (index: number): void => {
     this.updateComplete.then(() => {
-      const btnId = `button-id-${index}`;
-      const gridBtns = this.shadowRoot?.querySelectorAll('vsc-button-single') as NodeListOf<HTMLElement>;
-      const btnElt = Array.from(gridBtns).find((btn) => btn.id === btnId);
-
-      if (!btnElt) return;
-
-      const highlightButton = () => {
-        const filteredBtns = Array.from(gridBtns).filter((btn) => btn.id !== btnId);
-        const gridItem = btnElt.shadowRoot?.querySelector('.grid-item') as HTMLElement;
-        filteredBtns.forEach((btn) => (btn.style.opacity = '0.2'));
-        gridItem.classList.add('redGlows');
-
-        setTimeout(() => {
-          filteredBtns.forEach((btn) => (btn.style.opacity = ''));
-          gridItem.classList.remove('redGlows');
-        }, 3000);
-      };
-
+      const btnToFind = this._buttonElements[index];
+      if (!btnToFind) return;
       if (this.swiper) {
-        const targetSlide = btnElt.closest('.swiper-slide') as HTMLElement;
-        const targetSlideIndex = Array.from(targetSlide.parentElement?.children || []).indexOf(targetSlide);
-
-        if (targetSlideIndex !== -1) {
-          console.log('swiper slide to', targetSlideIndex);
-          this.swiper?.slideTo(targetSlideIndex);
-          setTimeout(highlightButton, 500);
+        const slideIndex = parseInt(btnToFind.parentElement!.dataset.slideIndex || '0', 10);
+        if (slideIndex !== -1) {
+          console.log('swiper slide to', slideIndex);
+          this.swiper?.slideTo(slideIndex, 500, this._setHighlightButton(btnToFind)!);
         }
       } else {
-        setTimeout(highlightButton, 500);
+        this._setHighlightButton(btnToFind);
       }
     });
   };
+
+  private _setHighlightButton(btnToFind: HTMLElement) {
+    const filteredBtns = Array.from(this._buttonElements).filter((btn) => btn !== btnToFind);
+    const gridItem = btnToFind.shadowRoot?.querySelector('.grid-item') as HTMLElement;
+    filteredBtns.forEach((btn) => btn.classList.add('disabled'));
+    btnToFind.classList.add('highlight');
+    gridItem.addEventListener(
+      'animationend',
+      () => {
+        filteredBtns.forEach((btn) => btn.classList.remove('disabled'));
+        btnToFind.classList.remove('highlight');
+      },
+      { once: true }
+    );
+  }
 
   public _toggleButtonEditMode = (index: number | null): void => {
     this.updateComplete.then(() => {
