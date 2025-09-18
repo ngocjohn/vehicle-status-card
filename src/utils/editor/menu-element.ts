@@ -147,9 +147,9 @@ export class MenuElement extends BaseEditor {
       .config-menu-wrapper {
         display: flex;
         align-items: center;
-        min-height: 43px;
+        height: 42px;
         margin-inline: 4px 8px;
-        padding-block-end: 8px;
+        /* padding-block-end: 8px; */
       }
 
       .config-menu-wrapper .menu-wrapper {
@@ -162,20 +162,23 @@ export class MenuElement extends BaseEditor {
       .config-menu-wrapper .menu-info-icon-wrapper {
         display: inline-flex;
         gap: var(--vic-card-padding);
-        height: auto;
+        height: 100%;
+        align-items: center;
+        flex: 0;
       }
 
       .config-menu-wrapper .menu-icon {
         width: 36px;
         height: 36px;
         display: inline-flex;
-        justify-content: center;
+        /* justify-content: center; */
         align-items: center;
-        border-radius: 50%;
+        /* border-radius: 50%; */
         cursor: pointer;
         color: var(--secondary-text-color);
-        padding-right: var(--vic-card-padding);
-        transition: color 400ms cubic-bezier(0.075, 0.82, 0.165, 1);
+        padding-inline-end: var(--vic-card-padding);
+        /* transition: color 400ms cubic-bezier(0.075, 0.82, 0.165, 1); */
+        pointer-events: auto;
       }
       .config-menu-wrapper .menu-icon.active,
       .config-menu-wrapper .menu-icon:hover {
@@ -225,6 +228,9 @@ export class MenuElement extends BaseEditor {
       .menu-content-wrapper .menu-label {
         display: flex;
         flex-direction: column;
+        height: 100%;
+        justify-content: space-evenly;
+        flex: 1;
       }
 
       .menu-content-wrapper .menu-label .primary {
@@ -235,6 +241,7 @@ export class MenuElement extends BaseEditor {
         text-overflow: ellipsis;
         overflow: hidden;
         text-transform: uppercase;
+        line-height: 1;
       }
 
       .menu-content-wrapper .menu-label .secondary {
