@@ -125,6 +125,7 @@ export interface RowGroupPreviewConfig {
   row_index?: number | null;
   group_index?: number | null;
   entity_index?: number | null;
+  peek?: boolean;
 }
 export interface EditorPreviewTypes {
   row_group_preview: {

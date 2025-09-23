@@ -23,32 +23,34 @@ export const HIDE_CARD_NAME_SCHEMA = (disabled: boolean = false) => {
     },
   ] as const;
 };
+
 // SECTION ORDER
 export const SECTION_ORDER_SCHEMA = [
+  {
+    name: 'section_order',
+    label: 'Choose section to display',
+    helper: 'Drag to reorder the sections as you want them to appear on the card.',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        multiple: true,
+        reorder: true,
+        options: SECTION_KEYS.map((option) => ({
+          value: option,
+          label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
+        })),
+      },
+    },
+  },
+] as const;
+export const SECTION_ORDER_SCHEMA_EXPAND = [
   {
     title: 'Sections Order',
     type: 'expandable',
     flatten: true,
     iconPath: mdiListBox,
     context: { isSectionOrder: true },
-    schema: [
-      {
-        name: 'section_order',
-        label: 'Choose section to display',
-        helper: 'Drag to reorder the sections as you want them to appear on the card.',
-        selector: {
-          select: {
-            mode: 'dropdown',
-            multiple: true,
-            reorder: true,
-            options: SECTION_KEYS.map((option) => ({
-              value: option,
-              label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
-            })),
-          },
-        },
-      },
-    ],
+    schema: [...SECTION_ORDER_SCHEMA],
   },
 ] as const;
 

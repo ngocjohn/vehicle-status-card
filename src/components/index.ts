@@ -14,3 +14,4 @@ export * from './shared/vsc-indicator-single';
 export * from './shared/vsc-dialog-ha-map';
 export * from './shared/vsc-custom-card-element';
 export * from './shared/vsc-tire-item';
+export * from './shared/vsc-indicators-group';

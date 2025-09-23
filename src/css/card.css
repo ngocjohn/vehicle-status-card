@@ -89,6 +89,11 @@ ha-card .card-header {
   padding: 0 var(--vic-card-padding) var(--vic-gutter-gap) !important;
 }
 
+.card-header[header-dimmed] {
+  opacity: 0.2;
+  filter: blur(1px);
+}
+
 #mini_map {
   position: relative;
   width: 100%;

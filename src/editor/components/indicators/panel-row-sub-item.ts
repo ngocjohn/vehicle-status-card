@@ -1,4 +1,4 @@
-import { html, TemplateResult, CSSResultGroup, PropertyValues, css, nothing } from 'lit';
+import { html, TemplateResult, CSSResultGroup, PropertyValues, css } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
@@ -11,7 +11,7 @@ import {
   IndicatorRowItem,
 } from '../../../types/config/card/row-indicators';
 import { Create } from '../../../utils';
-import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
+import { createSecondaryCodeLabel, createThirdActionBtn } from '../../../utils/editor/sub-editor-header';
 import '../../shared/vsc-editor-form';
 import './panel-row-sub-group-item';
 import { BaseEditor } from '../../base-editor';
@@ -39,6 +39,7 @@ export class PanelRowSubItem extends BaseEditor {
 
   @state() private _yamlActive = false;
   @state() private _subItemExpanded: boolean = false;
+  @state() private _groupPreviewActive: boolean = false;
 
   @state() private _groupItemIndex: number | null = null;
 
@@ -92,16 +93,17 @@ export class PanelRowSubItem extends BaseEditor {
     }
     const name = this._computeItemLabel(this._subItemConfig);
     const headerLabel = `Row ${this.rowIndex + 1} › ${this.isGroup ? 'Group' : 'Entity'}`;
-    const previewBtn = this._renderPreviewBtn();
+    this._groupPreviewActive = this._isPreviewGroup;
     return html`
       <sub-editor-header
         ?hidden=${this._groupItemIndex !== null}
         ._label=${headerLabel}
         .secondary=${name}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
-        .thirdAction=${previewBtn}
+        .thirdAction=${createThirdActionBtn(this._groupPreviewActive)}
         @primary-action=${this._goBack}
         @secondary-action=${this._toggleYaml}
+        @third-action=${this._handleGroupPreviewToggle}
       ></sub-editor-header>
       ${this._renderSubItemEditor()}
     `;
@@ -210,15 +212,16 @@ export class PanelRowSubItem extends BaseEditor {
     `;
   }
 
-  private _renderPreviewBtn(): TemplateResult | typeof nothing {
-    if (!this.isGroup || this._groupItemIndex !== null) return nothing;
+  private _renderPreviewBtn = (previeActive: boolean): TemplateResult => {
+    const label = previeActive ? 'CLOSE PREVIEW' : 'PREVIEW';
+    const variant = previeActive ? 'warning' : '';
     const previewBtn = Create.HaButton({
-      label: this._isPreviewGroup ? 'CLOSE PREVIEW' : 'PREVIEW',
-      onClick: () => this._handleGroupPreviewToggle(),
-      option: { appearance: 'outlined', variant: this._isPreviewGroup ? 'warning' : '' },
+      label: label,
+      onClick: this._handleGroupPreviewToggle.bind(this),
+      option: { appearance: 'outlined', variant: variant },
     });
     return previewBtn;
-  }
+  };
 
   private _editGroupItem(event: CustomEvent): void {
     event.stopPropagation();
@@ -301,14 +304,22 @@ export class PanelRowSubItem extends BaseEditor {
 
   // === helpers ===
   private _handleGroupPreviewToggle(): void {
-    // console.debug('Toggling group preview');
-    const isPreview = this._isPreviewGroup;
-    this._setPreviewConfig('row_group_preview', {
-      row_index: this.rowIndex,
-      group_index: isPreview ? null : this.itemIndex,
-      entity_index: this.itemIndex,
-    });
+    console.debug('Toggling group preview');
+    const group_index = this._isPreviewGroup ? null : this.itemIndex;
+    this._showSelectedRow(this.rowIndex, group_index, null);
+    this._groupPreviewActive = this._isPreviewGroup;
+    this.requestUpdate();
   }
+
+  // private _handleGroupPreviewToggle() {
+  //   console.debug('Toggling group preview');
+  //   const isPreview = this._isPreviewGroup;
+  //   this._setPreviewConfig('row_group_preview', {
+  //     row_index: this.rowIndex,
+  //     group_index: isPreview ? null : this.itemIndex,
+  //     entity_index: this.itemIndex,
+  //   });
+  // }
 
   private _computeItemLabel(config: IndicatorRowItem | IndicatorBaseItemConfig): string {
     if ('name' in config && config.name) return config.name;

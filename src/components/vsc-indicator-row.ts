@@ -32,8 +32,11 @@ const ALIGNS: Record<Alignment, string> = {
 export class VscIndicatorRow extends BaseElement {
   @property({ attribute: false }) private rowConfig!: IndicatorRowConfig;
   @property({ type: Boolean, reflect: true }) private active = false;
+  @property({ type: Number, attribute: 'row-index', reflect: true }) public rowIndex?: number;
+  @property({ type: Number, attribute: 'item-index', reflect: true }) public itemIndex?: number | null = null;
+  @property({ type: Boolean, reflect: true, attribute: 'editor-dimmed' }) public dimmedInEditor = false;
 
-  @state() private _selectedGroupId: number | null = null;
+  @state() _selectedGroupId: number | null = null;
   @state() private _rowItems?: IndicatorRowItem[];
 
   @queryAll(COMPONENT.INDICATOR_ITEM) _itemEls!: NodeListOf<VscIndicatorItem>;
@@ -330,6 +333,11 @@ export class VscIndicatorRow extends BaseElement {
     requestAnimationFrame(() => this._updateArrows());
   }
 
+  public _resetItemsDimmed(): void {
+    this._itemEls.forEach((item) => {
+      item.dimmedInEditor = false;
+    });
+  }
   private _computeOverlayFade(showLeft: boolean, showRight: boolean): string {
     if (showLeft) {
       return 'linear-gradient(to right, transparent 0%, var(--card-background-color) 5%, transparent 20%)';
@@ -342,6 +350,10 @@ export class VscIndicatorRow extends BaseElement {
   static get styles(): CSSResultGroup {
     return [
       css`
+        :host([editor-dimmed]) {
+          opacity: 0.3;
+          /* transition: opacity 0.3s ease-in-out; */
+        }
         :host(.disabled) {
           opacity: 0.2;
           transition: opacity 0.3s ease-in-out;

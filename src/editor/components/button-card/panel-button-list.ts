@@ -189,7 +189,7 @@ export class PanelButtonList extends BaseEditor {
   }
 
   protected render(): TemplateResult {
-    this._buttonListConfig = this.config.button_card;
+    this._buttonListConfig = this.config.button_card as ButtonCardConfig[] | undefined;
 
     return html`
       ${this._editorHeader()} ${!this._inGridSettings ? this._renderButtonList() : this._renderGridLayoutSettings()}

@@ -9,15 +9,19 @@ import {
   VehicleStatusCardConfig,
   computePopupCardConfig,
 } from '../../types/config';
+import { ConfigArea } from '../../types/config-area';
 import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
 import { SubElementEditorConfig } from '../../utils/editor/types';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
-import { BASE_MAP_CONFIG_SCHEMA } from '../form';
 import '../shared/vsc-sub-element-editor';
+import { BASE_MAP_CONFIG_SCHEMA } from '../form';
 
 @customElement(PANEL.MAP_EDITOR)
 export class PanelMapEditor extends BaseEditor {
+  constructor() {
+    super(ConfigArea.MINI_MAP);
+  }
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
   @state() _mapCardConfig?: MiniMapConfig;
   @state() _yamlMode: boolean = false;

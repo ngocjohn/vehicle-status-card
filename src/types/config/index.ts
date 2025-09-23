@@ -7,5 +7,8 @@ export * from './card/layout';
 export * from './card/mini-map';
 export * from './card/range-info';
 export * from './card/tire-card';
+export * from './card/button-card';
+
+/** Shared interface */
 export * from './actions-config';
 export * from './entity-config';

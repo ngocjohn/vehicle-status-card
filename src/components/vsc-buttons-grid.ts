@@ -9,6 +9,7 @@ import swipercss from 'swiper/swiper-bundle.css';
 import './shared/vsc-button-single';
 import { COMPONENT } from '../constants/const';
 import { ButtonCardConfig } from '../types/config';
+import { SECTION } from '../types/section';
 import { BaseElement } from '../utils/base-element';
 import { VehicleButtonSingle } from './shared/vsc-button-single';
 
@@ -24,13 +25,13 @@ export class VehicleButtonsGrid extends BaseElement {
   @queryAll('vsc-button-single') _buttonElements!: NodeListOf<VehicleButtonSingle>;
 
   constructor() {
-    super();
+    super(SECTION.BUTTONS);
   }
   protected willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
     if (changedProperties.has('_store') && this._store) {
       this.useSwiper = this._store.gridConfig.swipe!;
-      this.buttons = this._store.visibleButtons;
+      this.buttons = this._store.visibleButtons as ButtonCardConfig[];
     }
   }
 

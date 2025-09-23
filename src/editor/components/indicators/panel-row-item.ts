@@ -10,7 +10,6 @@ import { IndicatorEntityConfig, IndicatorRowConfig, IndicatorRowItem } from '../
 import { Create, showConfirmDialog } from '../../../utils';
 import { ensureRowItemConfig } from '../../../utils/editor/migrate-indicator';
 import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
-import { EDITOR_PREVIEW } from '../../../utils/editor/types';
 import { ICON } from '../../../utils/mdi-icons';
 import { BaseEditor } from '../../base-editor';
 import { SUB_PANEL } from '../../editor-const';
@@ -19,14 +18,19 @@ import { PanelRowSubItem } from './panel-row-sub-item';
 
 declare global {
   interface HASSDomEvents {
-    'row-item-changed': { rowConfig: IndicatorRowConfig };
+    'row-item-changed': {
+      rowConfig: IndicatorRowConfig;
+      rowIndex?: number;
+      itemIndex?: number;
+      type?: 'entity' | 'group' | null;
+    };
   }
 }
 @customElement(SUB_PANEL.ROW_ITEM)
 export class PanelIndicatorItem extends BaseEditor {
   @property({ attribute: false }) private _rowConfig!: IndicatorRowConfig;
   @property({ type: Number, attribute: 'row-index', reflect: true }) rowIndex!: number;
-  @property({ attribute: false }) public _editIndex: number | null = null;
+  @property({ type: Number, attribute: 'edit-item-index', reflect: true }) public _editIndex: number | null = null;
 
   @state() private _items: IndicatorRowItem[] = [];
   @state() private _yamlActive = false;
@@ -34,10 +38,6 @@ export class PanelIndicatorItem extends BaseEditor {
 
   constructor() {
     super();
-  }
-
-  connectedCallback(): void {
-    super.connectedCallback();
   }
 
   get _editingItemType(): 'entity' | 'group' | null {
@@ -65,7 +65,10 @@ export class PanelIndicatorItem extends BaseEditor {
       const newIndex = this._editIndex;
       if (oldIndex !== newIndex) {
         // const itemType = this._editingItemType;
-        this._toggleGroupPreview(null, newIndex);
+        const currentType = this._editingItemType;
+        const groupIndex = currentType === 'group' ? newIndex : null;
+        const entity_index = currentType === 'entity' ? newIndex : null;
+        this._toggleGroupPreview(groupIndex, entity_index);
       }
     }
   }
@@ -388,17 +391,34 @@ export class PanelIndicatorItem extends BaseEditor {
     this._rowConfigChanged(currentConfig);
   }
 
-  _toggleGroupPreview(groupIndex: number | null, entity_index: number | null): void {
+  private _toggleGroupPreview(groupIndex: number | null, entity_index: number | null): void {
     const previewConfig = {
-      row_index: this.rowIndex,
-      group_index: groupIndex,
-      entity_index: entity_index,
+      rowIndex: this.rowIndex,
+      groupIndex,
+      entity_index,
+      peek: false,
     };
-    this._setPreviewConfig(EDITOR_PREVIEW.ROW_GROUP, previewConfig);
+    this._showSelectedRow(previewConfig.rowIndex, previewConfig.groupIndex, previewConfig.entity_index);
   }
+  // _toggleGroupPreview(groupIndex: number | null, entity_index: number | null): void {
+  //   const previewConfig = {
+  //     row_index: this.rowIndex,
+  //     group_index: groupIndex,
+  //     entity_index: entity_index,
+  //   };
+  //   this._setPreviewConfig(EDITOR_PREVIEW.ROW_GROUP, previewConfig);
+  // }
 
   private _rowConfigChanged(config: IndicatorRowConfig): void {
-    fireEvent(this, 'row-item-changed', { rowConfig: config });
+    const detail = {
+      rowConfig: config,
+      rowIndex: this.rowIndex,
+      itemIndex: this._editIndex !== null ? this._editIndex : undefined,
+      type: this._editingItemType,
+    };
+    this._rowConfig = config;
+    // Notify the parent about the change
+    fireEvent(this, 'row-item-changed', { ...detail });
   }
 
   static get styles(): CSSResultGroup {

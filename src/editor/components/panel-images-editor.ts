@@ -6,6 +6,7 @@ import '../../utils/editor/sub-editor-header';
 import { fireEvent } from '../../ha';
 import { showFormDialog } from '../../ha/dialogs/form/show-form-dialog';
 import { ImageItem, VehicleStatusCardConfig } from '../../types/config';
+import { ConfigArea } from '../../types/config-area';
 import { ICON } from '../../utils';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
@@ -29,7 +30,7 @@ export class PanelImagesEditor extends BaseEditor {
   @state() private _images: ImageItem[] = [];
 
   constructor() {
-    super();
+    super(ConfigArea.IMAGES);
   }
 
   connectedCallback(): void {
@@ -105,12 +106,18 @@ export class PanelImagesEditor extends BaseEditor {
     const { key, subKey } = ev.target as any;
     const value = ev.detail;
     console.debug('YAML changed:', { key, subKey, value });
-    if (key === 'images' && Array.isArray(value)) {
-      this.config = { ...this.config, images: value };
+    if (key === 'images') {
+      if (value === undefined || !Array.isArray(value)) {
+        this._images = [];
+        delete this.config.images;
+        fireEvent(this, 'config-changed', { config: this.config });
+        return;
+      }
       this._images = value;
       fireEvent(this, 'config-changed', { config: this.config });
     }
   }
+
   private _handleViewChange(ev: Event): void {
     ev.stopPropagation();
     const button = ev.currentTarget as any;

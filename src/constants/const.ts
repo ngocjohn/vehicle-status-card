@@ -15,6 +15,7 @@ export enum COMPONENT {
   MINI_MAP = `${PREFIX_NAME}-mini-map`,
   INDICATOR_BADGE = `${PREFIX_NAME}-indicator-badge`,
   INDICATOR_ITEM = `${PREFIX_NAME}-indicator-item`,
+  INDICATORS_GROUP = `${PREFIX_NAME}-indicators-group`,
 }
 
 export type ComponentType = COMPONENT;

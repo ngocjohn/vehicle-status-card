@@ -74,13 +74,18 @@ export const IMAGE_MENU_ACTIONS: MenuItemConfig[] = [
   { title: 'Delete Image', action: 'delete-image', icon: 'mdi:delete' },
 ];
 
+export const CONFIG_AREA_ACTIONS: MenuItemConfig[] = [
+  { title: 'Show section', action: 'show-area', icon: 'mdi:eye' },
+  { title: 'Documentation', action: 'open-doc', icon: 'mdi:book-open-variant' },
+];
+
 export const _renderActionItem = ({
   item,
   onClick,
   option,
 }: {
   item: MenuItemConfig;
-  onClick: (ev) => void;
+  onClick?: (ev) => void;
   option?: any;
 }): TemplateResult => {
   const deleteClass = /(delete|remove)/.test(item.action) ? 'error' : '';

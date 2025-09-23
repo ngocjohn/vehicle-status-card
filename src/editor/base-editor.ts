@@ -3,18 +3,22 @@ import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import editorcss from '../css/editor.css';
+import { EditorIndicatorRowSelectedEvent } from '../events/editor-indicator-row';
 import { fireEvent, HomeAssistant } from '../ha';
-import { VehicleStatusCardConfig } from '../types/config';
+import * as IMAGE_HELPER from '../ha/data/image_upload';
+import { showFormDialog } from '../ha/dialogs/form/show-form-dialog';
+import { SectionOrder, VehicleStatusCardConfig } from '../types/config';
+import { ConfigArea } from '../types/config-area';
 import { Create } from '../utils';
 import * as MIGRATE from '../utils/editor/migrate-indicator';
 import { EditorPreviewTypes } from '../utils/editor/types';
 import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
+import './shared/vsc-yaml-editor';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import { VehicleStatusCardEditor } from './editor';
 import { PREVIEW_CONFIG_TYPES } from './editor-const';
-import './shared/vsc-yaml-editor';
-import { BUTTON_GRID_SCHEMA, SLIDE_SIZE_SCHEMA, SWIPE_BEHAVIOR_SCHEMA } from './form';
+import { BUTTON_GRID_SCHEMA, SECTION_ORDER_SCHEMA, SLIDE_SIZE_SCHEMA, SWIPE_BEHAVIOR_SCHEMA } from './form';
 
 const EditorCommandTypes = [
   'show-button',
@@ -45,16 +49,23 @@ export class BaseEditor extends LitElement {
   @property({ attribute: false }) protected _store!: Store;
 
   @property({ attribute: false }) _migrate = MIGRATE;
+  @property({ attribute: false }) _imageHelper = IMAGE_HELPER;
+
   @property() _domHelper = selectTree;
 
   protected _stylesManager: HomeAssistantStylesManager;
 
-  constructor() {
+  protected _editorArea?: ConfigArea;
+
+  constructor(area?: ConfigArea) {
     super();
     this._stylesManager = new HomeAssistantStylesManager({
       prefix: 'vsc-editor',
       throwWarnings: true,
     });
+    if (area) {
+      this._editorArea = area;
+    }
   }
 
   connectedCallback(): void {
@@ -70,6 +81,10 @@ export class BaseEditor extends LitElement {
     return this._hass;
   }
 
+  get cardPreview(): VehicleStatusCard | undefined {
+    return this._store?.cardPreview;
+  }
+
   protected get _cardInPreview(): VehicleStatusCard | undefined {
     return this._store?._editor?._vscElem;
   }
@@ -79,14 +94,68 @@ export class BaseEditor extends LitElement {
   }
 
   get _isPreviewGroup(): boolean {
-    const config = this._editor?._config;
-    return config
-      ? config.hasOwnProperty('row_group_preview') && config.row_group_preview?.group_index !== null
-      : false;
+    return this._cardInPreview?.isGroupIndiActive || false;
   }
 
   protected get _cardConfig(): VehicleStatusCardConfig | undefined {
     return this._editor?._config as VehicleStatusCardConfig;
+  }
+
+  protected showSectionOrderDialog = async () => {
+    if (!this._store) return;
+    const config = { ...(this._store._config || {}) };
+    if (!config || typeof config !== 'object') return;
+    const currentOrder = {
+      section_order: config.layout_config?.section_order,
+    };
+    console.debug('Current section order:', currentOrder);
+
+    const newOrder = await showFormDialog(this, {
+      title: 'Sections Order',
+      schema: [...SECTION_ORDER_SCHEMA],
+      data: currentOrder,
+    });
+    if (!newOrder) {
+      return;
+    }
+    console.debug('New section order:', newOrder);
+    const newConfig = {
+      ...config,
+      layout_config: {
+        ...config.layout_config,
+        section_order: newOrder.section_order,
+      },
+    };
+    console.debug('Updated config with new section order:', newConfig);
+    fireEvent(this, 'config-changed', { config: newConfig });
+    return;
+  };
+
+  public _getSectionInfo(sectionKey: SectionOrder): { total: number; indexInOrder: number } {
+    const sectionOrder = this._store?._config?.layout_config?.section_order;
+    const currentIndex = sectionOrder ? sectionOrder.indexOf(sectionKey) : -1;
+    const total = sectionOrder ? sectionOrder.length : 0;
+    return { total, indexInOrder: currentIndex };
+  }
+
+  public _moveSection(sectionKey: SectionOrder, direction: 'up' | 'down'): void {
+    const sectionOrder = this._store?._config?.layout_config?.section_order!;
+    const currentIndex = sectionOrder.indexOf(sectionKey);
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    sectionOrder.splice(currentIndex, 1);
+    sectionOrder.splice(newIndex, 0, sectionKey);
+    console.debug(`Move section ${sectionKey} ${direction}:`, sectionOrder);
+
+    const newConfig = {
+      ...this._store?._config,
+      layout_config: {
+        ...this._store?._config?.layout_config,
+        section_order: sectionOrder,
+      },
+    };
+    console.debug('Updated config with moved section order:', newConfig);
+    fireEvent(this, 'config-changed', { config: newConfig });
+    return;
   }
 
   protected _createAlert(message: string): TemplateResult {
@@ -136,7 +205,7 @@ export class BaseEditor extends LitElement {
    * @value-changed event handler _changed or _onValueChanged
    */
   protected _createVscForm(data: any, schema: any, key?: string, subKey?: string): TemplateResult {
-    const currentConfig = this._store?.config;
+    const currentConfig = this._store?._config;
     return html`
       <vsc-editor-form
         ._hass=${this._hass}
@@ -221,11 +290,10 @@ export class BaseEditor extends LitElement {
 
   public _cleanConfig(): void {
     if (!this._store) return;
-    const config = this._store.config;
+    const config = this._store._config;
     if (!config || typeof config !== 'object') return;
 
     const newConfig = { ...config };
-
     let hasChanges = false;
     // Check if any of the preview config types exist in the config
     PREVIEW_CONFIG_TYPES.forEach((key) => {
@@ -254,24 +322,35 @@ export class BaseEditor extends LitElement {
     this._dispatchEditorEvent('toggle-indicator-row', { rowIndex, peek });
   };
 
+  protected _showSelectedRow = (
+    rowIndex: number | null,
+    groupIndex: number | null = null,
+    entity_index: number | null = null,
+    peek: boolean = false
+  ): void => {
+    const rowPreviewConfig = { row_index: rowIndex, group_index: groupIndex, entity_index, peek };
+    document.dispatchEvent(EditorIndicatorRowSelectedEvent(rowPreviewConfig));
+    // console.debug('event from:', this);
+  };
+
   public _setPreviewConfig = <T extends keyof EditorPreviewTypes>(
     previewKey: T,
     value: EditorPreviewTypes[T]['config']
   ) => {
     if (!this._store) return;
-    const config = this._store.config;
+    const config = this._store._config;
     if (!config || typeof config !== 'object') return;
 
     // Update config
     const newConfig = { ...config, [previewKey]: value };
-    // console.debug(`Set preview config key: ${previewKey}`, value);
+    console.debug(`Set preview config key: ${previewKey}`, value, 'from', this);
     fireEvent(this, 'config-changed', { config: newConfig });
     return;
   };
 
   protected _cardConfigChanged(changedConfig: Partial<VehicleStatusCardConfig>): void {
     if (!this._store) return;
-    const config = this._store.config;
+    const config = this._store._config;
     if (!config || typeof config !== 'object') return;
 
     // Update config

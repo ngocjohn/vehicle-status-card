@@ -10,6 +10,7 @@ declare global {
     'go-back': undefined;
     'secondary-action': undefined;
     'primary-action': undefined;
+    'third-action': undefined;
   }
 }
 
@@ -30,6 +31,12 @@ export const createSecondaryCodeLabel = (yamlMode: boolean): TemplateResult => {
       ${label}
     </ha-button>
   `;
+};
+
+export const createThirdActionBtn = (previewActive: boolean): TemplateResult => {
+  const label = previewActive ? 'CLOSE PREVIEW' : 'PREVIEW';
+  const variant = previewActive ? 'warning' : 'neutral';
+  return html` <ha-button size="small" variant=${variant} appearance="plain"> ${label} </ha-button> `;
 };
 
 @customElement('sub-editor-header')
@@ -70,7 +77,9 @@ export class SubEditorHeader extends LitElement {
           ${this.hideSecondaryAction
             ? nothing
             : html`
-                ${this.thirdAction ? this.thirdAction : nothing}
+                ${this.thirdAction
+                  ? html` <span @click=${this._handleThirdAction}> ${this.thirdAction} </span> `
+                  : nothing}
                 <span @click=${this._handleSecondaryAction}>
                   ${this.secondaryAction
                     ? this.secondaryAction
@@ -92,6 +101,9 @@ export class SubEditorHeader extends LitElement {
 
   private _handleSecondaryAction(): void {
     fireEvent(this, 'secondary-action');
+  }
+  private _handleThirdAction(): void {
+    fireEvent(this, 'third-action');
   }
 
   static get styles(): CSSResultGroup {
