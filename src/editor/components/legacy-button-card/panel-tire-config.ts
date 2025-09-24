@@ -1,12 +1,12 @@
 import { html, TemplateResult, CSSResultGroup, nothing, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import editorcss from '../../css/editor.css';
-import { TireTemplateConfig } from '../../types/config';
-import { Create } from '../../utils';
-import { BaseEditor } from '../base-editor';
-import { PANEL } from '../editor-const';
-import { DEFAULT_TIRE_CONFIG, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../form';
+import editorcss from '../../../css/editor.css';
+import { TireTemplateConfig } from '../../../types/config';
+import { Create } from '../../../utils';
+import { BaseEditor } from '../../base-editor';
+import { PANEL } from '../../editor-const';
+import { DEFAULT_TIRE_CONFIG, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../../form';
 
 @customElement(PANEL.TIRE_CONFIG)
 export class PanelTireConfig extends BaseEditor {

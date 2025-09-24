@@ -72,3 +72,17 @@ export function migrateButtonCardConfig(oldConfig: ButtonCardConfig[]): BaseButt
   // console.debug('Migrating legacy button_card config...');
   return oldConfig.map((item) => convertButtonToNewFormat(item));
 }
+
+export const generateNewButtonConfig = (entity: string): BaseButtonCardItemConfig => {
+  const newButton: BaseButtonCardItemConfig = {
+    entity,
+    show_icon: true,
+    show_name: true,
+    show_state: true,
+    button_type: 'action',
+    tap_action: {
+      action: 'more-info',
+    },
+  };
+  return newButton;
+};

@@ -1,11 +1,11 @@
 import { LitElement, html, TemplateResult, CSSResultGroup, PropertyValues, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import editorcss from '../../css/editor.css';
-import { HomeAssistant } from '../../ha';
-import { BaseButtonConfig } from '../../types/config';
-import { PANEL } from '../editor-const';
-import { BASE_BUTTON_ACTION_SCHEMA, BASE_BUTTON_APPEARANCE_SCHEMA, BASE_BUTTON_SCHEMA } from '../form';
+import editorcss from '../../../css/editor.css';
+import { HomeAssistant } from '../../../ha';
+import { BaseButtonConfig } from '../../../types/config';
+import { PANEL } from '../../editor-const';
+import { BASE_BUTTON_ACTION_SCHEMA, BASE_BUTTON_APPEARANCE_SCHEMA, BASE_BUTTON_SCHEMA } from '../../form';
 
 @customElement(PANEL.BASE_BUTTON)
 export class PanelBaseButton extends LitElement {

@@ -1,4 +1,5 @@
 import { LovelaceCardConfig } from '../../../ha';
+import { migrateButtonCardConfig } from '../../../utils/editor/migrate-button-card';
 import { reorderSection } from '../../../utils/editor/reorder-section';
 import { EntityConfig } from '../entity-config';
 import { ButtonCardConfig } from './button';
@@ -38,14 +39,20 @@ export interface VehicleStatusCardConfig extends LovelaceCardConfig {
 
 export const configHasDeprecatedProps = (config: VehicleStatusCardConfig): boolean => {
   // Check for deprecated properties
-  const imageLegacy = hasImageLegacy(config.images || []) || !!config.image_entities;
-  // console.debug('Checking for deprecated config properties:', {
-  //   hasImageLegacy: imageLegacy,
-  //   hasLayoutHide: !!config.layout_config?.hide,
-  //   hasMiniMapExtraEntities: !!config.mini_map?.extra_entities,
-  //   hasButtonLegacy: !!config.button_card?.length,
-  // });
-  return Boolean(config.mini_map?.extra_entities || config.layout_config?.hide || imageLegacy);
+  const hasImageLegacyConfig = hasImageLegacy(config.images || []) || !!config.image_entities;
+  const hasLayoutHide = !!config.layout_config?.hide;
+  const hasMiniMapExtraEntities = !!config.mini_map?.extra_entities;
+  const hasButtonLegacy = !!config.button_card?.length;
+  const needsUpdate = Boolean(hasImageLegacyConfig || hasLayoutHide || hasMiniMapExtraEntities || hasButtonLegacy);
+  if (needsUpdate) {
+    console.debug('Checking for deprecated config properties:', {
+      hasImageLegacyConfig,
+      hasLayoutHide,
+      hasMiniMapExtraEntities,
+      hasButtonLegacy,
+    });
+  }
+  return needsUpdate;
 };
 
 export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): VehicleStatusCardConfig => {
@@ -89,10 +96,17 @@ export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): Vehicle
     }
   }
 
+  if (!!config.button_card?.length) {
+    console.debug(newConfig.button_card);
+    newConfig.button_cards = migrateButtonCardConfig(config.button_card);
+    console.debug('Button cards migrated');
+  }
   delete newConfig.mini_map?.extra_entities; // Remove deprecated extra_entities property
+
   // Remove the deprecated 'hide' property
   delete newConfig.layout_config.hide;
-  // console.debug('Final layout_config after migration:', newConfig.layout_config);
+
+  delete newConfig.button_card; // Remove deprecated button_card property
 
   return newConfig;
 };

@@ -3,22 +3,22 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { fireEvent } from '../../ha';
+import { ButtonListEditorEventParams } from '..';
+import { fireEvent } from '../../../ha';
 import {
   VehicleStatusCardConfig,
   DefaultCardConfig,
   ButtonCardConfig,
   TireTemplateConfig,
   BaseButtonConfig,
-} from '../../types/config';
-import { ConfigArea } from '../../types/config-area';
-import { ICON } from '../../utils';
-import { Create, showConfirmDialog } from '../../utils';
-import { BaseEditor } from '../base-editor';
-import * as ELEMENT from '../components';
-import { ButtonListEditorEventParams } from '../components';
-import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS, PANEL } from '../editor-const';
-import { DEFAULT_TIRE_CONFIG } from '../form';
+} from '../../../types/config';
+import { ConfigArea } from '../../../types/config-area';
+import { ICON } from '../../../utils';
+import { Create, showConfirmDialog } from '../../../utils';
+import { BaseEditor } from '../../base-editor';
+import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS, PANEL } from '../../editor-const';
+import { DEFAULT_TIRE_CONFIG } from '../../form';
+import * as ELEMENT from '../index';
 
 @customElement(PANEL.BUTTON_CARD)
 export class PanelButtonCard extends BaseEditor {

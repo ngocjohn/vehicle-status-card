@@ -3,15 +3,15 @@ import { cloneDeep } from 'es-toolkit';
 import { html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import editorcss from '../../css/editor.css';
-import { fireEvent, HASSDomEvent, LovelaceCardConfig, LovelaceConfig } from '../../ha';
-import { ButtonCardConfig, VehicleStatusCardConfig } from '../../types/config';
-import '../../utils/editor/vic-tab-bar';
-import '../../utils/editor/vic-tab';
-import { ICON } from '../../utils';
-import { BaseEditor } from '../base-editor';
-import { VehicleStatusCardEditor } from '../editor';
-import { PANEL } from '../editor-const';
+import editorcss from '../../../css/editor.css';
+import { fireEvent, HASSDomEvent, LovelaceCardConfig, LovelaceConfig } from '../../../ha';
+import { ButtonCardConfig, VehicleStatusCardConfig } from '../../../types/config';
+import '../../../utils/editor/vic-tab-bar';
+import '../../../utils/editor/vic-tab';
+import { ICON } from '../../../utils';
+import { BaseEditor } from '../../base-editor';
+import { VehicleStatusCardEditor } from '../../editor';
+import { PANEL } from '../../editor-const';
 export interface GUIModeChangedEvent {
   guiMode: boolean;
   guiModeAvailable: boolean;

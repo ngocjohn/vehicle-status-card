@@ -34,17 +34,20 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   public _migratedIndicatorsConfig: boolean = false;
 
   // Config Area Elements
+  @query(PANEL.INDICATOR_ROWS) _panelIndicatorRows?: ELEMENT.PanelIndicatorRows;
   @query(PANEL.IMAGES_EDITOR) _panelImages?: ELEMENT.PanelImagesEditor;
   @query(PANEL.RANGE_INFO) _panelRangeInfo?: ELEMENT.PanelRangeInfo;
-  @query(PANEL.BUTTON_CARD) _panelButtonCard?: ELEMENT.PanelButtonCard;
   @query(PANEL.MAP_EDITOR) _panelMapEditor?: ELEMENT.PanelMapEditor;
-  @query(PANEL.INDICATOR_ROWS) _panelIndicatorRows?: ELEMENT.PanelIndicatorRows;
+  @query(PANEL.BUTTON_SEC) _panelButtons?: ELEMENT.PanelButtonCardSec;
   @query(PANEL.LAYOUT_EDITOR) _panelLayoutEditor?: ELEMENT.PanelLayoutEditor;
+  @query(PANEL.EDITOR_UI) _panelEditorUI?: ELEMENT.PanelEditorUI;
+
   // Legacy Indicator Elements
   @query(PANEL.INDICATOR_SINGLE) _panelIndicatorSingle?: ELEMENT.PanelIndicatorSingle;
   @query(PANEL.INDICATOR_GROUP) _panelIndicatorGroup?: ELEMENT.PanelIndicatorGroup;
 
-  @query(PANEL.EDITOR_UI) _panelEditorUI?: ELEMENT.PanelEditorUI;
+  // Legacy Button Card Element
+  @query(PANEL.BUTTON_CARD) _panelButtonCard?: ELEMENT.PanelButtonCard;
 
   constructor() {
     super(ConfigArea.DEFAULT);
@@ -166,6 +169,14 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   /* ---------------------------- RENDER CONFIG TYPES ---------------------------- */
 
   private _renderButtonCard(): TemplateResult {
+    return html`<panel-button-card-sec
+      ._hass=${this._hass}
+      ._buttonList=${this._config.button_cards || []}
+      .config=${this._config}
+      ._store=${this._store}
+    ></panel-button-card-sec>`;
+  }
+  private _renderLEgacyButtonCard(): TemplateResult {
     return html`<panel-button-card
       ._hass=${this._hass}
       .config=${this._config}

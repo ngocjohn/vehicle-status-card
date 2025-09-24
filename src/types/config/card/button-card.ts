@@ -4,8 +4,10 @@ import type { ActionConfig } from '../../../ha/data/lovelace';
 import { EntitySharedConfig } from '../entity-config';
 import { TireTemplateConfig } from './tire-card';
 
-export type BUTTON_TYPE = 'default' | 'action';
-export type CARD_TYPE = 'default' | 'custom' | 'tire';
+export const ButtonType = ['default', 'action'] as const;
+export const CardType = ['default', 'custom', 'tire'] as const;
+export type BUTTON_TYPE = (typeof ButtonType)[number];
+export type CARD_TYPE = (typeof CardType)[number];
 
 export interface ButtonShowConfig {
   show_name?: boolean;

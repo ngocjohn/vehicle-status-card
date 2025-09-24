@@ -46,7 +46,6 @@ import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
 import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
-import { migrateButtonCardConfig } from './utils/editor/migrate-button-card';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { _setUpPreview, PREVIEW_TYPE, previewHandler } from './utils/lovelace/preview-helper';
@@ -75,13 +74,14 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const newConfig = JSON.parse(JSON.stringify(config));
     // this._config = newConfig;
     this._config = {
-      ...newConfig,
       ...updateDeprecatedConfig(newConfig),
     };
 
     if (this._config.button_card && this._config.button_card.length) {
       this._buttonCardConfigItem = this._config.button_card as ButtonCardConfig[];
-      this._newButtonConfig = migrateButtonCardConfig(this._config.button_card);
+    }
+    if (this._config.button_cards && this._config.button_cards.length) {
+      this._newButtonConfig = this._config.button_cards as BaseButtonCardItemConfig[];
     }
     if (this._store != null) {
       console.debug('Updating store config');

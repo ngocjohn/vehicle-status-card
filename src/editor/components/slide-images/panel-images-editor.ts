@@ -1,16 +1,16 @@
 import { html, TemplateResult, PropertyValues, CSSResultGroup } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import '../components/slide-images/panel-images-preview';
-import '../../utils/editor/sub-editor-header';
-import { fireEvent } from '../../ha';
-import { showFormDialog } from '../../ha/dialogs/form/show-form-dialog';
-import { ImageItem, VehicleStatusCardConfig } from '../../types/config';
-import { ConfigArea } from '../../types/config-area';
-import { ICON } from '../../utils';
-import { BaseEditor } from '../base-editor';
-import { PANEL } from '../editor-const';
-import { ImageSchema } from '../form';
+import './panel-images-preview';
+import '../../../utils/editor/sub-editor-header';
+import { fireEvent } from '../../../ha';
+import { showFormDialog } from '../../../ha/dialogs/form/show-form-dialog';
+import { ImageItem, VehicleStatusCardConfig } from '../../../types/config';
+import { ConfigArea } from '../../../types/config-area';
+import { ICON } from '../../../utils';
+import { BaseEditor } from '../../base-editor';
+import { PANEL } from '../../editor-const';
+import { ImageSchema } from '../../form';
 
 type ACTIVE_VIEW = 'grid' | 'settings' | 'yaml';
 

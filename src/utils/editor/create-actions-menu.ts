@@ -49,6 +49,7 @@ export const BUTTON_ACTION_MENU: MenuItemConfig[] = [
   { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
   { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
   { title: 'Hide on card', action: ACTIONS.HIDE_BUTTON, icon: 'mdi:eye-off' },
+  { title: 'Unhide on card', action: ACTIONS.UNHIDE_BUTTON, icon: 'mdi:eye' },
   {
     title: 'Delete',
     action: ACTIONS.DELETE_BUTTON,

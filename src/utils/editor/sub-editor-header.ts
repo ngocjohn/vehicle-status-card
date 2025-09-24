@@ -11,6 +11,7 @@ declare global {
     'secondary-action': undefined;
     'primary-action': undefined;
     'third-action': undefined;
+    'left-btn': undefined;
   }
 }
 
@@ -39,24 +40,38 @@ export const createThirdActionBtn = (previewActive: boolean): TemplateResult => 
   return html` <ha-button size="small" variant=${variant} appearance="plain"> ${label} </ha-button> `;
 };
 
+export const createAddBtnLabel = (label = 'Add'): TemplateResult => {
+  return html`
+    <ha-button size="small" appearance="filled">
+      <ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>
+      ${label}
+    </ha-button>
+  `;
+};
+
 @customElement('sub-editor-header')
 export class SubEditorHeader extends LitElement {
   @property({ type: Boolean, attribute: 'hide-primary', reflect: true }) public hidePrimaryAction = false;
   @property({ type: Boolean, attribute: 'hide-secondary', reflect: true }) public hideSecondaryAction = false;
   @property({ attribute: false }) public secondaryAction?: TemplateResult;
   @property({ attribute: false }) public thirdAction?: TemplateResult;
+  @property({ attribute: false }) public extraActions?: TemplateResult;
 
   @property({ attribute: false }) public primaryIcon: string | PrimaryActionTypes = 'back';
+  @property({ type: Boolean, attribute: 'left-btn', reflect: true }) public leftBtn = false;
   @property() public defaultAction?: string;
   @property() public _label?: string;
   @property() public secondary?: string;
   @property() public _secondaryLabel?: string;
-
+  @property() public _addBtnLabel?: string;
   protected render(): TemplateResult {
     const primaryIcon = PRIMARY_ICON[this.primaryIcon] || this.primaryIcon;
     return html`
       <div class="header">
         <slot name="primary-action">
+          ${this.leftBtn
+            ? html`<span @click=${this._handleLeftBtn}> ${createAddBtnLabel(this._addBtnLabel)} </span>`
+            : nothing}
           ${this.hidePrimaryAction
             ? nothing
             : html`
@@ -74,6 +89,7 @@ export class SubEditorHeader extends LitElement {
               `}
         </slot>
         <slot name="secondary-action">
+          ${this.extraActions ? this.extraActions : nothing}
           ${this.hideSecondaryAction
             ? nothing
             : html`
@@ -106,6 +122,10 @@ export class SubEditorHeader extends LitElement {
     fireEvent(this, 'third-action');
   }
 
+  private _handleLeftBtn(): void {
+    fireEvent(this, 'left-btn');
+  }
+
   static get styles(): CSSResultGroup {
     return [
       BaseEditor.styles,
@@ -117,7 +137,7 @@ export class SubEditorHeader extends LitElement {
           margin-bottom: auto;
           place-content: center;
         }
-        :host([hide-primary]) .header {
+        :host([hide-primary]):not([left-btn]) .header {
           justify-content: flex-end;
         }
 

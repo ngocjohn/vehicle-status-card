@@ -101,6 +101,10 @@ export class BaseEditor extends LitElement {
     return this._editor?._config as VehicleStatusCardConfig;
   }
 
+  protected _getButtonGridCols(): number {
+    const cols = this._cardConfig?.layout_config?.button_grid?.columns || 2;
+    return Math.max(2, Math.min(cols, 4)); // Clamp between 2 and 4
+  }
   protected showSectionOrderDialog = async () => {
     if (!this._store) return;
     const config = { ...(this._store._config || {}) };
@@ -220,7 +224,7 @@ export class BaseEditor extends LitElement {
   }
 
   protected _onValueChanged(ev: CustomEvent): void {
-    // console.debug('onValueChanged (BaseEditor)');
+    console.debug('onValueChanged (BaseEditor)');
     ev.stopPropagation();
     const { key, subKey, currentConfig } = ev.target as any;
     const value = { ...ev.detail.value };
@@ -355,7 +359,9 @@ export class BaseEditor extends LitElement {
 
     // Update config
     const newConfig = { ...config, ...changedConfig };
-    console.debug('Card config changed:', changedConfig, newConfig);
+    console.debug('Card config changed fire from: ', this._editorArea);
+    fireEvent(this, 'config-changed', { config: newConfig });
+    return;
   }
 
   static get styles(): CSSResultGroup {
