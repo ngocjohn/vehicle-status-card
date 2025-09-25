@@ -649,7 +649,7 @@ export class PanelRangeInfo extends BaseEditor {
   private _entityMoved(ev: CustomEvent): void {
     ev.stopPropagation();
     const { oldIndex, newIndex } = ev.detail;
-    const newRangeInfo = this._config.range_info.concat();
+    const newRangeInfo = this._config.range_info?.concat() || [];
     newRangeInfo.splice(newIndex, 0, newRangeInfo.splice(oldIndex, 1)[0]);
     this._config = { ...this._config, range_info: newRangeInfo };
     fireEvent(this, 'config-changed', { config: this._config });

@@ -52,7 +52,7 @@ export class PanelMapEditor extends BaseEditor {
   }
 
   private get _mapConfig(): MiniMapConfig {
-    return this._config?.mini_map || {};
+    return this._config.mini_map || ({} as MiniMapConfig);
   }
 
   protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -119,7 +119,7 @@ export class PanelMapEditor extends BaseEditor {
     // console.debug('Sub Element Config Changed', value);
 
     if (!value.entities || value.entities.length === 0) {
-      value.entities = [{ entity: this._mapConfig.device_tracker }];
+      value.entities = [{ entity: this._mapConfig.device_tracker! }];
     }
 
     this._subElementConfig = {

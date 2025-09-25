@@ -223,7 +223,7 @@ export class PanelButtonCard extends BaseEditor {
 
   private _renderButtonConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
     const headerActions =
-      this.config.layout_config.section_order?.includes('buttons') && !buttonCard.hide_button
+      this.config.layout_config?.section_order?.includes('buttons') && !buttonCard.hide_button
         ? [{ title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) }]
         : [];
 

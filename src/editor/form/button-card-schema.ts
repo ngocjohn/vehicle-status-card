@@ -1,8 +1,9 @@
-import { mdiBellBadge, mdiButtonCursor, mdiCodeJson, mdiGestureTap, mdiPalette, mdiTextShort } from '@mdi/js';
+import { mdiButtonCursor, mdiGestureTap, mdiPalette, mdiTextShort } from '@mdi/js';
+import { capitalize } from 'es-toolkit';
 
 import type { BaseButtonCardItemConfig } from '../../types/config';
 
-import { computeOptionalActionSchemaFull } from './actions-config';
+import { computeIconActionSchema, computeOptionalActionSchemaFull } from './actions-config';
 
 interface TemplateItem<T = string> {
   name: T;
@@ -12,7 +13,7 @@ interface TemplateItem<T = string> {
     template: {};
   };
 }
-const DISPLAY_ELEMENTS = ['show_name', 'show_state', 'show_icon'] as const;
+const DISPLAY_ELEMENTS = ['show_primary', 'show_secondary', 'show_icon'] as const;
 const BUTTON_TYPE = ['default', 'action'] as const;
 const CARD_TYPE = ['default', 'custom', 'tire'] as const;
 const BUTTON_DISPLAY_OPTS_SCHEMA = (entity?: string) => {
@@ -57,9 +58,14 @@ const BUTTON_DISPLAY_OPTS_SCHEMA = (entity?: string) => {
 
 const TEMPLATES = [
   {
+    name: 'primary_template',
+    label: 'Primary Label Template',
+    helper: 'Template for the primary label. Overrides the primary label content.',
+  },
+  {
     name: 'state_template',
-    label: 'State Template',
-    helper: 'Customize the state based on a template. The template should return a valid state name.',
+    label: 'Secondary State Template',
+    helper: 'Additional template to extend secondary state content.',
   },
   {
     name: 'icon_template',
@@ -68,28 +74,39 @@ const TEMPLATES = [
   },
   {
     name: 'color_template',
-    label: 'Color Template',
-    helper: 'Template to override the color. The template should return a valid CSS color (name, hex, rgb, hsl, etc.).',
+    label: 'Icon Color Template',
+    helper:
+      'Template to override the color to the icon. The template should return a valid CSS color (name, hex, rgb, hsl, etc.).',
   },
+] as const;
+
+const BADGE_TEMPLATES = [
   {
     name: 'notify',
-    label: 'Notify Badge condition',
+    label: 'Badge visibility',
     helper: 'Use Jinja2 template with result `true` to display notification badge',
   },
   {
     name: 'notify_color',
-    label: 'Notify Badge color',
-    helper:
-      'Template to override the notify badge color. The template should return a valid CSS color (name, hex, rgb, hsl, etc.).',
+    label: 'Badge color',
+    helper: 'Color applied to the badge. Supports Templating or CSS color formats',
   },
   {
     name: 'notify_icon',
-    label: 'Notify Badge icon',
-    helper: 'Template to override the notify badge icon. The template should return a valid icon format.',
+    label: 'Badge icon',
+    helper: 'Icon displayed as a badge. Supports Templating',
   },
-];
+  {
+    name: 'notify_text',
+    label: 'Badge text (replace icon)',
+    helper: 'Text displayed inside the badge. Supports Templating',
+  },
+] as const;
 
-const TemplateKeys = TEMPLATES.map((t) => t.name);
+const TEMPLATES_ALL = [...TEMPLATES, ...BADGE_TEMPLATES];
+
+const TemplateKeys = TEMPLATES_ALL.map((t) => t.name);
+
 type TemplateKey = (typeof TemplateKeys)[number];
 
 const computeTemplateSchema = (type?: TemplateKey[]) => {
@@ -98,7 +115,7 @@ const computeTemplateSchema = (type?: TemplateKey[]) => {
   }
   const list: TemplateItem[] = [];
   type.forEach((key) => {
-    const t = TEMPLATES.find((tt) => tt.name === key);
+    const t = TEMPLATES_ALL.find((tt) => tt.name === key);
     if (t) {
       list.push({
         name: t.name,
@@ -113,68 +130,105 @@ const computeTemplateSchema = (type?: TemplateKey[]) => {
   return list;
 };
 
-const BASE_TEMPLATE_KEYS: TemplateKey[] = ['state_template', 'icon_template', 'color_template'];
-const NOTIFY_TEMPLATE_KEYS: TemplateKey[] = ['notify', 'notify_color', 'notify_icon'];
+const BASE_TEMPLATE_KEYS: TemplateKey[] = ['primary_template', 'state_template', 'icon_template', 'color_template'];
+const NOTIFY_TEMPLATE_KEYS: TemplateKey[] = ['notify', 'notify_color', 'notify_icon', 'notify_text'];
 
-const OPTIONAL_TEMPLATE_SCHEMA = [
-  {
-    title: 'Extra Templates (Advanced)',
-    type: 'expandable',
-    flatten: true,
-    iconPath: mdiCodeJson,
-    context: {
-      isTemplate: true,
+const _generateOptionalTemplate = (type: 'base' | 'notify') => {
+  const schemaObj = {
+    base: {
+      title: 'Extra Templates (Advanced)',
+      icon: 'mdi:image-text',
+      keys: BASE_TEMPLATE_KEYS,
     },
-    schema: [
-      {
-        type: 'optional_actions',
-        flatten: true,
-        context: { isTemplate: true },
-        schema: [...computeTemplateSchema(BASE_TEMPLATE_KEYS)],
+    notify: {
+      title: 'Notification Badge (Advanced)',
+      icon: 'mdi:square-rounded-badge',
+      keys: NOTIFY_TEMPLATE_KEYS,
+    },
+  };
+  const obj = schemaObj[type];
+  return [
+    {
+      title: obj.title,
+      type: 'expandable',
+      flatten: true,
+      icon: obj.icon,
+      context: {
+        isTemplate: true,
       },
-    ],
-  },
-] as const;
+      schema: [
+        {
+          type: 'optional_actions',
+          flatten: true,
+          context: { isTemplate: true },
+          schema: [...computeTemplateSchema(obj.keys)],
+        },
+      ],
+    },
+  ] as const;
+};
 
-const OPTIONAL_NOTIFY_SCHEMA = [
-  {
-    title: 'Notification Badge Templates (Advanced)',
-    type: 'expandable',
-    flatten: true,
-    iconPath: mdiBellBadge,
-    context: {
-      isTemplate: true,
+const BUTTON_BEHAVIOR_SCHEMA = (isActionButton: boolean) => {
+  return [
+    {
+      title: 'Button Behavior',
+      type: 'expandable',
+      flatten: true,
+      icon: 'mdi:gesture-tap-button',
+      helper: 'Action and behavior when interacting with the button',
+      schema: [
+        {
+          type: 'grid',
+          schema: [
+            {
+              name: 'button_type',
+              label: 'Button Type',
+              selector: {
+                select: {
+                  mode: 'dropdown',
+                  options: BUTTON_TYPE.map((type) => ({ value: type, label: capitalize(type.replace(/_/g, ' ')) })),
+                },
+              },
+            },
+            {
+              name: 'card_type',
+              label: 'Card Type',
+              disabled: isActionButton,
+              selector: {
+                select: {
+                  mode: 'dropdown',
+                  options: CARD_TYPE.map((type) => ({ value: type, label: capitalize(type.replace(/_/g, ' ')) })),
+                },
+              },
+            },
+          ] as const,
+        },
+        ...(isActionButton ? [...computeOptionalActionSchemaFull()] : []),
+      ],
     },
-    schema: [
-      {
-        type: 'optional_actions',
-        flatten: true,
-        context: { isTemplate: true },
-        schema: [...computeTemplateSchema(NOTIFY_TEMPLATE_KEYS)],
-      },
-    ],
-  },
-] as const;
+  ] as const;
+};
 
 export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
   const hasEntity = !!data?.entity;
   const isActionButton = data?.button_type === 'action';
   return [
     {
-      title: 'Base configuration',
+      title: 'Context & Identity',
       type: 'expandable',
       flatten: true,
       iconPath: mdiButtonCursor,
       schema: [
         {
           name: 'name',
-          label: 'Button Name',
+          label: 'Name (optional)',
+          required: false,
           selector: { text: {} },
         },
         {
           name: 'entity',
           label: 'Entity (optional)',
-          helper: 'This entity is used to fetch the state content, and interactions',
+          helper: 'Entity used for templating, actions, and state display',
           required: false,
           selector: {
             entity: {},
@@ -226,15 +280,15 @@ export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
             {
               name: 'include_state_template',
               label: 'Include State Template',
-              helper: 'Add state template result to content',
+              helper: 'Extends the secondary content with the state_template',
               type: 'boolean',
               default: false,
             },
           ],
         },
         ...BUTTON_DISPLAY_OPTS_SCHEMA(data.entity),
-        ...OPTIONAL_NOTIFY_SCHEMA,
-        ...OPTIONAL_TEMPLATE_SCHEMA,
+        ..._generateOptionalTemplate('base'),
+        ..._generateOptionalTemplate('notify'),
       ] as const,
     },
     {
@@ -243,34 +297,16 @@ export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
       flatten: true,
       iconPath: mdiGestureTap,
       schema: [
+        ...BUTTON_BEHAVIOR_SCHEMA(isActionButton),
         {
-          type: 'grid',
-          schema: [
-            {
-              name: 'button_type',
-              label: 'Button Type',
-              selector: {
-                select: {
-                  mode: 'dropdown',
-                  options: BUTTON_TYPE.map((type) => ({ value: type, label: type.replace(/_/g, ' ') })),
-                },
-              },
-            },
-            {
-              name: 'card_type',
-              label: 'Card Type',
-              disabled: isActionButton,
-              selector: {
-                select: {
-                  mode: 'dropdown',
-                  options: CARD_TYPE.map((type) => ({ value: type, label: type.replace(/_/g, ' ') })),
-                },
-              },
-            },
-          ] as const,
+          title: 'Icon Interactions',
+          type: 'expandable',
+          flatten: true,
+          icon: 'mdi:gesture-tap-hold',
+          helper: 'Action and behavior when interacting with the icon',
+          schema: [...computeIconActionSchema()] as const,
         },
-        ...(isActionButton ? [...computeOptionalActionSchemaFull()] : []),
       ] as const,
     },
-  ];
+  ] as const;
 };

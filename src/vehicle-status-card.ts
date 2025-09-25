@@ -1,14 +1,14 @@
+import { isEmpty } from 'es-toolkit/compat';
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import './components';
 import './editor/editor';
 import './utils/custom-tire-card';
 import './components/shared/vsc-tire-item';
-import { styleMap } from 'lit/directives/style-map.js';
-
 // components
 import {
   VehicleButtonsGrid,
@@ -44,7 +44,7 @@ import {
 import { ConfigArea } from './types/config-area';
 import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
-import { isEmpty, applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
+import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createMapCard } from './utils/lovelace/create-map-card';
@@ -162,8 +162,8 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (
       changedProps.has('_config') &&
       this._config.mini_map?.single_map_card === true &&
-      this._config.mini_map?.device_tracker &&
-      this._config.mini_map?.maptiler_api_key
+      this._config.mini_map?.device_tracker !== undefined &&
+      this._config.mini_map?.maptiler_api_key !== undefined
     ) {
       console.log('Creating single map card');
       // this.createSingleMapCard();
@@ -185,6 +185,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _createMapElement(): void {
+    if (!this._config.mini_map) return;
     const miniMapConfig = this._config.mini_map;
     const element = createMapCard(miniMapConfig);
     if (element) {
@@ -322,7 +323,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     return html`
       ${repeat(
         rows,
-        (row: IndicatorRowConfig) => row.row_items.map((item) => item.type).join('-'),
+        (row: IndicatorRowConfig) => row,
         (row: IndicatorRowConfig, index: number) => {
           return html`
             <vsc-indicator-row
@@ -386,9 +387,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _renderMiniMap(): TemplateResult {
-    if (this._isSectionHidden(SECTION.MINI_MAP)) return html``;
-    const deviceTracker = this._config?.mini_map?.device_tracker;
-    const stateObj = this._hass.states[deviceTracker];
+    if (this._isSectionHidden(SECTION.MINI_MAP) || isEmpty(this._config.mini_map)) return html``;
+    const deviceTracker = this._config.mini_map?.device_tracker;
+    const stateObj = deviceTracker ? this._hass.states[deviceTracker] : null;
     if (!deviceTracker || !stateObj || /(unknown)/.test(stateObj.state)) {
       return this._showWarning('Device tracker not available');
     }

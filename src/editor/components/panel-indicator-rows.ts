@@ -7,8 +7,8 @@ import '../shared/badge-editor-item';
 import '../../utils/editor/sub-editor-header';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { computeStateName, fireEvent } from '../../ha';
-import { IndicatorRowConfig, IndicatorRowItem, toCommon, VehicleStatusCardConfig } from '../../types/config';
+import { computeStateName } from '../../ha';
+import { IndicatorRowConfig, IndicatorRowItem, toCommon } from '../../types/config';
 import { ConfigArea } from '../../types/config-area';
 import { Create, showConfirmDialog } from '../../utils';
 import { ExpansionPanelParams } from '../../utils/editor/create';
@@ -25,9 +25,7 @@ type RowAction = 'edit' | 'delete' | 'add' | 'peek';
 
 @customElement(PANEL.INDICATOR_ROWS)
 export class PanelIndicatorRows extends BaseEditor {
-  @property({ attribute: false }) _config!: VehicleStatusCardConfig;
-
-  @state() private _rows: IndicatorRowConfig[] = [];
+  @property({ attribute: false }) private _rows!: IndicatorRowConfig[];
   @state() public _selectedRowIndex: number | null = null;
   @state() private _yamlActive = false;
 
@@ -43,13 +41,6 @@ export class PanelIndicatorRows extends BaseEditor {
   }
   disconnectedCallback(): void {
     super.disconnectedCallback();
-  }
-
-  protected willUpdate(changedProps: PropertyValues): void {
-    super.willUpdate(changedProps);
-    if (changedProps.has('_config') && this._config.indicator_rows) {
-      this._rows = this._config.indicator_rows;
-    }
   }
 
   protected updated(_changedProperties: PropertyValues): void {
@@ -74,18 +65,14 @@ export class PanelIndicatorRows extends BaseEditor {
     return html`
       <sub-editor-header
         hide-primary
+        .leftBtn=${!this._yamlActive}
+        ._addBtnLabel=${'Add Row'}
+        @left-btn=${() => this._handleRowAction('add')}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
         @secondary-action=${() => {
           this._yamlActive = !this._yamlActive;
         }}
       >
-        <span slot="primary-action">
-          ${Create.HaButton({
-            label: 'Add Row',
-            onClick: () => this._handleRowAction('add'),
-            option: { type: 'add', disabled: this._yamlActive },
-          })}
-        </span>
       </sub-editor-header>
       ${!this._yamlActive ? this._renderRowList() : this._renderYamlEditor()}
     `;
@@ -103,7 +90,7 @@ export class PanelIndicatorRows extends BaseEditor {
                 const expansionOps = {
                   icon: `mdi:numeric-${index + 1}-circle`,
                   header: `ROW #${index + 1}`,
-                  secondary: `${row.row_items.length} items`,
+                  secondary: `${row.row_items?.length || 0} items`,
                   leftChevron: true,
                   elId: `row-${index}`,
                 } as ExpansionPanelParams['options'];
@@ -347,8 +334,8 @@ export class PanelIndicatorRows extends BaseEditor {
       action = ev;
     }
 
-    let currentRows = [...(this._rows || [])];
     const handleAction = async () => {
+      const currentRows = [...(this._rows || [])];
       switch (action) {
         case 'edit':
           this._selectedRowIndex = Number(index);
@@ -382,8 +369,8 @@ export class PanelIndicatorRows extends BaseEditor {
   }
 
   private _configChanged(rows: IndicatorRowConfig[]): void {
-    this._config = { ...this._config, indicator_rows: rows };
-    fireEvent(this, 'config-changed', { config: this._config });
+    const newRows = rows.length ? rows : undefined;
+    this._cardConfigChanged({ indicator_rows: newRows });
   }
 
   static get styles(): CSSResultGroup {

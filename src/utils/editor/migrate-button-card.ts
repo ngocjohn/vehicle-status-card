@@ -5,44 +5,47 @@ import { BaseButtonCardItemConfig } from '../../types/config/card/button-card';
 
 export const convertButtonToNewFormat = (oldConfig: ButtonCardConfig): BaseButtonCardItemConfig => {
   const newConfig: Partial<BaseButtonCardItemConfig> = {
-    show_name: true,
-    show_state: true,
+    show_primary: true,
+    show_secondary: true,
     show_icon: true,
   };
-  if (oldConfig.button) {
-    newConfig.name = oldConfig.button.primary;
-    if ('color' in oldConfig.button && oldConfig.button.color) {
-      if (hasTemplate(oldConfig.button.color)) {
-        newConfig.color_template = oldConfig.button.color;
+  if (oldConfig.button && typeof oldConfig.button === 'object') {
+    const button = { ...oldConfig.button };
+    if (button.primary) {
+      newConfig.name = button.primary;
+    }
+    if (button.color) {
+      if (hasTemplate(button.color)) {
+        newConfig.color_template = button.color;
+        delete newConfig.color;
       } else {
-        newConfig.color = oldConfig.button.color;
+        newConfig.color = button.color;
       }
     }
-    if ('picture_template' in oldConfig.button && oldConfig.button.picture_template) {
-      if (hasTemplate(oldConfig.button.picture_template)) {
-        newConfig.icon_template = oldConfig.button.picture_template;
-      } else if (oldConfig.button.icon) {
-        newConfig.icon = oldConfig.button.icon;
+    if (button.picture_template) {
+      if (hasTemplate(button.picture_template)) {
+        newConfig.icon_template = button.picture_template;
       }
-    } else if (oldConfig.button.icon) {
-      newConfig.icon = oldConfig.button.icon;
     }
-    if ('secondary' in oldConfig.button && oldConfig.button.secondary) {
-      const secondary = { ...oldConfig.button.secondary };
-      if ('state_template' in secondary && secondary.state_template) {
+    if (button.icon) {
+      newConfig.icon = button.icon;
+    }
+    if ('secondary' in button && button.secondary && typeof button.secondary === 'object') {
+      const secondary = { ...button.secondary };
+      if (secondary.state_template) {
         newConfig.state_template = secondary.state_template;
         newConfig.include_state_template = true;
       }
-      if ('entity' in secondary && secondary.entity) {
+      if (secondary.entity) {
         newConfig.entity = secondary.entity;
       }
-      if ('attribute' in secondary && secondary.attribute) {
+      if (secondary.attribute) {
         newConfig.state_content = [secondary.attribute];
       }
     }
     ['notify', 'notify_color', 'notify_icon'].forEach((prop) => {
-      if (prop in oldConfig.button && oldConfig.button[prop as keyof typeof oldConfig.button]) {
-        (newConfig as any)[prop] = oldConfig.button[prop as keyof typeof oldConfig.button];
+      if (prop in button && button[prop as keyof typeof button]) {
+        (newConfig as any)[prop] = button[prop as keyof typeof button];
       }
     });
   }
@@ -57,14 +60,25 @@ export const convertButtonToNewFormat = (oldConfig: ButtonCardConfig): BaseButto
     newConfig.hide_button = oldConfig.hide_button;
   }
 
-  newConfig.button_type = oldConfig.button_type || 'default';
-  newConfig.card_type = oldConfig.card_type || 'default';
+  if (oldConfig.button_type) {
+    newConfig.button_type = oldConfig.button_type;
+  }
+  if (oldConfig.card_type) {
+    newConfig.card_type = oldConfig.card_type;
+  }
 
   newConfig.sub_card = {
     default_card: oldConfig.default_card,
     custom_card: oldConfig.custom_card,
     tire_card: oldConfig.tire_card,
   };
+  // Remove undefined values or empty objects
+  Object.keys(newConfig).forEach((key) => {
+    const value = (newConfig as any)[key];
+    if (value === undefined || (typeof value === 'object' && value !== null && Object.keys(value).length === 0)) {
+      delete (newConfig as any)[key];
+    }
+  });
   return newConfig as BaseButtonCardItemConfig;
 };
 
@@ -77,8 +91,8 @@ export const generateNewButtonConfig = (entity: string): BaseButtonCardItemConfi
   const newButton: BaseButtonCardItemConfig = {
     entity,
     show_icon: true,
-    show_name: true,
-    show_state: true,
+    show_primary: true,
+    show_secondary: true,
     button_type: 'action',
     tap_action: {
       action: 'more-info',

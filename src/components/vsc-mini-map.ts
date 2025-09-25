@@ -51,7 +51,7 @@ export class MiniMapBox extends BaseElement {
   }
 
   private get _deviceState(): string {
-    const deviceTracker = this.mapConfig?.device_tracker;
+    const deviceTracker = this.mapConfig.device_tracker!;
     const stateObj = this._hass.states[deviceTracker];
     if (stateObj) {
       return this._hass.formatEntityState(stateObj);
@@ -60,7 +60,7 @@ export class MiniMapBox extends BaseElement {
   }
 
   private get _deviceNotInZone(): boolean {
-    return this._hass.states[this.mapConfig.device_tracker]?.state === 'not_home' || false;
+    return this._hass.states[this.mapConfig.device_tracker!]?.state === 'not_home' || false;
   }
 
   connectedCallback() {
@@ -86,7 +86,7 @@ export class MiniMapBox extends BaseElement {
     if (!this.mapConfig) return;
     if (changedProperties.has('mapConfig') && this.mapConfig) {
       // console.log('Map config changed, resetting map...');
-      const deviceTracker = this.mapConfig.device_tracker;
+      const deviceTracker = this.mapConfig.device_tracker!;
       const stateObj = this._hass.states[deviceTracker];
       if (stateObj) {
         this.mapData = {
@@ -124,7 +124,7 @@ export class MiniMapBox extends BaseElement {
     super.shouldUpdate(changedProperties);
     if (changedProperties.has('_hass') && changedProperties.get('_hass') !== undefined && this.map && this.mapData) {
       const { lat, lon } = this.mapData;
-      const stateObj = this._hass.states[this.mapConfig.device_tracker];
+      const stateObj = this._hass.states[this.mapConfig.device_tracker!];
       if (stateObj) {
         const { latitude, longitude } = stateObj.attributes;
         if (lat !== latitude || lon !== longitude) {

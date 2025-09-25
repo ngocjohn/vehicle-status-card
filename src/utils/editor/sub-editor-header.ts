@@ -68,45 +68,49 @@ export class SubEditorHeader extends LitElement {
     const primaryIcon = PRIMARY_ICON[this.primaryIcon] || this.primaryIcon;
     return html`
       <div class="header">
-        <slot name="primary-action">
-          ${this.leftBtn
-            ? html`<span @click=${this._handleLeftBtn}> ${createAddBtnLabel(this._addBtnLabel)} </span>`
-            : nothing}
-          ${this.hidePrimaryAction
-            ? nothing
-            : html`
-                <div class="back-title">
-                  <ha-icon-button .path=${primaryIcon} @click=${this._handlePrimaryAction}></ha-icon-button>
-                  <slot name="title">
-                    ${this._label
-                      ? html` <div class="title">
-                          <span class="primary">${this._label}</span>
-                          ${this.secondary ? html`<span class="secondary">${this.secondary}</span>` : nothing}
-                        </div>`
-                      : nothing}
-                  </slot>
-                </div>
-              `}
-        </slot>
-        <slot name="secondary-action">
-          ${this.extraActions ? this.extraActions : nothing}
-          ${this.hideSecondaryAction
-            ? nothing
-            : html`
-                ${this.thirdAction
-                  ? html` <span @click=${this._handleThirdAction}> ${this.thirdAction} </span> `
-                  : nothing}
-                <span @click=${this._handleSecondaryAction}>
-                  ${this.secondaryAction
-                    ? this.secondaryAction
-                    : html`
-                        <ha-button size="small" variant="neutral" appearance="filled">
-                          ${this._secondaryLabel}
-                        </ha-button>
-                      `}
-                </span>
-              `}
-        </slot>
+        <div class="primary-action">
+          <slot name="primary-action">
+            ${this.leftBtn
+              ? html`<span @click=${this._handleLeftBtn}> ${createAddBtnLabel(this._addBtnLabel)} </span>`
+              : nothing}
+            ${this.hidePrimaryAction
+              ? nothing
+              : html`
+                  <div class="back-title">
+                    <ha-icon-button .path=${primaryIcon} @click=${this._handlePrimaryAction}></ha-icon-button>
+                    <slot name="title">
+                      ${this._label
+                        ? html` <div class="title">
+                            <span class="primary">${this._label}</span>
+                            ${this.secondary ? html`<span class="secondary">${this.secondary}</span>` : nothing}
+                          </div>`
+                        : nothing}
+                    </slot>
+                  </div>
+                `}
+          </slot>
+        </div>
+        <div class="secondary-action">
+          <slot name="secondary-action">
+            ${this.extraActions ? this.extraActions : nothing}
+            ${this.hideSecondaryAction
+              ? nothing
+              : html`
+                  ${this.thirdAction
+                    ? html` <span @click=${this._handleThirdAction}> ${this.thirdAction} </span> `
+                    : nothing}
+                  <span @click=${this._handleSecondaryAction}>
+                    ${this.secondaryAction
+                      ? this.secondaryAction
+                      : html`
+                          <ha-button size="small" variant="neutral" appearance="filled">
+                            ${this._secondaryLabel}
+                          </ha-button>
+                        `}
+                  </span>
+                `}
+          </slot>
+        </div>
       </div>
     `;
   }
@@ -137,15 +141,30 @@ export class SubEditorHeader extends LitElement {
           margin-bottom: auto;
           place-content: center;
         }
-        :host([hide-primary]):not([left-btn]) .header {
+        /* :host([hide-primary]):not([left-btn]) .header {
           justify-content: flex-end;
-        }
+        } */
 
         .header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding-block-end: 8px;
+        }
+        .primary-action,
+        .secondary-action {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .primary-action {
+          flex: 1;
+        }
+
+        .secondary-action {
+          width: 100%;
+          max-width: fit-content;
+          justify-content: flex-end;
         }
         .back-title {
           display: flex;
@@ -161,8 +180,9 @@ export class SubEditorHeader extends LitElement {
         }
 
         ::slotted([slot='secondary-action']) {
-          flex-shrink: 0;
+          margin-inline-start: auto;
         }
+
         ha-icon-button[active],
         ha-icon-button:hover {
           color: var(--primary-color);

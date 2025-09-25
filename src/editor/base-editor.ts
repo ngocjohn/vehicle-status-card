@@ -357,9 +357,9 @@ export class BaseEditor extends LitElement {
     const config = this._store._config;
     if (!config || typeof config !== 'object') return;
 
+    console.debug('incoming changed config:', changedConfig, 'from', this._editorArea);
     // Update config
     const newConfig = { ...config, ...changedConfig };
-    console.debug('Card config changed fire from: ', this._editorArea);
     fireEvent(this, 'config-changed', { config: newConfig });
     return;
   }

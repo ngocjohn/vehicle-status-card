@@ -6,7 +6,7 @@ export type SectionOrder = (typeof SECTION_KEYS)[number];
  * Layout configuration Interface
  */
 export interface LayoutConfig {
-  button_grid: ButtonGridConfig;
+  button_grid?: ButtonGridConfig;
   images_swipe?: ImagesSwipeConfig;
   theme_config?: ThemeConfig;
   section_order?: SectionOrder[];

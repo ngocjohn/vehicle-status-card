@@ -1,6 +1,7 @@
 // External
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+// Internal
 
 import { EditorConfigAreaSelectedEvent } from '../events/editor-config-area';
 // Import all components
@@ -12,7 +13,9 @@ import { ConfigArea } from '../types/config-area';
 import { loadHaComponents, Create, refactorEditDialog } from '../utils';
 import '../utils/editor/menu-element';
 import { getSectionFromConfigArea } from '../utils/editor/area-select';
+import { cleanConfig } from '../utils/editor/clean-config';
 import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
+// Import struct
 import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
@@ -63,7 +66,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     return [super.styles];
   }
 
-  public setConfig(config: VehicleStatusCardConfig) {
+  public setConfig(config: VehicleStatusCardConfig): void {
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
     if (configHasDeprecatedProps(config)) {
@@ -71,7 +74,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       fireEvent(this, 'config-changed', { config: updatedConfig });
       return;
     } else {
-      this._config = { ...config };
+      this._config = cleanConfig(config);
     }
 
     if (this._store !== undefined) {
@@ -204,6 +207,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       ._store=${this._store}
       ._hass=${this._hass}
       ._config=${this._config}
+      ._rows=${this._config.indicator_rows || []}
     ></panel-indicator-rows>`;
   }
 

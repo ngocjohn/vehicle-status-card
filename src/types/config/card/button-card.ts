@@ -1,7 +1,6 @@
 import type { LovelaceCardConfig } from '../../../ha';
 import type { ActionConfig } from '../../../ha/data/lovelace';
 
-import { EntitySharedConfig } from '../entity-config';
 import { TireTemplateConfig } from './tire-card';
 
 export const ButtonType = ['default', 'action'] as const;
@@ -10,8 +9,8 @@ export type BUTTON_TYPE = (typeof ButtonType)[number];
 export type CARD_TYPE = (typeof CardType)[number];
 
 export interface ButtonShowConfig {
-  show_name?: boolean;
-  show_state?: boolean;
+  show_primary?: boolean;
+  show_secondary?: boolean;
   show_icon?: boolean;
   show_entity_picture?: boolean;
   include_state_template?: boolean;
@@ -24,20 +23,28 @@ export interface ButtonEntityBehavior {
   double_tap_action?: ActionConfig;
 }
 
+export interface ButtonIconBehavior {
+  icon_tap_action?: ActionConfig;
+  icon_hold_action?: ActionConfig;
+  icon_double_tap_action?: ActionConfig;
+}
+
 export interface ButtonNotifyBadgeConfig {
   notify?: string;
   notify_color?: string;
   notify_icon?: string;
+  notify_text?: string;
 }
 
 export interface ButtonTemplatesConfig {
   state_template?: string;
   icon_template?: string;
   color_template?: string;
+  primary_template?: string;
 }
 
-export interface DefaultCardItemConfig extends EntitySharedConfig {
-  entity: string; // Entity ID for the card item
+export interface DefaultCardItemConfig {
+  entity?: string; // Entity ID for the card item
   state_color?: boolean;
   state_template?: string;
 }
@@ -45,7 +52,7 @@ export interface DefaultCardItemConfig extends EntitySharedConfig {
 export interface CardDefaultConfig {
   collapsed?: boolean;
   title?: string;
-  items: DefaultCardItemConfig[];
+  items?: DefaultCardItemConfig[];
 }
 
 /**
@@ -81,5 +88,17 @@ export interface BaseButtonCardItem {
 export type BaseButtonCardItemConfig = BaseButtonCardItem &
   ButtonShowConfig &
   ButtonEntityBehavior &
+  ButtonIconBehavior &
   ButtonNotifyBadgeConfig &
   ButtonTemplatesConfig;
+
+export const BUTTON_CARD_TEMPLATE_KEYS = [
+  'state_template',
+  'icon_template',
+  'color_template',
+  'notify',
+  'notify_color',
+  'notify_icon',
+] as const;
+
+export type ButtonCardTemplateKey = (typeof BUTTON_CARD_TEMPLATE_KEYS)[number];

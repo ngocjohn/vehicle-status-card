@@ -1,6 +1,8 @@
 import { LovelaceCardConfig } from '../../../ha';
+// migration utils
 import { migrateButtonCardConfig } from '../../../utils/editor/migrate-button-card';
 import { reorderSection } from '../../../utils/editor/reorder-section';
+// Vehicle Status Card config
 import { EntityConfig } from '../entity-config';
 import { ButtonCardConfig } from './button';
 import { BaseButtonCardItemConfig } from './button-card';
@@ -10,6 +12,7 @@ import { LayoutConfig } from './layout';
 import { MiniMapConfig } from './mini-map';
 import { RangeInfoConfig } from './range-info';
 import { IndicatorRowConfig } from './row-indicators';
+
 /**
  * Configuration interface for the Vehicle Card.
  */
@@ -18,11 +21,11 @@ export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   name?: string;
   button_cards?: BaseButtonCardItemConfig[];
 
-  range_info: RangeInfoConfig[];
+  range_info?: RangeInfoConfig[];
   images?: (ImageItem | ImageConfig)[];
-  mini_map: MiniMapConfig;
+  mini_map?: MiniMapConfig;
   indicator_rows?: IndicatorRowConfig[];
-  layout_config: LayoutConfig;
+  layout_config?: LayoutConfig;
   /**
    * @deprecated Use `button_cards` instead.
    */
@@ -41,7 +44,11 @@ export const configHasDeprecatedProps = (config: VehicleStatusCardConfig): boole
   // Check for deprecated properties
   const hasImageLegacyConfig = hasImageLegacy(config.images || []) || !!config.image_entities;
   const hasLayoutHide = !!config.layout_config?.hide;
-  const hasMiniMapExtraEntities = !!config.mini_map?.extra_entities;
+  const hasMiniMapExtraEntities = !!(
+    config.mini_map &&
+    config.mini_map.extra_entities &&
+    config.mini_map.extra_entities.length
+  );
   const hasButtonLegacy = !!config.button_card?.length;
   const needsUpdate = Boolean(hasImageLegacyConfig || hasLayoutHide || hasMiniMapExtraEntities || hasButtonLegacy);
   if (needsUpdate) {
@@ -57,20 +64,23 @@ export const configHasDeprecatedProps = (config: VehicleStatusCardConfig): boole
 
 export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): VehicleStatusCardConfig => {
   const newConfig = { ...config };
-  if (!!config.layout_config?.hide) {
+  if (!!(config.layout_config && config.layout_config.hide)) {
     const hideConfig = config.layout_config.hide;
     if (hideConfig.card_name) {
-      newConfig.layout_config.hide_card_name = hideConfig.card_name;
+      newConfig.layout_config!.hide_card_name = hideConfig.card_name;
     } // Migrate hide_card_name if present
     const currentOrder = config.layout_config?.section_order || [];
     const updatedOrder = reorderSection(hideConfig, currentOrder);
-    newConfig.layout_config.section_order = updatedOrder;
+    newConfig.layout_config!.section_order = updatedOrder;
     console.debug('Updated section_order');
+    delete newConfig.layout_config!.hide; // Remove deprecated hide property
   }
-  if (!!config.mini_map?.extra_entities?.length) {
+  if (!!config.mini_map?.extra_entities && config.mini_map.extra_entities.length) {
+    newConfig.mini_map = { ...config.mini_map } as MiniMapConfig;
+    // If entities already exist, merge and remove duplicates
     // Clean up extra_entities to remove duplicates and invalid entries
     newConfig.mini_map.entities = config.mini_map.extra_entities;
-    newConfig.mini_map.extra_entities = undefined;
+    delete newConfig.mini_map.extra_entities; // Remove deprecated extra_entities property
     console.debug('Updated mini_map entities');
   }
   if (hasImageLegacy(config.images || []) || !!config.image_entities) {
@@ -100,13 +110,8 @@ export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): Vehicle
     console.debug(newConfig.button_card);
     newConfig.button_cards = migrateButtonCardConfig(config.button_card);
     console.debug('Button cards migrated');
+    delete newConfig.button_card; // Remove deprecated button_card property
   }
-  delete newConfig.mini_map?.extra_entities; // Remove deprecated extra_entities property
-
-  // Remove the deprecated 'hide' property
-  delete newConfig.layout_config.hide;
-
-  delete newConfig.button_card; // Remove deprecated button_card property
 
   return newConfig;
 };

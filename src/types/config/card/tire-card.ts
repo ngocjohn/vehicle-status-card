@@ -21,10 +21,10 @@ export interface TireEntityConfig {
 }
 
 export interface TireTemplateEntities {
-  front_left: TireEntityConfig;
-  front_right: TireEntityConfig;
-  rear_left: TireEntityConfig;
-  rear_right: TireEntityConfig;
+  front_left?: TireEntityConfig;
+  front_right?: TireEntityConfig;
+  rear_left?: TireEntityConfig;
+  rear_right?: TireEntityConfig;
 }
 
 export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities {}
