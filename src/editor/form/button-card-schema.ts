@@ -16,6 +16,9 @@ interface TemplateItem<T = string> {
 const DISPLAY_ELEMENTS = ['show_primary', 'show_secondary', 'show_icon'] as const;
 const BUTTON_TYPE = ['default', 'action'] as const;
 const CARD_TYPE = ['default', 'custom', 'tire'] as const;
+const LAYOUT = ['horizontal', 'vertical'] as const;
+const PRIMARY_INFO = ['name', 'state', 'primary-template'] as const;
+
 const BUTTON_DISPLAY_OPTS_SCHEMA = (entity?: string) => {
   return [
     {
@@ -38,11 +41,13 @@ const BUTTON_DISPLAY_OPTS_SCHEMA = (entity?: string) => {
           ? [
               {
                 name: 'state_content',
-                label: 'State Content',
+                label: 'Secondary State Content',
+                helper:
+                  'Additional content to display in the secondary state area. Select from available attributes and options.',
                 selector: {
                   ui_state_content: {
                     entity_id: entity,
-                    allow_name: false,
+                    allow_name: true,
                   },
                 },
                 context: {
@@ -137,7 +142,7 @@ const _generateOptionalTemplate = (type: 'base' | 'notify') => {
   const schemaObj = {
     base: {
       title: 'Extra Templates (Advanced)',
-      icon: 'mdi:image-text',
+      icon: 'mdi:code-block-braces',
       keys: BASE_TEMPLATE_KEYS,
     },
     notify: {
@@ -209,8 +214,50 @@ const BUTTON_BEHAVIOR_SCHEMA = (isActionButton: boolean) => {
   ] as const;
 };
 
+const LAYOUT_SCHEMA = [
+  {
+    title: 'Layout & Style',
+    type: 'expandable',
+    flatten: true,
+    icon: 'mdi:image-text',
+    schema: [
+      {
+        name: 'transparent',
+        label: 'Transparent background',
+        type: 'boolean',
+        default: false,
+        helper: 'Use this option to make the button background transparent.',
+      },
+      {
+        name: 'secondary_multiline',
+        label: 'Allow multiline secondary content',
+        type: 'boolean',
+        default: false,
+      },
+      {
+        name: 'layout',
+        label: 'Button Layout',
+        required: true,
+        selector: {
+          select: {
+            mode: 'box',
+            options: LAYOUT.map((value) => ({
+              label: capitalize(value),
+              value,
+              image: {
+                src: `/static/images/form/tile_content_layout_${value}.svg`,
+                src_dark: `/static/images/form/tile_content_layout_${value}_dark.svg`,
+                flip_rtl: true,
+              },
+            })),
+          },
+        },
+      },
+    ] as const,
+  },
+] as const;
+
 export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
-  const hasEntity = !!data?.entity;
   const isActionButton = data?.button_type === 'action';
   return [
     {
@@ -267,16 +314,21 @@ export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
               },
               context: { icon_entity: 'entity' },
             },
-            ...(hasEntity
-              ? [
-                  {
-                    name: 'show_entity_picture',
-                    label: 'Show Entity Picture',
-                    type: 'boolean',
-                    default: false,
-                  },
-                ]
-              : []),
+            {
+              name: 'primary_info',
+              label: 'Primary Information',
+              required: false,
+              default: 'name',
+              selector: {
+                select: {
+                  mode: 'dropdown',
+                  options: PRIMARY_INFO.map((type) => ({
+                    value: type,
+                    label: capitalize(type.replace(/_/g, ' ')),
+                  })),
+                },
+              },
+            },
             {
               name: 'include_state_template',
               label: 'Include State Template',
@@ -287,6 +339,7 @@ export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
           ],
         },
         ...BUTTON_DISPLAY_OPTS_SCHEMA(data.entity),
+        ...LAYOUT_SCHEMA,
         ..._generateOptionalTemplate('base'),
         ..._generateOptionalTemplate('notify'),
       ] as const,

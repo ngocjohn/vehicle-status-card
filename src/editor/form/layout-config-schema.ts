@@ -90,40 +90,6 @@ export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
         },
       ],
     },
-    {
-      name: 'transparent',
-      label: 'Transparent background',
-      type: 'boolean',
-      default: false,
-      helper: 'Use this option to make the button background transparent.',
-    },
-    {
-      name: 'hide_notify_badge',
-      label: 'Hide notify badge',
-      type: 'boolean',
-      default: false,
-      helper: 'Use this option to hide the notification badge on the button.',
-    },
-    {
-      name: 'button_layout',
-      label: 'Button layout',
-      required: true,
-      default: 'horizontal',
-      selector: {
-        select: {
-          mode: 'box',
-          options: ['horizontal', 'vertical'].map((value) => ({
-            label: value.charAt(0).toUpperCase() + value.slice(1),
-            value,
-            image: {
-              src: `/static/images/form/tile_content_layout_${value}.svg`,
-              src_dark: `/static/images/form/tile_content_layout_${value}_dark.svg`,
-              flip_rtl: true,
-            },
-          })),
-        },
-      },
-    },
   ] as const;
 
 export const BUTTON_GRID_LAYOUT_SCHEMA = (swipeDisabled: boolean = false, name: string = '') =>

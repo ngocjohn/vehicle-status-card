@@ -26,13 +26,14 @@ export class PanelButtonCardSec extends BaseEditor {
   constructor() {
     super(ConfigArea.BUTTONS);
   }
-  @property({ attribute: false }) private _buttonList!: BaseButtonCardItemConfig[];
+  @property({ attribute: false }) public _buttonList?: BaseButtonCardItemConfig[];
   @state() private _subElementConfig?: SubButtonCardConfig;
   @state() private _yamlActive: boolean = false;
 
   @query(SUB_PANEL.BTN_MAIN) _subBtnEl?: PanelButtonCardMain;
 
   protected render(): TemplateResult {
+    const btns = this._buttonList || [];
     if (this._subElementConfig) {
       return html`
         <panel-button-card-main
@@ -47,15 +48,15 @@ export class PanelButtonCardSec extends BaseEditor {
     return html`
       <sub-editor-header
         hide-primary
-        left-btn
+        .leftBtn=${!this._yamlActive}
         ._addBtnLabel=${'Add Button'}
-        .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
         @left-btn=${this._handleLeftBtn}
+        .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
         @secondary-action=${() => {
           this._yamlActive = !this._yamlActive;
         }}
       ></sub-editor-header>
-      ${this._renderButtonList()}
+      ${this._yamlActive ? this._createVscYamlEditor(btns, 'button_cards') : this._renderButtonList()}
     `;
   }
 
@@ -220,6 +221,15 @@ export class PanelButtonCardSec extends BaseEditor {
     this._buttonsChanged(newList);
   }
 
+  protected _onYamlChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    console.debug('onYamlChanged (PanelButtonCardSec)');
+    const { key, subKey } = ev.target as any;
+    const value = ev.detail;
+    console.debug('YAML changed:', { key, subKey, value });
+    const newBtns = [...value];
+    this._buttonsChanged(newBtns);
+  }
   private _buttonsChanged(newVal: BaseButtonCardItemConfig[]): void {
     this._buttonList = [...(newVal || [])];
     this._cardConfigChanged({ button_cards: this._buttonList });

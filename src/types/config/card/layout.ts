@@ -56,8 +56,11 @@ export type ButtonGridConfig = {
   rows?: number;
   columns?: number;
   swipe?: boolean;
+  /**@deprecated Use `layout` in button config instead */
   button_layout?: BUTTON_LAYOUT;
+  /**@deprecated Use `transparent` in button config instead */
   transparent?: boolean;
+  /**@deprecated Use `notify` template in button config instead */
   hide_notify_badge?: boolean;
 };
 

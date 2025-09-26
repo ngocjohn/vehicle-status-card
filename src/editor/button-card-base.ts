@@ -1,4 +1,4 @@
-import { CSSResultGroup } from 'lit';
+import { CSSResultGroup, html, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
 import { BaseButtonCardItemConfig } from '../types/config';
@@ -9,7 +9,7 @@ export const PREVIEW = ['custom', 'default', 'tire'] as const;
 export type PreviewType = (typeof PREVIEW)[number];
 
 export class ButtonCardBaseEditor extends BaseEditor {
-  @property({ attribute: false }) protected _baseButtonConfig!: BaseButtonCardItemConfig;
+  @property({ attribute: false }) protected _btnConfig!: BaseButtonCardItemConfig;
   @state() public _currentArea!: ButtonArea;
   @state() public _activePreview: PreviewType | null = null;
 
@@ -34,6 +34,13 @@ export class ButtonCardBaseEditor extends BaseEditor {
   }
   get currentArea(): ButtonArea {
     return this._currentArea;
+  }
+
+  protected _renderPreviewBtn(): TemplateResult {
+    const isActive = this._activePreview !== null;
+    const label = isActive ? 'Exit Preview' : 'Preview Card';
+    const variant = isActive ? 'warning' : 'neutral';
+    return html` <ha-button size="small" variant=${variant} appearance="plain"> ${label} </ha-button> `;
   }
 
   static get styles(): CSSResultGroup {

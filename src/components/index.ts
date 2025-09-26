@@ -1,9 +1,13 @@
 export * from './vsc-images-slide';
 export * from './vsc-mini-map';
-export * from './vsc-buttons-grid';
 export * from './vsc-indicators';
 export * from './vsc-indicator-row';
 export * from './vsc-range-info';
+// Btn components
+export * from './vsc-buttons-group';
+export * from './shared/button/vsc-btn-card';
+// legacy buttons grid
+export * from './vsc-buttons-grid';
 // shared
 export * from './shared/vsc-tire-card';
 export * from './shared/vsc-default-card';

@@ -299,24 +299,19 @@ export class PanelIndicatorRows extends BaseEditor {
 
   private _handleRowChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const target = (ev.target || ev.currentTarget) as any;
-    const targetRowIndex = target.getAttribute('row-index');
-    const editItemIndex = target.getAttribute('edit-item-index');
-    console.debug('target:', target, targetRowIndex, editItemIndex);
-    const index = this._selectedRowIndex!;
     const rowConfig = ev.detail.rowConfig as IndicatorRowConfig;
     const { rowIndex, itemIndex, type } = ev.detail;
     const newRows = [...(this._rows || [])];
-    newRows[index] = rowConfig;
+    newRows[rowIndex] = rowConfig;
     this._configChanged(newRows);
     console.debug('Row changed:', rowIndex, itemIndex, type);
-    this.updateComplete.then(() => {
-      const groupIndex = type === 'group' ? itemIndex ?? null : null;
-      const entityIndex = type === 'entity' ? itemIndex ?? null : null;
-      setTimeout(() => {
-        this._showSelectedRow(rowIndex, groupIndex, entityIndex);
-      }, 500);
-    });
+    // this.updateComplete.then(() => {
+    //   const groupIndex = type === 'group' ? itemIndex ?? null : null;
+    //   const entityIndex = type === 'entity' ? itemIndex ?? null : null;
+    //   setTimeout(() => {
+    //     this._showSelectedRow(rowIndex, groupIndex, entityIndex);
+    //   }, 500);
+    // });
   }
 
   private _handleRowAction(ev: any | RowAction): void {

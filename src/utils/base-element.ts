@@ -20,6 +20,7 @@ export class BaseElement extends LitElement {
       this.section = section;
     }
   }
+
   connectedCallback() {
     super.connectedCallback();
     if (this.section && this._store !== undefined && this.isBaseInEditor) {
@@ -33,6 +34,7 @@ export class BaseElement extends LitElement {
       this._store.hass = hass;
     }
   }
+
   get hass(): HomeAssistant {
     return this._hass;
   }

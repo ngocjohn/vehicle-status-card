@@ -5,15 +5,21 @@ import { TireTemplateConfig } from './tire-card';
 
 export const ButtonType = ['default', 'action'] as const;
 export const CardType = ['default', 'custom', 'tire'] as const;
+export const PrimaryInfo = ['name', 'state', 'primary-template'] as const;
+
 export type BUTTON_TYPE = (typeof ButtonType)[number];
 export type CARD_TYPE = (typeof CardType)[number];
+export type PRIMARY_INFO = (typeof PrimaryInfo)[number];
 
 export interface ButtonShowConfig {
   show_primary?: boolean;
   show_secondary?: boolean;
   show_icon?: boolean;
-  show_entity_picture?: boolean;
+  primary_info?: PRIMARY_INFO;
   include_state_template?: boolean;
+  layout?: 'horizontal' | 'vertical';
+  transparent?: boolean;
+  secondary_multiline?: boolean;
   state_content?: string[];
 }
 
@@ -74,9 +80,9 @@ export interface BaseButtonCardItem {
   entity?: string;
   icon?: string;
   color?: string;
+  hide_button?: boolean;
   button_type?: BUTTON_TYPE;
   card_type?: CARD_TYPE;
-  hide_button?: boolean;
   sub_card?: ButtonCardSubCardConfig;
 }
 
@@ -93,12 +99,14 @@ export type BaseButtonCardItemConfig = BaseButtonCardItem &
   ButtonTemplatesConfig;
 
 export const BUTTON_CARD_TEMPLATE_KEYS = [
+  'primary_template',
   'state_template',
   'icon_template',
   'color_template',
   'notify',
   'notify_color',
   'notify_icon',
+  'notify_text',
 ] as const;
 
 export type ButtonCardTemplateKey = (typeof BUTTON_CARD_TEMPLATE_KEYS)[number];

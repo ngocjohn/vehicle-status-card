@@ -29,7 +29,7 @@ declare global {
 @customElement(SUB_PANEL.ROW_ITEM)
 export class PanelIndicatorItem extends BaseEditor {
   @property({ attribute: false }) private _rowConfig!: IndicatorRowConfig;
-  @property({ type: Number, attribute: 'row-index', reflect: true }) rowIndex!: number;
+  @property({ type: Number, attribute: 'row-index', reflect: true }) public rowIndex!: number;
   @property({ type: Number, attribute: 'edit-item-index', reflect: true }) public _editIndex: number | null = null;
 
   @state() private _items: IndicatorRowItem[] = [];

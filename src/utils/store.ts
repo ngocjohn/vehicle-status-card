@@ -69,7 +69,7 @@ export class Store {
    * This method retrieves the button card configurations from the main configuration.
    */
   public get buttons(): (ButtonCardConfig | BaseButtonCardItemConfig)[] {
-    return this._config.button_card || [];
+    return this._config.button_card || this._config.button_cards || [];
   }
 
   public get visibleButtons(): (ButtonCardConfig | BaseButtonCardItemConfig)[] {

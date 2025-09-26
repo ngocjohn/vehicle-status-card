@@ -107,10 +107,20 @@ export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): Vehicle
   }
 
   if (!!config.button_card?.length) {
-    console.debug(newConfig.button_card);
-    newConfig.button_cards = migrateButtonCardConfig(config.button_card);
+    console.debug('Migrating legacy button_card config...');
+    const { button_layout, transparent } = config.layout_config?.button_grid || {};
+    const layoutForBtn = {
+      layout: button_layout ?? 'horizontal',
+      transparent: transparent ?? false, // default to false if undefined
+    };
+    console.debug('Button layout settings:', layoutForBtn);
+
+    newConfig.button_cards = migrateButtonCardConfig(config.button_card).map((btn) => ({ ...layoutForBtn, ...btn }));
     console.debug('Button cards migrated');
+
     delete newConfig.button_card; // Remove deprecated button_card property
+    delete newConfig.layout_config?.button_grid?.button_layout;
+    delete newConfig.layout_config?.button_grid?.transparent;
   }
 
   return newConfig;

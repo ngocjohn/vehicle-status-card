@@ -93,6 +93,7 @@ export const generateNewButtonConfig = (entity: string): BaseButtonCardItemConfi
     show_icon: true,
     show_primary: true,
     show_secondary: true,
+    layout: 'horizontal',
     button_type: 'action',
     tap_action: {
       action: 'more-info',

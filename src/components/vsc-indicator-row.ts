@@ -276,7 +276,7 @@ export class VscIndicatorRow extends BaseElement {
       newIndex = null;
     } else if (typeof arg === 'number') {
       newIndex = arg;
-      if (this.rowConfig.row_items[newIndex].type !== 'group') {
+      if (this.rowConfig.row_items[newIndex]?.type !== 'group') {
         // Not a group, ignore
         return;
       }

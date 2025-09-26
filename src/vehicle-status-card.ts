@@ -18,6 +18,7 @@ import {
   MiniMapBox,
   VscIndicatorRow,
   VscIndicatorsGroup,
+  VscButtonsGroup,
 } from './components';
 import { COMPONENT, CARD_NAME } from './constants/const';
 import { EditorEventParams } from './editor/base-editor';
@@ -127,14 +128,16 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @state() _buttonCardConfigItem!: ButtonCardConfig[]; // Button card configuration items
   @state() private _newButtonConfig?: BaseButtonCardItemConfig[]; // New button card configuration items
   @state() private configSection!: SECTION | undefined;
-
-  @query(COMPONENT.BUTTONS_GRID) _secButtons!: VehicleButtonsGrid;
+  // section queries
+  @query(COMPONENT.BUTTONS_GROUP) _secButtonsGroup!: VscButtonsGroup;
   @query(COMPONENT.IMAGES_SLIDE) _secImages!: ImagesSlide;
   @query(COMPONENT.RANGE_INFO) _secRangeInfo!: VscRangeInfo;
-  @query(COMPONENT.INDICATORS) _secIndicatorsLegacy!: VscIndicators;
   @query(COMPONENT.MINI_MAP) _secMiniMap!: MiniMapBox;
   @query(COMPONENT.INDICATORS_GROUP) _secIndiGroup!: VscIndicatorsGroup;
   @queryAll(COMPONENT.INDICATOR_ROW) _secIndicatorRows!: NodeListOf<VscIndicatorRow>;
+  // legacy query
+  @query(COMPONENT.BUTTONS_GRID) _secButtons!: VehicleButtonsGrid;
+  @query(COMPONENT.INDICATORS) _secIndicatorsLegacy!: VscIndicators;
 
   @query('#main-wrapper', true) _mainWrapper!: HTMLElement;
   @query('ha-card', true) _haCard!: HTMLElement;
@@ -348,15 +351,29 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   private _renderButtons(): TemplateResult | typeof nothing {
-    if (isEmpty(this._buttonCardConfigItem) || this._isSectionHidden(SECTION.BUTTONS)) return nothing;
+    if (isEmpty(this._newButtonConfig) || this._isSectionHidden(SECTION.BUTTONS)) return nothing;
     // const visibleButtons = this._buttonCardConfigItem.filter((button) => !button.hide_button);
     return html`
       <div id=${SECTION.BUTTONS}>
-        <vsc-buttons-grid .hass=${this._hass} ._store=${this._store} ._cardCurrentSwipeIndex=${this._currentSwipeIndex}>
-        </vsc-buttons-grid>
+        <vsc-buttons-group
+          .hass=${this._hass}
+          ._store=${this._store}
+          ._cardCurrentSwipeIndex=${this._currentSwipeIndex}
+        >
+        </vsc-buttons-group>
       </div>
     `;
   }
+  // private _renderButtons(): TemplateResult | typeof nothing {
+  //   if (isEmpty(this._buttonCardConfigItem) || this._isSectionHidden(SECTION.BUTTONS)) return nothing;
+  //   // const visibleButtons = this._buttonCardConfigItem.filter((button) => !button.hide_button);
+  //   return html`
+  //     <div id=${SECTION.BUTTONS}>
+  //       <vsc-buttons-grid .hass=${this._hass} ._store=${this._store} ._cardCurrentSwipeIndex=${this._currentSwipeIndex}>
+  //       </vsc-buttons-grid>
+  //     </div>
+  //   `;
+  // }
 
   private _renderCardPreview(): TemplateResult {
     if (!this._currentPreview) return html``;
@@ -498,39 +515,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _showWarning(warning: string): TemplateResult {
     return html` <hui-warning>${warning}</hui-warning> `;
-  }
-
-  private _toggleHelper(type: string | null): void {
-    if (!this.isEditorPreview) return;
-    this.updateComplete.then(() => {
-      const children = this._mainWrapper.children;
-
-      if (SECTION_KEYS.indexOf(type as SECTION) === -1) {
-        type = null;
-      }
-      const hasFocus = this._mainWrapper?.hasAttribute('focus-within');
-      if (SECTION_KEYS.indexOf(type as SECTION) !== -1 && hasFocus) {
-        type = null;
-      }
-
-      if (type !== null) {
-        if (!children.hasOwnProperty(type)) {
-          console.warn('Section not found:', type);
-          return;
-        }
-        Array.from(children).forEach((child) => {
-          if (child.id === type) {
-            child.classList.remove('dimmed');
-            this._mainWrapper.setAttribute('focus-within', 'true');
-          } else {
-            child.classList.add('dimmed');
-          }
-        });
-      } else {
-        this._mainWrapper.removeAttribute('focus-within');
-        Array.from(children).forEach((child) => child.classList.remove('dimmed'));
-      }
-    });
   }
 
   private _toggleIndicatorRow(data: { rowIndex?: number | null; groupIndex?: number }, peek: boolean = false): void {
