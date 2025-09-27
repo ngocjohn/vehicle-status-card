@@ -14,7 +14,6 @@ import * as MIGRATE from '../utils/editor/migrate-indicator';
 import { EditorPreviewTypes } from '../utils/editor/types';
 import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
-import './shared/vsc-yaml-editor';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import { VehicleStatusCardEditor } from './editor';
 import { PREVIEW_CONFIG_TYPES } from './editor-const';
@@ -77,6 +76,7 @@ export class BaseEditor extends LitElement {
       this._store.hass = hass;
     }
   }
+
   get hass(): HomeAssistant {
     return this._hass;
   }
@@ -267,7 +267,7 @@ export class BaseEditor extends LitElement {
   ): TemplateResult {
     return html`
       <vsc-yaml-editor
-        .hass=${this._hass}
+        ._hass=${this._hass}
         .configDefault=${configValue}
         .key=${key}
         .subKey=${subKey}
@@ -279,8 +279,8 @@ export class BaseEditor extends LitElement {
   }
 
   protected _onYamlChanged(ev: CustomEvent): void {
-    ev.stopPropagation();
     console.debug('YAML changed (BaseEditor)');
+    ev.stopPropagation();
     const { key, subKey } = ev.target as any;
     const value = ev.detail;
     console.debug('YAML changed:', { key, subKey, value });

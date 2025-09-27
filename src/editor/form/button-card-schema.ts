@@ -1,4 +1,4 @@
-import { mdiButtonCursor, mdiGestureTap, mdiPalette, mdiTextShort } from '@mdi/js';
+import { mdiButtonCursor, mdiGestureTap, mdiPalette } from '@mdi/js';
 import { capitalize } from 'es-toolkit';
 
 import type { BaseButtonCardItemConfig } from '../../types/config';
@@ -13,52 +13,79 @@ interface TemplateItem<T = string> {
     template: {};
   };
 }
-const DISPLAY_ELEMENTS = ['show_primary', 'show_secondary', 'show_icon'] as const;
+
+interface BooleanItem<T = string> {
+  name: T;
+  label?: string;
+  helper?: string;
+  default?: boolean;
+  type: 'boolean';
+}
+
 const BUTTON_TYPE = ['default', 'action'] as const;
 const CARD_TYPE = ['default', 'custom', 'tire'] as const;
 const LAYOUT = ['horizontal', 'vertical'] as const;
 const PRIMARY_INFO = ['name', 'state', 'primary-template'] as const;
+const ICON_TYPE = ['icon', 'entity-picture', 'icon-template'] as const;
 
-const BUTTON_DISPLAY_OPTS_SCHEMA = (entity?: string) => {
-  return [
-    {
-      type: 'expandable',
-      flatten: true,
-      title: 'Display Options',
-      iconPath: mdiTextShort,
-      schema: [
-        {
-          type: 'grid',
-          schema: [
-            ...DISPLAY_ELEMENTS.map((element) => ({
-              label: element.replace(/_/g, ' '),
-              name: element,
-              type: 'boolean',
-            })),
-          ] as const,
-        },
-        ...(!!entity
-          ? [
-              {
-                name: 'state_content',
-                label: 'Secondary State Content',
-                helper:
-                  'Additional content to display in the secondary state area. Select from available attributes and options.',
-                selector: {
-                  ui_state_content: {
-                    entity_id: entity,
-                    allow_name: true,
-                  },
-                },
-                context: {
-                  filter_entity: entity,
-                },
-              },
-            ]
-          : []),
-      ] as const,
-    },
-  ] as const;
+const BOOLEANS = [
+  {
+    name: 'show_primary',
+    label: 'Show Primary Info',
+  },
+  {
+    name: 'show_secondary',
+    label: 'Show Secondary Info',
+  },
+  {
+    name: 'show_icon',
+    label: 'Show Icon',
+  },
+  {
+    name: 'state_color',
+    label: 'State Color',
+    helper: 'Applies the color to icon background when available',
+    default: false,
+  },
+  {
+    name: 'include_state_template',
+    label: 'Include State Template',
+    helper: 'Extends the secondary content with the state_template',
+  },
+  {
+    name: 'transparent',
+    label: 'Transparent background',
+    helper: 'Use this option to make the button background transparent.',
+  },
+  {
+    name: 'secondary_multiline',
+    label: 'Allow multiline secondary content',
+    helper: 'Allows the secondary content to span multiple lines if needed.',
+  },
+  {
+    name: 'hide_button',
+    label: 'Hide Button on Card',
+    helper: 'Hides the button from being displayed on the card.',
+  },
+];
+const computeBooleanSchema = (type?: BooleanItem['name'][]) => {
+  if (!type) {
+    type = BOOLEANS.map((b) => b.name);
+  }
+  const list: BooleanItem[] = [];
+  type.forEach((key) => {
+    const b = BOOLEANS.find((bb) => bb.name === key);
+    if (b) {
+      list.push({
+        name: b.name,
+        label: b.label,
+        helper: b.helper,
+        default: b.default,
+        type: 'boolean',
+      });
+    }
+  });
+  return list;
 };
 
 const TEMPLATES = [
@@ -146,7 +173,7 @@ const _generateOptionalTemplate = (type: 'base' | 'notify') => {
       keys: BASE_TEMPLATE_KEYS,
     },
     notify: {
-      title: 'Notification Badge (Advanced)',
+      title: 'Badge',
       icon: 'mdi:square-rounded-badge',
       keys: NOTIFY_TEMPLATE_KEYS,
     },
@@ -214,6 +241,139 @@ const BUTTON_BEHAVIOR_SCHEMA = (isActionButton: boolean) => {
   ] as const;
 };
 
+const ICON_COLOR_SCHEMA = [
+  {
+    title: 'Icon & Color',
+    type: 'expandable',
+    flatten: true,
+    icon: 'mdi:emoticon-happy',
+    context: {
+      isTemplate: true,
+    },
+    schema: [
+      ...computeBooleanSchema(['show_icon']),
+      {
+        type: 'grid',
+        schema: [
+          {
+            name: 'color',
+            selector: {
+              ui_color: {
+                default_color: 'none',
+                include_none: true,
+                include_state: true,
+              },
+            },
+          },
+          ...computeBooleanSchema(['state_color']),
+          {
+            name: 'icon',
+            selector: {
+              icon: {},
+            },
+            context: { icon_entity: 'entity' },
+          },
+          {
+            name: 'icon_type',
+            label: 'Icon Type',
+            helper: 'Determines how the icon is generated and displayed. (default: icon)',
+            required: false,
+            default: 'icon',
+            selector: {
+              select: {
+                mode: 'dropdown',
+                options: ICON_TYPE.map((type) => ({
+                  value: type,
+                  label: capitalize(type.replace(/_/g, ' ')),
+                })),
+              },
+            },
+          },
+        ],
+      },
+
+      {
+        type: 'optional_actions',
+        flatten: true,
+        context: { isTemplate: true },
+        schema: [...computeTemplateSchema(['icon_template', 'color_template'])],
+      },
+    ] as const,
+  },
+] as const;
+
+const PRIMARY_INFO_SCHEMA = [
+  {
+    title: 'Primary Information',
+    type: 'expandable',
+    flatten: true,
+    icon: 'mdi:format-text',
+    context: {
+      isTemplate: true,
+    },
+    schema: [
+      ...computeBooleanSchema(['show_primary']),
+      {
+        name: 'primary_info',
+        label: 'Primary Information',
+        helper: 'Choose type of content to display as primary information (default: Name)',
+        required: false,
+        default: 'name',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: PRIMARY_INFO.map((type) => ({
+              value: type,
+              label: capitalize(type.replace(/_/g, ' ')),
+            })),
+          },
+        },
+      },
+      {
+        type: 'optional_actions',
+        flatten: true,
+        context: { isTemplate: true },
+        schema: [...computeTemplateSchema(['primary_template'])],
+      },
+    ] as const,
+  },
+] as const;
+
+const SECONDARY_INFO_SCHEMA = (entity?: string) =>
+  [
+    {
+      title: 'Secondary Information',
+      type: 'expandable',
+      flatten: true,
+      icon: 'mdi:format-text-variant',
+      context: {
+        isTemplate: true,
+      },
+      schema: [
+        ...computeBooleanSchema(['show_secondary', 'include_state_template']),
+        ...(!!entity
+          ? [
+              {
+                name: 'state_content',
+                label: 'Secondary State Content',
+                helper:
+                  'Additional content to display in the secondary state area. Select from available attributes and options.',
+                selector: {
+                  ui_state_content: {
+                    entity_id: entity,
+                    allow_name: true,
+                  },
+                },
+                context: {
+                  filter_entity: entity,
+                },
+              },
+            ]
+          : []),
+      ] as const,
+    },
+  ] as const;
+
 const LAYOUT_SCHEMA = [
   {
     title: 'Layout & Style',
@@ -221,19 +381,7 @@ const LAYOUT_SCHEMA = [
     flatten: true,
     icon: 'mdi:image-text',
     schema: [
-      {
-        name: 'transparent',
-        label: 'Transparent background',
-        type: 'boolean',
-        default: false,
-        helper: 'Use this option to make the button background transparent.',
-      },
-      {
-        name: 'secondary_multiline',
-        label: 'Allow multiline secondary content',
-        type: 'boolean',
-        default: false,
-      },
+      ...computeBooleanSchema(['transparent', 'secondary_multiline']),
       {
         name: 'layout',
         label: 'Button Layout',
@@ -259,6 +407,7 @@ const LAYOUT_SCHEMA = [
 
 export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
   const isActionButton = data?.button_type === 'action';
+  const entity = data?.entity;
   return [
     {
       title: 'Context & Identity',
@@ -266,6 +415,8 @@ export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
       flatten: true,
       iconPath: mdiButtonCursor,
       schema: [
+        ...computeBooleanSchema(['hide_button']),
+
         {
           name: 'name',
           label: 'Name (optional)',
@@ -282,11 +433,6 @@ export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
           },
           context: { group_entity: true },
         },
-        {
-          name: 'hide_button',
-          label: 'Hide Button on Card',
-          selector: { boolean: {} },
-        },
       ] as const,
     },
     {
@@ -294,54 +440,13 @@ export const MAIN_BUTTON_SCHEMA = (data: BaseButtonCardItemConfig) => {
       type: 'expandable',
       flatten: true,
       iconPath: mdiPalette,
+      headingLevel: 2,
       schema: [
-        {
-          name: '',
-          type: 'grid',
-          schema: [
-            {
-              name: 'color',
-              selector: {
-                ui_color: {
-                  include_state: false,
-                },
-              },
-            },
-            {
-              name: 'icon',
-              selector: {
-                icon: {},
-              },
-              context: { icon_entity: 'entity' },
-            },
-            {
-              name: 'primary_info',
-              label: 'Primary Information',
-              required: false,
-              default: 'name',
-              selector: {
-                select: {
-                  mode: 'dropdown',
-                  options: PRIMARY_INFO.map((type) => ({
-                    value: type,
-                    label: capitalize(type.replace(/_/g, ' ')),
-                  })),
-                },
-              },
-            },
-            {
-              name: 'include_state_template',
-              label: 'Include State Template',
-              helper: 'Extends the secondary content with the state_template',
-              type: 'boolean',
-              default: false,
-            },
-          ],
-        },
-        ...BUTTON_DISPLAY_OPTS_SCHEMA(data.entity),
-        ...LAYOUT_SCHEMA,
-        ..._generateOptionalTemplate('base'),
+        ...ICON_COLOR_SCHEMA,
+        ...PRIMARY_INFO_SCHEMA,
+        ...SECONDARY_INFO_SCHEMA(entity),
         ..._generateOptionalTemplate('notify'),
+        ...LAYOUT_SCHEMA,
       ] as const,
     },
     {

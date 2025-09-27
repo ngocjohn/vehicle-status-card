@@ -40,6 +40,7 @@ export class PanelButtonCardSec extends BaseEditor {
           ._hass=${this._hass}
           ._store=${this._store}
           ._btnConfig=${this._subElementConfig.config!}
+          ._btnIndex=${this._subElementConfig.index}
           @sub-button-closed=${this._closeSubEditor}
           @sub-button-changed=${this._subButtonChanged}
         ></panel-button-card-main>
@@ -178,7 +179,7 @@ export class PanelButtonCardSec extends BaseEditor {
     this._subElementConfig = undefined;
   };
 
-  private _subButtonChanged = (ev: CustomEvent) => {
+  private _subButtonChanged = (ev: CustomEvent): void => {
     ev.stopPropagation();
     if (!this._subElementConfig) return;
     const btnConfig = { ...ev.detail.btnConfig } as BaseButtonCardItemConfig;
@@ -187,7 +188,6 @@ export class PanelButtonCardSec extends BaseEditor {
       config: btnConfig,
     };
     const index = this._subElementConfig.index;
-
     const currentList = [...(this._buttonList || [])];
     currentList[index] = btnConfig;
     this._buttonsChanged(currentList);
@@ -230,6 +230,7 @@ export class PanelButtonCardSec extends BaseEditor {
     const newBtns = [...value];
     this._buttonsChanged(newBtns);
   }
+
   private _buttonsChanged(newVal: BaseButtonCardItemConfig[]): void {
     this._buttonList = [...(newVal || [])];
     this._cardConfigChanged({ button_cards: this._buttonList });
@@ -241,6 +242,11 @@ export class PanelButtonCardSec extends BaseEditor {
     return `grid-template-columns: repeat(auto-fill, minmax(${minWidth}, 1fr));`;
   }
 
+  public _reloadPreview(): void {
+    if (this._subBtnEl) {
+      this._subBtnEl._reoloadPreview();
+    }
+  }
   static get styles(): CSSResultGroup {
     return [
       super.styles,

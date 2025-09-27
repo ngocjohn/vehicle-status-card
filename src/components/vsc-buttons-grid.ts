@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
-import { customElement, queryAll, state } from 'lit/decorators.js';
+import { customElement, queryAll, state, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 // swiper
 import Swiper from 'swiper';
@@ -15,7 +15,7 @@ import { VehicleButtonSingle } from './shared/vsc-button-single';
 
 @customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {
-  @state() private buttons!: ButtonCardConfig[];
+  @property({ attribute: false }) private buttons!: ButtonCardConfig[];
   @state() private useSwiper!: boolean;
 
   @state() private swiper?: Swiper;
@@ -31,7 +31,7 @@ export class VehicleButtonsGrid extends BaseElement {
     super.willUpdate(changedProperties);
     if (changedProperties.has('_store') && this._store) {
       this.useSwiper = this._store.gridConfig.swipe!;
-      this.buttons = this._store.visibleButtons as ButtonCardConfig[];
+      // this.buttons = this._store.visibleButtons as ButtonCardConfig[];
     }
   }
 

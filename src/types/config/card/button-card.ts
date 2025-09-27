@@ -6,16 +6,20 @@ import { TireTemplateConfig } from './tire-card';
 export const ButtonType = ['default', 'action'] as const;
 export const CardType = ['default', 'custom', 'tire'] as const;
 export const PrimaryInfo = ['name', 'state', 'primary-template'] as const;
+export const IconType = ['icon', 'entity-picture', 'icon-template'] as const;
 
 export type BUTTON_TYPE = (typeof ButtonType)[number];
 export type CARD_TYPE = (typeof CardType)[number];
 export type PRIMARY_INFO = (typeof PrimaryInfo)[number];
+export type ICON_TYPE = (typeof IconType)[number];
 
 export interface ButtonShowConfig {
   show_primary?: boolean;
   show_secondary?: boolean;
   show_icon?: boolean;
   primary_info?: PRIMARY_INFO;
+  icon_type?: ICON_TYPE;
+  state_color?: boolean;
   include_state_template?: boolean;
   layout?: 'horizontal' | 'vertical';
   transparent?: boolean;

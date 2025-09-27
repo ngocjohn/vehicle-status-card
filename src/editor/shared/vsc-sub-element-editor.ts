@@ -1,12 +1,13 @@
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import { fireEvent, HASSDomEvent, HomeAssistant } from '../../ha';
+import { fireEvent, HASSDomEvent } from '../../ha';
 import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
 import { GUIModeChangedEvent, SubElementEditorConfig } from '../../utils/editor/types';
 import '../../utils/editor/sub-editor-header';
 import { selectTree } from '../../utils/helpers-dom';
 import { LovelaceGenericElementEditor } from '../../utils/lovelace/types';
+import { BaseEditor } from '../base-editor';
 
 declare global {
   interface HASSDomEvents {
@@ -15,11 +16,11 @@ declare global {
 }
 
 @customElement('vsc-sub-element-editor')
-export class VscSubElementEditor extends LitElement {
-  @property({ attribute: false }) public _hass!: HomeAssistant;
+export class VscSubElementEditor extends BaseEditor {
   @property({ attribute: false }) public _config!: SubElementEditorConfig;
   @property({ attribute: false }) public headerLabel?: string;
   @property({ attribute: false }) public headerSecondary?: string;
+  @property({ type: Boolean, attribute: 'hide-header', reflect: true }) public hideHeader = false;
 
   @state() protected _GUImode = true;
   @state() protected _guiModeAvailable? = true;
@@ -48,17 +49,23 @@ export class VscSubElementEditor extends LitElement {
     const isGuiMode = this._GUImode;
     const secondary = this._config?.elementConfig?.type ?? undefined;
     return html`
-      <sub-editor-header
-        ._label=${this.headerLabel ?? this._config.type}
-        .secondary=${secondary}
-        .hidePrimaryAction=${!isGuiMode}
-        .secondaryAction=${createSecondaryCodeLabel(!isGuiMode)}
-        @primary-action=${this._goBack}
-        @secondary-action=${this._toggleGuiMode}
-      ></sub-editor-header>
+      ${!this.hideHeader
+        ? html`
+            <sub-editor-header
+              ._label=${this.headerLabel ?? this._config.type}
+              .secondary=${secondary}
+              .hidePrimaryAction=${!isGuiMode}
+              .secondaryAction=${createSecondaryCodeLabel(!isGuiMode)}
+              @primary-action=${this._goBack}
+              @secondary-action=${this._toggleGuiMode}
+            ></sub-editor-header>
+          `
+        : nothing}
+
       <hui-card-element-editor
         .hass=${this._hass}
         .value=${this._config.elementConfig}
+        .lovelace=${this._editor.lovelace}
         @config-changed=${this._handleConfigChanged}
         @GUImode-changed=${this._handleGUIModeChanged}
       ></hui-card-element-editor>
@@ -89,7 +96,7 @@ export class VscSubElementEditor extends LitElement {
     const editorEl = this._cardEditorEl?.shadowRoot;
     if (!editorEl) return;
     const configType = this._config?.elementConfig?.type as string;
-    if (!['map', 'custom:extra-map-card'].includes(configType)) {
+    if (!['map', 'custom:extra-map-card', 'vertical-stack'].includes(configType)) {
       console.debug('Config type not supported for hiding elements:', configType);
       return;
     }
@@ -117,6 +124,11 @@ export class VscSubElementEditor extends LitElement {
           selectTree(configElement.shadowRoot, 'h3'),
         ])) as (HTMLElement | null)[];
         elementsToHide.forEach((el) => el?.style.setProperty('display', 'none'));
+        break;
+      }
+      case 'vertical-stack': {
+        const haFormTitle = configElement.shadowRoot?.querySelector('ha-form') as HTMLElement | null;
+        haFormTitle?.style.setProperty('display', 'none');
         break;
       }
     }

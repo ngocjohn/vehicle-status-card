@@ -69,6 +69,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   public setConfig(config: VehicleStatusCardConfig): void {
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
+
     if (configHasDeprecatedProps(config)) {
       const updatedConfig = updateDeprecatedConfig(config);
       fireEvent(this, 'config-changed', { config: updatedConfig });
@@ -83,9 +84,10 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       this.createStore();
     }
     this.updateComplete.then(() => {
-      console.debug('Editor setConfig called from:', this.configArea);
+      this._panelButtons?._reloadPreview();
       const selectedArea = getSectionFromConfigArea(this.configArea);
       document.dispatchEvent(EditorConfigAreaSelectedEvent(selectedArea));
+      console.debug('Editor setConfig called from:', this.configArea);
     });
   }
 
@@ -174,7 +176,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   private _renderButtonCard(): TemplateResult {
     return html`<panel-button-card-sec
       ._hass=${this._hass}
-      ._buttonList=${this._config.button_cards || []}
+      ._buttonList=${this._config?.button_cards}
       .config=${this._config}
       ._store=${this._store}
     ></panel-button-card-sec>`;
@@ -309,6 +311,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     this._getCardInPreview();
     this._store = new Store(this, this._config);
     // console.debug('Store created:', this, this._config);
+    this._store.hass = this._hass;
     if (this._vscElem) {
       this._store.cardPreview = this._vscElem;
     }

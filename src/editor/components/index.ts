@@ -26,3 +26,4 @@ export * from './legacy-button-card/panel-tire-config';
 export * from '../../utils/editor/vic-tab';
 export * from '../../utils/editor/vic-tab-bar';
 export * from '../shared/panel-yaml-editor';
+export * from '../shared/vsc-yaml-editor';

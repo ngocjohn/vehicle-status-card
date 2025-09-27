@@ -1,6 +1,7 @@
 import { LovelaceViewConfig, ShowViewConfig, LovelaceCardConfig, ActionConfig } from '../../ha';
 import { LovelaceMapPopupConfig } from '../../types/config';
 import { ButtonCardConfig } from '../../types/config/card/button';
+import { CARD_TYPE, ButtonCardSubCardConfig } from '../../types/config/card/button-card';
 import { LovelaceRowItemConfig } from '../../types/config/card/row-indicators';
 
 declare global {
@@ -127,6 +128,11 @@ export interface RowGroupPreviewConfig {
   entity_index?: number | null;
   peek?: boolean;
 }
+export interface ButtonSubCardPreviewConfig {
+  type?: CARD_TYPE | undefined | null;
+  config?: ButtonCardSubCardConfig['custom_card' | 'default_card' | 'tire_card'];
+}
+
 export interface EditorPreviewTypes {
   row_group_preview: {
     config: RowGroupPreviewConfig | null;

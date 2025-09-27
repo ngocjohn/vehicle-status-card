@@ -6,20 +6,20 @@ import type { ButtonShowConfig } from '../../../types/config/card/button-card';
 
 @customElement('vsc-btn-card')
 export class VscBtnCard extends LitElement {
-  @property({ attribute: false }) public btnConfig?: ButtonShowConfig;
+  @property({ attribute: false }) public btnShowConfig?: ButtonShowConfig;
 
   protected render(): TemplateResult {
     return html`
       <div
         class=${classMap({
           container: true,
-          vertical: this.btnConfig?.layout === 'vertical',
-          horizontal: this.btnConfig?.layout !== 'vertical',
-          'no-info': this.btnConfig?.show_primary === false && this.btnConfig?.show_secondary === false,
+          vertical: this.btnShowConfig?.layout === 'vertical',
+          horizontal: this.btnShowConfig?.layout !== 'vertical',
+          'no-info': this.btnShowConfig?.show_primary === false && this.btnShowConfig?.show_secondary === false,
           'no-content':
-            this.btnConfig?.show_icon === false &&
-            this.btnConfig?.show_primary === false &&
-            this.btnConfig?.show_secondary === false,
+            this.btnShowConfig?.show_icon === false &&
+            this.btnShowConfig?.show_primary === false &&
+            this.btnShowConfig?.show_secondary === false,
         })}
       >
         <slot></slot>
