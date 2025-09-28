@@ -19,8 +19,8 @@ export enum ConfigArea {
  */
 export enum ButtonArea {
   BASE = 'base',
-  SUB_DEFAULT = 'default_card',
-  SUB_CUSTOM = 'custom_card',
-  SUB_TIRE = 'tire_card',
+  DEFAULT_CARD = 'default_card',
+  CUSTOM_CARD = 'custom_card',
+  TIRE_CARD = 'tire_card',
   MAIN = 'main',
 }

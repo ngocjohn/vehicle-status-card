@@ -1,7 +1,7 @@
 import { LovelaceViewConfig, ShowViewConfig, LovelaceCardConfig, ActionConfig } from '../../ha';
 import { LovelaceMapPopupConfig } from '../../types/config';
 import { ButtonCardConfig } from '../../types/config/card/button';
-import { CARD_TYPE, ButtonCardSubCardConfig } from '../../types/config/card/button-card';
+import { PreviewType, ButtonCardSubCardConfig } from '../../types/config/card/button-card';
 import { LovelaceRowItemConfig } from '../../types/config/card/row-indicators';
 
 declare global {
@@ -115,8 +115,14 @@ export interface CardPickTarget extends EventTarget {
 
 export interface SubElementEditorConfig {
   index?: number;
-  elementConfig?: LovelaceCardConfig | LovelaceRowItemConfig | LovelaceMapPopupConfig;
+  elementConfig?:
+    | LovelaceCardConfig
+    | LovelaceRowItemConfig
+    | LovelaceMapPopupConfig
+    | ButtonCardSubCardConfig['default_card']
+    | ButtonCardSubCardConfig['tire_card'];
   type: string;
+  sub_card_type?: 'default_card' | 'custom_card' | 'tire_card';
 }
 
 export interface EditSubElementEvent {
@@ -129,7 +135,7 @@ export interface RowGroupPreviewConfig {
   peek?: boolean;
 }
 export interface ButtonSubCardPreviewConfig {
-  type?: CARD_TYPE | undefined | null;
+  type?: PreviewType | undefined | null;
   config?: ButtonCardSubCardConfig['custom_card' | 'default_card' | 'tire_card'];
 }
 

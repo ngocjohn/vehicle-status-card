@@ -119,7 +119,11 @@ export class MenuElement extends BaseEditor {
             @click=${this._moveSectionUp.bind(this, section)}
           ></ha-icon-button>
 
-          <ha-icon-button class="add-btn" @click=${this.showSectionOrderDialog} .path=${isHidden ? ICON.PLUS : ''}>
+          <ha-icon-button
+            class="add-btn"
+            @click=${() => this.openLayoutConfigModal(section)}
+            .path=${isHidden ? ICON.PLUS : ''}
+          >
             <div class="position-badge">${indexInOrder + 1}</div>
           </ha-icon-button>
           <ha-icon-button

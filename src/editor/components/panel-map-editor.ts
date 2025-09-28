@@ -72,7 +72,7 @@ export class PanelMapEditor extends BaseEditor {
         ._config=${this._subElementConfig}
         .headerLabel=${header}
         @sub-element-editor-closed=${this._closeSubElementEditor}
-        @config-changed=${this._handleSubElementConfigChanged}
+        @sub-element-config-changed=${this._handleSubElementConfigChanged}
       ></vsc-sub-element-editor>`;
     }
 
@@ -102,7 +102,7 @@ export class PanelMapEditor extends BaseEditor {
   private _editPopupConfig(): void {
     const popupConfig = computePopupCardConfig(this._mapConfig);
     this._subElementConfig = {
-      type: 'Map Card configuration',
+      type: popupConfig.type,
       elementConfig: popupConfig,
     };
   }

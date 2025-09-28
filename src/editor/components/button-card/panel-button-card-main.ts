@@ -1,17 +1,17 @@
 import { capitalize } from 'es-toolkit';
 import { omit } from 'es-toolkit/compat';
-import { html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
+import { html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 
 import { fireEvent } from '../../../ha';
 import { ButtonArea } from '../../../types/config-area';
 import '../../../utils/editor/sub-editor-header';
-import { BaseButtonCardItemConfig, CardType } from '../../../types/config/card/button-card';
+import { BaseButtonCardItemConfig, PreviewType, PREVIEW } from '../../../types/config/card/button-card';
 import { Create } from '../../../utils';
 import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
 import { SubElementEditorConfig } from '../../../utils/editor/types';
 import { computeVerticalStackConfig } from '../../../utils/lovelace/create-custom-card';
-import { ButtonCardBaseEditor, PreviewType } from '../../button-card-base';
+import { ButtonCardBaseEditor } from '../../button-card-base';
 import '../../shared/vsc-sub-element-editor';
 import { SUB_PANEL } from '../../editor-const';
 import { MAIN_BUTTON_SCHEMA } from '../../form';
@@ -42,12 +42,9 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (oldArea !== undefined && oldArea !== this._selectedArea && this.activePreview !== null) {
       this.activePreview = null;
       this._togglePreview(this.activePreview);
-    } else if (
-      oldArea === ButtonArea.SUB_CUSTOM &&
-      this._selectedArea !== ButtonArea.SUB_CUSTOM &&
-      this._customCardConfig !== undefined
-    ) {
-      this._customCardConfig = undefined;
+      if (!this._customCardConfig) {
+        this._customCardConfig = undefined;
+      }
     }
   }
   disconnectedCallback(): void {
@@ -76,9 +73,9 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     const area = this._selectedArea;
     const areaMap = {
       [ButtonArea.BASE]: this._renderBaseEditor(),
-      [ButtonArea.SUB_CUSTOM]: this._renderCustomCardEditor(),
-      [ButtonArea.SUB_DEFAULT]: this._renderDefaultCardEditor(),
-      [ButtonArea.SUB_TIRE]: this._renderTireCardEditor(),
+      [ButtonArea.CUSTOM_CARD]: this._renderCustomCardEditor(),
+      [ButtonArea.DEFAULT_CARD]: this._renderDefaultCardEditor(),
+      [ButtonArea.TIRE_CARD]: this._renderTireCardEditor(),
     };
     return areaMap[area];
   }
@@ -104,7 +101,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   }
 
   private _renderCustomCardEditor(): TemplateResult {
-    if (this._selectedArea !== ButtonArea.SUB_CUSTOM) {
+    if (this._selectedArea !== ButtonArea.CUSTOM_CARD) {
       return html``;
     }
     return html`
@@ -113,7 +110,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
         ._hass=${this._hass}
         ._store=${this._store}
         ._config=${this._customCardConfig}
-        @config-changed=${this._handleCustomCardConfigChanged}
+        @sub-element-config-changed=${this._handleCustomCardConfigChanged}
       ></vsc-sub-element-editor>
     `;
   }
@@ -127,15 +124,32 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   }
 
   private _renderSubCardSelect(): TemplateResult {
+    const currentCardType = this._btnConfig?.card_type ?? 'default';
+    const isSelected = (type: PreviewType) => {
+      return type === `${currentCardType}_card`;
+    };
+    const infoMessage = this._createAlert('Currently selected sub-card type is highlighted.');
     const content = html`
-      <div class="sub-card-types">
-        ${CardType.map(
-          (type) => html`
-            <ha-button size="small" appearance="filled" @click=${() => this._handleSelectSubCard(type)}>
-              ${capitalize(type)} Card
-            </ha-button>
-          `
-        )}
+      <div class="base-config gap">
+        ${infoMessage}
+        <div class="sub-card-types">
+          ${PREVIEW.map((type) => {
+            const variant = isSelected(type) ? 'success' : 'brand';
+            const iconSlot = isSelected(type)
+              ? html`<ha-icon icon="mdi:check-circle" slot="start"></ha-icon>`
+              : nothing;
+            return html`
+              <ha-button
+                size="small"
+                variant=${variant}
+                appearance="filled"
+                @click=${() => this._handleSelectSubCard(type)}
+              >
+                ${iconSlot} ${type.replace('_', ' ').toUpperCase()}
+              </ha-button>
+            `;
+          })}
+        </div>
       </div>
     `;
     const expansionOpts = {
@@ -154,36 +168,33 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     const btnIndexLabel = `Button #${this._btnIndex + 1} `;
     const area = this._selectedArea;
     const isBase = area === ButtonArea.BASE;
-    let label = isBase ? 'Main Configuration' : `${area.replace('_', ' ').toUpperCase()}`;
+    let label = isBase ? 'Main Configuration' : capitalize(area.replace('_', ' '));
     const secondary = isBase ? btnIndexLabel : `${btnIndexLabel} · Sub-Card`;
     const icon = isBase ? 'close' : 'back';
     return { label, secondary, icon };
   }
 
-  private _handleSelectSubCard(type: (typeof CardType)[number]): void {
-    console.debug('Select sub card type:', type);
-    switch (type) {
-      case 'custom':
-        const customConfig = this._btnConfig?.sub_card?.custom_card || [];
-        const elementConfig = computeVerticalStackConfig(customConfig);
-        this._customCardConfig = {
-          type: 'Custom Card configuration',
-          elementConfig,
-        };
-        this._selectedArea = ButtonArea.SUB_CUSTOM;
-        break;
-      case 'default':
-        this._selectedArea = ButtonArea.SUB_DEFAULT;
-        break;
-      case 'tire':
-        this._selectedArea = ButtonArea.SUB_TIRE;
-        break;
-    }
+  private _handleSelectSubCard(cardType: PreviewType): void {
+    console.debug('Select sub card type:', cardType);
+    const subCardConfig = this._btnConfig?.sub_card;
+    const typeKey = cardType === 'custom_card' ? 'vertical-stack' : cardType;
+    const subConfig =
+      cardType === 'custom_card'
+        ? computeVerticalStackConfig(subCardConfig?.custom_card || [])
+        : subCardConfig?.[cardType];
+    // set sub-element config
+    this._customCardConfig = {
+      type: typeKey,
+      sub_card_type: cardType,
+      elementConfig: subConfig,
+    } as SubElementEditorConfig;
+    // switch to sub-element editor
+    this._selectedArea = ButtonArea[cardType.toUpperCase() as keyof typeof ButtonArea];
   }
 
   private _computePreviewBtn(): TemplateResult {
     if (this._selectedArea === ButtonArea.BASE) {
-      return html``;
+      return html` <span> ${this._renderPreviewBtn()} </span> `;
     }
     return html` <span @click=${() => this._handlePreviewClick()}> ${this._renderPreviewBtn()} </span> `;
   }
@@ -194,17 +205,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
       this.activePreview = null;
     } else {
       const area = this._selectedArea;
-      let previewType: PreviewType | null = null;
-      switch (area) {
-        case ButtonArea.SUB_CUSTOM:
-          previewType = 'custom';
-          break;
-        case ButtonArea.SUB_DEFAULT:
-          previewType = 'default';
-          break;
-        case ButtonArea.SUB_TIRE:
-          previewType = 'tire';
-      }
+      const previewType = area as PreviewType;
       this.activePreview = previewType;
     }
     console.debug('Active preview:', this.activePreview);
@@ -213,6 +214,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
 
   public _reoloadPreview(): void {
     if (this.activePreview !== null) {
+      console.debug('Reload preview (PanelButtonCardSec)');
       this._togglePreview(this.activePreview);
     }
   }
@@ -225,6 +227,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
         break;
       default:
         this._selectedArea = ButtonArea.BASE;
+        this._customCardConfig = undefined;
         break;
     }
   }
@@ -238,16 +241,32 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (!ev.detail || !this._btnConfig || !this._customCardConfig) {
       return;
     }
-    const config = { ...ev.detail.config } as any;
-    console.debug('Custom Card Config Changed:', config);
+    console.debug('Handle Custom Card Config Changed (PanelButtonCardMain)');
+    const currentElementConfig = { ...this._customCardConfig.elementConfig } as any;
+    const incoming = { ...ev.detail.config } as any;
+    // Check if there are actual changes
+    if (JSON.stringify(currentElementConfig) === JSON.stringify(incoming)) {
+      console.debug('No changes detected in custom card config');
+      return;
+    }
+    // update sub-element config
+    console.debug('Custom card config changed, updating...');
+    // re-add sub_card if exists
     this._customCardConfig = {
       ...this._customCardConfig,
-      elementConfig: config,
+      elementConfig: incoming,
     };
+    const subKey = this._customCardConfig.sub_card_type as 'custom_card' | 'default_card' | 'tire_card';
+    let value = incoming;
+    if (subKey === 'custom_card') {
+      value = incoming.cards || [];
+    }
+    console.debug('Updating button config sub_card:', subKey, value);
+    // update button config
     const btnConfig = { ...(this._btnConfig || {}) } as BaseButtonCardItemConfig;
     btnConfig.sub_card = {
       ...(btnConfig.sub_card || {}),
-      custom_card: config.cards || [],
+      [subKey]: value,
     };
     this._btnConfigChanged(btnConfig);
   }
@@ -287,49 +306,40 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (!ev.detail || !this._btnConfig) {
       return;
     }
-    const key = (ev.currentTarget as any).key;
     const currentConfig = { ...(this._btnConfig ?? {}) } as BaseButtonCardItemConfig;
-    const incoming = ev.detail.value as Partial<BaseButtonCardItemConfig>;
-    if (key && key === 'base') {
-      // Case base config without sub_card
-      const baseConfig = omit(currentConfig, ['sub_card']);
-      // merge with cleanup
-      let changed = this.mergeWithCleanup(baseConfig, incoming);
-      // ---- normalize state_content against include_state_template ----
-      const include = !!baseConfig.include_state_template;
-      const raw = baseConfig.state_content as string | string[] | undefined;
+    const incoming = ev.detail.value as Partial<Omit<BaseButtonCardItemConfig, 'sub_card'>>;
+    const baseConfig = omit(currentConfig, ['sub_card']);
+    // merge with cleanup
+    let changed = this.mergeWithCleanup(baseConfig, incoming);
+    // ---- normalize state_content against include_state_template ----
+    const include = !!baseConfig.include_state_template;
+    const raw = baseConfig.state_content as string | string[] | undefined;
 
-      const normalized = this._applyTemplateFlagStable(this._toArray(raw), include);
-      const normalizedOrUndef = normalized.length ? normalized : undefined;
+    const normalized = this._applyTemplateFlagStable(this._toArray(raw), include);
+    const normalizedOrUndef = normalized.length ? normalized : undefined;
 
-      // only set/delete if it actually changes something
-      const before = Array.isArray(raw) ? raw : this._toArray(raw);
-      if (normalizedOrUndef === undefined) {
-        if ('state_content' in baseConfig) {
-          delete baseConfig.state_content;
-          changed = true;
-        }
-      } else if (!this._arrayEq(before, normalizedOrUndef)) {
-        baseConfig.state_content = normalizedOrUndef;
+    // only set/delete if it actually changes something
+    const before = Array.isArray(raw) ? raw : this._toArray(raw);
+    if (normalizedOrUndef === undefined) {
+      if ('state_content' in baseConfig) {
+        delete baseConfig.state_content;
         changed = true;
       }
-      if (!changed) {
-        console.debug('No changes detected in base config');
-        return;
-      }
-      // if changed, update the button config
-      console.debug('Base config changed, updating...');
-      // re-add sub_card if exists
-      const newConfig: BaseButtonCardItemConfig = {
-        ...baseConfig,
-        sub_card: currentConfig.sub_card ? { ...currentConfig.sub_card } : undefined,
-      };
-      this._btnConfigChanged(newConfig);
-    } else {
-      // no change
-      console.debug('No changes detected (non-base config)');
+    } else if (!this._arrayEq(before, normalizedOrUndef)) {
+      baseConfig.state_content = normalizedOrUndef;
+      changed = true;
+    }
+    if (!changed) {
       return;
     }
+    // if changed, update the button config
+    console.debug('Base config changed, updating...');
+    // re-add sub_card if exists
+    const newConfig: BaseButtonCardItemConfig = {
+      ...baseConfig,
+      sub_card: currentConfig.sub_card ? { ...currentConfig.sub_card } : undefined,
+    };
+    this._btnConfigChanged(newConfig);
   }
 
   // helpers

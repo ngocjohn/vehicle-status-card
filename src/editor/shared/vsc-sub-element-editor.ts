@@ -12,6 +12,9 @@ import { BaseEditor } from '../base-editor';
 declare global {
   interface HASSDomEvents {
     'sub-element-editor-closed': undefined;
+    'sub-element-config-changed': {
+      config: SubElementEditorConfig['elementConfig'];
+    };
   }
 }
 
@@ -47,7 +50,7 @@ export class VscSubElementEditor extends BaseEditor {
 
   protected render(): TemplateResult {
     const isGuiMode = this._GUImode;
-    const secondary = this._config?.elementConfig?.type ?? undefined;
+    const secondary = this._config?.type ?? this.headerSecondary ?? '';
     return html`
       ${!this.hideHeader
         ? html`
@@ -88,14 +91,17 @@ export class VscSubElementEditor extends BaseEditor {
   }
 
   private _handleConfigChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    console.debug('Config Changed (SubElementEditor)');
     this._guiModeAvailable = ev.detail.guiModeAvailable;
+    fireEvent(this, 'sub-element-config-changed', { config: ev.detail.config });
   }
 
   private _hideEditorElements = async (): Promise<void> => {
     // return; // Disable hiding for now
     const editorEl = this._cardEditorEl?.shadowRoot;
     if (!editorEl) return;
-    const configType = this._config?.elementConfig?.type as string;
+    const configType = this._config?.type;
     if (!['map', 'custom:extra-map-card', 'vertical-stack'].includes(configType)) {
       console.debug('Config type not supported for hiding elements:', configType);
       return;

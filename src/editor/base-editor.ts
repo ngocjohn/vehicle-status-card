@@ -9,6 +9,7 @@ import * as IMAGE_HELPER from '../ha/data/image_upload';
 import { showFormDialog } from '../ha/dialogs/form/show-form-dialog';
 import { SectionOrder, VehicleStatusCardConfig } from '../types/config';
 import { ConfigArea } from '../types/config-area';
+import { SECTION } from '../types/section';
 import { Create } from '../utils';
 import * as MIGRATE from '../utils/editor/migrate-indicator';
 import { EditorPreviewTypes } from '../utils/editor/types';
@@ -17,7 +18,14 @@ import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import { VehicleStatusCardEditor } from './editor';
 import { PREVIEW_CONFIG_TYPES } from './editor-const';
-import { BUTTON_GRID_SCHEMA, SECTION_ORDER_SCHEMA, SLIDE_SIZE_SCHEMA, SWIPE_BEHAVIOR_SCHEMA } from './form';
+import {
+  BUTTON_GRID_LAYOUT_SCHEMA,
+  BUTTON_GRID_SCHEMA,
+  IMAGES_LAYOUT_SCHEMA,
+  SECTION_ORDER_SCHEMA,
+  SLIDE_SIZE_SCHEMA,
+  SWIPE_BEHAVIOR_SCHEMA,
+} from './form';
 
 const EditorCommandTypes = [
   'show-button',
@@ -26,6 +34,7 @@ const EditorCommandTypes = [
   'toggle-indicator-row',
   'toggle-helper',
   'toggle-highlight-row-item',
+  'reset-preview',
 ] as const;
 type EditorCommandTypes = (typeof EditorCommandTypes)[number];
 
@@ -105,32 +114,46 @@ export class BaseEditor extends LitElement {
     const cols = this._cardConfig?.layout_config?.button_grid?.columns || 2;
     return Math.max(2, Math.min(cols, 4)); // Clamp between 2 and 4
   }
-  protected showSectionOrderDialog = async () => {
+  protected openLayoutConfigModal = async (section: SectionOrder) => {
     if (!this._store) return;
     const config = { ...(this._store._config || {}) };
     if (!config || typeof config !== 'object') return;
-    const currentOrder = {
-      section_order: config.layout_config?.section_order,
-    };
-    console.debug('Current section order:', currentOrder);
 
-    const newOrder = await showFormDialog(this, {
-      title: 'Sections Order',
-      schema: [...SECTION_ORDER_SCHEMA],
-      data: currentOrder,
+    let title: string = 'Sections Order';
+    const data = {} as Record<string, any>;
+    const schema: any[] = [...SECTION_ORDER_SCHEMA];
+
+    data['section_order'] = config.layout_config?.section_order || [];
+
+    if (section === SECTION.BUTTONS) {
+      data['button_grid'] = config.layout_config?.button_grid || {};
+      schema.unshift(...BUTTON_GRID_LAYOUT_SCHEMA(!data['button_grid']?.swipe, 'button_grid'));
+      title += ' & Button Grid';
+    }
+
+    if (section === SECTION.IMAGES) {
+      data['images_swipe'] = config.layout_config?.images_swipe || {};
+      schema.unshift(...IMAGES_LAYOUT_SCHEMA(data['images_swipe'], 'images_swipe'));
+      title += ' & Images Swipe';
+    }
+
+    const updatedLayout = await showFormDialog(this, {
+      title,
+      schema,
+      data,
     });
-    if (!newOrder) {
+    if (!updatedLayout) {
       return;
     }
-    console.debug('New section order:', newOrder);
+
+    console.debug('Updated Layout:', updatedLayout);
     const newConfig = {
       ...config,
       layout_config: {
         ...config.layout_config,
-        section_order: newOrder.section_order,
+        ...updatedLayout,
       },
     };
-    console.debug('Updated config with new section order:', newConfig);
     fireEvent(this, 'config-changed', { config: newConfig });
     return;
   };
@@ -157,7 +180,7 @@ export class BaseEditor extends LitElement {
         section_order: sectionOrder,
       },
     };
-    console.debug('Updated config with moved section order:', newConfig);
+    // console.debug('Updated config with moved section order:', newConfig);
     fireEvent(this, 'config-changed', { config: newConfig });
     return;
   }
@@ -357,7 +380,7 @@ export class BaseEditor extends LitElement {
     const config = this._store._config;
     if (!config || typeof config !== 'object') return;
 
-    console.debug('incoming changed config:', changedConfig, 'from', this._editorArea);
+    console.debug('incoming changed from:', this._editorArea);
     // Update config
     const newConfig = { ...config, ...changedConfig };
     fireEvent(this, 'config-changed', { config: newConfig });

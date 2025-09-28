@@ -23,7 +23,6 @@ export class VscCustomCardElement extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    console.debug('custom-card', this._config?.type);
   }
 
   disconnectedCallback(): void {
@@ -50,7 +49,6 @@ export class VscCustomCardElement extends LitElement {
 
   private _createCard(config: any): any {
     if (helpers) {
-      console.debug('helpers available, using helpers to create card');
       return helpers.createCardElement(config);
     } else {
       const element = createThing(config);

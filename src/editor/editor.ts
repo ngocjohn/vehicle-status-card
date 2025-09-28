@@ -84,10 +84,10 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       this.createStore();
     }
     this.updateComplete.then(() => {
-      this._panelButtons?._reloadPreview();
+      console.debug('Editor setConfig called from:', this.configArea);
       const selectedArea = getSectionFromConfigArea(this.configArea);
       document.dispatchEvent(EditorConfigAreaSelectedEvent(selectedArea));
-      console.debug('Editor setConfig called from:', this.configArea);
+      this._panelButtons?._reloadPreview();
     });
   }
 

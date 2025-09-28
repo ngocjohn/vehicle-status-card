@@ -27,20 +27,20 @@ export class PanelButtonCardSec extends BaseEditor {
     super(ConfigArea.BUTTONS);
   }
   @property({ attribute: false }) public _buttonList?: BaseButtonCardItemConfig[];
-  @state() private _subElementConfig?: SubButtonCardConfig;
+  @state() private _buttonItemConfig?: SubButtonCardConfig;
   @state() private _yamlActive: boolean = false;
 
   @query(SUB_PANEL.BTN_MAIN) _subBtnEl?: PanelButtonCardMain;
 
   protected render(): TemplateResult {
     const btns = this._buttonList || [];
-    if (this._subElementConfig) {
+    if (this._buttonItemConfig) {
       return html`
         <panel-button-card-main
           ._hass=${this._hass}
           ._store=${this._store}
-          ._btnConfig=${this._subElementConfig.config!}
-          ._btnIndex=${this._subElementConfig.index}
+          ._btnConfig=${this._buttonItemConfig.config!}
+          ._btnIndex=${this._buttonItemConfig.index}
           @sub-button-closed=${this._closeSubEditor}
           @sub-button-changed=${this._subButtonChanged}
         ></panel-button-card-main>
@@ -51,7 +51,7 @@ export class PanelButtonCardSec extends BaseEditor {
         hide-primary
         .leftBtn=${!this._yamlActive}
         ._addBtnLabel=${'Add Button'}
-        @left-btn=${this._handleLeftBtn}
+        @left-btn=${this._handleAddBtn}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
         @secondary-action=${() => {
           this._yamlActive = !this._yamlActive;
@@ -169,25 +169,25 @@ export class PanelButtonCardSec extends BaseEditor {
 
   private _editButtonConfig(index: number): void {
     const btnConfig = this._buttonList![index];
-    this._subElementConfig = {
+    this._buttonItemConfig = {
       index,
       config: btnConfig,
     };
   }
 
   private _closeSubEditor = () => {
-    this._subElementConfig = undefined;
+    this._buttonItemConfig = undefined;
   };
 
   private _subButtonChanged = (ev: CustomEvent): void => {
     ev.stopPropagation();
-    if (!this._subElementConfig) return;
+    if (!this._buttonItemConfig) return;
     const btnConfig = { ...ev.detail.btnConfig } as BaseButtonCardItemConfig;
-    this._subElementConfig = {
-      ...this._subElementConfig,
+    this._buttonItemConfig = {
+      ...this._buttonItemConfig,
       config: btnConfig,
     };
-    const index = this._subElementConfig.index;
+    const index = this._buttonItemConfig.index;
     const currentList = [...(this._buttonList || [])];
     currentList[index] = btnConfig;
     this._buttonsChanged(currentList);
@@ -201,7 +201,7 @@ export class PanelButtonCardSec extends BaseEditor {
     this._buttonsChanged(currentList);
   };
 
-  private _handleLeftBtn(ev: CustomEvent): void {
+  private _handleAddBtn(ev: CustomEvent): void {
     ev.stopPropagation();
     console.debug('Add new button');
     const entities = findEntitiesFromHass(this._hass, 1, ['light']);
@@ -209,8 +209,12 @@ export class PanelButtonCardSec extends BaseEditor {
     const newButton = generateNewButtonConfig(entities[0]);
     console.debug('New button config', newButton);
     const currentList = [...(this._buttonList || [])];
-    currentList.push(newButton);
+    const visibleBtns = currentList.filter((btn) => !btn.hide_button);
+    // Insert new button before first hidden button (or at end of list)
+    currentList.splice(visibleBtns.length, 0, newButton);
     this._buttonsChanged(currentList);
+    // Open editor for new button
+    this._editButtonConfig(visibleBtns.length);
   }
 
   private _buttonMoved(ev: CustomEvent): void {
@@ -234,6 +238,7 @@ export class PanelButtonCardSec extends BaseEditor {
   private _buttonsChanged(newVal: BaseButtonCardItemConfig[]): void {
     this._buttonList = [...(newVal || [])];
     this._cardConfigChanged({ button_cards: this._buttonList });
+    return;
   }
 
   private _computeGridColumns() {
@@ -247,6 +252,7 @@ export class PanelButtonCardSec extends BaseEditor {
       this._subBtnEl._reoloadPreview();
     }
   }
+
   static get styles(): CSSResultGroup {
     return [
       super.styles,

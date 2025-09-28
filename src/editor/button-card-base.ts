@@ -1,14 +1,11 @@
-import { CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
+import { CSSResultGroup, html, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
 import { EditorSubCardPreviewEvent } from '../events';
-import { BaseButtonCardItemConfig, ButtonCardSubCardConfig } from '../types/config';
+import { BaseButtonCardItemConfig, PreviewType } from '../types/config';
 import { ButtonArea } from '../types/config-area';
 import { ButtonSubCardPreviewConfig } from '../utils/editor/types';
 import { BaseEditor } from './base-editor';
-
-export const PREVIEW = ['custom', 'default', 'tire'] as const;
-export type PreviewType = (typeof PREVIEW)[number];
 
 export class ButtonCardBaseEditor extends BaseEditor {
   @property({ attribute: false }) protected _btnConfig!: BaseButtonCardItemConfig;
@@ -22,15 +19,6 @@ export class ButtonCardBaseEditor extends BaseEditor {
     super();
     if (area) {
       this.buttonArea = area;
-    }
-  }
-
-  protected willUpdate(_changedProperties: PropertyValues): void {
-    super.willUpdate(_changedProperties);
-    if (_changedProperties.has('_btnConfig') && this._btnConfig) {
-      if (this._activePreview !== null) {
-        this._togglePreview(this._activePreview);
-      }
     }
   }
 
@@ -49,6 +37,16 @@ export class ButtonCardBaseEditor extends BaseEditor {
   }
 
   protected _renderPreviewBtn(): TemplateResult {
+    if (this.currentArea === ButtonArea.BASE) {
+      return html`<ha-button
+        @click=${() => this._dispatchEditorEvent('show-button', { buttonIndex: this._btnIndex })}
+        size="small"
+        variant="neutral"
+        appearance="plain"
+        >Show Button</ha-button
+      > `;
+    }
+
     const isActive = this._activePreview !== null;
     const label = isActive ? 'Exit Preview' : 'Preview Card';
     const variant = isActive ? 'warning' : 'neutral';
@@ -56,7 +54,11 @@ export class ButtonCardBaseEditor extends BaseEditor {
   }
 
   protected _togglePreview(previewType: PreviewType | null): void {
-    const cardKey = previewType === null ? null : (`${previewType}_card` as keyof ButtonCardSubCardConfig);
+    if (previewType === null) {
+      this._dispatchEditorEvent('reset-preview', {});
+      return;
+    }
+    const cardKey = previewType === null ? null : previewType;
     const config = this._btnConfig?.sub_card?.[cardKey!];
 
     const eventDetail: ButtonSubCardPreviewConfig = {

@@ -41,7 +41,6 @@ import {
   TireTemplateConfig,
   VehicleStatusCardConfig,
   BaseButtonCardItemConfig,
-  ButtonCardSubCardConfig,
 } from './types/config';
 import { ConfigArea } from './types/config-area';
 import { SECTION_KEYS } from './types/config/card/layout';
@@ -51,7 +50,6 @@ import { BaseElement } from './utils/base-element';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
 import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createMapCard } from './utils/lovelace/create-map-card';
-import { PREVIEW_TYPE, previewHandler } from './utils/lovelace/preview-helper';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
 
@@ -88,11 +86,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @property({ attribute: false }) public layout?: string;
   @property({ attribute: false }) public isPanel?: boolean;
 
-  @state() public _currentPreview: PREVIEW_TYPE | null = null;
-  @state() public _cardPreviewElement: LovelaceCardConfig[] = [];
-  @state() public _defaultCardPreview: DefaultCardConfig[] = [];
-  @state() public _tireCardPreview: TireTemplateConfig | undefined;
-
   @state() public _activeCardIndex: null | number | string = null;
 
   @state() _hasAnimated: boolean = false;
@@ -105,7 +98,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @state() private _newButtonConfig?: BaseButtonCardItemConfig[]; // New button card configuration items
   @state() private configSection!: SECTION | undefined;
   @state() private subCardPreviewConfig?: ButtonSubCardPreviewConfig;
-  @state() private _previewConfig?: ButtonCardSubCardConfig['custom_card' | 'default_card' | 'tire_card'];
 
   // section queries
   @query(COMPONENT.BUTTONS_GROUP) _secButtonsGroup!: VscButtonsGroup;
@@ -158,7 +150,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (this.isEditorPreview) {
       window.addEventListener('editor-event', this._handleEditorEvent.bind(this));
       document.addEventListener(EDITOR_AREA_SELECTED, this._handleEditorConfigAreaSelected);
-      document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview);
+      document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this), { once: true });
     }
   }
 
@@ -166,7 +158,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     this._connected = false;
     window.removeEventListener('editor-event', this._handleEditorEvent.bind(this));
     document.removeEventListener(EDITOR_AREA_SELECTED, this._handleEditorConfigAreaSelected);
-    document.removeEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview);
+    document.removeEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this));
     super.disconnectedCallback();
   }
 
@@ -214,11 +206,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   protected async updated(changedProps: PropertyValues): Promise<void> {
     super.updated(changedProps);
     if (!this._config || !this._hass) return;
-    // Always configure the card preview when there are config changes
-    if (changedProps.has('_config') && this._currentPreview !== null) {
-      console.log('Reconfiguring card preview');
-      previewHandler(this._currentPreview, this);
-    }
 
     if (changedProps.has('_config') && this.isEditorPreview) {
       if (this._config.active_group !== undefined) {
@@ -418,13 +405,19 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
     let cardContent: unknown = nothing;
     switch (type) {
-      case 'default':
-        cardContent = (config as DefaultCardConfig[]).map((card) => this._renderDefaultCardItems(card));
+      case 'default_card':
+        const defaultConfig = config as DefaultCardConfig[];
+        cardContent = defaultConfig?.length
+          ? defaultConfig.map((card) => this._renderDefaultCardItems(card))
+          : this._showWarning('Default card not found, configure it in the editor');
         break;
-      case 'custom':
-        cardContent = (config as LovelaceCardConfig[]).map((card) => this._renderCustomCard(card));
+      case 'custom_card':
+        const cardConfig = config as LovelaceCardConfig[];
+        cardContent = cardConfig?.length
+          ? cardConfig.map((card) => this._renderCustomCard(card))
+          : this._showWarning('Custom card not found, configure it in the editor');
         break;
-      case 'tire':
+      case 'tire_card':
         cardContent = this._renderTireCard(config as TireTemplateConfig);
         break;
     }
@@ -433,24 +426,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       <ha-card class="preview-card">
         <main>
           <section class="card-element"><div class="added-card">${cardContent}</div></section>
-        </main>
-      </ha-card>
-    `;
-  }
-
-  private _renderCardPreview(): TemplateResult {
-    if (!this._currentPreview) return html``;
-    const type = this._currentPreview;
-    const typeMap = {
-      default: this._defaultCardPreview.map((card) => this._renderDefaultCardItems(card)),
-      custom: this._cardPreviewElement.map((card) => html`<div class="added-cutom">${card}</div>`),
-      tire: this._renderTireCard(this._tireCardPreview as TireTemplateConfig),
-    };
-
-    return html`
-      <ha-card class="preview-card">
-        <main>
-          <section class="card-element"><div class="added-card">${typeMap[type]}</div></section>
         </main>
       </ha-card>
     `;
@@ -798,6 +773,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   };
 
   protected _handleEditorSubCardPreview = (ev: Event): void => {
+    ev.stopPropagation();
     const evArgs = (ev as CustomEvent).detail;
     const previewConfig = evArgs.config as ButtonSubCardPreviewConfig;
     console.log('Received sub-card preview config:', previewConfig);
@@ -827,23 +803,15 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     switch (type) {
       case 'show-button':
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
-        console.log('Show button:', data.buttonIndex);
-        if (this._currentPreview !== null) {
-          this._currentPreview = null;
-        }
         console.log('Current preview cleared, showing button', data.buttonIndex);
         this.updateComplete.then(() => {
-          this._secButtons.showButton(data.buttonIndex);
+          this._secButtons?.showButton(data.buttonIndex);
         });
         break;
 
       case 'show-image':
         if (this._isSectionHidden(SECTION.IMAGES)) return;
         this._secImages?.showImage(data.index);
-        break;
-      case 'toggle-preview':
-        const cardType = data.cardType;
-        this._currentPreview = cardType;
         break;
 
       case 'toggle-helper':
@@ -859,6 +827,11 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         const preview = { row_index: data.rowIndex, group_index: data.groupIndex, entity_index: data.itemIndex };
         const peekItem = data.peek ?? false;
         this._toggleIndicatorEntity(preview, peekItem);
+        break;
+      case 'reset-preview':
+        console.log('resetting preview');
+        this.subCardPreviewConfig = undefined;
+        document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this), { once: true });
         break;
     }
   }
