@@ -80,6 +80,12 @@ export const CONFIG_AREA_ACTIONS: MenuItemConfig[] = [
   { title: 'Documentation', action: 'open-doc', icon: 'mdi:book-open-variant' },
 ];
 
+export const BUTTON_DEFAULT_CARD_CATEGORY_ACTIONS: MenuItemConfig[] = [
+  { title: 'Edit Category', action: 'edit', icon: 'mdi:pencil' },
+  { title: 'Duplicate Category', action: 'duplicate', icon: 'mdi:content-duplicate' },
+  { title: 'Delete Category', action: 'delete', icon: 'mdi:delete' },
+];
+
 export const _renderActionItem = ({
   item,
   onClick,

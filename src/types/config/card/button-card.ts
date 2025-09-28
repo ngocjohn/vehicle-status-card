@@ -54,14 +54,17 @@ export interface ButtonTemplatesConfig {
 }
 
 export interface DefaultCardItemConfig {
-  entity?: string; // Entity ID for the card item
-  state_color?: boolean;
+  entity: string; // Entity ID for the card item
+  name?: string;
+  icon?: string;
+  attribute?: string;
   state_template?: string;
 }
 
 export interface CardDefaultConfig {
-  collapsed?: boolean;
   title?: string;
+  collapsed_items?: boolean;
+  state_color?: boolean;
   items?: DefaultCardItemConfig[];
 }
 

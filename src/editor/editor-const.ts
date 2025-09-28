@@ -232,6 +232,9 @@ export enum SUB_PANEL {
   ROW_ITEM = `${PANEL_PREFIX}row-item`,
   ROW_SUB_GROUP_ITEM = `${PANEL_PREFIX}row-sub-group-item`,
   BTN_MAIN = `${PANEL_PREFIX}button-card-main`,
+  BTN_DEFAULT_CARD = `${PANEL_PREFIX}button-card-default`,
+  BTN_DEFAULT_CARD_ITEM = `${PANEL_PREFIX}button-card-default-item`,
+  BTN_TIRE_CARD = `${PANEL_PREFIX}button-card-tire`,
 }
 
 export enum ELEMENT {

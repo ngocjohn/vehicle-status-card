@@ -6,6 +6,8 @@ export * from './panel-layout-editor';
 // Button card components
 export * from './panel-button-card-sec';
 export * from './button-card/panel-button-card-main';
+export * from './button-card/panel-button-card-default';
+export * from './button-card/panel-button-card-default-item';
 
 // Image components
 export * from './slide-images/panel-images-editor';

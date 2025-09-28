@@ -231,7 +231,7 @@ export class BaseEditor extends LitElement {
    * @param subKey sub key for nested objects
    * @value-changed event handler _changed or _onValueChanged
    */
-  protected _createVscForm(data: any, schema: any, key?: string, subKey?: string): TemplateResult {
+  protected _createVscForm(data: any, schema: any, key?: string | number, subKey?: string | number): TemplateResult {
     const currentConfig = this._store?._config;
     return html`
       <vsc-editor-form

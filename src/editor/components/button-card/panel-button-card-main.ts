@@ -6,13 +6,19 @@ import { customElement, state } from 'lit/decorators.js';
 import { fireEvent } from '../../../ha';
 import { ButtonArea } from '../../../types/config-area';
 import '../../../utils/editor/sub-editor-header';
-import { BaseButtonCardItemConfig, PreviewType, PREVIEW } from '../../../types/config/card/button-card';
+import {
+  BaseButtonCardItemConfig,
+  PreviewType,
+  PREVIEW,
+  ButtonCardSubCardConfig,
+} from '../../../types/config/card/button-card';
 import { Create } from '../../../utils';
 import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
 import { SubElementEditorConfig } from '../../../utils/editor/types';
 import { computeVerticalStackConfig } from '../../../utils/lovelace/create-custom-card';
 import { ButtonCardBaseEditor } from '../../button-card-base';
 import '../../shared/vsc-sub-element-editor';
+import './panel-button-card-default';
 import { SUB_PANEL } from '../../editor-const';
 import { MAIN_BUTTON_SCHEMA } from '../../form';
 
@@ -116,7 +122,18 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   }
 
   private _renderDefaultCardEditor(): TemplateResult {
-    return html`This is default card editor.`;
+    if (this._selectedArea !== ButtonArea.DEFAULT_CARD) {
+      return html``;
+    }
+    const defaultConfig = (this._customCardConfig!.elementConfig as ButtonCardSubCardConfig['default_card']) || [];
+    return html`
+      <panel-button-card-default
+        ._hass=${this._hass}
+        ._store=${this._store}
+        ._defaultCardConfig=${defaultConfig}
+        @default-card-changed=${this._handleCustomCardConfigChanged}
+      ></panel-button-card-default>
+    `;
   }
 
   private _renderTireCardEditor(): TemplateResult {
@@ -243,7 +260,8 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     }
     console.debug('Handle Custom Card Config Changed (PanelButtonCardMain)');
     const currentElementConfig = { ...this._customCardConfig.elementConfig } as any;
-    const incoming = { ...ev.detail.config } as any;
+    const incoming = ev.detail.config as any;
+    console.debug('incoming config:', incoming);
     // Check if there are actual changes
     if (JSON.stringify(currentElementConfig) === JSON.stringify(incoming)) {
       console.debug('No changes detected in custom card config');
