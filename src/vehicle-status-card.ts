@@ -8,18 +8,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import './components';
 import './editor/editor';
 import './utils/custom-tire-card';
-import './components/shared/vsc-tire-item';
-// components
-import {
-  VehicleButtonsGrid,
-  ImagesSlide,
-  VscRangeInfo,
-  VscIndicators,
-  MiniMapBox,
-  VscIndicatorRow,
-  VscIndicatorsGroup,
-  VscButtonsGroup,
-} from './components';
+import * as SEC from './components';
 import { COMPONENT, CARD_NAME } from './constants/const';
 import { EditorEventParams } from './editor/base-editor';
 import { EDITOR_AREA_SELECTED, EDITOR_SUB_CARD_PREVIEW } from './events';
@@ -48,7 +37,6 @@ import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
-import { loadVerticalStackCard } from './utils/lovelace/create-card-element';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
@@ -100,15 +88,15 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @state() private subCardPreviewConfig?: ButtonSubCardPreviewConfig;
 
   // section queries
-  @query(COMPONENT.BUTTONS_GROUP) _secButtonsGroup!: VscButtonsGroup;
-  @query(COMPONENT.IMAGES_SLIDE) _secImages!: ImagesSlide;
-  @query(COMPONENT.RANGE_INFO) _secRangeInfo!: VscRangeInfo;
-  @query(COMPONENT.MINI_MAP) _secMiniMap!: MiniMapBox;
-  @query(COMPONENT.INDICATORS_GROUP) _secIndiGroup!: VscIndicatorsGroup;
-  @queryAll(COMPONENT.INDICATOR_ROW) _secIndicatorRows!: NodeListOf<VscIndicatorRow>;
+  @query(COMPONENT.BUTTONS_GROUP) _secButtonsGroup!: SEC.VscButtonsGroup;
+  @query(COMPONENT.IMAGES_SLIDE) _secImages!: SEC.ImagesSlide;
+  @query(COMPONENT.RANGE_INFO) _secRangeInfo!: SEC.VscRangeInfo;
+  @query(COMPONENT.MINI_MAP) _secMiniMap!: SEC.MiniMapBox;
+  @query(COMPONENT.INDICATORS_GROUP) _secIndiGroup!: SEC.VscIndicatorsGroup;
+  @queryAll(COMPONENT.INDICATOR_ROW) _secIndicatorRows!: NodeListOf<SEC.VscIndicatorRow>;
   // legacy query
-  @query(COMPONENT.BUTTONS_GRID) _secButtons!: VehicleButtonsGrid;
-  @query(COMPONENT.INDICATORS) _secIndicatorsLegacy!: VscIndicators;
+  @query(COMPONENT.BUTTONS_GRID) _secButtons!: SEC.VehicleButtonsGrid;
+  @query(COMPONENT.INDICATORS) _secIndicatorsLegacy!: SEC.VscIndicators;
 
   @query('#main-wrapper', true) _mainWrapper!: HTMLElement;
   @query('ha-card', true) _haCard!: HTMLElement;
@@ -144,7 +132,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   connectedCallback(): void {
     super.connectedCallback();
-    void loadVerticalStackCard();
     window.VehicleCard = this;
     this._connected = true;
     if (this.isEditorPreview) {
@@ -223,13 +210,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         if (this._secIndicatorRows) {
           this._toggleIndicatorRow({ rowIndex: row_index, groupIndex: group_index });
           this._toggleIndicatorEntity({ row_index, group_index, entity_index });
-        }
-      }
-      if (this._config.active_button !== undefined) {
-        const buttonIndex = this._config.active_button;
-        // console.log('Active button index:', buttonIndex);
-        if (this._secButtons) {
-          this._secButtons._toggleButtonEditMode(buttonIndex);
         }
       }
     }

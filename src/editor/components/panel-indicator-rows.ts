@@ -40,6 +40,7 @@ export class PanelIndicatorRows extends BaseEditor {
     super.connectedCallback();
   }
   disconnectedCallback(): void {
+    this._showSelectedRow(null);
     super.disconnectedCallback();
   }
 
