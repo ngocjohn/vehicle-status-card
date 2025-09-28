@@ -346,7 +346,7 @@ export const ENTITY_SINGLE_TYPE_SCHEMA = (data: any) => {
   ] as const;
 };
 
-export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined, isGroupEntityType: boolean = false) =>
+export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string, isGroupEntityType: boolean = false) =>
   [
     {
       title: 'Group configuration',
@@ -431,7 +431,7 @@ export const ROW_GROUP_BASE_SCHEMA = (groupEntity?: string | undefined, isGroupE
       type: 'expandable',
       flatten: true,
       iconPath: mdiGestureTap,
-      schema: [...computeOptionalActionSchemaFull(!!groupEntity)],
+      schema: [...computeOptionalActionSchemaFull(true)],
     },
   ] as const;
 

@@ -12,13 +12,13 @@ import {
   PREVIEW,
   ButtonCardSubCardConfig,
 } from '../../../types/config/card/button-card';
-import { Create } from '../../../utils';
+import { computeVerticalStackConfig, Create } from '../../../utils';
 import { createSecondaryCodeLabel } from '../../../utils/editor/sub-editor-header';
 import { SubElementEditorConfig } from '../../../utils/editor/types';
-import { computeVerticalStackConfig } from '../../../utils/lovelace/create-custom-card';
 import { ButtonCardBaseEditor } from '../../button-card-base';
 import '../../shared/vsc-sub-element-editor';
 import './panel-button-card-default';
+import './panel-button-card-tire';
 import { SUB_PANEL } from '../../editor-const';
 import { MAIN_BUTTON_SCHEMA } from '../../form';
 
@@ -137,7 +137,17 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   }
 
   private _renderTireCardEditor(): TemplateResult {
-    return html`This is tire card editor.`;
+    if (this._selectedArea !== ButtonArea.TIRE_CARD) {
+      return html``;
+    }
+    return html`
+      <panel-button-card-tire
+        ._hass=${this._hass}
+        ._store=${this._store}
+        .tireConfig=${(this._customCardConfig!.elementConfig as ButtonCardSubCardConfig['tire_card']) || {}}
+        @tire-card-changed=${this._handleCustomCardConfigChanged}
+      ></panel-button-card-tire>
+    `;
   }
 
   private _renderSubCardSelect(): TemplateResult {

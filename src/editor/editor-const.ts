@@ -244,6 +244,7 @@ export enum ELEMENT {
   FORM_OPTIONAL_ACTIONS = 'ha-form-optional_actions',
   HA_EXPANSION_PANEL = 'ha-expansion-panel',
   CHIP_INPUT = 'ha-input-chip',
+  HA_BUTTON_MENU = 'ha-button-menu',
 }
 
 export enum SELECTOR {

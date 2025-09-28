@@ -139,7 +139,7 @@ export class PanelRowSubItem extends BaseEditor {
     const groupItems = config.items;
     const DATA_BASE = { ...config };
     const isGroupEntityType = !!(config.entity && isGroupEntity(this._hass.states[config.entity]));
-    const groupBaseForm = this._createHaForm(DATA_BASE, ROW_GROUP_BASE_SCHEMA(config.entity, isGroupEntityType));
+    const groupBaseForm = this._createHaForm(DATA_BASE, ROW_GROUP_BASE_SCHEMA(config?.entity, isGroupEntityType));
 
     const groupEntity = isGroupEntityType ? this._hass.states[config.entity!] : undefined;
 

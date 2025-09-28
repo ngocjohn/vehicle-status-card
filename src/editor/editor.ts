@@ -14,6 +14,7 @@ import { loadHaComponents, Create, refactorEditDialog } from '../utils';
 import '../utils/editor/menu-element';
 import { getSectionFromConfigArea } from '../utils/editor/area-select';
 import { cleanConfig } from '../utils/editor/clean-config';
+import { MenuElement } from '../utils/editor/menu-element';
 import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
 // Import struct
 import { selectTree } from '../utils/helpers-dom';
@@ -43,7 +44,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   @query(PANEL.MAP_EDITOR) _panelMapEditor?: ELEMENT.PanelMapEditor;
   @query(PANEL.BUTTON_SEC) _panelButtons?: ELEMENT.PanelButtonCardSec;
   @query(PANEL.LAYOUT_EDITOR) _panelLayoutEditor?: ELEMENT.PanelLayoutEditor;
-  @query(PANEL.EDITOR_UI) _panelEditorUI?: ELEMENT.PanelEditorUI;
 
   // Legacy Indicator Elements
   @query(PANEL.INDICATOR_SINGLE) _panelIndicatorSingle?: ELEMENT.PanelIndicatorSingle;
@@ -52,6 +52,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   // Legacy Button Card Element
   @query(PANEL.BUTTON_CARD) _panelButtonCard?: ELEMENT.PanelButtonCard;
 
+  @query('vsc-menu-element') _vscMenuElement?: MenuElement;
   constructor() {
     super(ConfigArea.DEFAULT);
   }
@@ -103,10 +104,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     super.disconnectedCallback();
   }
 
-  private get _hasLegacyIndicatorsConfig(): boolean {
-    return !!(this._config.indicators && Object.keys(this._config.indicators).length > 0);
-  }
-
   protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);
     if (!this._config) return;
@@ -146,9 +143,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
           ._store=${this._store}
           ._hass=${this._hass}
           ._config=${this._config}
-          .legacyIndicators=${!this._migratedIndicatorsConfig}
           .value=${this.configArea}
-          .editorConfigArea=${this.configArea}
           @menu-value-changed=${this._handleMenuValueChange}
         ></vsc-menu-element>
         ${this._renderSelectedConfigType()}
@@ -321,9 +316,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
   // convert the legacy indicators config to the new format
   private _convertLegacyIndicatorsConfig(): void {
-    if (!this._hasLegacyIndicatorsConfig) {
-      return;
-    }
     if (!this._config) {
       console.error('No config found to migrate.');
       return;

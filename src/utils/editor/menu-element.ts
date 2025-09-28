@@ -1,9 +1,9 @@
 import { CSSResultGroup, TemplateResult, css, html, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { CARD_VERSION } from '../../constants/const';
 import { BaseEditor } from '../../editor/base-editor';
-import { CONFIG_TYPES } from '../../editor/editor-const';
+import { CONFIG_TYPES, ELEMENT } from '../../editor/editor-const';
 import { fireEvent } from '../../ha/common/dom/fire_event';
 import { SectionOrder } from '../../types/config';
 import { stopPropagation } from '../helpers-dom';
@@ -37,9 +37,9 @@ declare global {
 
 @customElement('vsc-menu-element')
 export class MenuElement extends BaseEditor {
-  @property({ attribute: false }) public legacyIndicators: boolean = false;
   @property() public value?: string;
   @state() private _open = false;
+  @query(ELEMENT.HA_BUTTON_MENU) _buttonMenu!: Element;
 
   protected render(): TemplateResult {
     const options = CONFIG_TYPES.options;
@@ -183,7 +183,7 @@ export class MenuElement extends BaseEditor {
             html`<div class="tip-item" @click="${() => this._handleItemClick(key)}" role="button" tabindex="0">
               <div class="tip-title">
                 ${name}
-                ${key === 'indicators' && this.legacyIndicators ? html`<span>New Config Format!</span>` : nothing}
+                ${key === 'indicators' && this._legacyIndicator ? html`<span>New Config Format!</span>` : nothing}
               </div>
               <span>${description}</span>
             </div>`

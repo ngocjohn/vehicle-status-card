@@ -110,6 +110,9 @@ export class BaseEditor extends LitElement {
     return this._editor?._config as VehicleStatusCardConfig;
   }
 
+  get _legacyIndicator(): boolean {
+    return !!(this._cardConfig?.indicators && Object.keys(this._cardConfig.indicators).length > 0);
+  }
   protected _getButtonGridCols(): number {
     const cols = this._cardConfig?.layout_config?.button_grid?.columns || 2;
     return Math.max(2, Math.min(cols, 4)); // Clamp between 2 and 4

@@ -31,8 +31,6 @@ export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities
 
 export const TireLayoutKeys = [
   'title',
-  'background',
-  'background_entity',
   'horizontal',
   'image_size',
   'value_size',
@@ -40,5 +38,7 @@ export const TireLayoutKeys = [
   'left',
   'hide_rotation_button',
 ] as const;
+
+export const TireBackgroundKeys = ['background', 'background_entity'] as const;
 
 export const TireItems = ['front_left', 'front_right', 'rear_left', 'rear_right'] as const;

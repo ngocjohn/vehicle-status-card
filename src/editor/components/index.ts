@@ -8,6 +8,7 @@ export * from './panel-button-card-sec';
 export * from './button-card/panel-button-card-main';
 export * from './button-card/panel-button-card-default';
 export * from './button-card/panel-button-card-default-item';
+export * from './button-card/panel-button-card-tire';
 
 // Image components
 export * from './slide-images/panel-images-editor';

@@ -35,6 +35,7 @@ export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
       },
       {
         name: '',
+        flatten: true,
         type: 'grid',
         schema: [
           {
@@ -81,10 +82,16 @@ export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
 export const TIRE_BACKGROUND_SCHEMA = [
   {
     name: 'background',
-    label: 'Background image URL',
+    label: 'Background image',
     selector: { image: {} },
     helper:
       'The image should be square with a maximum resolution of 450x450 pixels. A transparent background is recommended.',
+  },
+  {
+    name: 'background_entity',
+    label: 'Background entity',
+    selector: { entity: { domain: ['image'] } },
+    helper: 'If set, the background image will be taken from this entity.',
   },
 ] as const;
 
@@ -94,6 +101,7 @@ export const TIRE_ENTITY_SCHEMA = memoizeOne(
       {
         name: tirePosition,
         type: 'expandable',
+        flatten: false,
         label: tirePosition.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
         schema: [
           {
