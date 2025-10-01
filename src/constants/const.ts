@@ -17,6 +17,7 @@ export enum COMPONENT {
   INDICATOR_ITEM = `${PREFIX_NAME}-indicator-item`,
   INDICATORS_GROUP = `${PREFIX_NAME}-indicators-group`,
   BUTTONS_GROUP = `${PREFIX_NAME}-buttons-group`,
+  BUTTON_CARD_ITEM = `${PREFIX_NAME}-button-card-item`,
 }
 
 export type ComponentType = COMPONENT;

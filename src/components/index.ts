@@ -6,6 +6,7 @@ export * from './vsc-range-info';
 
 // Btn components
 export * from './vsc-buttons-group';
+export * from './shared/button/vsc-button-card-item';
 export * from './shared/button/vsc-btn-card';
 export * from './shared/button/vsc-state-item';
 // legacy buttons grid

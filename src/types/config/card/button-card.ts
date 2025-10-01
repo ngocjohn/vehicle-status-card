@@ -118,5 +118,21 @@ export const BUTTON_CARD_TEMPLATE_KEYS = [
 
 export type ButtonCardTemplateKey = (typeof BUTTON_CARD_TEMPLATE_KEYS)[number];
 
+export const BUTTON_SHOW_CONFIG_KEYS = [
+  'show_primary',
+  'show_secondary',
+  'show_icon',
+  'primary_info',
+  'icon_type',
+  'state_color',
+  'include_state_template',
+  'layout',
+  'transparent',
+  'secondary_multiline',
+  'state_content',
+] as const;
+
+export type ButtonShowConfigKey = (typeof BUTTON_SHOW_CONFIG_KEYS)[number];
+
 export const PREVIEW = ['default_card', 'custom_card', 'tire_card'] as const;
 export type PreviewType = (typeof PREVIEW)[number];

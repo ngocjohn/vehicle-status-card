@@ -50,6 +50,7 @@ export const configHasDeprecatedProps = (config: VehicleStatusCardConfig): boole
     config.mini_map.extra_entities.length
   );
   const hasButtonLegacy = !!config.button_card?.length;
+  // const needsUpdate = Boolean(hasImageLegacyConfig || hasLayoutHide || hasMiniMapExtraEntities);
   const needsUpdate = Boolean(hasImageLegacyConfig || hasLayoutHide || hasMiniMapExtraEntities || hasButtonLegacy);
   if (needsUpdate) {
     console.debug('Config needs update:', {

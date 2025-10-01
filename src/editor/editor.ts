@@ -70,8 +70,8 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   public setConfig(config: VehicleStatusCardConfig): void {
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
-
-    if (configHasDeprecatedProps(config)) {
+    const keepLegacyBtnTest = config?.name?.includes('LEGACY BTN');
+    if (configHasDeprecatedProps(config) && !keepLegacyBtnTest) {
       const updatedConfig = updateDeprecatedConfig(config);
       fireEvent(this, 'config-changed', { config: updatedConfig });
       return;

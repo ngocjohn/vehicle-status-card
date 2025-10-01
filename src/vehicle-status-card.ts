@@ -30,6 +30,8 @@ import {
   TireTemplateConfig,
   VehicleStatusCardConfig,
   BaseButtonCardItemConfig,
+  ButtonCardSubCardConfig,
+  CardDefaultConfig,
 } from './types/config';
 import { ConfigArea } from './types/config-area';
 import { SECTION_KEYS } from './types/config/card/layout';
@@ -107,12 +109,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     const newConfig = JSON.parse(JSON.stringify(config));
-    // if (newConfig.button_card && newConfig.button_card.length) {
-    //   console.debug('legacy button_card config found');
-    //   // Backward compatibility for legacy button_card config
-    //   this._buttonCardConfigItem = newConfig.button_card as ButtonCardConfig[];
-    //   console.debug('config button_card:', this._buttonCardConfigItem);
-    // }
+    if (newConfig.button_card && newConfig.button_card.length) {
+      console.debug('legacy button_card config found');
+      // Backward compatibility for legacy button_card config
+      this._buttonCardConfigItem = newConfig.button_card as ButtonCardConfig[];
+      console.debug('config button_card:', this._buttonCardConfigItem);
+    }
     // this._config = newConfig;
     this._config = {
       ...updateDeprecatedConfig(newConfig),
@@ -461,13 +463,14 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   private _renderSelectedCard(): TemplateResult {
     const index = this._activeCardIndex;
     if (index === null) return html``;
+    const selectedBtnConfig = this._newButtonConfig![index as number] as BaseButtonCardItemConfig;
+    const cardType = selectedBtnConfig?.card_type ?? 'default';
 
     const {
-      card_type: cardType = 'default',
       default_card: defaultCard,
       custom_card: customCard,
       tire_card: tireCard = {} as TireTemplateConfig,
-    } = this._buttonCardConfigItem![index] as ButtonCardConfig;
+    } = selectedBtnConfig.sub_card as ButtonCardSubCardConfig;
 
     const renderButton = (label: string, icon: string, action: () => void): TemplateResult => {
       return html`
@@ -512,6 +515,60 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       </main>
     `;
   }
+  // private _renderSelectedCard(): TemplateResult {
+  //   const index = this._activeCardIndex;
+  //   if (index === null) return html``;
+
+  //   const {
+  //     card_type: cardType = 'default',
+  //     default_card: defaultCard,
+  //     custom_card: customCard,
+  //     tire_card: tireCard = {} as TireTemplateConfig,
+  //   } = this._buttonCardConfigItem![index] as ButtonCardConfig;
+
+  //   const renderButton = (label: string, icon: string, action: () => void): TemplateResult => {
+  //     return html`
+  //       <ha-icon-button
+  //         class="click-shrink headder-btn"
+  //         .label=${label}
+  //         .path=${icon}
+  //         @click=${action}
+  //       ></ha-icon-button>
+  //     `;
+  //   };
+  //   const cardHeaderBox = html`
+  //     <div class="added-card-header">
+  //       ${renderButton('Close', ICON.CLOSE, () => (this._activeCardIndex = null))}
+  //       <div class="card-toggle">
+  //         ${renderButton('Previous', ICON.CHEVRON_LEFT, () => this.toggleCard('prev'))}
+  //         ${renderButton('Next', ICON.CHEVRON_RIGHT, () => this.toggleCard('next'))}
+  //       </div>
+  //     </div>
+  //   `;
+
+  //   let selectedContent: unknown = nothing;
+
+  //   if (cardType === 'default') {
+  //     selectedContent = defaultCard?.length
+  //       ? defaultCard.map((card) => this._renderDefaultCardItems(card))
+  //       : this._showWarning('Default card not found, configure it in the editor');
+  //   } else if (cardType === 'custom') {
+  //     selectedContent = customCard?.length
+  //       ? customCard.map((card) => this._renderCustomCard(card))
+  //       : this._showWarning('Custom card not found');
+  //   } else if (cardType === 'tire') {
+  //     selectedContent = this._renderTireCard(tireCard);
+  //   }
+
+  //   return html`
+  //     <main id="cards-wrapper">
+  //       ${cardHeaderBox}
+  //       <section class="card-element">
+  //         <div class="added-card">${selectedContent}</div>
+  //       </section>
+  //     </main>
+  //   `;
+  // }
 
   private _renderCustomCard(card: LovelaceCardConfig) {
     return html`<vsc-custom-card-element
@@ -521,7 +578,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     ></vsc-custom-card-element>`;
   }
 
-  private _renderDefaultCardItems(data: DefaultCardConfig): TemplateResult {
+  private _renderDefaultCardItems(data: DefaultCardConfig | CardDefaultConfig): TemplateResult {
     return html` <vsc-default-card .hass=${this._hass} ._data=${data} ._store=${this._store}></vsc-default-card> `;
   }
 

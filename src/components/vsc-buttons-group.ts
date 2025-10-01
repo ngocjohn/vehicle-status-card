@@ -11,6 +11,7 @@ import { COMPONENT } from '../constants/const';
 import { BaseButtonCardItemConfig } from '../types/config/card/button-card';
 import { SECTION } from '../types/section';
 import { BaseElement } from '../utils/base-element';
+import '../components/shared/button/vsc-button-card-item';
 
 @customElement(COMPONENT.BUTTONS_GROUP)
 export class VscButtonsGroup extends BaseElement {
@@ -75,15 +76,37 @@ export class VscButtonsGroup extends BaseElement {
   }
 
   private _renderButton(button: BaseButtonCardItemConfig, index: number): TemplateResult {
-    const btnCfg = button as BaseButtonCardItemConfig;
-    const contentText = btnCfg.name ?? btnCfg.entity ?? '';
     return html`
-      <div class="button-item" data-index=${index}>
-        <div>Button ${index + 1}</div>
-        <div>${contentText}</div>
-      </div>
+      <vsc-button-card-item
+        ._hass=${this._hass}
+        ._store=${this._store}
+        ._btnConfig=${button}
+        .itemIndex=${index}
+        @click-index=${this._handleClickIndex.bind(this)}
+      ></vsc-button-card-item>
     `;
   }
+
+  _handleClickIndex(ev: Event): void {
+    ev.stopPropagation();
+    const index = (ev.target as any).itemIndex;
+    console.debug('Button index clicked:', index);
+    setTimeout(() => {
+      this._store.card._currentSwipeIndex = this.activeSlideIndex;
+      this._store.card._activeCardIndex = index;
+    }, 50);
+  }
+
+  // private _renderButton(button: BaseButtonCardItemConfig, index: number): TemplateResult {
+  //   const btnCfg = button as BaseButtonCardItemConfig;
+  //   const contentText = btnCfg.name ?? btnCfg.entity ?? '';
+  //   return html`
+  //     <div class="button-item" data-index=${index}>
+  //       <div>Button ${index + 1}</div>
+  //       <div>${contentText}</div>
+  //     </div>
+  //   `;
+  // }
 
   private _computeStyle() {
     const { columns } = this._store.gridConfig;
