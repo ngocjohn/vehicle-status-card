@@ -66,8 +66,8 @@ export interface DefaultCardConfig {
  * ButtonCardConfig Interface
  * This interface defines the structure of the button card configuration
  * used in the Vehicle Status Card.
+ * @deprecated Use BaseButtonCardItemConfig instead
  */
-
 export interface ButtonCardConfig extends BaseButtonConfig {
   custom_card: LovelaceCardConfig[];
   default_card: DefaultCardConfig[];

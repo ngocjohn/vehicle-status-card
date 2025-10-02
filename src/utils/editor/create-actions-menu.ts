@@ -49,6 +49,7 @@ export const BUTTON_ACTION_MENU: MenuItemConfig[] = [
   { title: 'Show Button', action: ACTIONS.SHOW_BUTTON, icon: 'mdi:eye' },
   { title: 'Duplicate', action: ACTIONS.DUPLICATE_BUTTON, icon: 'mdi:content-duplicate' },
   { title: 'Hide on card', action: ACTIONS.HIDE_BUTTON, icon: 'mdi:eye-off' },
+  { title: 'Unhide on card', action: ACTIONS.UNHIDE_BUTTON, icon: 'mdi:eye' },
   {
     title: 'Delete',
     action: ACTIONS.DELETE_BUTTON,
@@ -74,13 +75,24 @@ export const IMAGE_MENU_ACTIONS: MenuItemConfig[] = [
   { title: 'Delete Image', action: 'delete-image', icon: 'mdi:delete' },
 ];
 
+export const CONFIG_AREA_ACTIONS: MenuItemConfig[] = [
+  { title: 'Show section', action: 'show-area', icon: 'mdi:eye' },
+  { title: 'Documentation', action: 'open-doc', icon: 'mdi:book-open-variant' },
+];
+
+export const BUTTON_DEFAULT_CARD_CATEGORY_ACTIONS: MenuItemConfig[] = [
+  { title: 'Edit Category', action: 'edit', icon: 'mdi:pencil' },
+  { title: 'Duplicate Category', action: 'duplicate', icon: 'mdi:content-duplicate' },
+  { title: 'Delete Category', action: 'delete', icon: 'mdi:delete' },
+];
+
 export const _renderActionItem = ({
   item,
   onClick,
   option,
 }: {
   item: MenuItemConfig;
-  onClick: (ev) => void;
+  onClick?: (ev) => void;
   option?: any;
 }): TemplateResult => {
   const deleteClass = /(delete|remove)/.test(item.action) ? 'error' : '';

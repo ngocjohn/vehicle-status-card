@@ -55,6 +55,7 @@ export class VscEditorForm extends BaseEditor {
     await this.updateComplete;
     if (this._haForm.shadowRoot) {
       this._stylesManager.addStyle([HA_FORM_STYLE], this._haForm.shadowRoot);
+      this._changeChips();
     }
     this._addEventListeners();
   }
@@ -160,7 +161,7 @@ export class VscEditorForm extends BaseEditor {
       Array.from(chipInputs).forEach((chip) => {
         const hasStyle = chip.getAttribute('data-styled') === 'true';
         if (!hasStyle) {
-          console.debug('adding style to chip:', chip.label);
+          // console.debug('adding style to chip:', chip.label);
           this._stylesManager.addStyle([CHIP_CONTAINER_STYLE], chip.shadowRoot!);
           chip.setAttribute('data-styled', 'true');
         }
@@ -174,6 +175,21 @@ export class VscEditorForm extends BaseEditor {
       const haChipSet = await selectTree(target.shadowRoot!, SELECTOR.HA_CHIP_SET);
       this._changeChipInputStyle(haChipSet);
     }
+  };
+
+  private _changeChips = () => {
+    setTimeout(async () => {
+      if (this.schema === undefined || this.schema === null) {
+        if (this.schema![0]?.name !== 'section_order') {
+          return;
+        }
+      }
+      const haChipSet = await selectTree(this._haForm.shadowRoot!, SELECTOR.HA_CHIP_SET);
+      if (haChipSet) {
+        this._haForm.addEventListener('value-changed', this._chipsChanged.bind(this));
+        this._changeChipInputStyle(haChipSet);
+      }
+    }, 100);
   };
 
   static get styles(): CSSResultGroup {

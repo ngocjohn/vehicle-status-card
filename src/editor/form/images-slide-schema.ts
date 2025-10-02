@@ -6,7 +6,7 @@ export const ImageSchema = [
   {
     name: 'image',
     required: false,
-    selector: { image: {} },
+    selector: { image: { original: true } },
   },
   {
     name: 'image_entity',

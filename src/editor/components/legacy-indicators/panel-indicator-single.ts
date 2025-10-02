@@ -2,13 +2,13 @@ import { LitElement, html, TemplateResult, CSSResultGroup, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import editorcss from '../../css/editor.css';
-import { fireEvent, HomeAssistant } from '../../ha';
-import '../shared/panel-yaml-editor';
-import { IndicatorItemConfig } from '../../types/config';
-import { ICON } from '../../utils';
-import { VehicleStatusCardEditor } from '../editor';
-import { singleIndicatorSchema, singleApparenceSchema, singleActionSchema } from '../form';
+import editorcss from '../../../css/editor.css';
+import { fireEvent, HomeAssistant } from '../../../ha';
+import '../../shared/panel-yaml-editor';
+import { IndicatorItemConfig } from '../../../types/config';
+import { ICON } from '../../../utils';
+import { VehicleStatusCardEditor } from '../../editor';
+import { singleIndicatorSchema, singleApparenceSchema, singleActionSchema } from '../../form';
 
 @customElement('panel-indicator-single')
 export class PanelIndicatorSingle extends LitElement {

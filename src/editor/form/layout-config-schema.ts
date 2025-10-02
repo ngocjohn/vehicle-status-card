@@ -23,32 +23,34 @@ export const HIDE_CARD_NAME_SCHEMA = (disabled: boolean = false) => {
     },
   ] as const;
 };
+
 // SECTION ORDER
 export const SECTION_ORDER_SCHEMA = [
+  {
+    name: 'section_order',
+    label: 'Choose section to display',
+    helper: 'Drag to reorder the sections as you want them to appear on the card.',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        multiple: true,
+        reorder: true,
+        options: SECTION_KEYS.map((option) => ({
+          value: option,
+          label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
+        })),
+      },
+    },
+  },
+] as const;
+export const SECTION_ORDER_SCHEMA_EXPAND = [
   {
     title: 'Sections Order',
     type: 'expandable',
     flatten: true,
     iconPath: mdiListBox,
     context: { isSectionOrder: true },
-    schema: [
-      {
-        name: 'section_order',
-        label: 'Choose section to display',
-        helper: 'Drag to reorder the sections as you want them to appear on the card.',
-        selector: {
-          select: {
-            mode: 'dropdown',
-            multiple: true,
-            reorder: true,
-            options: SECTION_KEYS.map((option) => ({
-              value: option,
-              label: capitalizeFirstLetter(option.replace(/_/g, ' ')),
-            })),
-          },
-        },
-      },
-    ],
+    schema: [...SECTION_ORDER_SCHEMA],
   },
 ] as const;
 
@@ -87,40 +89,6 @@ export const BUTTON_GRID_SCHEMA = (swipeDisabled: boolean = false) =>
           selector: { number: { mode: 'box', min: 1, step: 1 } },
         },
       ],
-    },
-    {
-      name: 'transparent',
-      label: 'Transparent background',
-      type: 'boolean',
-      default: false,
-      helper: 'Use this option to make the button background transparent.',
-    },
-    {
-      name: 'hide_notify_badge',
-      label: 'Hide notify badge',
-      type: 'boolean',
-      default: false,
-      helper: 'Use this option to hide the notification badge on the button.',
-    },
-    {
-      name: 'button_layout',
-      label: 'Button layout',
-      required: true,
-      default: 'horizontal',
-      selector: {
-        select: {
-          mode: 'box',
-          options: ['horizontal', 'vertical'].map((value) => ({
-            label: value.charAt(0).toUpperCase() + value.slice(1),
-            value,
-            image: {
-              src: `/static/images/form/tile_content_layout_${value}.svg`,
-              src_dark: `/static/images/form/tile_content_layout_${value}_dark.svg`,
-              flip_rtl: true,
-            },
-          })),
-        },
-      },
     },
   ] as const;
 

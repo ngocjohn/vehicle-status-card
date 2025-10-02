@@ -1,6 +1,7 @@
 import { VehicleStatusCardEditor } from '../editor/editor';
 import { HomeAssistant } from '../ha/types';
 import {
+  BaseButtonCardItemConfig,
   ButtonCardConfig,
   ButtonGridConfig,
   IndicatorRowConfig,
@@ -9,7 +10,9 @@ import {
   RangeInfoConfig,
   VehicleStatusCardConfig,
 } from '../types/config';
+import { ConfigArea } from '../types/config-area';
 import { SectionOrder } from '../types/config/card/layout';
+import { SECTION } from '../types/section';
 import { VehicleStatusCard } from '../vehicle-status-card';
 /**
  * Card storage class to manage the VehicleStatusCard configuration.
@@ -21,7 +24,15 @@ export class Store {
   public card!: VehicleStatusCard;
   public _editor?: VehicleStatusCardEditor;
   public hass?: HomeAssistant;
-  constructor(card: VehicleStatusCard | VehicleStatusCardEditor, config: VehicleStatusCardConfig) {
+  static selectedConfigArea: ConfigArea = ConfigArea.DEFAULT;
+  public sectionInEditor?: SECTION;
+  public _cardPreview?: VehicleStatusCard;
+
+  constructor(
+    card: VehicleStatusCard | VehicleStatusCardEditor,
+    config: VehicleStatusCardConfig,
+    sectionInEditor?: SECTION
+  ) {
     this._config = config;
     if (card instanceof VehicleStatusCardEditor) {
       this._editor = card;
@@ -32,21 +43,36 @@ export class Store {
     } else {
       throw new Error('Invalid card type. Expected VehicleStatusCard or VehicleStatusCardEditor.');
     }
-  }
-  public get config(): VehicleStatusCardConfig {
-    return this._config;
+    if (sectionInEditor) {
+      this.sectionInEditor = sectionInEditor;
+    }
   }
 
+  set cardPreview(card: VehicleStatusCard | undefined) {
+    this._cardPreview = card;
+  }
+
+  get cardPreview(): VehicleStatusCard | undefined {
+    return this._cardPreview;
+  }
+
+  public SetSelectedSection(section: SECTION | undefined) {
+    this.sectionInEditor = section;
+  }
+
+  public get _sectionInEditor(): SECTION | undefined {
+    return this.sectionInEditor;
+  }
   /**
    * Get the button card configuration.
    * @returns {ButtonCardConfig[]} Array of button card configurations.
    * This method retrieves the button card configurations from the main configuration.
    */
-  public get buttons(): ButtonCardConfig[] {
-    return this._config.button_card || [];
+  public get buttons(): (ButtonCardConfig | BaseButtonCardItemConfig)[] {
+    return this._config.button_card || this._config.button_cards || [];
   }
 
-  public get visibleButtons(): ButtonCardConfig[] {
+  public get visibleButtons(): (ButtonCardConfig | BaseButtonCardItemConfig)[] {
     return this.buttons.filter((button) => !button.hide_button);
   }
 

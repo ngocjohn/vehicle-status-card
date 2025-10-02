@@ -12,6 +12,10 @@
 	/* padding-block: var(--vic-gutter-gap); */
 }
 
+.card-config>ha-alert {
+	margin-bottom: var(--vic-gutter-gap);
+}
+
 .sub-card-header {
 	display: flex;
 	justify-content: space-between;

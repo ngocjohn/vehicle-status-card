@@ -7,3 +7,4 @@ export * from './images-slide-schema';
 export * from './range-config-schema';
 export * from './layout-config-schema';
 export * from './indicator-row-schema';
+export * from './button-card-schema';

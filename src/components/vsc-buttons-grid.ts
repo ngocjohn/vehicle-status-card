@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
-import { customElement, queryAll, state } from 'lit/decorators.js';
+import { customElement, queryAll, state, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 // swiper
 import Swiper from 'swiper';
@@ -9,12 +9,13 @@ import swipercss from 'swiper/swiper-bundle.css';
 import './shared/vsc-button-single';
 import { COMPONENT } from '../constants/const';
 import { ButtonCardConfig } from '../types/config';
+import { SECTION } from '../types/section';
 import { BaseElement } from '../utils/base-element';
 import { VehicleButtonSingle } from './shared/vsc-button-single';
 
 @customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {
-  @state() private buttons!: ButtonCardConfig[];
+  @property({ attribute: false }) private buttons!: ButtonCardConfig[];
   @state() private useSwiper!: boolean;
 
   @state() private swiper?: Swiper;
@@ -24,13 +25,13 @@ export class VehicleButtonsGrid extends BaseElement {
   @queryAll('vsc-button-single') _buttonElements!: NodeListOf<VehicleButtonSingle>;
 
   constructor() {
-    super();
+    super(SECTION.BUTTONS);
   }
   protected willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
     if (changedProperties.has('_store') && this._store) {
       this.useSwiper = this._store.gridConfig.swipe!;
-      this.buttons = this._store.visibleButtons;
+      // this.buttons = this._store.visibleButtons as ButtonCardConfig[];
     }
   }
 

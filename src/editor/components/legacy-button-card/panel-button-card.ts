@@ -3,21 +3,22 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { fireEvent } from '../../ha';
+import { ButtonListEditorEventParams } from '..';
+import { fireEvent } from '../../../ha';
 import {
   VehicleStatusCardConfig,
   DefaultCardConfig,
   ButtonCardConfig,
   TireTemplateConfig,
   BaseButtonConfig,
-} from '../../types/config';
-import { ICON } from '../../utils';
-import { Create, showConfirmDialog } from '../../utils';
-import { BaseEditor } from '../base-editor';
-import * as ELEMENT from '../components';
-import { ButtonListEditorEventParams } from '../components';
-import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS, PANEL } from '../editor-const';
-import { DEFAULT_TIRE_CONFIG } from '../form';
+} from '../../../types/config';
+import { ConfigArea } from '../../../types/config-area';
+import { ICON } from '../../../utils';
+import { Create, showConfirmDialog } from '../../../utils';
+import { BaseEditor } from '../../base-editor';
+import { BUTTON_CARD_ACTIONS, CONFIG_TYPES, NEW_BUTTON_CONFIG, ACTIONS, PANEL } from '../../editor-const';
+import { DEFAULT_TIRE_CONFIG } from '../../form';
+import * as ELEMENT from '../index';
 
 @customElement(PANEL.BUTTON_CARD)
 export class PanelButtonCard extends BaseEditor {
@@ -44,7 +45,7 @@ export class PanelButtonCard extends BaseEditor {
   }
 
   constructor() {
-    super();
+    super(ConfigArea.BUTTONS);
     this.toggleAction = this.toggleAction.bind(this);
   }
 
@@ -114,7 +115,7 @@ export class PanelButtonCard extends BaseEditor {
   private _renderButtonCardConfig(): TemplateResult {
     const buttonIndex = this._buttonIndex!;
 
-    const buttonCard = this.config.button_card[buttonIndex];
+    const buttonCard = this.config.button_card![buttonIndex] as ButtonCardConfig;
     const button = buttonCard.button;
     const defaultCard = buttonCard.default_card || [];
     const configTabs = [
@@ -222,7 +223,7 @@ export class PanelButtonCard extends BaseEditor {
 
   private _renderButtonConfig(buttonCard: ButtonCardConfig, buttonIndex: number): TemplateResult {
     const headerActions =
-      this.config.layout_config.section_order?.includes('buttons') && !buttonCard.hide_button
+      this.config.layout_config?.section_order?.includes('buttons') && !buttonCard.hide_button
         ? [{ title: 'Show Button', action: this.toggleAction('show-button', buttonIndex) }]
         : [];
 
@@ -404,7 +405,8 @@ export class PanelButtonCard extends BaseEditor {
 
   private _renderCardItemList(cardIndex: number, buttonIndex: number): TemplateResult {
     if (this._cardIndex === null) return html``;
-    const baseCard = this.config.button_card[buttonIndex].default_card[cardIndex] as DefaultCardConfig;
+    const buttonConfig = this.config.button_card![buttonIndex] as ButtonCardConfig;
+    const baseCard = buttonConfig.default_card[cardIndex] as DefaultCardConfig;
 
     const itemHeader = this._renderSubHeader(
       `Category: ${baseCard.title}`,
@@ -430,7 +432,8 @@ export class PanelButtonCard extends BaseEditor {
   }
 
   private _renderCustomCardConfig(buttonIndex: number): TemplateResult {
-    const customCard = this.config.button_card[buttonIndex].custom_card;
+    const buttonCard = this.config.button_card![buttonIndex] as ButtonCardConfig;
+    const customCard = buttonCard.custom_card;
     const isHidden = customCard === undefined || !customCard.length;
 
     return html`
@@ -555,7 +558,7 @@ export class PanelButtonCard extends BaseEditor {
               if (!confirm) {
                 return;
               }
-              const buttonCardConfig = [...(this.config.button_card || [])];
+              const buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
               const defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
               defaultCard.splice(cardIndex, 1);
               buttonCardConfig[buttonIndex].default_card = defaultCard;
@@ -565,7 +568,7 @@ export class PanelButtonCard extends BaseEditor {
           case 'category-duplicate':
             if (buttonIndex !== undefined && cardIndex !== undefined) {
               console.log('Duplicate category', buttonIndex, cardIndex);
-              let buttonCardConfig = [...(this.config.button_card || [])];
+              let buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
               const defaultCards = buttonCardConfig[buttonIndex]?.default_card || [];
               console.log('Default cards', defaultCards);
               const newCard = JSON.parse(JSON.stringify(defaultCards[cardIndex]));
@@ -582,7 +585,7 @@ export class PanelButtonCard extends BaseEditor {
             break;
           case 'category-add':
             if (buttonIndex !== undefined) {
-              const buttonCardConfig = [...(this.config.button_card || [])];
+              const buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
               const defaultCard = buttonCardConfig[buttonIndex]?.default_card || [];
               const newCard = { title: 'New Category', collapsed_items: false, items: [] };
               buttonCardConfig[buttonIndex].default_card = [...defaultCard, newCard];
@@ -668,7 +671,7 @@ export class PanelButtonCard extends BaseEditor {
       return;
     } else if (index !== null) {
       this._activePreview = type;
-      const buttonCardConfig = this.config.button_card[index];
+      const buttonCardConfig = this.config.button_card![index] as ButtonCardConfig;
       let previewConfig: any = {};
 
       switch (type) {
@@ -750,7 +753,7 @@ export class PanelButtonCard extends BaseEditor {
       return;
     }
     const newConfig = value;
-    let buttonCardConfig = [...(this.config.button_card || [])];
+    let buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
     let buttonConfig = { ...buttonCardConfig[index] };
     buttonConfig.default_card = newConfig;
     buttonCardConfig[index] = buttonConfig;

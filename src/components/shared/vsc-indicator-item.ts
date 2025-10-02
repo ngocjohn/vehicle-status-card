@@ -29,6 +29,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
   @property({ type: Number, attribute: 'item-index' }) public itemIndex?: number;
   @property({ type: Boolean, reflect: true }) public active = false;
   @property({ attribute: false }) private globalAppearance?: GlobalAppearanceConfig;
+  @property({ type: Boolean, reflect: true, attribute: 'dimmed-in-editor' }) public dimmedInEditor = false;
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
 
   private get _visibility(): boolean {
@@ -162,14 +163,15 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
 
   static get styles() {
     return css`
+      :host([dimmed-in-editor]),
       :host(.dimmed) {
         opacity: 0.2;
         filter: blur(1px);
       }
+      :host([dimmed-in-editor]):hover,
       :host(.dimmed:hover) {
         opacity: 1 !important;
         filter: none !important;
-        transition: all 0.3s ease-in-out;
       }
       :host(.peek) {
         border: 1px solid var(--accent-color);

@@ -3,15 +3,15 @@ import { cloneDeep } from 'es-toolkit';
 import { html, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import editorcss from '../../css/editor.css';
-import { fireEvent, HASSDomEvent, LovelaceCardConfig, LovelaceConfig } from '../../ha';
-import { VehicleStatusCardConfig } from '../../types/config';
-import '../../utils/editor/vic-tab-bar';
-import '../../utils/editor/vic-tab';
-import { ICON } from '../../utils';
-import { BaseEditor } from '../base-editor';
-import { VehicleStatusCardEditor } from '../editor';
-import { PANEL } from '../editor-const';
+import editorcss from '../../../css/editor.css';
+import { fireEvent, HASSDomEvent, LovelaceCardConfig, LovelaceConfig } from '../../../ha';
+import { ButtonCardConfig, VehicleStatusCardConfig } from '../../../types/config';
+import '../../../utils/editor/vic-tab-bar';
+import '../../../utils/editor/vic-tab';
+import { ICON } from '../../../utils';
+import { BaseEditor } from '../../base-editor';
+import { VehicleStatusCardEditor } from '../../editor';
+import { PANEL } from '../../editor-const';
 export interface GUIModeChangedEvent {
   guiMode: boolean;
   guiModeAvailable: boolean;
@@ -103,7 +103,8 @@ export class PanelEditorUI extends BaseEditor {
     }
 
     this.cardEditor = this._editor!;
-    this.cards = this.config.button_card[this.buttonIndex].custom_card;
+    const buttonCardConfig = this.config.button_card![this.buttonIndex] as ButtonCardConfig;
+    this.cards = buttonCardConfig.custom_card;
 
     const selected = this._selectedCard!;
     const cardsLength = this.cards.length;
@@ -225,7 +226,7 @@ export class PanelEditorUI extends BaseEditor {
       this.config = { ...this.config, card_preview: cards };
     }
 
-    let buttonCardConfig = [...(this.config.button_card || [])];
+    let buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
     let buttonConfig = { ...buttonCardConfig[this.buttonIndex] };
     buttonConfig.custom_card = cards;
     buttonCardConfig[this.buttonIndex] = buttonConfig;
@@ -243,7 +244,7 @@ export class PanelEditorUI extends BaseEditor {
     const config = ev.detail.config;
     const cards = [...(this.cards || []), config];
 
-    let buttonCardConfig = [...(this.config.button_card || [])];
+    let buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
     let buttonConfig = { ...buttonCardConfig[this.buttonIndex] };
 
     this._copyToPreview(cards);
@@ -267,7 +268,7 @@ export class PanelEditorUI extends BaseEditor {
     cards.splice(target, 0, movedCard);
 
     // Update the button card config
-    let buttonCardConfig = [...(this.config.button_card || [])];
+    let buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
     let buttonConfig = { ...buttonCardConfig[this.buttonIndex] };
 
     buttonConfig.custom_card = cards;
@@ -306,7 +307,7 @@ export class PanelEditorUI extends BaseEditor {
 
     const cards = [...(this.cards || [])];
     cards.splice(this._selectedCard, 1);
-    const buttonCardConfig = [...(this.config.button_card || [])];
+    const buttonCardConfig = [...(this.config.button_card || [])] as ButtonCardConfig[];
     const buttonConfig = { ...buttonCardConfig[this.buttonIndex] };
     buttonConfig.custom_card = cards;
     buttonCardConfig[this.buttonIndex] = buttonConfig;

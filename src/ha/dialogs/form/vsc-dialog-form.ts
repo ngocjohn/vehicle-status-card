@@ -8,6 +8,7 @@ import type { FormDialogData, FormDialogParams } from './show-form-dialog';
 
 import { createCloseHeading } from '../../../utils/editor/create';
 import { fireEvent } from '../../common/dom/fire_event';
+import '../../../editor/shared/vsc-editor-form';
 
 @customElement('vsc-dialog-form')
 export class VscDialogForm extends LitElement implements HassDialog<FormDialogData> {
@@ -47,7 +48,16 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
     if (!this._params || !this.hass) {
       return nothing;
     }
-
+    //eslint-disable-next-line
+    const haForm = html` <ha-form
+      dialogInitialFocus
+      .hass=${this.hass}
+      .computeLabel=${this._params?.computeLabel || this.computeLabel}
+      .computeHelper=${this._params?.computeHelper || this.computeHelper}
+      .data=${this._data}
+      .schema=${this._params.schema}
+      @value-changed=${this._valueChanged}
+    ></ha-form>`;
     return html`
       <ha-dialog
         open
@@ -56,15 +66,14 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
         .heading=${createCloseHeading(this.hass, this._params.title)}
         @closed=${this._cancel}
       >
-        <ha-form
+        <vsc-editor-form
           dialogInitialFocus
-          .hass=${this.hass}
-          .computeLabel=${this._params?.computeLabel || this.computeLabel}
-          .computeHelper=${this._params?.computeHelper || this.computeHelper}
+          ._hass=${this.hass}
           .data=${this._data}
           .schema=${this._params.schema}
           @value-changed=${this._valueChanged}
-        ></ha-form>
+        ></vsc-editor-form>
+
         <ha-button appearance="plain" @click=${this._cancel} slot="secondaryAction">
           ${this._params.cancelText || this.hass.localize('ui.common.cancel')}
         </ha-button>
@@ -91,8 +100,6 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
     /* mwc-dialog (ha-dialog) styles */
     ha-dialog {
       --mdc-dialog-min-width: 400px;
-      --mdc-dialog-max-width: 600px;
-      --mdc-dialog-max-width: min(600px, 95vw);
       --justify-action-buttons: space-between;
     }
 

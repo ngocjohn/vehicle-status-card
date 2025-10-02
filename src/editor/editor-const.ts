@@ -76,7 +76,7 @@ const PREVIEW_CONFIG_TYPES = [
   'card_preview',
   'tire_preview',
   'active_group',
-  'row_group_preview',
+
   'active_button',
 ];
 
@@ -212,6 +212,7 @@ export enum PANEL {
   RANGE_INFO = `${PANEL_PREFIX}range-info`,
   BASE_BUTTON = `${PANEL_PREFIX}base-button`,
   BUTTON_CARD = `${PANEL_PREFIX}button-card`,
+  BUTTON_SEC = `${PANEL_PREFIX}button-card-sec`,
   DEFAULT_CARD = `${PANEL_PREFIX}default-card`,
   EDITOR_UI = `${PANEL_PREFIX}editor-ui`,
   IMAGES_EDITOR = `${PANEL_PREFIX}images-editor`,
@@ -230,6 +231,10 @@ export enum SUB_PANEL {
   ROW_SUB_ITEM = `${PANEL_PREFIX}row-sub-item`,
   ROW_ITEM = `${PANEL_PREFIX}row-item`,
   ROW_SUB_GROUP_ITEM = `${PANEL_PREFIX}row-sub-group-item`,
+  BTN_MAIN = `${PANEL_PREFIX}button-card-main`,
+  BTN_DEFAULT_CARD = `${PANEL_PREFIX}button-card-default`,
+  BTN_DEFAULT_CARD_ITEM = `${PANEL_PREFIX}button-card-default-item`,
+  BTN_TIRE_CARD = `${PANEL_PREFIX}button-card-tire`,
 }
 
 export enum ELEMENT {
@@ -239,6 +244,7 @@ export enum ELEMENT {
   FORM_OPTIONAL_ACTIONS = 'ha-form-optional_actions',
   HA_EXPANSION_PANEL = 'ha-expansion-panel',
   CHIP_INPUT = 'ha-input-chip',
+  HA_BUTTON_MENU = 'ha-button-menu',
 }
 
 export enum SELECTOR {
