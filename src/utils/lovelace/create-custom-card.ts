@@ -2,6 +2,13 @@ import { LovelaceCardConfig, LovelaceCard } from '../../ha';
 
 const VERTIAL_STACK_TAG = 'hui-vertical-stack-card';
 
+export const computeVerticalStackConfig = (config: LovelaceCardConfig[]): LovelaceCardConfig => {
+  return {
+    type: 'vertical-stack',
+    cards: config,
+  };
+};
+
 /**
  * Creates a custom card element for the Vehicle Status Card.
  * @param config LovelaceCardConfig array of card configurations

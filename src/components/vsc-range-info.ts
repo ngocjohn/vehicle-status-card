@@ -4,13 +4,16 @@ import { customElement, property } from 'lit/decorators.js';
 import { COMPONENT } from '../constants/const';
 import './shared/vsc-range-item';
 import { RangeInfoConfig } from '../types/config/card/range-info';
+import { SECTION } from '../types/section';
 import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.RANGE_INFO)
 export class VscRangeInfo extends BaseElement {
   @property({ attribute: false }) rangeConfig!: RangeInfoConfig[];
   @property({ type: Boolean, reflect: true }) public row = false;
-
+  constructor() {
+    super(SECTION.RANGE_INFO);
+  }
   static get styles(): CSSResultGroup {
     return [
       super.styles,

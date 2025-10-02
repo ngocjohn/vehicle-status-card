@@ -1,3 +1,4 @@
+import { isEmpty } from 'es-toolkit/compat';
 import { css, CSSResultGroup, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
@@ -21,7 +22,7 @@ export class VscDefaultCard extends BaseElement {
 
     return html`
       <div class="default-card">
-        <div class="data-header">${title} ${header}</div>
+        ${!!isEmpty(title) || header ? html` <div class="data-header">${title} ${header}</div> ` : nothing}
         <div class="data-box" ?active=${(collapsed_items && !this._subCardActive) || !items.length}>
           ${items.map((item) => {
             return html`
@@ -45,13 +46,30 @@ export class VscDefaultCard extends BaseElement {
 
   static get styles(): CSSResultGroup {
     return [
+      super.styles,
       css`
         .default-card {
           padding: 8px 14px !important;
+          background: var(--ha-card-background-color, var(--secondary-background-color));
+          box-shadow: var(--ha-card-box-shadow);
+          box-sizing: border-box;
+          border-radius: var(--ha-card-border-radius, 12px);
+          border-width: var(--ha-card-border-width, 1px);
+          border-style: solid;
+          border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+        }
+        .data-header {
+          display: flex;
+          width: 100%;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 1.1em;
+          font-weight: 500;
         }
         .default-card .data-box {
           opacity: 1;
-          padding-top: var(--vic-gutter-gap);
+          /* padding-top: var(--vic-gutter-gap); */
           max-height: 1000px;
           transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
         }
@@ -83,6 +101,8 @@ export class VscDefaultCard extends BaseElement {
           transform: rotate(0deg);
           display: inline-block;
           cursor: pointer;
+          flex: 0;
+          margin-inline-start: auto;
         }
 
         .subcard-icon[active] {
@@ -93,7 +113,6 @@ export class VscDefaultCard extends BaseElement {
           visibility: hidden;
         }
       `,
-      super.styles,
     ];
   }
 }

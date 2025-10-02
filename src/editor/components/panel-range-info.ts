@@ -9,6 +9,7 @@ import tinycolor from 'tinycolor2';
 import '../shared/panel-yaml-editor';
 import { findBatteryChargingEntity, findPowerEntities, fireEvent, getEntitiesByDomain, hasPercent } from '../../ha';
 import { RangeInfoConfig, RangeItemConfig, Threshold, VehicleStatusCardConfig } from '../../types/config';
+import { ConfigArea } from '../../types/config-area';
 import { ICON } from '../../utils';
 import {
   colorToRgb,
@@ -56,7 +57,7 @@ export class PanelRangeInfo extends BaseEditor {
   @state() private _overValueTimeout?: number;
 
   constructor() {
-    super();
+    super(ConfigArea.RANGE_INFO);
   }
   static get styles(): CSSResultGroup {
     return [
@@ -648,7 +649,7 @@ export class PanelRangeInfo extends BaseEditor {
   private _entityMoved(ev: CustomEvent): void {
     ev.stopPropagation();
     const { oldIndex, newIndex } = ev.detail;
-    const newRangeInfo = this._config.range_info.concat();
+    const newRangeInfo = this._config.range_info?.concat() || [];
     newRangeInfo.splice(newIndex, 0, newRangeInfo.splice(oldIndex, 1)[0]);
     this._config = { ...this._config, range_info: newRangeInfo };
     fireEvent(this, 'config-changed', { config: this._config });

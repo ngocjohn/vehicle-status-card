@@ -22,6 +22,10 @@ import {
   mdiCheckCircle,
   mdiDotsHexagon,
   mdiCodeBracesBox,
+  mdiArrowUp,
+  mdiArrowDown,
+  mdiMinus,
+  mdiDotsHorizontal,
 } from '@mdi/js';
 
 export const ICON = {
@@ -48,4 +52,8 @@ export const ICON = {
   CLOSE_CIRCLE: mdiCloseCircle,
   CHECK_CIRCLE: mdiCheckCircle,
   DOTS_HEXAGON: mdiDotsHexagon,
+  ARROW_UP: mdiArrowUp,
+  ARROW_DOWN: mdiArrowDown,
+  MINUS: mdiMinus,
+  DOTS_HORIZONTAL: mdiDotsHorizontal,
 };

@@ -8,6 +8,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { DEFAULT_TIRE_CONFIG } from '../../editor/form';
 // local
 import {
+  TireBackgroundKeys,
   TireCardLayout,
   TireEntityConfig,
   TireItems,
@@ -37,7 +38,7 @@ export class VehicleTireCard extends BaseElement {
       ...DEFAULT_TIRE_CONFIG,
       ...this.tireConfig,
     } as TireTemplateConfig;
-    const tireLayout = pick(tireConfig, [...TireLayoutKeys]) as TireCardLayout;
+    const tireLayout = pick(tireConfig, [...TireLayoutKeys, ...TireBackgroundKeys]) as TireCardLayout;
     const tireEntities = pick(tireConfig, [...TireItems]) as TireTemplateEntities;
     return html` <custom-tire-card
       .hass=${this.hass}

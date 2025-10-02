@@ -37,6 +37,7 @@ export interface HaFormBaseSchema {
     suggested_value?: HaFormData;
   };
   context?: Record<string, string>;
+  helper?: string;
 }
 
 export interface HaFormGridSchema extends HaFormBaseSchema {

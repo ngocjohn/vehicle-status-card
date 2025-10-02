@@ -8,11 +8,15 @@ import { SwiperOptions } from 'swiper/types';
 
 import { COMPONENT } from '../constants/const';
 import { VehicleStatusCardConfig, ImageItem } from '../types/config';
-import { BaseElement } from '../utils/base-element';
+import { SECTION } from '../types/section';
 import './shared/vsc-image-item';
+import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.IMAGES_SLIDE)
 export class ImagesSlide extends BaseElement {
+  constructor() {
+    super(SECTION.IMAGES);
+  }
   @property({ attribute: false }) private config!: VehicleStatusCardConfig;
   @state() private _images: ImageItem[] = [];
 

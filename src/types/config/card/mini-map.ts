@@ -30,7 +30,7 @@ type CustomStyles = Partial<{
 }>;
 
 export interface MiniMapBaseConfig {
-  device_tracker: string;
+  device_tracker?: string;
   maptiler_api_key?: string;
   single_map_card?: boolean;
   google_api_key?: string;

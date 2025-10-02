@@ -253,6 +253,16 @@ export class BadgeEditorItem extends LitElement {
     if (style.borderRadius && style.borderRadius !== '0px') {
       this.style.setProperty('--overlay-radius', style.borderRadius);
     }
+    if (el.tagName.toLowerCase() === 'ha-badge') {
+      const badge = el.shadowRoot?.querySelector('.badge') as HTMLElement;
+      if (badge) {
+        badge.style.setProperty('justify-content', 'var(--badge-editor-justify, center)');
+        const infoClass = badge.querySelector('.info') as HTMLElement;
+        if (infoClass) {
+          infoClass.style.setProperty('text-align', 'var(--badge-editor-justify, center)');
+        }
+      }
+    }
   };
 
   static get styles(): CSSResultGroup {
