@@ -14,7 +14,7 @@ import '../components/shared/button/vsc-btn-shape-icon';
 import { stateColorCss } from '../ha/common/entity/state_color';
 import * as HA_STATE_COLOR from '../ha/common/entity/state_color';
 import { RenderTemplateResult, hasTemplate, subscribeRenderTemplate } from '../ha/data/ws-templates';
-import { hasAction } from '../types/config';
+import { hasAction, hasItemAction } from '../types/config';
 import {
   BaseButtonCardItemConfig,
   BUTTON_CARD_TEMPLATE_KEYS,
@@ -123,20 +123,28 @@ export class BaseButton extends BaseElement {
     return this._hass.states[eId] as HassEntity | undefined;
   }
 
+  protected get _btnShowConfig(): ButtonShowConfig {
+    return pick(this._btnConfig, [...BUTTON_SHOW_CONFIG_KEYS]);
+  }
+
   protected get _btnActionConfig(): Pick<
     BaseButtonCardItemConfig,
     'entity' | 'tap_action' | 'hold_action' | 'double_tap_action'
   > {
+    const config = this._btnConfig;
     return {
-      entity: this._btnConfig.entity,
-      tap_action: this._btnConfig.tap_action,
-      hold_action: this._btnConfig.hold_action,
-      double_tap_action: this._btnConfig.double_tap_action,
+      entity: config.entity,
+      tap_action: config.tap_action,
+      hold_action: config.hold_action,
+      double_tap_action: config.double_tap_action,
     };
   }
 
-  protected get _btnShowConfig(): ButtonShowConfig {
-    return pick(this._btnConfig, [...BUTTON_SHOW_CONFIG_KEYS]);
+  protected get _hasAction(): boolean {
+    if (this._btnConfig?.button_type !== 'action') {
+      return false;
+    }
+    return hasItemAction(this._btnActionConfig);
   }
 
   protected get _hasIconAction(): boolean {
@@ -156,6 +164,15 @@ export class BaseButton extends BaseElement {
       icon_tap_action: this._btnConfig?.icon_tap_action,
       icon_hold_action: this._btnConfig?.icon_hold_action,
       icon_double_tap_action: this._btnConfig?.icon_double_tap_action,
+    };
+  }
+
+  protected get _iconActions() {
+    return {
+      entity: this._btnConfig?.entity,
+      tap_action: this._btnConfig?.icon_tap_action,
+      hold_action: this._btnConfig?.icon_hold_action,
+      double_tap_action: this._btnConfig?.icon_double_tap_action,
     };
   }
 

@@ -207,7 +207,8 @@ const BUTTON_BEHAVIOR_SCHEMA = (isActionButton: boolean) => {
       type: 'expandable',
       flatten: true,
       icon: 'mdi:gesture-tap-button',
-      helper: 'Action and behavior when interacting with the button',
+      helper:
+        'Tap action is ommitted when button type is "default", as tapping will open subcard. Other actions will still apply.',
       schema: [
         {
           type: 'grid',
@@ -215,6 +216,7 @@ const BUTTON_BEHAVIOR_SCHEMA = (isActionButton: boolean) => {
             {
               name: 'button_type',
               label: 'Button Type',
+              default: 'default',
               selector: {
                 select: {
                   mode: 'dropdown',
@@ -225,17 +227,22 @@ const BUTTON_BEHAVIOR_SCHEMA = (isActionButton: boolean) => {
             {
               name: 'card_type',
               label: 'Card Type',
+              default: 'default',
               disabled: isActionButton,
               selector: {
                 select: {
                   mode: 'dropdown',
-                  options: CARD_TYPE.map((type) => ({ value: type, label: capitalize(type.replace(/_/g, ' ')) })),
+                  options: CARD_TYPE.map((type) => ({
+                    value: type,
+                    label: capitalize(type.replace(/_/g, ' ') + ' card'),
+                  })),
                 },
               },
             },
           ] as const,
         },
-        ...(isActionButton ? [...computeOptionalActionSchemaFull()] : []),
+        // ...(isActionButton ? [...computeOptionalActionSchemaFull()] : []),
+        ...computeOptionalActionSchemaFull(!isActionButton),
       ],
     },
   ] as const;

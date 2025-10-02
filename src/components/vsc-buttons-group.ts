@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, queryAll, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 // swiper
@@ -7,11 +7,12 @@ import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 import swipercss from 'swiper/swiper-bundle.css';
 
+import { VscButtonCardItem } from '../components/shared/button/vsc-button-card-item';
 import { COMPONENT } from '../constants/const';
 import { BaseButtonCardItemConfig } from '../types/config/card/button-card';
 import { SECTION } from '../types/section';
-import { BaseElement } from '../utils/base-element';
 import '../components/shared/button/vsc-button-card-item';
+import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.BUTTONS_GROUP)
 export class VscButtonsGroup extends BaseElement {
@@ -25,6 +26,8 @@ export class VscButtonsGroup extends BaseElement {
 
   @state() private _cardCurrentSwipeIndex?: number;
   @state() activeSlideIndex: number = 0;
+
+  @queryAll(COMPONENT.BUTTON_CARD_ITEM) _buttonItems!: NodeListOf<VscButtonCardItem>;
 
   protected willUpdate(_changedProperties: PropertyValues): void {
     super.willUpdate(_changedProperties);
@@ -63,7 +66,7 @@ export class VscButtonsGroup extends BaseElement {
                 <div class="grid-container" data-slide-index=${slideIndex}>
                   ${buttons.slice(start, end).map((button, index) => {
                     const realIndex = start + index;
-                    return this._renderButton(button, realIndex);
+                    return this._renderButton(button, realIndex, slideIndex);
                   })}
                 </div>
               </div>
@@ -75,13 +78,14 @@ export class VscButtonsGroup extends BaseElement {
     `;
   }
 
-  private _renderButton(button: BaseButtonCardItemConfig, index: number): TemplateResult {
+  private _renderButton(button: BaseButtonCardItemConfig, index: number, slideIndex: number): TemplateResult {
     return html`
       <vsc-button-card-item
         ._hass=${this._hass}
         ._store=${this._store}
         ._btnConfig=${button}
         .itemIndex=${index}
+        .slideIndex=${slideIndex}
         @click-index=${this._handleClickIndex.bind(this)}
       ></vsc-button-card-item>
     `;
@@ -97,22 +101,12 @@ export class VscButtonsGroup extends BaseElement {
     }, 50);
   }
 
-  // private _renderButton(button: BaseButtonCardItemConfig, index: number): TemplateResult {
-  //   const btnCfg = button as BaseButtonCardItemConfig;
-  //   const contentText = btnCfg.name ?? btnCfg.entity ?? '';
-  //   return html`
-  //     <div class="button-item" data-index=${index}>
-  //       <div>Button ${index + 1}</div>
-  //       <div>${contentText}</div>
-  //     </div>
-  //   `;
-  // }
-
   private _computeStyle() {
     const { columns } = this._store.gridConfig;
-    const minWidth = `calc((100% / ${columns}) - 8px)`;
-    const gridTemplateColumns = `repeat(auto-fill, minmax(${minWidth}, 1fr))`;
-    const paddingBottom = this.swiper?.isLocked || !this.useSwiper ? '0' : 'initial';
+    // const minWidth = `calc((100% / ${columns}) - 8px)`;
+    // const gridTemplateColumns = `repeat(auto-fill, minmax(${minWidth}, 1fr))`;
+    const gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+    const paddingBottom = this.swiper?.isLocked || !this.useSwiper ? '0' : undefined;
     let marginTop: string | null = null;
     if (this.parentElement?.previousElementSibling !== null) {
       marginTop = 'var(--vic-card-padding)';
@@ -126,7 +120,6 @@ export class VscButtonsGroup extends BaseElement {
   }
 
   private _initSwiper(): void {
-    console.debug('Init swiper');
     const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
     if (!swiperCon) return;
 
@@ -157,6 +150,63 @@ export class VscButtonsGroup extends BaseElement {
     }
   }
 
+  public highlightButton = (index: number | null): void => {
+    this.updateComplete.then(() => {
+      const buttonEls = this._buttonItems;
+
+      if (index === null) {
+        buttonEls.forEach((btn) => (btn.dimmedInEditor = false));
+        return;
+      }
+      const buttonEl = buttonEls[index];
+      if (!buttonEl) {
+        return;
+      }
+      if (this.useSwiper && this.swiper) {
+        const slideIndex = (buttonEl as any).slideIndex;
+        if (slideIndex !== -1) {
+          console.debug('Highlight to slide index', slideIndex);
+          this.swiper.slideTo(slideIndex);
+        }
+      }
+      buttonEls.forEach((btn, idx) => {
+        btn.dimmedInEditor = idx !== index;
+      });
+    });
+  };
+
+  public peekButton = (index: number): void => {
+    this.updateComplete.then(() => {
+      const buttonEls = this._buttonItems;
+      const buttonEl = buttonEls[index];
+      if (!buttonEl) {
+        return;
+      }
+      if (this.useSwiper && this.swiper) {
+        const slideIndex = (buttonEl as any).slideIndex;
+        if (slideIndex !== -1) {
+          console.debug('Peek to slide index', slideIndex);
+          this.swiper.slideTo(slideIndex, 300, this._peekBtn(buttonEl)!);
+        }
+      } else {
+        this._peekBtn(buttonEl);
+      }
+    });
+  };
+
+  private _peekBtn(buttonEl: VscButtonCardItem): void {
+    const filtredBtns = Array.from(this._buttonItems).filter((btn) => btn !== buttonEl);
+    const haCard = buttonEl._haCard;
+    filtredBtns.forEach((btn) => (btn.dimmedInEditor = true));
+    buttonEl._toggleHighlight();
+    haCard!.addEventListener(
+      'animationend',
+      () => {
+        filtredBtns.forEach((btn) => (btn.dimmedInEditor = false));
+      },
+      { once: true }
+    );
+  }
   static get styles(): CSSResultGroup {
     return [
       super.styles,
@@ -166,6 +216,7 @@ export class VscButtonsGroup extends BaseElement {
           --swiper-pagination-bottom: -8px;
           --swiper-theme-color: var(--primary-text-color);
         }
+
         .buttons-group {
           padding: 0 0 var(--vic-card-padding) 0;
           border: none !important;
@@ -176,16 +227,15 @@ export class VscButtonsGroup extends BaseElement {
           width: 100%;
           height: 100%;
         }
+        .swiper-slide {
+          width: 100%;
+          height: auto;
+        }
 
         /* .swiper-wrapper {
 					flex-direction: initial;
 					flex-wrap: wrap;
 				} */
-
-        .swiper-slide {
-          height: 100%;
-          width: 100%;
-        }
         .swiper-pagination {
           margin-top: var(--swiper-pagination-bottom);
           display: block;

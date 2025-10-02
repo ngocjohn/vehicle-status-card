@@ -1,14 +1,16 @@
-import { html, css, CSSResultGroup, TemplateResult, nothing } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { html, css, CSSResultGroup, TemplateResult, nothing, PropertyValues } from 'lit';
+import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { COMPONENT } from '../../../constants/const';
 import './vsc-btn-card';
 import './vsc-state-item';
-import { actionHandler } from '../../../ha/panels/common/directives/action-handler-directive';
+import './vsc-btn-badge';
 import { handleAction } from '../../../ha/panels/common/handle-actions';
 import { hasAction } from '../../../types/config';
 import { BaseButton } from '../../../utils/base-button';
+import { ActionDomEvent, ActionHandleOpts, addActionHandler } from '../../../utils/lovelace/action-handler';
+import { addActions } from '../../../utils/lovelace/tap-action';
 
 @customElement(COMPONENT.BUTTON_CARD_ITEM)
 export class VscButtonCardItem extends BaseButton {
@@ -18,6 +20,40 @@ export class VscButtonCardItem extends BaseButton {
   @property({ type: Number, attribute: 'item-index' }) public itemIndex?: number;
   @property({ type: Boolean, reflect: true, attribute: 'dimmed-in-editor' }) public dimmedInEditor = false;
 
+  @query('ha-card') _haCard!: HTMLElement;
+
+  protected firstUpdated(_changedProperties: PropertyValues): void {
+    super.firstUpdated(_changedProperties);
+    this._addIconAction();
+    this._addCardAction();
+  }
+
+  private _addIconAction(): void {
+    if (!this._hasIconAction) {
+      return;
+    }
+    const icon = this.renderRoot.querySelector('vsc-btn-shape-icon') as HTMLElement;
+    if (!icon) {
+      return;
+    }
+    const config = this._iconActions;
+    addActions(icon, config);
+  }
+
+  private _addCardAction(): void {
+    const card = this.renderRoot.querySelector('#clickable-background') as HTMLElement;
+    if (!card) {
+      return;
+    }
+    const handlerOptions: ActionHandleOpts = {
+      hasHold: true,
+      hasDoubleClick: true,
+      hasClick: true,
+    };
+    addActionHandler(card, handlerOptions);
+    card.addEventListener('action', this._handleCardEvent.bind(this) as EventListener);
+  }
+
   protected render(): TemplateResult | typeof nothing {
     if (!this._btnConfig || !this._hass) {
       return nothing;
@@ -26,36 +62,56 @@ export class VscButtonCardItem extends BaseButton {
     const btnShowConfig = this._btnShowConfig;
 
     const imageUrl = btnShowConfig.icon_type === 'entity-picture' ? this._getImageUrl() : undefined;
-    const icon = this._getTemplateValue('icon_template') ?? this._btnConfig.icon;
+    const icon =
+      (btnShowConfig.icon_type === 'icon-template' && this._getTemplateValue('icon_template')) ?? this._btnConfig.icon;
     const iconStyle = this._computeIconStyle();
+
+    const badgeVisible = Boolean(this._getTemplateValue('notify'));
+    const notifyIcon = this._getTemplateValue('notify_icon');
+    const notifyText = this._getTemplateValue('notify_text');
+    const notifyColor = this._getTemplateValue('notify_color');
+
     return html`
       <ha-card ?transparent=${btnShowConfig.transparent} style=${styleMap(iconStyle)}>
         <div
+          id="clickable-background"
           class="background"
-          @action=${this._handleCardAction.bind(this)}
-          .actionHandler=${actionHandler({
-            hasHold: true,
-            hasDoubleClick: true,
-          })}
           role="button"
         >
           <ha-ripple></ha-ripple>
         </div>
         <vsc-btn-card .btnShowConfig=${btnShowConfig}>
-          <vsc-state-item .btnShowConfig=${btnShowConfig}>
+          <vsc-state-item
+            .btnShowConfig=${btnShowConfig}
+            >
             <vsc-btn-shape-icon
               slot="icon"
               .interactive=${this._hasIconAction}
               .imageSrc=${imageUrl}
-              @action=${this._handleIconAction.bind(this)}
-              .actionHandler=${actionHandler({
-                disabled: !this._hasIconAction,
-                hasDoubleClick: true,
-                hasHold: true,
-              })}
+              role=${this._hasIconAction ? 'button' : undefined}
+              tabindex=${this._hasIconAction ? '0' : undefined}
             >
-              <ha-state-icon slot="icon" .hass=${this._hass} .stateObj=${stateObj} .icon=${icon}> </ha-state-icon>
+              <ha-state-icon
+                slot="icon"
+                .hass=${this._hass}
+                .stateObj=${stateObj}
+                .icon=${icon}>
+              </ha-state-icon>
             </vsc-btn-shape-icon>
+            ${
+              badgeVisible
+                ? html`<vsc-btn-badge
+                    slot="badge"
+                    .isText=${Boolean(notifyText)}
+                    style=${styleMap({ '--vsc-btn-badge-background-color': notifyColor })}
+                  >
+                    ${notifyText
+                      ? html`<span>${notifyText}</span>`
+                      : html`<ha-icon .icon=${notifyIcon || 'mdi:circle'}></ha-icon>`}
+                  </vsc-btn-badge>`
+                : nothing
+            }
+              </vsc-btn-badge>
 
             ${this._renderStateInfo()}
           </vsc-state-item>
@@ -64,47 +120,12 @@ export class VscButtonCardItem extends BaseButton {
     `;
   }
 
-  private _handleIconAction(ev: CustomEvent) {
+  private _handleCardEvent(ev: ActionDomEvent): void {
     ev.stopPropagation();
     const action = ev.detail.action;
-    const config = {
-      entity: this._iconActionConfig!.entity,
-      tap_action: this._iconActionConfig!.icon_tap_action,
-      hold_action: this._iconActionConfig!.icon_hold_action,
-      double_tap_action: this._iconActionConfig!.icon_double_tap_action,
-    };
-    if (action === 'tap') {
-      if (hasAction(config?.tap_action)) {
-        handleAction(this, this._hass!, config, 'tap');
-        return;
-      }
-    }
-    if (action === 'hold') {
-      if (hasAction(config!.hold_action)) {
-        handleAction(this, this._hass!, config, 'hold');
-        return;
-      }
-    }
-    if (action === 'double_tap') {
-      if (hasAction(config!.double_tap_action)) {
-        handleAction(this, this._hass!, config, 'double_tap');
-        return;
-      }
-    }
-  }
-
-  private _handleCardAction(ev: CustomEvent): void {
-    const action = ev.detail.action;
     const isAction = this._btnConfig?.button_type === 'action';
-
-    const config = {
-      entity: this._btnConfig?.entity,
-      tap_action: this._btnConfig?.tap_action,
-      hold_action: this._btnConfig?.hold_action,
-      double_tap_action: this._btnConfig?.double_tap_action,
-    };
-    const _hasAction = isAction && hasAction(config[`${action}_action`]);
-    console.debug('_handleCardAction', action, isAction, _hasAction, config[`${action}_action`]);
+    const config = this._btnActionConfig;
+    const _hasAction = hasAction(config[`${action}_action`]);
     switch (action) {
       case 'tap':
         if (!isAction) {
@@ -112,23 +133,40 @@ export class VscButtonCardItem extends BaseButton {
           return;
         }
         if (_hasAction) {
-          handleAction(this, this._hass!, config, 'tap');
-          return;
+          handleAction(this, this.hass, config, action);
         }
         break;
       case 'hold':
       case 'double_tap':
         if (_hasAction) {
-          handleAction(this, this._hass!, config, action);
-          return;
+          handleAction(this, this.hass, config, action);
         }
+        break;
+      default:
         break;
     }
   }
+
+  public _toggleHighlight(): void {
+    const haCard = this._haCard;
+    if (!haCard) {
+      return;
+    }
+    haCard.classList.add('highlight');
+    haCard.addEventListener('animationend', () => {
+      haCard.classList.remove('highlight');
+    });
+  }
+
   static get styles(): CSSResultGroup {
     return [
       super.styles,
       css`
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
         :host {
           --icon-color: rgba(var(--rgb-primary-text-color), 0.75);
           --icon-color-disabled: rgb(var(--default-disabled-color));
@@ -141,6 +179,15 @@ export class VscButtonCardItem extends BaseButton {
           --shape-color-disabled: rgba(var(--default-disabled-color), 0.2);
           --shape-outline-color: transparent;
         }
+        :host([dimmed-in-editor]) {
+          opacity: 0.3;
+          filter: blur(1px);
+        }
+        :host([dimmed-in-editor]:hover) {
+          opacity: 1;
+          filter: none;
+        }
+
         ha-card {
           --ha-ripple-color: var(--icon-color);
           --ha-ripple-hover-opacity: 0.04;
@@ -154,7 +201,6 @@ export class VscButtonCardItem extends BaseButton {
           display: flex;
           flex-direction: column;
           justify-content: var(--vsc-button-align, center);
-          height: 100%;
           background: var(--secondary-background-color, var(--card-background-color, #fff));
         }
         ha-card[transparent] {
@@ -178,6 +224,46 @@ export class VscButtonCardItem extends BaseButton {
           border-radius: var(--ha-card-border-radius, 12px);
           margin: calc(-1 * var(--ha-card-border-width, 1px));
           overflow: hidden;
+        }
+        .highlight {
+          background: transparent;
+          &::before {
+            content: '';
+            position: absolute;
+            z-index: -2;
+            left: -50%;
+            top: -50%;
+            width: 200%;
+            height: 200%;
+            background-color: transparent;
+            background-repeat: no-repeat;
+            background-size: 50% 50%, 50% 50%;
+            background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+            background-image: linear-gradient(transparent, transparent), linear-gradient(transparent, transparent),
+              linear-gradient(transparent, transparent), linear-gradient(var(--primary-color), var(--primary-color));
+            animation: rotate 1s linear infinite;
+            animation-fill-mode: forwards;
+            display: block;
+            animation-iteration-count: 2;
+          }
+
+          &::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            left: 2px;
+            top: 2px;
+            width: calc(100% - 4px);
+            height: calc(100% - 4px);
+            background: var(--secondary-background-color, var(--card-background-color, #fff));
+            border-radius: inherit;
+            display: block;
+          }
+        }
+        @keyframes rotate {
+          100% {
+            transform: rotate(1turn);
+          }
         }
       `,
     ];

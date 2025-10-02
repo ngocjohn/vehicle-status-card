@@ -69,6 +69,7 @@ ha-card.preview-card {
   padding: 0px;
   border: none;
   background: none;
+  /* background-color: var(--card-background-color) */
 }
 
 

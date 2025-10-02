@@ -24,7 +24,8 @@ export class BaseElement extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     if (this.section && this._store !== undefined && this.isBaseInEditor) {
-      document.addEventListener(EDITOR_AREA_SELECTED, this._changeDimmedState);
+      document.addEventListener(EDITOR_AREA_SELECTED, this._changeDimmedState.bind(this));
+      console.debug('add listener for', this.section);
     }
   }
 

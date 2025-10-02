@@ -14,7 +14,7 @@ export class VscBtnCard extends LitElement {
         class=${classMap({
           container: true,
           vertical: this.btnShowConfig?.layout === 'vertical',
-          horizontal: this.btnShowConfig?.layout !== 'vertical',
+          horizontal: this.btnShowConfig?.layout !== 'vertical' || this.btnShowConfig?.layout === undefined,
           'no-info': this.btnShowConfig?.show_primary === false && this.btnShowConfig?.show_secondary === false,
           'no-content':
             this.btnShowConfig?.show_icon === false &&

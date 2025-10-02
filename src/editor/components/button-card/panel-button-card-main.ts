@@ -38,6 +38,14 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   constructor() {
     super();
   }
+  connectedCallback(): void {
+    super.connectedCallback();
+    console.debug('PanelButtonCardMain connected:', this.buttonArea);
+  }
+  disconnectCallback(): void {
+    super.disconnectedCallback();
+    console.debug('PanelButtonCardMain disconnected:', this.buttonArea);
+  }
 
   protected updated(_changedProperties: PropertyValues): void {
     super.updated(_changedProperties);
@@ -46,6 +54,8 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     }
     const oldArea = _changedProperties.get('_selectedArea');
     if (oldArea !== undefined && oldArea !== this._selectedArea && this.activePreview !== null) {
+      // reset preview and highlight when switching area
+      console.debug('Reset preview and highlight due to area change:', oldArea, '->', this._selectedArea);
       this.activePreview = null;
       this._togglePreview(this.activePreview);
       if (!this._customCardConfig) {
@@ -58,6 +68,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     super._togglePreview(null);
     super.disconnectedCallback();
   }
+
   protected render(): TemplateResult {
     const infoState = this._computeInfoState();
     return html`
@@ -99,7 +110,12 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   }
 
   private _renderBaseEditor(): TemplateResult {
-    const data = omit(this._btnConfig || {}, ['sub_card']);
+    let data = omit(this._btnConfig || {}, ['sub_card']);
+    data = {
+      ...data,
+      button_type: data.button_type ?? 'default',
+      card_type: data.card_type ?? 'default',
+    };
     const baseButtonSchema = MAIN_BUTTON_SCHEMA(data);
     const baseForm = this._createVscForm(data, baseButtonSchema, 'base');
 
@@ -244,12 +260,14 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
       console.debug('Reload preview (PanelButtonCardSec)');
       this._togglePreview(this.activePreview);
     }
+    this._toggleHighlightButton(true);
   }
 
   private _goBack(): void {
     const currentArea = this._selectedArea;
     switch (currentArea) {
       case ButtonArea.BASE:
+        this._dispatchEditorEvent('highlight-button', { buttonIndex: null });
         fireEvent(this, 'sub-button-closed');
         break;
       default:

@@ -162,6 +162,9 @@ export class PanelButtonCardSec extends BaseEditor {
       case ACTIONS.DELETE_BUTTON:
         this._deleteButton(index);
         break;
+      case ACTIONS.SHOW_BUTTON:
+        this._dispatchEditorEvent('show-button', { buttonIndex: index });
+        break;
       default:
         console.warn('Unknown action', action);
     }

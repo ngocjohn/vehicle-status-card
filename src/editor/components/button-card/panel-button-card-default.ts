@@ -6,6 +6,7 @@ import { customElement, queryAll, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { computeStateName, fireEvent } from '../../../ha';
+import { ButtonArea } from '../../../types/config-area';
 import { CardDefaultConfig } from '../../../types/config/card/button-card';
 import { Create, ICON } from '../../../utils';
 import { ExpansionPanelParams } from '../../../utils/editor/create';
@@ -15,8 +16,8 @@ import {
   computeActionList,
 } from '../../../utils/editor/create-actions-menu';
 import { preventDefault, stopAndPrevent, stopPropagation } from '../../../utils/helpers-dom';
-import { ButtonCardBaseEditor } from '../../button-card-base';
 import './panel-button-card-default-item';
+import { ButtonCardBaseEditor } from '../../button-card-base';
 import { ELEMENT, SUB_PANEL } from '../../editor-const';
 
 interface SubDefaultCardItemConfig {
@@ -33,7 +34,7 @@ declare global {
 @customElement(SUB_PANEL.BTN_DEFAULT_CARD)
 export class PanelButtonDefaultCard extends ButtonCardBaseEditor {
   constructor() {
-    super();
+    super(ButtonArea.DEFAULT_CARD);
   }
   @state() _defaultCardConfig!: CardDefaultConfig[];
   @state() private _subDefaultCardConfig?: SubDefaultCardItemConfig;

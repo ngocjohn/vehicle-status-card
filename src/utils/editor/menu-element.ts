@@ -1,4 +1,4 @@
-import { CSSResultGroup, TemplateResult, css, html, nothing } from 'lit';
+import { CSSResultGroup, PropertyValues, TemplateResult, css, html, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { CARD_VERSION } from '../../constants/const';
@@ -40,6 +40,18 @@ export class MenuElement extends BaseEditor {
   @property() public value?: string;
   @state() private _open = false;
   @query(ELEMENT.HA_BUTTON_MENU) _buttonMenu!: Element;
+
+  protected updated(_changedProperties: PropertyValues): void {
+    if (!this.value) {
+      return;
+    }
+    const oldArea = _changedProperties.get('value');
+    if (oldArea !== undefined && oldArea === 'buttons' && this.value !== 'buttons') {
+      // reset highlight when leaving buttons area
+      this._dispatchEditorEvent('highlight-button', { buttonIndex: null });
+      this._resetPreview();
+    }
+  }
 
   protected render(): TemplateResult {
     const options = CONFIG_TYPES.options;

@@ -22,7 +22,7 @@ export interface ActionHandlerDetail {
   action: 'hold' | 'tap' | 'double_tap';
 }
 
-interface ActionHandler extends HTMLElement {
+interface ActionHandlerType extends HTMLElement {
   holdTime: number;
   bind(element: Element, options?: ActionHandlerOptions): void;
 }
@@ -33,6 +33,7 @@ interface ActionHandlerElement extends HTMLElement {
     start?: (ev: Event) => void;
     end?: (ev: Event) => void;
     handleKeyDown?: (ev: KeyboardEvent) => void;
+    handleTouchMove?: (ev: TouchEvent) => void;
   };
 }
 
@@ -40,7 +41,7 @@ export type ActionHandlerEvent = HASSDomEvent<ActionHandlerDetail>;
 
 declare global {
   interface HTMLElementTagNameMap {
-    'action-handler': ActionHandler;
+    'action-handler': ActionHandlerType;
   }
 
   interface HASSDomEvents {
@@ -48,7 +49,7 @@ declare global {
   }
 }
 
-class ActionHandler extends HTMLElement implements ActionHandler {
+class ActionHandlerType extends HTMLElement implements ActionHandlerType {
   public holdTime = 500;
 
   protected timer?: number;
@@ -59,7 +60,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
 
   private dblClickTimeout?: number;
 
-  public connectedCallback() {
+  public connectedCallback(): void {
     Object.assign(this.style, {
       position: 'fixed',
       width: isTouch ? '100px' : '50px',
@@ -85,7 +86,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
     });
   }
 
-  public bind(element: ActionHandlerElement, options: ActionHandlerOptions = {}) {
+  public bind(element: ActionHandlerElement, options: ActionHandlerOptions = {}): void {
     if (element.actionHandler && deepEqual(options, element.actionHandler.options)) {
       return;
     }
@@ -174,6 +175,13 @@ class ActionHandler extends HTMLElement implements ActionHandler {
       }
     };
 
+    element.actionHandler.handleTouchMove = (ev: TouchEvent) => {
+      if (ev.type == 'touchmove' && options.hasHold && this.held) {
+        ev.stopPropagation();
+        ev.preventDefault();
+      }
+    };
+
     element.actionHandler.handleKeyDown = (ev: KeyboardEvent) => {
       if (!['Enter', ' '].includes(ev.key)) {
         return;
@@ -182,6 +190,9 @@ class ActionHandler extends HTMLElement implements ActionHandler {
     };
 
     element.addEventListener('touchstart', element.actionHandler.start, {
+      passive: true,
+    });
+    element.addEventListener('touchmove', element.actionHandler.handleTouchMove!, {
       passive: true,
     });
     element.addEventListener('touchend', element.actionHandler.end);
@@ -212,22 +223,22 @@ class ActionHandler extends HTMLElement implements ActionHandler {
   }
 }
 
-customElements.define('action-handler-vehicle-status-card', ActionHandler);
+customElements.define('action-handler-vehicle-status-card', ActionHandlerType);
 
-const getActionHandler = (): ActionHandler => {
+const getActionHandler = (): ActionHandlerType => {
   const body = document.body;
   if (body.querySelector('action-handler-vehicle-status-card')) {
-    return body.querySelector('action-handler-vehicle-status-card') as ActionHandler;
+    return body.querySelector('action-handler-vehicle-status-card') as ActionHandlerType;
   }
 
   const actionhandler = document.createElement('action-handler-vehicle-status-card');
   body.appendChild(actionhandler);
 
-  return actionhandler as ActionHandler;
+  return actionhandler as ActionHandlerType;
 };
 
 export const actionHandlerBind = (element: ActionHandlerElement, options?: ActionHandlerOptions) => {
-  const actionhandler: ActionHandler = getActionHandler();
+  const actionhandler: ActionHandlerType = getActionHandler();
   if (!actionhandler) {
     return;
   }

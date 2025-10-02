@@ -3,6 +3,7 @@ import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import editorcss from '../css/editor.css';
+import { EditorConfigAreaSelectedEvent } from '../events';
 import { EditorIndicatorRowSelectedEvent } from '../events/editor-indicator-row';
 import { fireEvent, HomeAssistant } from '../ha';
 import * as IMAGE_HELPER from '../ha/data/image_upload';
@@ -11,6 +12,7 @@ import { SectionOrder, VehicleStatusCardConfig } from '../types/config';
 import { ConfigArea } from '../types/config-area';
 import { SECTION } from '../types/section';
 import { Create } from '../utils';
+import { getSectionFromConfigArea } from '../utils/editor/area-select';
 import * as MIGRATE from '../utils/editor/migrate-indicator';
 import { EditorPreviewTypes } from '../utils/editor/types';
 import { selectTree } from '../utils/helpers-dom';
@@ -35,6 +37,7 @@ const EditorCommandTypes = [
   'toggle-helper',
   'toggle-highlight-row-item',
   'reset-preview',
+  'highlight-button',
 ] as const;
 type EditorCommandTypes = (typeof EditorCommandTypes)[number];
 
@@ -352,6 +355,10 @@ export class BaseEditor extends LitElement {
     this._dispatchEditorEvent('toggle-indicator-row', { rowIndex, peek });
   };
 
+  public _resetPreview = (): void => {
+    this._dispatchEditorEvent('reset-preview', {});
+  };
+
   protected _showSelectedRow = (
     rowIndex: number | null,
     groupIndex: number | null = null,
@@ -388,6 +395,13 @@ export class BaseEditor extends LitElement {
     const newConfig = { ...config, ...changedConfig };
     fireEvent(this, 'config-changed', { config: newConfig });
     return;
+  }
+
+  protected _dispatchEditorArea(area?: ConfigArea): void {
+    if (!area) return;
+    const sectionNew = getSectionFromConfigArea(area);
+    document.dispatchEvent(EditorConfigAreaSelectedEvent(sectionNew));
+    console.debug('event from:', area, sectionNew);
   }
 
   static get styles(): CSSResultGroup {

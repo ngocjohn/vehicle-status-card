@@ -9,6 +9,20 @@ export const DEFAULT_ACTIONS: UiAction[] = [
   'assist',
   'none',
 ];
+const ActionKey = ['tap_action', 'hold_action', 'double_tap_action'] as const;
+type ActionKey = (typeof ActionKey)[number];
+
+const IconActionsKeys = ['icon_tap_action', 'icon_hold_action', 'icon_double_tap_action'] as const;
+type IconActionKey = (typeof IconActionsKeys)[number];
+
+const ActionLabel: Record<ActionKey | IconActionKey, string> = {
+  tap_action: 'Tap behavior',
+  hold_action: 'Hold behavior',
+  double_tap_action: 'Double tap behavior',
+  icon_tap_action: 'Icon tap behavior',
+  icon_hold_action: 'Icon hold behavior',
+  icon_double_tap_action: 'Icon double tap behavior',
+};
 
 export const computeOptionalActionSchema = () => {
   return [
@@ -41,21 +55,18 @@ export const computeOptionalActionSchema = () => {
 // const groupActions: UiAction[] = ['navigate', 'url', 'perform-action', 'assist', 'none'];
 
 export const computeOptionalActionSchemaFull = (noTap: boolean = false) => {
-  const tapGestureActions = [...(noTap ? [] : (['tap_action'] as const)), 'hold_action', 'double_tap_action'] as const;
-
-  // const tapGestureActions = noTap
-  //   ? (['hold_action', 'double_tap_action'] as const)
-  //   : (['tap_action', 'hold_action', 'double_tap_action'] as const);
-  // const actions = noTap ? groupActions : DEFAULT_ACTIONS;
+  const tapGestureActions: ActionKey[] = noTap
+    ? (['hold_action', 'double_tap_action'] as const)
+    : (['tap_action', 'hold_action', 'double_tap_action'] as const);
 
   return [
     {
       name: '',
       type: 'optional_actions',
       flatten: true,
-      schema: tapGestureActions.map((action) => ({
+      schema: tapGestureActions.map((action: string) => ({
         name: action,
-        label: action.replace(/_/g, ' '),
+        label: ActionLabel[action as ActionKey],
         selector: {
           ui_action: {
             actions: DEFAULT_ACTIONS,
@@ -67,15 +78,6 @@ export const computeOptionalActionSchemaFull = (noTap: boolean = false) => {
   ] as const;
 };
 
-const IconActionsKeys = ['icon_tap_action', 'icon_hold_action', 'icon_double_tap_action'] as const;
-type IconActionKey = (typeof IconActionsKeys)[number];
-
-const IconActionLabels: Record<IconActionKey, string> = {
-  icon_tap_action: 'Icon Tap Behavior',
-  icon_hold_action: 'Icon Hold Behavior',
-  icon_double_tap_action: 'Icon Double Tap Behavior',
-};
-
 export const computeIconActionSchema = (actions?: UiAction[]) => {
   return [
     {
@@ -85,7 +87,7 @@ export const computeIconActionSchema = (actions?: UiAction[]) => {
       schema: [
         ...IconActionsKeys.map((action) => ({
           name: action,
-          label: IconActionLabels[action],
+          label: ActionLabel[action],
           selector: {
             ui_action: {
               actions: actions ?? DEFAULT_ACTIONS,

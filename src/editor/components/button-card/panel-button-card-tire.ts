@@ -5,6 +5,7 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { fireEvent } from '../../../ha';
 import { TireItems, TireLayoutKeys, TireTemplateConfig } from '../../../types/config';
+import { ButtonArea } from '../../../types/config-area';
 import { Create } from '../../../utils';
 import { ExpansionPanelParams } from '../../../utils/editor/create';
 import { ButtonCardBaseEditor } from '../../button-card-base';
@@ -33,7 +34,7 @@ const DEFAULT_LAYOUT = {
 @customElement(SUB_PANEL.BTN_TIRE_CARD)
 export class PanelButtonCardTire extends ButtonCardBaseEditor {
   constructor() {
-    super();
+    super(ButtonArea.TIRE_CARD);
   }
   @property({ attribute: false }) tireConfig!: TireTemplateConfig;
   @state() private _tireConfig?: TireTemplateConfig;
@@ -141,6 +142,6 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'button-card-panel-tire': PanelButtonCardTire;
+    'panel-button-card-tire': PanelButtonCardTire;
   }
 }

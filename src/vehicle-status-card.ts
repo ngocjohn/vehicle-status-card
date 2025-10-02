@@ -101,7 +101,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @query(COMPONENT.INDICATORS) _secIndicatorsLegacy!: SEC.VscIndicators;
 
   @query('#main-wrapper', true) _mainWrapper!: HTMLElement;
-  @query('ha-card', true) _haCard!: HTMLElement;
 
   public setConfig(config: VehicleStatusCardConfig): void {
     if (!config) {
@@ -123,6 +122,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (this._config.button_cards && this._config.button_cards.length) {
       this._newButtonConfig = this._config.button_cards as BaseButtonCardItemConfig[];
     }
+
     if (this._store != null) {
       console.debug('Updating store config');
       this._store._config = this._config;
@@ -355,31 +355,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       </div>
     `;
   }
-  // private _renderButtons(): TemplateResult | typeof nothing {
-  //   if (isEmpty(this._newButtonConfig) || this._isSectionHidden(SECTION.BUTTONS)) return nothing;
-  //   // const visibleButtons = this._buttonCardConfigItem.filter((button) => !button.hide_button);
-  //   return html`
-  //     <div id=${SECTION.BUTTONS}>
-  //       <vsc-buttons-group
-  //         .hass=${this._hass}
-  //         ._store=${this._store}
-  //         ._cardCurrentSwipeIndex=${this._currentSwipeIndex}
-  //       >
-  //       </vsc-buttons-group>
-  //     </div>
-  //   `;
-  // }
-
-  // private _renderButtons(): TemplateResult | typeof nothing {
-  //   if (isEmpty(this._buttonCardConfigItem) || this._isSectionHidden(SECTION.BUTTONS)) return nothing;
-  //   // const visibleButtons = this._buttonCardConfigItem.filter((button) => !button.hide_button);
-  //   return html`
-  //     <div id=${SECTION.BUTTONS}>
-  //       <vsc-buttons-grid .hass=${this._hass} ._store=${this._store} ._cardCurrentSwipeIndex=${this._currentSwipeIndex}>
-  //       </vsc-buttons-grid>
-  //     </div>
-  //   `;
-  // }
 
   private _renderSubCardPreview(): TemplateResult {
     if (!this.subCardPreviewConfig) return html``;
@@ -463,14 +438,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   private _renderSelectedCard(): TemplateResult {
     const index = this._activeCardIndex;
     if (index === null) return html``;
-    const selectedBtnConfig = this._newButtonConfig![index as number] as BaseButtonCardItemConfig;
-    const cardType = selectedBtnConfig?.card_type ?? 'default';
+    const cardConfig = this._newButtonConfig![Number(index)] as BaseButtonCardItemConfig;
+    const subCardConfig = cardConfig?.sub_card;
 
-    const {
-      default_card: defaultCard,
-      custom_card: customCard,
-      tire_card: tireCard = {} as TireTemplateConfig,
-    } = selectedBtnConfig.sub_card as ButtonCardSubCardConfig;
+    const cardType = cardConfig?.card_type ?? 'default';
+
+    const { default_card, custom_card, tire_card } = subCardConfig || ({} as ButtonCardSubCardConfig);
 
     const renderButton = (label: string, icon: string, action: () => void): TemplateResult => {
       return html`
@@ -495,15 +468,15 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     let selectedContent: unknown = nothing;
 
     if (cardType === 'default') {
-      selectedContent = defaultCard?.length
-        ? defaultCard.map((card) => this._renderDefaultCardItems(card))
+      selectedContent = default_card?.length
+        ? default_card.map((card) => this._renderDefaultCardItems(card))
         : this._showWarning('Default card not found, configure it in the editor');
     } else if (cardType === 'custom') {
-      selectedContent = customCard?.length
-        ? customCard.map((card) => this._renderCustomCard(card))
+      selectedContent = custom_card?.length
+        ? custom_card.map((card) => this._renderCustomCard(card))
         : this._showWarning('Custom card not found');
     } else if (cardType === 'tire') {
-      selectedContent = this._renderTireCard(tireCard);
+      selectedContent = this._renderTireCard(tire_card as TireTemplateConfig);
     }
 
     return html`
@@ -515,60 +488,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       </main>
     `;
   }
-  // private _renderSelectedCard(): TemplateResult {
-  //   const index = this._activeCardIndex;
-  //   if (index === null) return html``;
-
-  //   const {
-  //     card_type: cardType = 'default',
-  //     default_card: defaultCard,
-  //     custom_card: customCard,
-  //     tire_card: tireCard = {} as TireTemplateConfig,
-  //   } = this._buttonCardConfigItem![index] as ButtonCardConfig;
-
-  //   const renderButton = (label: string, icon: string, action: () => void): TemplateResult => {
-  //     return html`
-  //       <ha-icon-button
-  //         class="click-shrink headder-btn"
-  //         .label=${label}
-  //         .path=${icon}
-  //         @click=${action}
-  //       ></ha-icon-button>
-  //     `;
-  //   };
-  //   const cardHeaderBox = html`
-  //     <div class="added-card-header">
-  //       ${renderButton('Close', ICON.CLOSE, () => (this._activeCardIndex = null))}
-  //       <div class="card-toggle">
-  //         ${renderButton('Previous', ICON.CHEVRON_LEFT, () => this.toggleCard('prev'))}
-  //         ${renderButton('Next', ICON.CHEVRON_RIGHT, () => this.toggleCard('next'))}
-  //       </div>
-  //     </div>
-  //   `;
-
-  //   let selectedContent: unknown = nothing;
-
-  //   if (cardType === 'default') {
-  //     selectedContent = defaultCard?.length
-  //       ? defaultCard.map((card) => this._renderDefaultCardItems(card))
-  //       : this._showWarning('Default card not found, configure it in the editor');
-  //   } else if (cardType === 'custom') {
-  //     selectedContent = customCard?.length
-  //       ? customCard.map((card) => this._renderCustomCard(card))
-  //       : this._showWarning('Custom card not found');
-  //   } else if (cardType === 'tire') {
-  //     selectedContent = this._renderTireCard(tireCard);
-  //   }
-
-  //   return html`
-  //     <main id="cards-wrapper">
-  //       ${cardHeaderBox}
-  //       <section class="card-element">
-  //         <div class="added-card">${selectedContent}</div>
-  //       </section>
-  //     </main>
-  //   `;
-  // }
 
   private _renderCustomCard(card: LovelaceCardConfig) {
     return html`<vsc-custom-card-element
@@ -748,9 +667,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
       const cardIndexNum = Number(this._activeCardIndex);
       console.log('Current card index:', cardIndexNum);
-      const totalCards = this._buttonCardConfigItem!.filter((button) => !button.hide_button).length;
+      const totalCards = this._newButtonConfig!.filter((button) => !button.hide_button).length;
 
-      const isNotActionType = (index: number): boolean => this._buttonCardConfigItem![index].button_type !== 'action';
+      const isNotActionType = (index: number): boolean => this._newButtonConfig![index].button_type !== 'action';
 
       let newCardIndex = cardIndexNum;
 
@@ -783,18 +702,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
 
   protected _handleEditorConfigAreaSelected = (ev: Event): void => {
-    const setSection = (section: SECTION) => {
-      this.configSection = section;
-      this._store.SetSelectedSection(section);
-      // super.requestUpdate();
-    };
-
+    ev.stopPropagation();
     const evArgs = (ev as CustomEvent).detail;
     const selectedArea = evArgs.section as SECTION;
     if (this.configSection !== selectedArea) {
-      // console.debug('Area changed from', this.configSection, 'to', selectedArea);
+      console.debug('Area changed from', this.configSection, 'to', selectedArea);
       if (selectedArea === SECTION.DEFAULT) {
-        setSection(SECTION.DEFAULT);
+        this._setEditorSection(SECTION.DEFAULT);
         return;
       }
       const isHidden = this._isSectionHidden(selectedArea);
@@ -803,10 +717,15 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       // If the selected area is hidden or has no config, default to SECTION.DEFAULT
       const newArea = isHidden ? SECTION.DEFAULT : sectionIsEmpty ? SECTION.DEFAULT : selectedArea;
 
-      setSection(newArea);
+      this._setEditorSection(newArea);
     } else {
       // console.debug('Area not changed');
     }
+  };
+
+  public _setEditorSection = (section: SECTION) => {
+    this.configSection = section;
+    this._store.SetSelectedSection(section);
   };
 
   protected _handleEditorSubCardPreview = (ev: Event): void => {
@@ -840,10 +759,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     switch (type) {
       case 'show-button':
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
-        console.log('Current preview cleared, showing button', data.buttonIndex);
-        this.updateComplete.then(() => {
-          this._secButtons?.showButton(data.buttonIndex);
-        });
+        this._secButtonsGroup?.peekButton(data.buttonIndex);
         break;
 
       case 'show-image':
@@ -869,6 +785,11 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         console.log('resetting preview');
         this.subCardPreviewConfig = undefined;
         document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this), { once: true });
+        break;
+      case 'highlight-button':
+        console.debug('Highlighting button', data.buttonIndex);
+        if (this._isSectionHidden(SECTION.BUTTONS)) return;
+        this._secButtonsGroup?.highlightButton(data.buttonIndex);
         break;
     }
   }
@@ -911,12 +832,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
   }
 
-  public _peekBorder(): void {
-    this._haCard.classList.add('peek-border');
-    setTimeout(() => {
-      this._haCard.classList.remove('peek-border');
-    }, 2000);
-  }
   static get styles(): CSSResultGroup {
     return [super.styles];
   }

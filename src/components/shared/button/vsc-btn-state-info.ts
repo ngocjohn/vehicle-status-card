@@ -51,6 +51,8 @@ export class VscBtnStateInfo extends LitElement {
       }
       .multiline_secondary {
         white-space: pre-wrap;
+        width: 100%;
+        display: flex;
       }
     `;
   }
