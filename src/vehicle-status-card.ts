@@ -67,6 +67,10 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     return this._hass;
   }
 
+  private _onEditorEvent = (e: CustomEvent<EditorEventParams>) => this._handleEditorEvent(e);
+  private _onEditorConfigAreaSelected = (e: Event) => this._handleEditorConfigAreaSelected(e);
+  private _onEditorSubCardPreview = (e: Event) => this._handleEditorSubCardPreview(e);
+
   constructor() {
     super();
   }
@@ -85,7 +89,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
 
   @state() _buttonCardConfigItem?: ButtonCardConfig[]; // Button card configuration items
-  @state() private _newButtonConfig?: BaseButtonCardItemConfig[]; // New button card configuration items
+  @state() private _newButtonConfig!: BaseButtonCardItemConfig[]; // New button card configuration items
   @state() private configSection!: SECTION | undefined;
   @state() private subCardPreviewConfig?: ButtonSubCardPreviewConfig;
 
@@ -135,19 +139,17 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
-    this._connected = true;
     if (this.isEditorPreview) {
-      window.addEventListener('editor-event', this._handleEditorEvent.bind(this));
-      document.addEventListener(EDITOR_AREA_SELECTED, this._handleEditorConfigAreaSelected);
-      document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this), { once: true });
+      window.addEventListener('editor-event', this._onEditorEvent);
+      document.addEventListener(EDITOR_AREA_SELECTED, this._onEditorConfigAreaSelected);
+      document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._onEditorSubCardPreview, { once: true });
     }
   }
-
   disconnectedCallback(): void {
     this._connected = false;
-    window.removeEventListener('editor-event', this._handleEditorEvent.bind(this));
-    document.removeEventListener(EDITOR_AREA_SELECTED, this._handleEditorConfigAreaSelected);
-    document.removeEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this));
+    window.removeEventListener('editor-event', this._onEditorEvent);
+    document.removeEventListener(EDITOR_AREA_SELECTED, this._onEditorConfigAreaSelected);
+    document.removeEventListener(EDITOR_SUB_CARD_PREVIEW, this._onEditorSubCardPreview);
     super.disconnectedCallback();
   }
 

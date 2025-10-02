@@ -186,7 +186,10 @@ export class VscButtonsGroup extends BaseElement {
         const slideIndex = (buttonEl as any).slideIndex;
         if (slideIndex !== -1) {
           console.debug('Peek to slide index', slideIndex);
-          this.swiper.slideTo(slideIndex, 300, this._peekBtn(buttonEl)!);
+          this.swiper.slideTo(slideIndex);
+          this.swiper.once('slideChangeTransitionEnd', () => {
+            this._peekBtn(buttonEl);
+          });
         }
       } else {
         this._peekBtn(buttonEl);

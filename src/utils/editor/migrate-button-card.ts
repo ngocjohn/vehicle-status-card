@@ -25,6 +25,7 @@ export const convertButtonToNewFormat = (oldConfig: ButtonCardConfig): BaseButto
     if (button.picture_template) {
       if (hasTemplate(button.picture_template)) {
         newConfig.icon_template = button.picture_template;
+        newConfig.icon_type = 'icon-template';
       }
     }
     if (button.icon) {

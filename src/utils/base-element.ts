@@ -14,18 +14,29 @@ export class BaseElement extends LitElement {
 
   protected section?: SECTION;
 
+  private _onAreaSelected: (ev: Event) => void;
+
   constructor(section?: SECTION) {
     super();
     if (section) {
       this.section = section;
     }
+    this._onAreaSelected = this._changeDimmedState.bind(this);
   }
 
   connectedCallback() {
     super.connectedCallback();
     if (this.section && this._store !== undefined && this.isBaseInEditor) {
-      document.addEventListener(EDITOR_AREA_SELECTED, this._changeDimmedState.bind(this));
+      document.addEventListener(EDITOR_AREA_SELECTED, this._onAreaSelected);
       console.debug('add listener for', this.section);
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.section && this._store !== undefined && this.isBaseInEditor) {
+      document.removeEventListener(EDITOR_AREA_SELECTED, this._onAreaSelected);
+      console.debug('remove listener for', this.section);
     }
   }
 
