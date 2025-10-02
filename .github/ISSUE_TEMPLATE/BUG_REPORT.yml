@@ -26,6 +26,7 @@ body:
       label: Version 📦
       description: The version of the application where the bug was found
       options:
+        - v1.17.0-0
         - v1.16.2-0
         - v1.16.1
         - v1.16.0
@@ -35,7 +36,6 @@ body:
         - v1.14.0
         - v1.13.1
         - v1.13.0
-        - v1.12.1
     validations:
       required: true
   - type: input
