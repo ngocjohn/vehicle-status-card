@@ -165,7 +165,7 @@ export class VscButtonsGroup extends BaseElement {
       if (this.useSwiper && this.swiper) {
         const slideIndex = (buttonEl as any).slideIndex;
         if (slideIndex !== -1) {
-          console.debug('Highlight to slide index', slideIndex);
+          // console.debug('Highlight to slide index', slideIndex);
           this.swiper.slideTo(slideIndex);
         }
       }
@@ -175,7 +175,7 @@ export class VscButtonsGroup extends BaseElement {
     });
   };
 
-  public peekButton = (index: number): void => {
+  public peekButton = (index: number, keep: boolean = false): void => {
     this.updateComplete.then(() => {
       const buttonEls = this._buttonItems;
       const buttonEl = buttonEls[index];
@@ -185,23 +185,24 @@ export class VscButtonsGroup extends BaseElement {
       if (this.useSwiper && this.swiper) {
         const slideIndex = (buttonEl as any).slideIndex;
         if (slideIndex !== -1) {
-          console.debug('Peek to slide index', slideIndex);
+          // console.debug('Peek to slide index', slideIndex);
           this.swiper.slideTo(slideIndex);
           this.swiper.once('slideChangeTransitionEnd', () => {
-            this._peekBtn(buttonEl);
+            this._peekBtn(buttonEl, keep);
           });
         }
       } else {
-        this._peekBtn(buttonEl);
+        this._peekBtn(buttonEl, keep);
       }
     });
   };
 
-  private _peekBtn(buttonEl: VscButtonCardItem): void {
+  private _peekBtn(buttonEl: VscButtonCardItem, keep: boolean): void {
     const filtredBtns = Array.from(this._buttonItems).filter((btn) => btn !== buttonEl);
     const haCard = buttonEl._haCard;
     filtredBtns.forEach((btn) => (btn.dimmedInEditor = true));
     buttonEl._toggleHighlight();
+    if (keep) return;
     haCard!.addEventListener(
       'animationend',
       () => {
