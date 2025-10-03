@@ -67,6 +67,18 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     return [super.styles];
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    void loadHaComponents();
+    void refactorEditDialog();
+    window.EditorManager = this;
+    this._cleanConfig();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+  }
+
   public setConfig(config: VehicleStatusCardConfig): void {
     const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
     this._migratedIndicatorsConfig = !isLegacyConfig;
@@ -90,18 +102,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       document.dispatchEvent(EditorConfigAreaSelectedEvent(selectedArea));
       this._panelButtons?._reloadPreview();
     });
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    void loadHaComponents();
-    void refactorEditDialog();
-    window.EditorManager = this;
-    this._cleanConfig();
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
   }
 
   protected willUpdate(changedProps: PropertyValues): void {

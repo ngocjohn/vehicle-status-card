@@ -769,11 +769,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         this._secImages?.showImage(data.index);
         break;
 
-      case 'toggle-helper':
-        console.log('Toggling helper for section:', data);
-
-        // this._toggleHelper(data);
-        break;
       case 'toggle-indicator-row':
         const peek = data.peek ?? false;
         this._toggleIndicatorRow(data, peek);
@@ -789,7 +784,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this), { once: true });
         break;
       case 'highlight-button':
-        console.debug('Highlighting button', data.buttonIndex);
+        // console.debug('Highlighting button', data.buttonIndex);
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
         this._secButtonsGroup?.highlightButton(data.buttonIndex);
         break;

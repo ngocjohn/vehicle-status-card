@@ -401,7 +401,7 @@ export class BaseEditor extends LitElement {
     if (!area) return;
     const sectionNew = getSectionFromConfigArea(area);
     document.dispatchEvent(EditorConfigAreaSelectedEvent(sectionNew));
-    console.debug('event from:', area, sectionNew);
+    // console.debug('event from:', area, sectionNew);
   }
 
   static get styles(): CSSResultGroup {
