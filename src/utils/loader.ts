@@ -62,14 +62,17 @@ export const refactorEditDialog = async () => {
   // Add custom styles
 
   const newStyle = css`
-    .element-preview {
-      flex: 0 0 50% !important;
-      margin: 3em auto 1em !important;
+    ha-dialog {
+      --dialog-content-padding: 8px 4px !important;
     }
     @media (min-width: 1000px) {
       .content hui-card {
         margin: 0 auto !important;
         padding: inherit !important;
+      }
+      .element-preview {
+        flex: 0 0 50% !important;
+        margin: 3em auto 1em !important;
       }
     }
   `;

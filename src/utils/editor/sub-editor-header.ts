@@ -53,12 +53,15 @@ export const createAddBtnLabel = (label = 'Add'): TemplateResult => {
 export class SubEditorHeader extends LitElement {
   @property({ type: Boolean, attribute: 'hide-primary', reflect: true }) public hidePrimaryAction = false;
   @property({ type: Boolean, attribute: 'hide-secondary', reflect: true }) public hideSecondaryAction = false;
+  @property({ type: Boolean, attribute: 'left-btn', reflect: true }) public leftBtn = false;
+  @property({ type: Boolean, attribute: 'hide-primary-icon', reflect: true }) public hidePrimaryIcon = false;
+
   @property({ attribute: false }) public secondaryAction?: TemplateResult;
   @property({ attribute: false }) public thirdAction?: TemplateResult;
   @property({ attribute: false }) public extraActions?: TemplateResult;
 
   @property({ attribute: false }) public primaryIcon: string | PrimaryActionTypes = 'back';
-  @property({ type: Boolean, attribute: 'left-btn', reflect: true }) public leftBtn = false;
+
   @property() public defaultAction?: string;
   @property() public _label?: string;
   @property() public secondary?: string;
@@ -77,11 +80,16 @@ export class SubEditorHeader extends LitElement {
               ? nothing
               : html`
                   <div class="back-title">
-                    <ha-icon-button .path=${primaryIcon} @click=${this._handlePrimaryAction}></ha-icon-button>
+                    ${this.hidePrimaryIcon
+                      ? nothing
+                      : html`
+                          <ha-icon-button .path=${primaryIcon} @click=${this._handlePrimaryAction}></ha-icon-button>
+                        `}
+
                     <slot name="title">
-                      ${this._label
-                        ? html` <div class="title">
-                            <span class="primary">${this._label}</span>
+                      ${this._label || this.secondary
+                        ? html`<div class="title">
+                            ${this._label ? html`<span class="primary">${this._label}</span>` : nothing}
                             ${this.secondary ? html`<span class="secondary">${this.secondary}</span>` : nothing}
                           </div>`
                         : nothing}
@@ -158,13 +166,15 @@ export class SubEditorHeader extends LitElement {
           gap: 8px;
         }
         .primary-action {
-          flex: 1;
+          flex: auto;
+          margin-inline-end: auto;
         }
 
         .secondary-action {
-          width: 100%;
           max-width: fit-content;
           justify-content: flex-end;
+          flex: 0 1 auto;
+          flex-wrap: wrap;
         }
         .back-title {
           display: flex;
