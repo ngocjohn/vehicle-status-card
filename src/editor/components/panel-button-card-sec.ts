@@ -132,7 +132,7 @@ export class PanelButtonCardSec extends BaseEditor {
     ev.stopPropagation();
     const index = (ev.currentTarget as any).btnIndex;
     const action = ev.detail.action;
-    console.debug('Button action', action, index);
+    // console.debug('Button action', action, index);
     const updateChange = (newConfig: BaseButtonCardItemConfig[]) => {
       this._buttonsChanged(newConfig);
     };
@@ -141,6 +141,15 @@ export class PanelButtonCardSec extends BaseEditor {
     switch (action) {
       case ACTIONS.EDIT_BUTTON:
         this._editButtonConfig(index);
+        this.updateComplete.then(() => {
+          this._dispatchEditorEvent('show-button', { buttonIndex: index, keep: true });
+          if (this._subBtnEl) {
+            setTimeout(() => {
+              this._subBtnEl?._toggleHighlightButton();
+            }, 3000);
+          }
+        });
+
         break;
       case ACTIONS.DUPLICATE_BUTTON:
         const newBtn = JSON.parse(JSON.stringify(currentList[index]));
