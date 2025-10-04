@@ -22,6 +22,7 @@ export type RangeItemConfig = {
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;
   double_tap_action?: ActionConfig;
+  hide_icon?: boolean;
 };
 
 export type RangeInfoLayoutConfig = Partial<{

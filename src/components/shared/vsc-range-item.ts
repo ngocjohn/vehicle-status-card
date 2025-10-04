@@ -312,10 +312,15 @@ export class VscRangeItem extends BaseElement {
 
     switch (key) {
       case 'icon':
-        return r.energy_level?.icon ?? '';
+        return r.energy_level?.icon;
+      case 'energyIconHidden':
+        return r.energy_level?.hide_icon ?? false;
 
       case 'rangeIcon':
-        return r.range_level?.icon ?? '';
+        return r.range_level?.icon;
+
+      case 'rangeIconHidden':
+        return r.range_level?.hide_icon ?? false;
 
       case 'energyState':
         return getEntityState(r.energy_level?.entity, r.energy_level?.attribute);
@@ -438,6 +443,9 @@ export class VscRangeItem extends BaseElement {
       '--vsc-bar-energy-color': get('energyStateColor'),
     };
 
+    const energyStateObj = this.hass.states?.[this.rangeItem.energy_level?.entity || ''];
+    const rangeStateObj = this.hass.states?.[this.rangeItem.range_level?.entity || ''];
+
     const chargingIcon = html`
       <ha-icon
         icon="mdi:battery-high"
@@ -449,10 +457,15 @@ export class VscRangeItem extends BaseElement {
     `;
 
     const showEnergyItem = get('energyState') && get('energyPosition') === 'outside';
+    const energyIconHidden = get('energyIconHidden');
     const energyItem = showEnergyItem
       ? html`
           <div class="item" id="energy-item">
-            <ha-icon icon="${get('icon')}"></ha-icon>
+            ${!energyIconHidden
+              ? html`
+                  <ha-state-icon .hass=${this._hass} .stateObj=${energyStateObj} icon=${get('icon')}></ha-state-icon>
+                `
+              : nothing}
             <span>${get('energyState')}</span>
             ${chargingIcon}
           </div>
@@ -469,11 +482,20 @@ export class VscRangeItem extends BaseElement {
         ? html`<span class="range-inside" id="range-item">${get('rangeState')}</span>`
         : nothing;
 
+    const rangeIconHidden = get('rangeIconHidden');
     const outsideRange =
       get('rangePosition') !== 'off'
         ? html`
             <div class="item" ?hidden=${!get('rangeState') || get('rangePosition') !== 'outside'} id="range-item">
-              <ha-icon icon="${get('rangeIcon')}"></ha-icon>
+              ${!rangeIconHidden
+                ? html`
+                    <ha-state-icon
+                      .hass=${this._hass}
+                      .stateObj=${rangeStateObj}
+                      icon=${get('rangeIcon')}
+                    ></ha-state-icon>
+                  `
+                : nothing}
               <span>${get('rangeState')}</span>
             </div>
           `

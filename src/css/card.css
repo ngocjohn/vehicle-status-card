@@ -206,7 +206,7 @@ ha-card .card-header {
 
 .info-box .item {
   display: flex;
-  gap: 0.4rem;
+  /* gap: 0.4rem; */
   /* align-items: flex-end; */
   line-height: 100%;
 }
