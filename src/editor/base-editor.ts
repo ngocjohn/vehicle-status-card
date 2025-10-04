@@ -191,8 +191,6 @@ export class BaseEditor extends LitElement {
     sectionOrder.splice(currentIndex, 1);
     sectionOrder.splice(newIndex, 0, sectionKey);
 
-    console.debug(`Move section ${sectionKey} ${direction}:`, { currentIndex, newIndex, sectionOrder });
-
     const newConfig = {
       ...this._store?._config,
       layout_config: {

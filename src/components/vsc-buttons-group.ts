@@ -203,9 +203,7 @@ export class VscButtonsGroup extends BaseElement {
     filtredBtns.forEach((btn) => (btn.dimmedInEditor = true));
     buttonEl._toggleHighlight();
     if (keep) return;
-    console.debug('Peek animation started');
     haCard!.addEventListener('animationend', () => {
-      console.debug('Peek animation ended');
       filtredBtns.forEach((btn) => (btn.dimmedInEditor = false));
     });
   }

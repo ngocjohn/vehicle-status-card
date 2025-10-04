@@ -309,15 +309,14 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (!ev.detail || !this._btnConfig || !this._customCardConfig) {
       return;
     }
-    console.debug('Sub-Card Config (PanelButtonCardMain)');
+
     const currentElementConfig = { ...this._customCardConfig.elementConfig } as any;
     const incoming = ev.detail.config as any;
     if (JSON.stringify(currentElementConfig) === JSON.stringify(incoming)) {
-      console.debug('No changes detected in custom card config');
+      // console.debug('No changes detected in custom card config');
       return;
     }
-    // update sub-element config
-    console.debug('Custom card config changed, updating elementConfig...');
+
     // re-add sub_card if exists
     this._customCardConfig = {
       ...this._customCardConfig,
@@ -330,7 +329,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
       value = incoming.cards || [];
     }
 
-    console.debug('Updating button config sub_card:', subKey);
+    // console.debug('Updating button config sub_card:', subKey);
     // update button config
     const btnConfig = { ...(this._btnConfig || {}) } as BaseButtonCardItemConfig;
     btnConfig.sub_card = {
@@ -345,7 +344,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (!ev.detail || !this._btnConfig) {
       return;
     }
-    console.debug('onYamlChanged (PanelButtonCardMain)');
+    // console.debug('onYamlChanged (PanelButtonCardMain)');
     const { key, subKey } = ev.currentTarget as any;
     const value = ev.detail;
     // console.debug('YAML changed:', { key, subKey, value });

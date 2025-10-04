@@ -39,6 +39,7 @@ import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
+import { checkCardLatest } from './utils/loader_card_latest';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
@@ -761,7 +762,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     switch (type) {
       case 'show-button':
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
-        console.debug('Peeking button', data.buttonIndex, data.keep);
+        // console.debug('Peeking button', data.buttonIndex, data.keep);
         this._secButtonsGroup?.peekButton(data.buttonIndex, data.keep);
         break;
 
@@ -855,3 +856,4 @@ declare global {
 }
 // Load and clean extra map resources
 loadAndCleanExtraMap().catch(console.error);
+checkCardLatest();
