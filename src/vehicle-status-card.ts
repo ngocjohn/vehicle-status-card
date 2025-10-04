@@ -761,7 +761,8 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     switch (type) {
       case 'show-button':
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
-        this._secButtonsGroup?.peekButton(data.buttonIndex);
+        console.debug('Peeking button', data.buttonIndex, data.keep);
+        this._secButtonsGroup?.peekButton(data.buttonIndex, data.keep);
         break;
 
       case 'show-image':

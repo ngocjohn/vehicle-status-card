@@ -24,14 +24,9 @@ const PRIMARY_ICON: Record<PrimaryActionTypes | string, string> = {
 };
 
 export const createSecondaryCodeLabel = (yamlMode: boolean): TemplateResult => {
-  const icon = yamlMode ? ICON.LIST_BOX_OUTLINE : ICON.CODE_JSON;
-  const label = yamlMode ? 'Show UI editor' : 'Edit YAML';
-  return html`
-    <ha-button size="small" variant="neutral" appearance="filled">
-      <ha-svg-icon slot="end" .path=${icon}></ha-svg-icon>
-      ${label}
-    </ha-button>
-  `;
+  const label = yamlMode ? 'Close code editor' : 'Edit YAML';
+  const variant = yamlMode ? 'warning' : 'neutral';
+  return html` <ha-button size="small" variant=${variant} appearance="filled"> ${label} </ha-button> `;
 };
 
 export const createThirdActionBtn = (previewActive: boolean): TemplateResult => {
@@ -181,6 +176,10 @@ export class SubEditorHeader extends LitElement {
           align-items: center;
           margin-inline-end: auto;
         }
+        .back-title > ha-icon-button {
+          color: var(--secondary-text-color);
+        }
+
         ha-icon-button {
           --mdc-icon-button-size: 36px;
           margin-inline-end: 0.5em;

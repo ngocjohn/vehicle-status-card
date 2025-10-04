@@ -374,19 +374,18 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (!ev.detail || !this._btnConfig) {
       return;
     }
-    console.debug('onValueChanged (PanelButtonCardMain)');
     const currentConfig = { ...(this._btnConfig ?? {}) } as BaseButtonCardItemConfig;
     const incoming = ev.detail.value as Partial<Omit<BaseButtonCardItemConfig, 'sub_card'>>;
     // strip out sub_card from current config
     const baseConfig = omit(currentConfig, ['sub_card']);
     // Check if there are actual changes before proceeding
     if (JSON.stringify(baseConfig) === JSON.stringify(incoming)) {
-      console.debug('No changes detected in base config');
+      // console.debug('No changes detected in base config');
       return;
     }
     // merge with cleanup
     let changed = this.mergeWithCleanup(baseConfig, incoming);
-    console.debug('Base config after merge:', baseConfig);
+
     // ---- normalize state_content against include_state_template ----
     const include = !!baseConfig.include_state_template;
     const raw = baseConfig.state_content as string | string[] | undefined;

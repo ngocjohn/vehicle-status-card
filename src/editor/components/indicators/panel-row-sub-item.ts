@@ -311,16 +311,6 @@ export class PanelRowSubItem extends BaseEditor {
     this.requestUpdate();
   }
 
-  // private _handleGroupPreviewToggle() {
-  //   console.debug('Toggling group preview');
-  //   const isPreview = this._isPreviewGroup;
-  //   this._setPreviewConfig('row_group_preview', {
-  //     row_index: this.rowIndex,
-  //     group_index: isPreview ? null : this.itemIndex,
-  //     entity_index: this.itemIndex,
-  //   });
-  // }
-
   private _computeItemLabel(config: IndicatorRowItem | IndicatorBaseItemConfig): string {
     if ('name' in config && config.name) return config.name;
     if ('entity' in config && config.entity) {

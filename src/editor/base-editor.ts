@@ -1,3 +1,4 @@
+import { isEmpty } from 'es-toolkit/compat';
 import { HomeAssistantStylesManager } from 'home-assistant-styles-manager';
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -6,15 +7,12 @@ import editorcss from '../css/editor.css';
 import { EditorConfigAreaSelectedEvent } from '../events';
 import { EditorIndicatorRowSelectedEvent } from '../events/editor-indicator-row';
 import { fireEvent, HomeAssistant } from '../ha';
-import * as IMAGE_HELPER from '../ha/data/image_upload';
 import { showFormDialog } from '../ha/dialogs/form/show-form-dialog';
 import { SectionOrder, VehicleStatusCardConfig } from '../types/config';
 import { ConfigArea } from '../types/config-area';
 import { SECTION } from '../types/section';
 import { Create } from '../utils';
 import { getSectionFromConfigArea } from '../utils/editor/area-select';
-import * as MIGRATE from '../utils/editor/migrate-indicator';
-import { EditorPreviewTypes } from '../utils/editor/types';
 import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
@@ -58,9 +56,6 @@ declare global {
 export class BaseEditor extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _store!: Store;
-
-  @property({ attribute: false }) _migrate = MIGRATE;
-  @property({ attribute: false }) _imageHelper = IMAGE_HELPER;
 
   @property() _domHelper = selectTree;
 
@@ -116,6 +111,22 @@ export class BaseEditor extends LitElement {
   get _legacyIndicator(): boolean {
     return !!(this._cardConfig?.indicators && Object.keys(this._cardConfig.indicators).length > 0);
   }
+
+  get _notEmptyOrder(): SectionOrder[] {
+    const order = this._store?._config?.layout_config?.section_order || [];
+    const config = this._store?._config;
+    if (!order || !config) return [];
+    return Array.from(order).filter((section) => {
+      const secConfig =
+        section === SECTION.BUTTONS
+          ? config.button_cards
+          : section === SECTION.INDICATORS
+          ? config.indicator_rows
+          : config[section];
+      return !isEmpty(secConfig);
+    });
+  }
+
   protected _getButtonGridCols(): number {
     const cols = this._cardConfig?.layout_config?.button_grid?.columns || 2;
     return Math.max(2, Math.min(cols, 4)); // Clamp between 2 and 4
@@ -165,19 +176,22 @@ export class BaseEditor extends LitElement {
   };
 
   public _getSectionInfo(sectionKey: SectionOrder): { total: number; indexInOrder: number } {
-    const sectionOrder = this._store?._config?.layout_config?.section_order;
+    const sectionOrder = this._notEmptyOrder;
     const currentIndex = sectionOrder ? sectionOrder.indexOf(sectionKey) : -1;
     const total = sectionOrder ? sectionOrder.length : 0;
     return { total, indexInOrder: currentIndex };
   }
 
   public _moveSection(sectionKey: SectionOrder, direction: 'up' | 'down'): void {
-    const sectionOrder = this._store?._config?.layout_config?.section_order!;
+    // const orderNotFiltered = this._store?._config?.layout_config?.section_order;
+    const sectionOrder = this._notEmptyOrder;
+
     const currentIndex = sectionOrder.indexOf(sectionKey);
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     sectionOrder.splice(currentIndex, 1);
     sectionOrder.splice(newIndex, 0, sectionKey);
-    console.debug(`Move section ${sectionKey} ${direction}:`, sectionOrder);
+
+    console.debug(`Move section ${sectionKey} ${direction}:`, { currentIndex, newIndex, sectionOrder });
 
     const newConfig = {
       ...this._store?._config,
@@ -351,10 +365,6 @@ export class BaseEditor extends LitElement {
     fireEvent(this, 'editor-event', { type, data });
   }
 
-  protected _showRow = (rowIndex: number | null, peek = false): void => {
-    this._dispatchEditorEvent('toggle-indicator-row', { rowIndex, peek });
-  };
-
   public _resetPreview = (): void => {
     this._dispatchEditorEvent('reset-preview', {});
   };
@@ -368,21 +378,6 @@ export class BaseEditor extends LitElement {
     const rowPreviewConfig = { row_index: rowIndex, group_index: groupIndex, entity_index, peek };
     document.dispatchEvent(EditorIndicatorRowSelectedEvent(rowPreviewConfig));
     // console.debug('event from:', this);
-  };
-
-  public _setPreviewConfig = <T extends keyof EditorPreviewTypes>(
-    previewKey: T,
-    value: EditorPreviewTypes[T]['config']
-  ) => {
-    if (!this._store) return;
-    const config = this._store._config;
-    if (!config || typeof config !== 'object') return;
-
-    // Update config
-    const newConfig = { ...config, [previewKey]: value };
-    console.debug(`Set preview config key: ${previewKey}`, value, 'from', this);
-    fireEvent(this, 'config-changed', { config: newConfig });
-    return;
   };
 
   protected _cardConfigChanged(changedConfig: Partial<VehicleStatusCardConfig>): void {

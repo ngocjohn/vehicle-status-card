@@ -120,6 +120,7 @@ export class VscButtonsGroup extends BaseElement {
   }
 
   private _initSwiper(): void {
+    if (!this.useSwiper) return;
     const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
     if (!swiperCon) return;
 
@@ -166,7 +167,7 @@ export class VscButtonsGroup extends BaseElement {
         const slideIndex = (buttonEl as any).slideIndex;
         if (slideIndex !== -1) {
           // console.debug('Highlight to slide index', slideIndex);
-          this.swiper.slideTo(slideIndex);
+          this.swiper.slideTo(slideIndex, 0);
         }
       }
       buttonEls.forEach((btn, idx) => {
@@ -182,35 +183,33 @@ export class VscButtonsGroup extends BaseElement {
       if (!buttonEl) {
         return;
       }
-      if (this.useSwiper && this.swiper) {
+      buttonEl.dimmedInEditor = false;
+      if (this.swiper) {
         const slideIndex = (buttonEl as any).slideIndex;
         if (slideIndex !== -1) {
           // console.debug('Peek to slide index', slideIndex);
-          this.swiper.slideTo(slideIndex);
-          this.swiper.once('slideChangeTransitionEnd', () => {
-            this._peekBtn(buttonEl, keep);
-          });
+          this.swiper.slideTo(slideIndex, 0);
         }
-      } else {
-        this._peekBtn(buttonEl, keep);
       }
+      this._peekBtn(buttonEl, keep);
     });
   };
 
-  private _peekBtn(buttonEl: VscButtonCardItem, keep: boolean): void {
+  private _peekBtn(buttonEl: VscButtonCardItem, keep: boolean = false): void {
+    if (!buttonEl) return;
+
     const filtredBtns = Array.from(this._buttonItems).filter((btn) => btn !== buttonEl);
     const haCard = buttonEl._haCard;
     filtredBtns.forEach((btn) => (btn.dimmedInEditor = true));
     buttonEl._toggleHighlight();
     if (keep) return;
-    haCard!.addEventListener(
-      'animationend',
-      () => {
-        filtredBtns.forEach((btn) => (btn.dimmedInEditor = false));
-      },
-      { once: true }
-    );
+    console.debug('Peek animation started');
+    haCard!.addEventListener('animationend', () => {
+      console.debug('Peek animation ended');
+      filtredBtns.forEach((btn) => (btn.dimmedInEditor = false));
+    });
   }
+
   static get styles(): CSSResultGroup {
     return [
       super.styles,

@@ -17,6 +17,7 @@ export class ButtonCardBaseEditor extends BaseEditor {
   @state() public _subDefaultItemActive!: boolean;
 
   @state() private _connected: boolean = false;
+  @state() public _btnLoading: boolean = false;
 
   protected buttonArea?: ButtonArea;
 
@@ -63,10 +64,24 @@ export class ButtonCardBaseEditor extends BaseEditor {
   }
 
   private _renderHighlightBtn(): TemplateResult {
-    const label = this._buttonHighlighted ? 'Unhighlight Button' : 'Highlight Button';
-    const variant = this._buttonHighlighted ? 'warning' : 'brand';
+    const btnIsHidden = this._btnConfig?.hide_button;
+    if (btnIsHidden) {
+      if (this._buttonHighlighted) {
+        this._buttonHighlighted = false;
+      }
+      return html``;
+    }
+    const isHighlighted = this._buttonHighlighted;
+    const label = isHighlighted ? 'Unhighlight Button' : 'Highlight Button';
+    const variant = isHighlighted ? 'warning' : 'brand';
     return html`
-      <ha-button size="small" variant=${variant} appearance="plain" @click=${() => this._toggleHighlightButton()}>
+      <ha-button
+        .loading=${this._btnLoading}
+        size="small"
+        variant=${variant}
+        appearance="plain"
+        @click=${() => this._toggleHighlightButton()}
+      >
         ${label}
       </ha-button>
     `;

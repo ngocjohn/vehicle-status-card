@@ -141,15 +141,6 @@ export class PanelButtonCardSec extends BaseEditor {
     switch (action) {
       case ACTIONS.EDIT_BUTTON:
         this._editButtonConfig(index);
-        this.updateComplete.then(() => {
-          this._dispatchEditorEvent('show-button', { buttonIndex: index, keep: true });
-          if (this._subBtnEl) {
-            setTimeout(() => {
-              this._subBtnEl?._toggleHighlightButton();
-            }, 3000);
-          }
-        });
-
         break;
       case ACTIONS.DUPLICATE_BUTTON:
         const newBtn = JSON.parse(JSON.stringify(currentList[index]));
@@ -185,6 +176,21 @@ export class PanelButtonCardSec extends BaseEditor {
       index,
       config: btnConfig,
     };
+    if (btnConfig.hide_button) {
+      return;
+    }
+    // Auto highlight button after 300ms
+    setTimeout(() => {
+      if (this._subBtnEl) {
+        this._subBtnEl._btnLoading = true;
+        this._dispatchEditorEvent('show-button', { buttonIndex: index, keep: true });
+        this._subBtnEl._buttonHighlighted = true;
+        this._subBtnEl._toggleHighlightButton(true);
+        setTimeout(() => {
+          this._subBtnEl!._btnLoading = false;
+        }, 3000);
+      }
+    }, 300);
   }
 
   private _closeSubEditor = () => {
