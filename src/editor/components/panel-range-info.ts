@@ -582,7 +582,7 @@ export class PanelRangeInfo extends BaseEditor {
       },
     ];
     const LAYOUT_DATA = {
-      layout: this._config.layout_config?.range_info_config?.layout ?? 'row',
+      layout: this._config.layout_config?.range_info_config?.layout ?? 'column',
     };
     const layoutForm = this._createVscForm(LAYOUT_DATA, RANGE_LAYOUT, 'layout_config', 'range_info_config');
 
