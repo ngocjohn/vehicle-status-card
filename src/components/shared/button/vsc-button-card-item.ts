@@ -63,7 +63,8 @@ export class VscButtonCardItem extends BaseButton {
 
     const imageUrl = btnShowConfig.icon_type === 'entity-picture' ? this._getImageUrl() : undefined;
     const icon =
-      (btnShowConfig.icon_type === 'icon-template' && this._getTemplateValue('icon_template')) ?? this._btnConfig.icon;
+      btnShowConfig.icon_type === 'icon-template' ? this._getTemplateValue('icon_template') : this._btnConfig.icon;
+
     const iconStyle = this._computeIconStyle();
 
     const badgeVisible = Boolean(this._getTemplateValue('notify'));
@@ -71,14 +72,17 @@ export class VscButtonCardItem extends BaseButton {
     const notifyText = this._getTemplateValue('notify_text');
     const notifyColor = this._getTemplateValue('notify_color');
 
+    const _hasAction = this._hasAction;
+
     return html`
       <ha-card ?transparent=${btnShowConfig.transparent} style=${styleMap(iconStyle)}>
         <div
           id="clickable-background"
           class="background"
-          role="button"
+          role=${_hasAction ? 'button' : undefined}
+          tabindex=${_hasAction ? '0' : undefined}
         >
-          <ha-ripple></ha-ripple>
+          <ha-ripple .disabled=${!_hasAction}></ha-ripple>
         </div>
         <vsc-btn-card .btnShowConfig=${btnShowConfig}>
           <vsc-state-item
@@ -156,6 +160,23 @@ export class VscButtonCardItem extends BaseButton {
     haCard.addEventListener('animationend', () => {
       haCard.classList.remove('highlight');
     });
+  }
+
+  public _zoomInEffect(): void {
+    const haCard = this._haCard;
+    if (!haCard) {
+      return;
+    }
+    haCard.style.animationDelay = `${this.itemIndex! * 50}ms`;
+    haCard.classList.add('zoom-in');
+    haCard.addEventListener(
+      'animationend',
+      () => {
+        haCard.classList.remove('zoom-in');
+        haCard.style.removeProperty('animation-delay');
+      },
+      { once: true }
+    );
   }
 
   static get styles(): CSSResultGroup {
@@ -263,6 +284,23 @@ export class VscButtonCardItem extends BaseButton {
         @keyframes rotate {
           100% {
             transform: rotate(1turn);
+          }
+        }
+
+        .zoom-in {
+          animation-duration: 0.3s;
+          animation-fill-mode: both;
+          animation-name: zoomIn;
+        }
+
+        @keyframes zoomIn {
+          from {
+            opacity: 0.5;
+            transform: scale3d(0.3, 0.3, 0.3);
+          }
+
+          to {
+            opacity: 1;
           }
         }
       `,

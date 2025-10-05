@@ -42,7 +42,39 @@ export class VscButtonsGroup extends BaseElement {
     if (this.useSwiper) {
       this._initSwiper();
     }
+    this._setUpButtonAnimation();
   }
+
+  private _setUpButtonAnimation(): void {
+    if (this._store.card._hasAnimated || this._store.card.isEditorPreview || !this.shadowRoot) return;
+    this._store.card._hasAnimated = true;
+
+    const runAnimation = () => {
+      const buttons = this.shadowRoot?.querySelectorAll('vsc-button-card-item');
+      if (!buttons || buttons.length === 0) return;
+
+      buttons.forEach((btn: VscButtonCardItem) => {
+        requestAnimationFrame(() => {
+          btn._zoomInEffect();
+        });
+      });
+      observer.disconnect();
+    };
+
+    const observer = new MutationObserver(() => {
+      const buttons = this.shadowRoot?.querySelectorAll('vsc-button-card-item') as NodeListOf<HTMLElement>;
+
+      if (buttons && buttons.length > 0) {
+        requestAnimationFrame(() => runAnimation());
+      }
+    });
+
+    observer.observe(this.shadowRoot, { childList: true, subtree: true });
+
+    // Fallback in case MutationObserver doesn't trigger
+    requestAnimationFrame(() => runAnimation());
+  }
+
   protected render(): TemplateResult {
     const buttons = this.buttons;
     const { rows, columns } = this._store.gridConfig;
@@ -94,7 +126,7 @@ export class VscButtonsGroup extends BaseElement {
   _handleClickIndex(ev: Event): void {
     ev.stopPropagation();
     const index = (ev.target as any).itemIndex;
-    console.debug('Button index clicked:', index);
+    // console.debug('Button index clicked:', index);
     setTimeout(() => {
       this._store.card._currentSwipeIndex = this.activeSlideIndex;
       this._store.card._activeCardIndex = index;
