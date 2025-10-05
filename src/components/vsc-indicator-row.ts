@@ -7,6 +7,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { VscIndicatorItem } from '../components/shared/vsc-indicator-item';
 import { COMPONENT } from '../constants/const';
+import { fireEvent } from '../ha';
 import { getGroupEntities, GroupEntity, isGroupEntity } from '../ha/data/group';
 import {
   IndicatorRowGroupConfig,
@@ -27,6 +28,12 @@ const ALIGNS: Record<Alignment, string> = {
   end: 'flex-end',
   justify: 'space-between',
 };
+
+declare global {
+  interface HASSDomEvents {
+    'group-active': Boolean | null;
+  }
+}
 
 @customElement(COMPONENT.INDICATOR_ROW)
 export class VscIndicatorRow extends BaseElement {
@@ -78,6 +85,9 @@ export class VscIndicatorRow extends BaseElement {
     }
     if (_changedProperties.has('_selectedGroupId')) {
       this.active = this._selectedGroupId !== null;
+      if (!this.isBaseInEditor) return;
+      // Notify editor if group active state changes
+      fireEvent(this, 'group-active', this.active);
     }
   }
 
