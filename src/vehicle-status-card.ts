@@ -145,7 +145,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       window.addEventListener('editor-event', this._onEditorEvent);
       document.addEventListener(EDITOR_AREA_SELECTED, this._onEditorConfigAreaSelected);
       document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._onEditorSubCardPreview, { once: true });
-      console.debug('Added editor event listener');
     }
   }
   disconnectedCallback(): void {

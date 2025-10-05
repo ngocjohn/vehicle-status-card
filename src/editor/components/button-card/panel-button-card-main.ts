@@ -44,11 +44,9 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   }
   connectedCallback(): void {
     super.connectedCallback();
-    console.debug('PanelButtonCardMain connected:', this.buttonArea);
   }
   disconnectCallback(): void {
     super.disconnectedCallback();
-    console.debug('PanelButtonCardMain disconnected:', this.buttonArea);
   }
 
   protected updated(_changedProperties: PropertyValues): void {
