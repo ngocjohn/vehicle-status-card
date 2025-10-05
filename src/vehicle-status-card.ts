@@ -14,7 +14,6 @@ import { EditorEventParams } from './editor/base-editor';
 import { EDITOR_AREA_SELECTED, EDITOR_SUB_CARD_PREVIEW } from './events';
 // Ha utils
 import {
-  fireEvent,
   forwardHaptic,
   HomeAssistant,
   LovelaceCard,
@@ -47,6 +46,9 @@ import { Store } from './utils/store';
 
 @customElement(CARD_NAME)
 export class VehicleStatusCard extends BaseElement implements LovelaceCard {
+  constructor() {
+    super();
+  }
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     Store.selectedConfigArea = ConfigArea.DEFAULT;
     return document.createElement('vehicle-status-card-editor');
@@ -72,10 +74,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   private _onEditorEvent = (e: CustomEvent<EditorEventParams>) => this._handleEditorEvent(e);
   private _onEditorConfigAreaSelected = (e: Event) => this._handleEditorConfigAreaSelected(e);
   private _onEditorSubCardPreview = (e: Event) => this._handleEditorSubCardPreview(e);
-
-  constructor() {
-    super();
-  }
 
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
@@ -115,13 +113,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     const newConfig = JSON.parse(JSON.stringify(config));
-    if (newConfig.button_card && newConfig.button_card.length) {
-      console.debug('legacy button_card config found');
-      // Backward compatibility for legacy button_card config
-      this._buttonCardConfigItem = newConfig.button_card as ButtonCardConfig[];
-      console.debug('config button_card:', this._buttonCardConfigItem);
-    }
-    // this._config = newConfig;
+    // if (newConfig.button_card && newConfig.button_card.length) {
+    //   console.debug('legacy button_card config found');
+    //   // Backward compatibility for legacy button_card config
+    //   this._buttonCardConfigItem = newConfig.button_card as ButtonCardConfig[];
+    //   console.debug('config button_card:', this._buttonCardConfigItem);
+    // }
+
     this._config = {
       ...updateDeprecatedConfig(newConfig),
     };
@@ -698,12 +696,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       this._activeCardIndex = newCardIndex;
     }, 100);
     this.requestUpdate();
-  }
-
-  toggleMoreInfo(entity: string | undefined): void {
-    if (!entity) return;
-    console.log('Toggled more info:', entity);
-    fireEvent(this, 'hass-more-info', { entityId: entity });
   }
 
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */

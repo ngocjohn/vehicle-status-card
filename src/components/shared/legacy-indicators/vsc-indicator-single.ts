@@ -5,10 +5,10 @@ import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
 // Utils
-import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
-import { hasItemAction, IndicatorItemConfig } from '../../types/config';
-import { addActions } from '../../utils';
-import { BaseElement } from '../../utils/base-element';
+import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../../../ha';
+import { hasItemAction, IndicatorItemConfig } from '../../../types/config';
+import { addActions } from '../../../utils';
+import { BaseElement } from '../../../utils/base-element';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];

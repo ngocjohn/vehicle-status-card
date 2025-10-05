@@ -1,11 +1,11 @@
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, queryAssignedElements, state } from 'lit/decorators.js';
 
-import { COMPONENT } from '../../constants/const';
-import { EDITOR_INDICATOR_ROW_SELECTED, EditorIndicatorRowEventArgs } from '../../events/editor-indicator-row';
-import { SECTION } from '../../types/section';
-import { BaseElement } from '../../utils/base-element';
-import { VscIndicatorRow } from '../vsc-indicator-row';
+import { COMPONENT } from '../../../constants/const';
+import { EDITOR_INDICATOR_ROW_SELECTED, EditorIndicatorRowEventArgs } from '../../../events/editor-indicator-row';
+import { SECTION } from '../../../types/section';
+import { BaseElement } from '../../../utils/base-element';
+import { VscIndicatorRow } from '../../vsc-indicator-row';
 
 @customElement('vsc-indicators-group')
 export class VscIndicatorsGroup extends BaseElement {

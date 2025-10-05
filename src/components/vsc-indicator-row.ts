@@ -2,10 +2,10 @@ import { html, css, CSSResultGroup, TemplateResult, PropertyValues, nothing } fr
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import '../components/shared/vsc-indicator-item';
+import '../components/shared/indicator-row/vsc-indicator-item';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { VscIndicatorItem } from '../components/shared/vsc-indicator-item';
+import { VscIndicatorItem } from '../components/shared/indicator-row/vsc-indicator-item';
 import { COMPONENT } from '../constants/const';
 import { fireEvent } from '../ha';
 import { getGroupEntities, GroupEntity, isGroupEntity } from '../ha/data/group';
