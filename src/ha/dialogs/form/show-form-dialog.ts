@@ -1,0 +1,43 @@
+import type { HaFormSchema } from '../../panels/ha-form/types';
+
+import { fireEvent } from '../../common/dom/fire_event';
+
+export type FormDialogData = Record<string, any>;
+
+export interface FormDialogParams {
+  title: string;
+  schema: HaFormSchema[];
+  data?: FormDialogData;
+  submit?: (data?: FormDialogData) => void;
+  cancel?: () => void;
+  computeLabel?: (schema, data) => string | undefined;
+  computeHelper?: (schema) => string | undefined;
+  submitText?: string;
+  cancelText?: string;
+}
+
+export const showFormDialog = (element: HTMLElement, dialogParams: FormDialogParams) =>
+  new Promise<FormDialogData | null>((resolve) => {
+    const origCancel = dialogParams.cancel;
+    const origSubmit = dialogParams.submit;
+
+    fireEvent(element, 'show-dialog', {
+      dialogTag: 'vsc-dialog-form',
+      dialogImport: () => import('./vsc-dialog-form'),
+      dialogParams: {
+        ...dialogParams,
+        cancel: () => {
+          resolve(null);
+          if (origCancel) {
+            origCancel();
+          }
+        },
+        submit: (data: FormDialogData) => {
+          resolve(data);
+          if (origSubmit) {
+            origSubmit(data);
+          }
+        },
+      },
+    });
+  });

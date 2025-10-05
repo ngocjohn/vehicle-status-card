@@ -3,24 +3,24 @@
  * @description Configuration area for sections in card components.
  */
 
-// export const enum ConfigArea {
-//   GENERAL = 'general',
-//   BUTTON_CARD = 'button_card',
-//   INDICATORS = 'indicators',
-//   RANGE = 'range',
-//   IMAGES = 'images',
-//   MINI_MAP = 'mini_map',
-//   LAYOUT_CONFIG = 'layout_config',
-// }
+export enum ConfigArea {
+  DEFAULT = 'default',
+  INDICATORS = 'indicators',
+  RANGE_INFO = 'range_info',
+  IMAGES = 'images',
+  MINI_MAP = 'mini_map',
+  BUTTONS = 'buttons',
+  LAYOUT_CONFIG = 'layout_config',
+}
 
-export const CONFIG_AREAS = {
-  GENERAL: 'general',
-  BUTTON_CARD: 'button_card',
-  INDICATORS: 'indicators',
-  RANGE: 'range',
-  IMAGES: 'images',
-  MINI_MAP: 'mini_map',
-  LAYOUT_CONFIG: 'layout_config',
-} as const;
-
-export type ConfigArea = (typeof CONFIG_AREAS)[keyof typeof CONFIG_AREAS];
+/**
+ * Button Area Sections
+ * This enum defines the different sections available in the button card configuration area.
+ */
+export enum ButtonArea {
+  BASE = 'base',
+  DEFAULT_CARD = 'default_card',
+  CUSTOM_CARD = 'custom_card',
+  TIRE_CARD = 'tire_card',
+  MAIN = 'main',
+}

@@ -4,6 +4,12 @@ export const enum SECTION {
   IMAGES = 'images',
   MINI_MAP = 'mini_map',
   BUTTONS = 'buttons',
-  HEADER_INFO = 'header_info',
-  CARD_NAME = 'card_name',
+  LAYOUT_CONFIG = 'layout_config',
+  DEFAULT = 'default',
+  BUTTON_CARDS = 'button_cards',
+  BUTTON_CARD = 'button_card',
+  INDICATOR_ROWS = 'indicator_rows',
+  /* Default section, not a real section */
+
+  UNDEFINED = 'undefined',
 }

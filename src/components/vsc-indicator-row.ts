@@ -2,11 +2,12 @@ import { html, css, CSSResultGroup, TemplateResult, PropertyValues, nothing } fr
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import '../components/shared/vsc-indicator-item';
+import '../components/shared/indicator-row/vsc-indicator-item';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { VscIndicatorItem } from '../components/shared/vsc-indicator-item';
+import { VscIndicatorItem } from '../components/shared/indicator-row/vsc-indicator-item';
 import { COMPONENT } from '../constants/const';
+import { fireEvent } from '../ha';
 import { getGroupEntities, GroupEntity, isGroupEntity } from '../ha/data/group';
 import {
   IndicatorRowGroupConfig,
@@ -28,12 +29,21 @@ const ALIGNS: Record<Alignment, string> = {
   justify: 'space-between',
 };
 
+declare global {
+  interface HASSDomEvents {
+    'group-active': Boolean | null;
+  }
+}
+
 @customElement(COMPONENT.INDICATOR_ROW)
 export class VscIndicatorRow extends BaseElement {
   @property({ attribute: false }) private rowConfig!: IndicatorRowConfig;
   @property({ type: Boolean, reflect: true }) private active = false;
+  @property({ type: Number, attribute: 'row-index', reflect: true }) public rowIndex?: number;
+  @property({ type: Number, attribute: 'item-index', reflect: true }) public itemIndex?: number | null = null;
+  @property({ type: Boolean, reflect: true, attribute: 'editor-dimmed' }) public dimmedInEditor = false;
 
-  @state() private _selectedGroupId: number | null = null;
+  @state() _selectedGroupId: number | null = null;
   @state() private _rowItems?: IndicatorRowItem[];
 
   @queryAll(COMPONENT.INDICATOR_ITEM) _itemEls!: NodeListOf<VscIndicatorItem>;
@@ -75,6 +85,9 @@ export class VscIndicatorRow extends BaseElement {
     }
     if (_changedProperties.has('_selectedGroupId')) {
       this.active = this._selectedGroupId !== null;
+      if (!this.isBaseInEditor) return;
+      // Notify editor if group active state changes
+      fireEvent(this, 'group-active', this.active);
     }
   }
 
@@ -273,7 +286,7 @@ export class VscIndicatorRow extends BaseElement {
       newIndex = null;
     } else if (typeof arg === 'number') {
       newIndex = arg;
-      if (this.rowConfig.row_items[newIndex].type !== 'group') {
+      if (this.rowConfig.row_items[newIndex]?.type !== 'group') {
         // Not a group, ignore
         return;
       }
@@ -330,6 +343,11 @@ export class VscIndicatorRow extends BaseElement {
     requestAnimationFrame(() => this._updateArrows());
   }
 
+  public _resetItemsDimmed(): void {
+    this._itemEls.forEach((item) => {
+      item.dimmedInEditor = false;
+    });
+  }
   private _computeOverlayFade(showLeft: boolean, showRight: boolean): string {
     if (showLeft) {
       return 'linear-gradient(to right, transparent 0%, var(--card-background-color) 5%, transparent 20%)';
@@ -342,6 +360,10 @@ export class VscIndicatorRow extends BaseElement {
   static get styles(): CSSResultGroup {
     return [
       css`
+        :host([editor-dimmed]) {
+          opacity: 0.3;
+          /* transition: opacity 0.3s ease-in-out; */
+        }
         :host(.disabled) {
           opacity: 0.2;
           transition: opacity 0.3s ease-in-out;

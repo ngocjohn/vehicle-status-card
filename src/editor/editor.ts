@@ -1,18 +1,25 @@
 // External
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+// Internal
 
-// Import styles
-import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
+import { EditorConfigAreaSelectedEvent } from '../events/editor-config-area';
 // Import all components
 import './components/';
-import { VehicleStatusCardConfig } from '../types/config';
+// Import styles
+import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
+import { configHasDeprecatedProps, updateDeprecatedConfig, VehicleStatusCardConfig } from '../types/config';
+import { ConfigArea } from '../types/config-area';
 import { loadHaComponents, Create, refactorEditDialog } from '../utils';
-import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
-import { selectTree } from '../utils/helpers-dom';
 import '../utils/editor/menu-element';
+import { getSectionFromConfigArea } from '../utils/editor/area-select';
+import { cleanConfig } from '../utils/editor/clean-config';
+import { MenuElement } from '../utils/editor/menu-element';
+import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
+// Import struct
+import { selectTree } from '../utils/helpers-dom';
 import { Store } from '../utils/store';
-import { migrateLegacySectionOrder, VehicleStatusCard } from '../vehicle-status-card';
+import { VehicleStatusCard } from '../vehicle-status-card';
 import { BaseEditor } from './base-editor';
 import * as ELEMENT from './components';
 import { ALERT_INFO, EDITOR_NAME, PANEL } from './editor-const';
@@ -23,23 +30,31 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   @property({ attribute: false }) public lovelace?: LovelaceConfig;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
   @property({ attribute: false }) public _vscElem?: VehicleStatusCard;
-  @state() _selectedConfigType: null | string = null;
+
+  @state() private configArea: ConfigArea = ConfigArea.DEFAULT;
 
   @state() private _indicatorTabIndex: number = 0;
 
   public _migratedIndicatorsConfig: boolean = false;
 
+  // Config Area Elements
+  @query(PANEL.INDICATOR_ROWS) _panelIndicatorRows?: ELEMENT.PanelIndicatorRows;
   @query(PANEL.IMAGES_EDITOR) _panelImages?: ELEMENT.PanelImagesEditor;
   @query(PANEL.RANGE_INFO) _panelRangeInfo?: ELEMENT.PanelRangeInfo;
-  @query(PANEL.EDITOR_UI) _panelEditorUI?: ELEMENT.PanelEditorUI;
-  @query(PANEL.BUTTON_CARD) _panelButtonCard?: ELEMENT.PanelButtonCard;
   @query(PANEL.MAP_EDITOR) _panelMapEditor?: ELEMENT.PanelMapEditor;
+  @query(PANEL.BUTTON_SEC) _panelButtons?: ELEMENT.PanelButtonCardSec;
+  @query(PANEL.LAYOUT_EDITOR) _panelLayoutEditor?: ELEMENT.PanelLayoutEditor;
+
+  // Legacy Indicator Elements
   @query(PANEL.INDICATOR_SINGLE) _panelIndicatorSingle?: ELEMENT.PanelIndicatorSingle;
   @query(PANEL.INDICATOR_GROUP) _panelIndicatorGroup?: ELEMENT.PanelIndicatorGroup;
-  @query(PANEL.INDICATOR_ROWS) _panelIndicatorRows?: ELEMENT.PanelIndicatorRows;
 
+  // Legacy Button Card Element
+  @query(PANEL.BUTTON_CARD) _panelButtonCard?: ELEMENT.PanelButtonCard;
+
+  @query('vsc-menu-element') _vscMenuElement?: MenuElement;
   constructor() {
-    super();
+    super(ConfigArea.DEFAULT);
   }
   set hass(hass: HomeAssistant) {
     this._hass = hass;
@@ -50,30 +65,6 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   }
   static get styles(): CSSResultGroup {
     return [super.styles];
-  }
-
-  public async setConfig(config: VehicleStatusCardConfig): Promise<void> {
-    const hasExtraEntities = config.mini_map && config.mini_map.extra_entities?.length;
-    const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
-    this._migratedIndicatorsConfig = !isLegacyConfig;
-    if ((config.layout_config.hide && Object.keys(config.layout_config.hide).length > 0) || hasExtraEntities) {
-      console.debug('Migrating legacy layout_config.hide to section_order');
-      config = {
-        ...config,
-        ...migrateLegacySectionOrder(config),
-      };
-      fireEvent(this, 'config-changed', { config: config });
-      console.log('Migrated layout_config.hide:', config);
-      return;
-    }
-
-    const newConfig = { ...config };
-    this._config = newConfig;
-    if (this._store !== undefined) {
-      this._store._config = this._config;
-    } else {
-      this.createStore();
-    }
   }
 
   connectedCallback() {
@@ -88,23 +79,39 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     super.disconnectedCallback();
   }
 
-  private get _hasLegacyIndicatorsConfig(): boolean {
-    return !!(this._config.indicators && Object.keys(this._config.indicators).length > 0);
-  }
+  public setConfig(config: VehicleStatusCardConfig): void {
+    const isLegacyConfig = config.indicators && Object.keys(config.indicators).length > 0;
+    this._migratedIndicatorsConfig = !isLegacyConfig;
+    // const keepLegacyBtnTest = config?.name?.includes('LEGACY BTN');
+    if (configHasDeprecatedProps(config)) {
+      const updatedConfig = updateDeprecatedConfig(config);
+      fireEvent(this, 'config-changed', { config: updatedConfig });
+      return;
+    } else {
+      this._config = cleanConfig(config);
+    }
 
-  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
-    super.firstUpdated(_changedProperties);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    if (this._store !== undefined) {
+      this._store._config = this._config;
+    } else {
+      this.createStore();
+    }
+    this.updateComplete.then(() => {
+      console.debug('Editor setConfig called from:', this.configArea);
+      const selectedArea = getSectionFromConfigArea(this.configArea);
+      document.dispatchEvent(EditorConfigAreaSelectedEvent(selectedArea));
+      this._panelButtons?._reloadPreview();
+    });
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);
-
-    const oldSelectedConfigType = changedProps.get('_selectedConfigType') as string | null;
+    if (!this._config) return;
+    const oldArea = changedProps.get('configArea') as ConfigArea | undefined;
     const shouldUpdate =
-      (this._selectedConfigType === null && oldSelectedConfigType !== null) ||
-      (oldSelectedConfigType === 'buttons' && this._selectedConfigType !== 'buttons') ||
-      (oldSelectedConfigType === 'indicators' && this._selectedConfigType !== 'indicators');
+      (oldArea === undefined && this.configArea !== undefined) ||
+      (oldArea === ConfigArea.BUTTONS && this.configArea !== ConfigArea.BUTTONS) ||
+      (oldArea === ConfigArea.INDICATORS && this.configArea !== ConfigArea.INDICATORS);
     if (shouldUpdate) {
       this._cleanConfig();
     }
@@ -133,8 +140,10 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
     return html`
       <div class="base-config">
         <vsc-menu-element
-          .legacyIndicators=${!this._migratedIndicatorsConfig}
-          .value=${this._selectedConfigType || ''}
+          ._store=${this._store}
+          ._hass=${this._hass}
+          ._config=${this._config}
+          .value=${this.configArea}
           @menu-value-changed=${this._handleMenuValueChange}
         ></vsc-menu-element>
         ${this._renderSelectedConfigType()}
@@ -145,24 +154,29 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   /* ---------------------------- RENDER SELECTED TYPE ---------------------------- */
 
   private _renderSelectedConfigType(): TemplateResult {
-    if (this._selectedConfigType === null) {
-      return html``;
-    }
-    const selected = this._selectedConfigType;
+    const selected = this.configArea;
     const typeMap = {
-      buttons: this._renderButtonCard(),
-      images: this._renderImages(),
-      indicators: this._renderIndicators(),
-      layout_config: this._renderLayoutConfig(),
-      mini_map: this._renderMiniMap(),
-      range: this._renderRangeInfo(),
+      [ConfigArea.INDICATORS]: this._renderIndicators(),
+      [ConfigArea.RANGE_INFO]: this._renderRangeInfo(),
+      [ConfigArea.IMAGES]: this._renderImages(),
+      [ConfigArea.MINI_MAP]: this._renderMiniMap(),
+      [ConfigArea.BUTTONS]: this._renderButtonCard(),
+      [ConfigArea.LAYOUT_CONFIG]: this._renderLayoutConfig(),
     };
-    return typeMap[selected];
+    return typeMap[selected] || html``;
   }
 
   /* ---------------------------- RENDER CONFIG TYPES ---------------------------- */
 
   private _renderButtonCard(): TemplateResult {
+    return html`<panel-button-card-sec
+      ._hass=${this._hass}
+      ._buttonList=${this._config?.button_cards}
+      .config=${this._config}
+      ._store=${this._store}
+    ></panel-button-card-sec>`;
+  }
+  private _renderLEgacyButtonCard(): TemplateResult {
     return html`<panel-button-card
       ._hass=${this._hass}
       .config=${this._config}
@@ -190,6 +204,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       ._store=${this._store}
       ._hass=${this._hass}
       ._config=${this._config}
+      ._rows=${this._config.indicator_rows || []}
     ></panel-indicator-rows>`;
   }
 
@@ -261,7 +276,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
   private _renderRangeInfo(): TemplateResult {
     return html`<panel-range-info
       ._hass=${this._hass}
-      .config=${this._config}
+      ._config=${this._config}
       ._store=${this._store}
     ></panel-range-info>`;
   }
@@ -277,32 +292,35 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
   private _handleMenuValueChange(ev: CustomEvent): void {
     ev.stopPropagation();
-    const value = ev.detail.value;
-    if (value) {
-      this._selectedConfigType = value;
-      setTimeout(() => this._dispatchEditorEvent('toggle-helper', value), 200);
-    } else {
-      this._selectedConfigType = null;
-    }
+    const value = ev.detail.value || null;
+
+    const configArea = value ? (value as ConfigArea) : ConfigArea.DEFAULT;
+    this.configArea = configArea;
+
+    Store.selectedConfigArea = configArea;
+    const sectionNew = getSectionFromConfigArea(configArea);
+    document.dispatchEvent(EditorConfigAreaSelectedEvent(sectionNew));
   }
 
   private createStore(): void {
+    this._getCardInPreview();
     this._store = new Store(this, this._config);
     // console.debug('Store created:', this, this._config);
-    this._getCardInPreview();
+    this._store.hass = this._hass;
+    if (this._vscElem) {
+      this._store.cardPreview = this._vscElem;
+    }
+
     super.requestUpdate();
   }
 
   // convert the legacy indicators config to the new format
   private _convertLegacyIndicatorsConfig(): void {
-    if (!this._hasLegacyIndicatorsConfig) {
-      return;
-    }
     if (!this._config) {
       console.error('No config found to migrate.');
       return;
     }
-    const newConfig = { ...(this._config as VehicleStatusCardConfig) };
+    const newConfig = JSON.parse(JSON.stringify(this._config)) as VehicleStatusCardConfig;
     if (newConfig.indicators) {
       console.log('Migrating legacy indicators config:', newConfig.indicators);
       const migratedIndicators = migrateLegacyIndicatorsConfig(newConfig.indicators);

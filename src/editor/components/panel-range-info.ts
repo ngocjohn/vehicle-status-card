@@ -9,6 +9,7 @@ import tinycolor from 'tinycolor2';
 import '../shared/panel-yaml-editor';
 import { findBatteryChargingEntity, findPowerEntities, fireEvent, getEntitiesByDomain, hasPercent } from '../../ha';
 import { RangeInfoConfig, RangeItemConfig, Threshold, VehicleStatusCardConfig } from '../../types/config';
+import { ConfigArea } from '../../types/config-area';
 import { ICON } from '../../utils';
 import {
   colorToRgb,
@@ -40,7 +41,7 @@ type ColorStyle = (typeof COLOR_STYLES)[number];
 
 @customElement(PANEL.RANGE_INFO)
 export class PanelRangeInfo extends BaseEditor {
-  @property({ attribute: false }) config!: VehicleStatusCardConfig;
+  @property({ attribute: false }) _config!: VehicleStatusCardConfig;
 
   @state() private _activeIndexItem: number | null = null;
   @state() private _colorTestValue?: number | undefined = undefined;
@@ -56,7 +57,7 @@ export class PanelRangeInfo extends BaseEditor {
   @state() private _overValueTimeout?: number;
 
   constructor() {
-    super();
+    super(ConfigArea.RANGE_INFO);
   }
   static get styles(): CSSResultGroup {
     return [
@@ -340,12 +341,12 @@ export class PanelRangeInfo extends BaseEditor {
 
   private _toggleAction(action: ITEM_ACTION, index?: number): void {
     const updateChanged = (update: RangeInfoConfig[]) => {
-      this.config = { ...this.config, range_info: update };
-      fireEvent(this, 'config-changed', { config: this.config });
+      this._config = { ...this._config, range_info: update };
+      fireEvent(this, 'config-changed', { config: this._config });
     };
     switch (action) {
       case 'add':
-        let rangeInfo = [...(this.config.range_info || [])];
+        let rangeInfo = [...(this._config.range_info || [])];
 
         const entities = Object.values(this._hass.states);
 
@@ -382,7 +383,7 @@ export class PanelRangeInfo extends BaseEditor {
 
       case 'delete-item':
         if (index !== undefined) {
-          const rangeInfo = [...(this.config.range_info || [])];
+          const rangeInfo = [...(this._config.range_info || [])];
           rangeInfo.splice(index, 1);
           updateChanged(rangeInfo);
         }
@@ -411,7 +412,7 @@ export class PanelRangeInfo extends BaseEditor {
     if (this._activeIndexItem === null) return nothing;
 
     const index = this._activeIndexItem;
-    const rangeItem = { ...(this.config.range_info || [])[index] } as RangeInfoConfig;
+    const rangeItem = { ...(this._config.range_info || [])[index] } as RangeInfoConfig;
     this._rangeItemConfig = rangeItem;
 
     const createSection = this._createSection;
@@ -581,17 +582,17 @@ export class PanelRangeInfo extends BaseEditor {
       },
     ];
     const LAYOUT_DATA = {
-      layout: this.config.layout_config?.range_info_config?.layout,
+      layout: this._config.layout_config?.range_info_config?.layout ?? 'column',
     };
     const layoutForm = this._createVscForm(LAYOUT_DATA, RANGE_LAYOUT, 'layout_config', 'range_info_config');
 
-    return html`${!this._yamlEditorActive && this.config.range_info
+    return html`${!this._yamlEditorActive && this._config.range_info
         ? html`
             ${layoutForm}
             <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved}>
               <div class="range-info-list">
                 ${repeat(
-                  this.config.range_info || [],
+                  this._config.range_info || [],
                   (rangeItem: RangeInfoConfig) => rangeItem.energy_level.entity,
                   (rangeItem: RangeInfoConfig, index: number) => {
                     const entity = rangeItem.energy_level.entity || '';
@@ -648,10 +649,10 @@ export class PanelRangeInfo extends BaseEditor {
   private _entityMoved(ev: CustomEvent): void {
     ev.stopPropagation();
     const { oldIndex, newIndex } = ev.detail;
-    const newRangeInfo = this.config.range_info.concat();
+    const newRangeInfo = this._config.range_info?.concat() || [];
     newRangeInfo.splice(newIndex, 0, newRangeInfo.splice(oldIndex, 1)[0]);
-    this.config = { ...this.config, range_info: newRangeInfo };
-    fireEvent(this, 'config-changed', { config: this.config });
+    this._config = { ...this._config, range_info: newRangeInfo };
+    fireEvent(this, 'config-changed', { config: this._config });
   }
 
   private _renderYamlEditor(): TemplateResult | typeof nothing {
@@ -663,8 +664,8 @@ export class PanelRangeInfo extends BaseEditor {
       <div class="card-config">
         <panel-yaml-editor
           .hass=${this._hass}
-          .config=${this.config}
-          .configDefault=${this.config.range_info}
+          .config=${this._config}
+          .configDefault=${this._config.range_info}
           .configKey=${'range_info'}
           has-extra-actions
           @close-editor=${() => (this._yamlEditorActive = false)}
@@ -678,13 +679,13 @@ export class PanelRangeInfo extends BaseEditor {
     ev.stopPropagation();
     const detail = ev.detail;
     const { isValid, value, key, index } = detail;
-    if (!isValid || !this.config) {
+    if (!isValid || !this._config) {
       return;
     }
     console.log('YAML config changed', key, index, value);
 
     const newConfig = value;
-    let rangeInfo = [...(this.config.range_info || [])];
+    let rangeInfo = [...(this._config.range_info || [])];
     let rangeItem = { ...rangeInfo[index] }; // Clone the item at the specific index
     if (key === 'range_info') {
       // Update the entire range_info array
@@ -695,7 +696,7 @@ export class PanelRangeInfo extends BaseEditor {
       rangeInfo[index] = rangeItem; // Replace the modified item in the range_info array
     }
 
-    fireEvent(this, 'config-changed', { config: { ...this.config, range_info: rangeInfo } });
+    fireEvent(this, 'config-changed', { config: { ...this._config, range_info: rangeInfo } });
   }
 
   private _renderEnergyLevelConfig(config: RangeInfoConfig): TemplateResult {
@@ -1295,7 +1296,7 @@ export class PanelRangeInfo extends BaseEditor {
 
   private _rangeItemValueChanged(ev: CustomEvent<{ value: any }>): void {
     ev.stopPropagation();
-    if (!this.config) return;
+    if (!this._config) return;
 
     const configType = (ev.target as any)?.configType as keyof RangeInfoConfig | undefined;
     const value = ev.detail?.value ?? {};
@@ -1343,24 +1344,24 @@ export class PanelRangeInfo extends BaseEditor {
   }
 
   private _rangeItemChanged(config: RangeInfoConfig): void {
-    if (!this.config) {
+    if (!this._config) {
       return;
     }
     const activeIndex = this._activeIndexItem;
-    let rangeInfo = [...(this.config.range_info || [])]; // Clone the range_info array
+    let rangeInfo = [...(this._config.range_info || [])]; // Clone the range_info array
     let rangeItem = { ...rangeInfo[activeIndex!] }; // Clone the item at the active index
     rangeItem = config; // Replace the item with the new config
     rangeInfo[activeIndex!] = rangeItem; // Replace the modified item in the range_info array
-    this.config = { ...this.config, range_info: rangeInfo }; // Update the config with the modified range_info
-    fireEvent(this, 'config-changed', { config: this.config });
+    this._config = { ...this._config, range_info: rangeInfo }; // Update the config with the modified range_info
+    fireEvent(this, 'config-changed', { config: this._config });
     // console.log('Range item changed', rangeItem);
     this.requestUpdate();
   }
   protected _onValueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    if (!this.config) return;
+    if (!this._config) return;
     const value = ev.detail.value;
-    const config = { ...(this.config || {}) };
+    const config = { ...(this._config || {}) };
     const layoutConfigRange = { ...(config.layout_config?.range_info_config || {}) };
     if (value && value.layout) {
       layoutConfigRange.layout = value.layout;
@@ -1374,8 +1375,8 @@ export class PanelRangeInfo extends BaseEditor {
     } else {
       config.layout_config = { ...(config.layout_config || {}), range_info_config: layoutConfigRange };
     }
-    this.config = config;
-    fireEvent(this, 'config-changed', { config: this.config });
+    this._config = config;
+    fireEvent(this, 'config-changed', { config: this._config });
   }
 }
 

@@ -4,13 +4,16 @@ import { customElement, property } from 'lit/decorators.js';
 import { COMPONENT } from '../constants/const';
 import './shared/vsc-range-item';
 import { RangeInfoConfig } from '../types/config/card/range-info';
+import { SECTION } from '../types/section';
 import { BaseElement } from '../utils/base-element';
 
 @customElement(COMPONENT.RANGE_INFO)
 export class VscRangeInfo extends BaseElement {
   @property({ attribute: false }) rangeConfig!: RangeInfoConfig[];
   @property({ type: Boolean, reflect: true }) public row = false;
-
+  constructor() {
+    super(SECTION.RANGE_INFO);
+  }
   static get styles(): CSSResultGroup {
     return [
       super.styles,
@@ -56,5 +59,11 @@ export class VscRangeInfo extends BaseElement {
 
     // Wrap rangeInfo in a div if there are more than one entries
     return html`<div class="combined-info-box" ?row=${this.row}>${rangeInfo}</div>`;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'vsc-range-info': VscRangeInfo;
   }
 }

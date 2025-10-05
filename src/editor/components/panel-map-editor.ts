@@ -9,15 +9,19 @@ import {
   VehicleStatusCardConfig,
   computePopupCardConfig,
 } from '../../types/config';
+import { ConfigArea } from '../../types/config-area';
 import { createSecondaryCodeLabel } from '../../utils/editor/sub-editor-header';
 import { SubElementEditorConfig } from '../../utils/editor/types';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
-import { BASE_MAP_CONFIG_SCHEMA } from '../form';
 import '../shared/vsc-sub-element-editor';
+import { BASE_MAP_CONFIG_SCHEMA } from '../form';
 
 @customElement(PANEL.MAP_EDITOR)
 export class PanelMapEditor extends BaseEditor {
+  constructor() {
+    super(ConfigArea.MINI_MAP);
+  }
   @property({ attribute: false }) _config!: VehicleStatusCardConfig;
   @state() _mapCardConfig?: MiniMapConfig;
   @state() _yamlMode: boolean = false;
@@ -48,7 +52,7 @@ export class PanelMapEditor extends BaseEditor {
   }
 
   private get _mapConfig(): MiniMapConfig {
-    return this._config?.mini_map || {};
+    return this._config.mini_map || ({} as MiniMapConfig);
   }
 
   protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -68,7 +72,7 @@ export class PanelMapEditor extends BaseEditor {
         ._config=${this._subElementConfig}
         .headerLabel=${header}
         @sub-element-editor-closed=${this._closeSubElementEditor}
-        @config-changed=${this._handleSubElementConfigChanged}
+        @sub-element-config-changed=${this._handleSubElementConfigChanged}
       ></vsc-sub-element-editor>`;
     }
 
@@ -81,11 +85,11 @@ export class PanelMapEditor extends BaseEditor {
     `;
 
     const DATA = { ...(this._mapCardConfig || {}) };
-
+    const noEntity = !DATA?.device_tracker || DATA?.device_tracker === '';
     const baseMapWrapper = this._createVscForm(DATA, BASE_MAP_CONFIG_SCHEMA(DATA), 'mini_map');
 
     const mapLayoutPopup = html`
-      <ha-button appearance="filled" @click=${() => this._editPopupConfig()}>${header}</ha-button>
+      <ha-button .disabled=${noEntity} appearance="filled" @click=${() => this._editPopupConfig()}>${header}</ha-button>
     `;
     return html`
       ${editorHeader}
@@ -98,7 +102,7 @@ export class PanelMapEditor extends BaseEditor {
   private _editPopupConfig(): void {
     const popupConfig = computePopupCardConfig(this._mapConfig);
     this._subElementConfig = {
-      type: 'Map Card configuration',
+      type: popupConfig.type,
       elementConfig: popupConfig,
     };
   }
@@ -115,7 +119,7 @@ export class PanelMapEditor extends BaseEditor {
     // console.debug('Sub Element Config Changed', value);
 
     if (!value.entities || value.entities.length === 0) {
-      value.entities = [{ entity: this._mapConfig.device_tracker }];
+      value.entities = [{ entity: this._mapConfig.device_tracker! }];
     }
 
     this._subElementConfig = {

@@ -17,6 +17,7 @@ const OVERLAY_ICON: Record<ActionType | string, string> = {
   'delete-item': ICON.DELETE,
   'add-exclude-entity': ICON.CLOSE_CIRCLE,
   'remove-exclude-entity': ICON.CHECK_CIRCLE,
+  'show-image': ICON.EYE,
 };
 
 export const DeleteAction: MenuItemConfig[] = [
@@ -251,6 +252,16 @@ export class BadgeEditorItem extends LitElement {
     // set --overlay-radius to style border-radius or 12px if not found
     if (style.borderRadius && style.borderRadius !== '0px') {
       this.style.setProperty('--overlay-radius', style.borderRadius);
+    }
+    if (el.tagName.toLowerCase() === 'ha-badge') {
+      const badge = el.shadowRoot?.querySelector('.badge') as HTMLElement;
+      if (badge) {
+        badge.style.setProperty('justify-content', 'var(--badge-editor-justify, center)');
+        const infoClass = badge.querySelector('.info') as HTMLElement;
+        if (infoClass) {
+          infoClass.style.setProperty('text-align', 'var(--badge-editor-justify, center)');
+        }
+      }
     }
   };
 

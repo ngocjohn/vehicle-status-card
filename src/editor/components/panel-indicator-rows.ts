@@ -7,8 +7,9 @@ import '../shared/badge-editor-item';
 import '../../utils/editor/sub-editor-header';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { computeStateName, fireEvent } from '../../ha';
-import { IndicatorRowConfig, IndicatorRowItem, toCommon, VehicleStatusCardConfig } from '../../types/config';
+import { computeStateName } from '../../ha';
+import { IndicatorRowConfig, IndicatorRowItem, toCommon } from '../../types/config';
+import { ConfigArea } from '../../types/config-area';
 import { Create, showConfirmDialog } from '../../utils';
 import { ExpansionPanelParams } from '../../utils/editor/create';
 import { _renderActionItem, ActionType, ROW_MAIN_ACTIONS } from '../../utils/editor/create-actions-menu';
@@ -24,41 +25,34 @@ type RowAction = 'edit' | 'delete' | 'add' | 'peek';
 
 @customElement(PANEL.INDICATOR_ROWS)
 export class PanelIndicatorRows extends BaseEditor {
-  @property({ attribute: false }) _config!: VehicleStatusCardConfig;
-
-  @state() private _rows: IndicatorRowConfig[] = [];
-  @state() private _selectedRowIndex: number | null = null;
+  @property({ attribute: false }) private _rows!: IndicatorRowConfig[];
+  @state() public _selectedRowIndex: number | null = null;
   @state() private _yamlActive = false;
 
   @query(SUB_PANEL.ROW_ITEM) _rowItemEditor?: ROW_SUB.PanelIndicatorItem;
   @queryAll(ELEMENT.HA_EXPANSION_PANEL) _expansionPanels?: Element[];
 
   constructor() {
-    super();
+    super(ConfigArea.INDICATORS);
   }
 
   connectedCallback(): void {
     super.connectedCallback();
-    window.IndicatorRowsEditor = this;
-    console.debug('IndicatorRowsEditor connected');
   }
-  protected willUpdate(changedProps: PropertyValues): void {
-    super.willUpdate(changedProps);
-    if (changedProps.has('_config') && this._config.indicator_rows) {
-      this._rows = this._config.indicator_rows;
-    }
+  disconnectedCallback(): void {
+    this._showSelectedRow(null);
+    super.disconnectedCallback();
   }
 
   protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
     if (_changedProperties.has('_selectedRowIndex') && _changedProperties.get('_selectedRowIndex') !== undefined) {
       const oldIndex = _changedProperties.get('_selectedRowIndex') as number | null;
       const newIndex = this._selectedRowIndex;
       if (oldIndex !== newIndex) {
-        this._setPreviewConfig('row_group_preview', { row_index: newIndex, group_index: null });
-        if (newIndex !== null) {
-          setTimeout(() => {
-            this._showRow(newIndex, true);
-          }, 500);
+        console.debug('Selected row index changed:', oldIndex, '->', newIndex);
+        if (newIndex === null) {
+          this._showSelectedRow(null);
         }
       }
     }
@@ -72,18 +66,14 @@ export class PanelIndicatorRows extends BaseEditor {
     return html`
       <sub-editor-header
         hide-primary
+        .leftBtn=${!this._yamlActive}
+        ._addBtnLabel=${'Add Row'}
+        @left-btn=${() => this._handleRowAction('add')}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
         @secondary-action=${() => {
           this._yamlActive = !this._yamlActive;
         }}
       >
-        <span slot="primary-action">
-          ${Create.HaButton({
-            label: 'Add Row',
-            onClick: () => this._handleRowAction('add'),
-            option: { type: 'add', disabled: this._yamlActive },
-          })}
-        </span>
       </sub-editor-header>
       ${!this._yamlActive ? this._renderRowList() : this._renderYamlEditor()}
     `;
@@ -101,7 +91,7 @@ export class PanelIndicatorRows extends BaseEditor {
                 const expansionOps = {
                   icon: `mdi:numeric-${index + 1}-circle`,
                   header: `ROW #${index + 1}`,
-                  secondary: `${row.row_items.length} items`,
+                  secondary: `${row.row_items?.length || 0} items`,
                   leftChevron: true,
                   elId: `row-${index}`,
                 } as ExpansionPanelParams['options'];
@@ -127,12 +117,12 @@ export class PanelIndicatorRows extends BaseEditor {
     const expanded = ev.detail.expanded;
     // console.debug('Panel will change:', panelId, expanded);
     if (!expanded) {
-      this._showRow(null);
+      this._showSelectedRow(null);
       return;
     }
     const rowIndex = panelId?.replace('row-', '');
     // console.debug('Row index expanded:', rowIndex);
-    this._showRow(Number(rowIndex));
+    this._showSelectedRow(Number(rowIndex));
     const panels = Array.from(this._expansionPanels).filter((p) => p.id !== panelId) as any[];
     // console.debug('Other panels:', panels);
     panels.forEach((p) => {
@@ -236,7 +226,6 @@ export class PanelIndicatorRows extends BaseEditor {
     return html` <panel-row-item
       ._hass=${this._hass}
       ._store=${this._store}
-      ._config=${this._config}
       ._rowConfig=${row}
       .rowIndex=${this._selectedRowIndex!}
       @go-back=${() => {
@@ -250,19 +239,15 @@ export class PanelIndicatorRows extends BaseEditor {
     ev.stopPropagation();
     const target = ev.currentTarget as any;
     const { rowIndex, itemIndex } = target;
-    console.debug('Peek/Edit sub-row item:', rowIndex, itemIndex);
     const { action } = (ev as CustomEvent).detail;
-    console.debug('Action:', action);
+    console.debug('Action:', action, rowIndex, itemIndex);
 
     switch (action as ActionType) {
       case 'edit-item':
         this._selectedRowIndex = rowIndex;
-        this.requestUpdate();
         await this.updateComplete;
-        if (this._rowItemEditor && this._rowItemEditor.updateComplete) {
-          await this._rowItemEditor.updateComplete;
+        if (this._rowItemEditor && this._rowItemEditor.hasUpdated) {
           this._rowItemEditor._editIndex = itemIndex;
-          this._rowItemEditor.requestUpdate();
         }
         break;
       case 'show-item':
@@ -313,11 +298,19 @@ export class PanelIndicatorRows extends BaseEditor {
 
   private _handleRowChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    const index = this._selectedRowIndex!;
     const rowConfig = ev.detail.rowConfig as IndicatorRowConfig;
+    const { rowIndex, itemIndex, type } = ev.detail;
     const newRows = [...(this._rows || [])];
-    newRows[index] = rowConfig;
+    newRows[rowIndex] = rowConfig;
     this._configChanged(newRows);
+    console.debug('Row changed:', rowIndex, itemIndex, type);
+    // this.updateComplete.then(() => {
+    //   const groupIndex = type === 'group' ? itemIndex ?? null : null;
+    //   const entityIndex = type === 'entity' ? itemIndex ?? null : null;
+    //   setTimeout(() => {
+    //     this._showSelectedRow(rowIndex, groupIndex, entityIndex);
+    //   }, 500);
+    // });
   }
 
   private _handleRowAction(ev: any | RowAction): void {
@@ -335,8 +328,8 @@ export class PanelIndicatorRows extends BaseEditor {
       action = ev;
     }
 
-    let currentRows = [...(this._rows || [])];
     const handleAction = async () => {
+      const currentRows = [...(this._rows || [])];
       switch (action) {
         case 'edit':
           this._selectedRowIndex = Number(index);
@@ -370,8 +363,8 @@ export class PanelIndicatorRows extends BaseEditor {
   }
 
   private _configChanged(rows: IndicatorRowConfig[]): void {
-    this._config = { ...this._config, indicator_rows: rows };
-    fireEvent(this, 'config-changed', { config: this._config });
+    const newRows = rows.length ? rows : undefined;
+    this._cardConfigChanged({ indicator_rows: newRows });
   }
 
   static get styles(): CSSResultGroup {

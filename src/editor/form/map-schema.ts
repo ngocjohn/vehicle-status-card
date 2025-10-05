@@ -16,59 +16,85 @@ export const BASE_MAP_SCHEMA = [
   },
 ] as const;
 
+const LAYOUT_BOOL = ['enable_popup', 'us_format', 'hide_map_address', 'use_zone_name'] as const;
+
 export const MINI_MAP_LAYOUT_SCHEMA = [
   {
     type: 'expandable',
-    flatten: true,
     title: 'Mini Map Layout',
+    flatten: true,
     iconPath: mdiMap,
     schema: [
       {
         type: 'grid',
         flatten: true,
         schema: [
-          {
-            name: 'enable_popup',
-            label: 'Enable Popup',
-            default: false,
-            type: 'boolean',
-          },
-          {
-            name: 'us_format',
-            label: 'US Address Format',
-            default: false,
-            type: 'boolean',
-          },
-          {
-            name: 'hide_map_address',
-            label: 'Hide address',
-            default: false,
-            type: 'boolean',
-          },
-          {
-            name: 'use_zone_name',
-            label: 'Use zone name',
-            default: false,
-            type: 'boolean',
-          },
+          ...LAYOUT_BOOL.map((name) => ({
+            name,
+            selector: { boolean: {} },
+          })),
           {
             name: 'map_zoom',
-            label: 'Map Zoom',
             default: 14,
-            valueMin: 0,
-            type: 'integer',
+            selector: { number: { mode: 'box', min: 0, max: 20, step: 1 } },
           },
           {
             name: 'map_height',
-            label: 'Map Height',
             default: 150,
             selector: { number: { mode: 'box', min: 150, max: 500, step: 10 } },
           },
-        ],
+        ] as const,
       },
     ],
   },
-] as const;
+];
+// export const MINI_MAP_LAYOUT_SCHEMA = [
+//   {
+//     type: 'expandable',
+//     flatten: true,
+//     title: 'Mini Map Layout',
+//     iconPath: mdiMap,
+//     schema: [
+//       {
+//         type: 'grid',
+//         flatten: true,
+//         schema: [
+//           {
+//             name: 'enable_popup',
+//             default: false,
+//             type: 'boolean',
+//           },
+//           {
+//             name: 'us_format',
+//             default: false,
+//             type: 'boolean',
+//           },
+//           {
+//             name: 'hide_map_address',
+//             default: false,
+//             type: 'boolean',
+//           },
+//           {
+//             name: 'use_zone_name',
+//             default: false,
+//             type: 'boolean',
+//           },
+//           {
+//             name: 'map_zoom',
+//             default: 14,
+//             valueMin: 0,
+//             type: 'integer',
+//           },
+//           {
+//             name: 'map_height',
+//             default: 150,
+//             selector: { number: { mode: 'box', min: 150, max: 500, step: 10 } },
+//           },
+//         ] as const satisfies readonly HaFormSchema[],
+//       },
+//     ],
+//   },
+// ];
 
 export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
   const noEntity = !data?.device_tracker || data?.device_tracker === '';
@@ -82,6 +108,7 @@ export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
       title: 'Base Map Configuration',
       type: 'expandable',
       flatten: true,
+      expanded: noEntity,
       iconPath: mdiCog,
       schema: [
         ...BASE_MAP_SCHEMA,
@@ -107,7 +134,6 @@ export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
           : []),
       ],
     },
-
     ...(!noEntity && notUseSingleMapCard ? MINI_MAP_LAYOUT_SCHEMA : []),
   ] as const;
 };

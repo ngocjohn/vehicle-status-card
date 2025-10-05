@@ -2,21 +2,23 @@ import { CSSResultGroup, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
 import { LayoutConfig, VehicleStatusCardConfig } from '../../types/config';
+import { ConfigArea } from '../../types/config-area';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
 import {
   CARD_THEME_SCHEMA,
-  SECTION_ORDER_SCHEMA,
+  SECTION_ORDER_SCHEMA_EXPAND,
   BUTTON_GRID_LAYOUT_SCHEMA,
   NAME_SCHEMA,
   HIDE_CARD_NAME_SCHEMA,
+  IMAGES_LAYOUT_SCHEMA,
 } from '../form';
 
 @customElement(PANEL.LAYOUT_EDITOR)
 export class PanelLayoutEditor extends BaseEditor {
   @property({ attribute: false }) private _config!: VehicleStatusCardConfig;
   constructor() {
-    super();
+    super(ConfigArea.LAYOUT_CONFIG);
   }
   static get styles(): CSSResultGroup {
     return super.styles;
@@ -29,21 +31,18 @@ export class PanelLayoutEditor extends BaseEditor {
       {
         name: config?.name,
       },
-      NAME_SCHEMA,
-      'name'
+      NAME_SCHEMA
     );
 
     const LAYOUT_DATA = {
-      hide_card_name: config.layout_config?.hide_card_name,
-      section_order: config.layout_config?.section_order,
-      theme_config: config.layout_config?.theme_config,
-      button_grid: config.layout_config?.button_grid,
-    } as Pick<LayoutConfig, 'section_order' | 'theme_config' | 'button_grid' | 'hide_card_name'>;
+      ...config.layout_config,
+    } as LayoutConfig;
 
     const schemasForms = [
       HIDE_CARD_NAME_SCHEMA(!config?.name || config?.name === ''),
-      SECTION_ORDER_SCHEMA,
+      SECTION_ORDER_SCHEMA_EXPAND,
       BUTTON_GRID_LAYOUT_SCHEMA(!LAYOUT_DATA.button_grid?.swipe, 'button_grid'),
+      IMAGES_LAYOUT_SCHEMA(LAYOUT_DATA.images_swipe, 'images_swipe'),
       CARD_THEME_SCHEMA,
     ];
     const createForm = (form: any) => {

@@ -1,7 +1,8 @@
-import { LitElement, html, TemplateResult, PropertyValues, css, nothing } from 'lit';
+import { LitElement, html, TemplateResult, PropertyValues, css, nothing, CSSResultGroup } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 
-import { fireEvent, HomeAssistant } from '../../ha';
+import { fireEvent } from '../../ha';
+import { BaseEditor } from '../base-editor';
 
 declare global {
   interface HASSDomEvents {
@@ -10,29 +11,24 @@ declare global {
   }
 }
 
+const YAML_ACTION_STYLE = css`
+  .card-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+`.toString();
+
 @customElement('vsc-yaml-editor')
-export class VscYamlEditor extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+export class VscYamlEditor extends BaseEditor {
   @property({ attribute: false }) public configDefault: any;
   @property({ type: Boolean, attribute: 'has-extra-actions' })
   public extraAction = false;
+  @property() _yamlChanged!: (ev: CustomEvent) => void;
 
   @query('ha-yaml-editor', true) private _yamlEditor?: LitElement;
 
-  static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      ha-yaml-editor > div.card-actions {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-      }
-    `;
-  }
-
-  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
+  protected async firstUpdated(_changedProperties: PropertyValues) {
     super.firstUpdated(_changedProperties);
     await this.updateComplete;
     this._changeStyle();
@@ -42,13 +38,14 @@ export class VscYamlEditor extends LitElement {
   }
 
   protected render(): TemplateResult | typeof nothing {
-    if (!this.hass) return nothing;
-
+    if (!this._hass) {
+      return nothing;
+    }
     return html` <ha-yaml-editor
-      .hass=${this.hass}
+      .hass=${this._hass}
       .defaultValue=${this.configDefault}
       .copyClipboard=${true}
-      @value-changed=${this._onChange}
+      @value-changed=${this._yamlChanged || this._onChange}
       .hasExtraActions=${this.extraAction}
     >
       ${this.extraAction
@@ -73,26 +70,26 @@ export class VscYamlEditor extends LitElement {
   }
 
   private _closeEditor(): void {
-    fireEvent(this, 'yaml-editor-closed', undefined);
+    fireEvent(this, 'yaml-editor-closed');
   }
 
   private _changeStyle(): void {
     if (this._yamlEditor) {
       console.debug('Change style of ha-yaml-editor actions');
-      // Change style of actions
-      // Make space between actions and align center
-      const actions = this._yamlEditor.shadowRoot?.querySelector('.card-actions') as HTMLElement;
-      if (actions) {
-        actions.style.display = 'flex';
-        actions.style.justifyContent = 'space-between';
-        actions.style.alignItems = 'center';
-      }
+      this._stylesManager.addStyle([YAML_ACTION_STYLE], this._yamlEditor.shadowRoot!);
     }
   }
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'vsc-yaml-editor': VscYamlEditor;
+  static get styles(): CSSResultGroup {
+    return css`
+      :host {
+        display: block;
+        --code-mirror-max-height: 400px;
+      }
+      ha-yaml-editor div.card-actions {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+      }
+    `;
   }
 }

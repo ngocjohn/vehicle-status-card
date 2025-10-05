@@ -1,8 +1,8 @@
+import { capitalize } from 'es-toolkit';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 
-import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
-import { HaFormElement, HaFormElItem } from '../../utils/form/ha-form';
+import { HaFormElement } from '../../ha/panels/ha-form/types';
 import { selectTree } from '../../utils/helpers-dom';
 import { BaseEditor } from '../base-editor';
 import { ELEMENT, SELECTOR } from '../editor-const';
@@ -14,7 +14,31 @@ const HA_FORM_STYLE = css`
   }
   .root ha-form-grid,
   .root ha-expansion-panel .root ha-form-grid {
-    gap: 14px 8px !important;
+    gap: 1em !important;
+  }
+  :host(.sectionOrder) .root ha-selector ha-selector-select {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+`.toString();
+
+const CHIP_CONTAINER_STYLE = css`
+  :host {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    --md-input-chip-container-height: 36px;
+    --md-input-chip-icon-size: 20px;
+    --md-input-chip-label-text-size: 1em;
+  }
+  .container {
+    display: flex;
+    justify-content: space-between;
+    padding-inline: 8px;
+    /* font-size: 1em; */
+  }
+  .container > button.primary {
+    flex: 1 1 auto;
   }
 `.toString();
 
@@ -31,18 +55,10 @@ export class VscEditorForm extends BaseEditor {
     await this.updateComplete;
     if (this._haForm.shadowRoot) {
       this._stylesManager.addStyle([HA_FORM_STYLE], this._haForm.shadowRoot);
+      this._changeChips();
     }
     this._addEventListeners();
   }
-
-  private get _formRoot(): HTMLElement {
-    return this._haForm.shadowRoot!.querySelector('.root') as HTMLElement;
-  }
-
-  private _getNestedHaForm = async (root: ShadowRoot | HTMLElement): Promise<HaFormElement | null> => {
-    const haForm = await selectTree(root, 'ha-form');
-    return haForm || null;
-  };
 
   protected render(): TemplateResult {
     return html`<ha-form
@@ -61,7 +77,7 @@ export class VscEditorForm extends BaseEditor {
       return undefined;
     }
     const label = schema.label || schema.name || schema.title || '';
-    return capitalizeFirstLetter(label.trim());
+    return capitalize(label.replace(/_/g, ' '));
   };
 
   private computeHelper = (schema: any): string | TemplateResult | undefined => {
@@ -73,7 +89,7 @@ export class VscEditorForm extends BaseEditor {
       this._haForm.shadowRoot,
       ELEMENT.FORM_EXPANDABLE,
       true
-    )) as NodeListOf<HaFormElItem>;
+    )) as NodeListOf<HaFormElement>;
     if (expandables) {
       Array.from(expandables).forEach((el: any) => {
         el.addEventListener('expanded-changed', this._expandableToggled.bind(this)), { once: true };
@@ -98,6 +114,7 @@ export class VscEditorForm extends BaseEditor {
       const haFormRoot = await selectTree(target.shadowRoot, 'ha-expansion-panel ha-form');
       if (!haFormRoot) return;
       const hasTemplate = target.schema?.context?.isTemplate;
+      const isSectionOrder = target.schema?.context?.isSectionOrder;
       if (hasTemplate) {
         const buttonTrigger = await selectTree(haFormRoot.shadowRoot!, SELECTOR.OPTIONAL_BUTTON_TRIGGER);
         if (buttonTrigger) {
@@ -109,6 +126,15 @@ export class VscEditorForm extends BaseEditor {
           }
         }
       }
+      if (isSectionOrder) {
+        console.debug('Section form detected..');
+        const haChipSet = await selectTree(haFormRoot.shadowRoot!, SELECTOR.HA_CHIP_SET);
+        if (haChipSet) {
+          haFormRoot.addEventListener('value-changed', this._chipsChanged.bind(this));
+          this._changeChipInputStyle(haChipSet);
+        }
+      }
+
       // add styles
       // console.log('Adding styles to ha-form in expandable');
       this._stylesManager.addStyle([HA_FORM_STYLE], haFormRoot.shadowRoot);
@@ -117,7 +143,7 @@ export class VscEditorForm extends BaseEditor {
         haFormRoot.shadowRoot,
         ELEMENT.FORM_EXPANDABLE,
         true
-      )) as NodeListOf<HaFormElItem>;
+      )) as NodeListOf<HaFormElement>;
       if (nestedExpandables.length) {
         Array.from(nestedExpandables).forEach((el: any) => {
           // console.log('Adding event listener to nested expandable', el);
@@ -127,6 +153,43 @@ export class VscEditorForm extends BaseEditor {
       target.setAttribute('data-processed', 'true');
       target.removeEventListener('expanded-changed', this._expandableToggled.bind(this));
     }
+  };
+
+  private _changeChipInputStyle = async (haChipSet: HTMLElement) => {
+    const chipInputs = (await selectTree(haChipSet, ELEMENT.CHIP_INPUT, true)) as NodeListOf<any>;
+    if (chipInputs.length) {
+      Array.from(chipInputs).forEach((chip) => {
+        const hasStyle = chip.getAttribute('data-styled') === 'true';
+        if (!hasStyle) {
+          // console.debug('adding style to chip:', chip.label);
+          this._stylesManager.addStyle([CHIP_CONTAINER_STYLE], chip.shadowRoot!);
+          chip.setAttribute('data-styled', 'true');
+        }
+      });
+    }
+  };
+
+  private _chipsChanged = async (ev: any) => {
+    const target = ev.currentTarget as any;
+    if (target) {
+      const haChipSet = await selectTree(target.shadowRoot!, SELECTOR.HA_CHIP_SET);
+      this._changeChipInputStyle(haChipSet);
+    }
+  };
+
+  private _changeChips = () => {
+    setTimeout(async () => {
+      if (this.schema === undefined || this.schema === null) {
+        if (this.schema![0]?.name !== 'section_order') {
+          return;
+        }
+      }
+      const haChipSet = await selectTree(this._haForm.shadowRoot!, SELECTOR.HA_CHIP_SET);
+      if (haChipSet) {
+        this._haForm.addEventListener('value-changed', this._chipsChanged.bind(this));
+        this._changeChipInputStyle(haChipSet);
+      }
+    }, 100);
   };
 
   static get styles(): CSSResultGroup {
