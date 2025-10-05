@@ -47,7 +47,6 @@ declare global {
 }
 
 export const loadAndCleanExtraMap = async (): Promise<void> => {
-  console.debug(`${CARD_NAME}: Checking Extra Map Card...`);
   if (window.__extraMapCardLoadPromise) return window.__extraMapCardLoadPromise;
 
   window.__extraMapCardLoadPromise = (async () => {

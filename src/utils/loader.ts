@@ -66,6 +66,7 @@ export const refactorEditDialog = async () => {
       --dialog-content-padding: 8px 4px !important;
     }
     @media (min-width: 1000px) {
+      .content hui-section,
       .content hui-card {
         margin: 0 auto !important;
         padding: inherit !important;

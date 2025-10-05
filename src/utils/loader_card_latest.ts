@@ -27,7 +27,6 @@ declare global {
 }
 
 export const checkCardLatest = async (): Promise<void> => {
-  console.debug(`VSC: Checking Card Latest Version...`);
   if (window.__vscLoadPromise) return window.__vscLoadPromise;
   window.__vscLoadPromise = (async () => {
     const latestVersion = await memoizedGetLatestCardVersion();
@@ -40,7 +39,7 @@ export const checkCardLatest = async (): Promise<void> => {
         `VSC: A new version is available: ${latestVersion}. You are using version ${version}. Please consider updating.`
       );
     } else {
-      console.info(`VSC: You are using the latest version: ${version}.`);
+      // console.info(`VSC: You are using the latest version: ${version}.`);
     }
   })();
   return window.__vscLoadPromise;
