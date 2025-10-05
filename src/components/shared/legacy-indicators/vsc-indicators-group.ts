@@ -1,11 +1,11 @@
-import { html, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, queryAssignedElements, state } from 'lit/decorators.js';
 
-import { COMPONENT } from '../../constants/const';
-import { EDITOR_INDICATOR_ROW_SELECTED, EditorIndicatorRowEventArgs } from '../../events/editor-indicator-row';
-import { SECTION } from '../../types/section';
-import { BaseElement } from '../../utils/base-element';
-import { VscIndicatorRow } from '../vsc-indicator-row';
+import { COMPONENT } from '../../../constants/const';
+import { EDITOR_INDICATOR_ROW_SELECTED, EditorIndicatorRowEventArgs } from '../../../events/editor-indicator-row';
+import { SECTION } from '../../../types/section';
+import { BaseElement } from '../../../utils/base-element';
+import { VscIndicatorRow } from '../../vsc-indicator-row';
 
 @customElement('vsc-indicators-group')
 export class VscIndicatorsGroup extends BaseElement {
@@ -115,7 +115,31 @@ export class VscIndicatorsGroup extends BaseElement {
   }
 
   protected render(): TemplateResult {
-    return html`<slot></slot>`;
+    return html`
+      <div class="container" style=${this._computeStyle()}>
+        <slot></slot>
+      </div>
+    `;
+  }
+
+  private _computeStyle(): string | undefined {
+    if (this.parentElement?.previousElementSibling !== null) {
+      return 'margin-top: var(--vic-gutter-gap, 8px);';
+    }
+    return undefined;
+  }
+  static get styles(): CSSResultGroup {
+    return [
+      super.styles,
+      css`
+        .container {
+          display: flex;
+          flex-direction: column;
+          gap: var(--vic-gutter-gap, 8px);
+          width: 100%;
+        }
+      `,
+    ];
   }
 }
 

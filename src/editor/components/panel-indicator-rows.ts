@@ -117,13 +117,11 @@ export class PanelIndicatorRows extends BaseEditor {
     const expanded = ev.detail.expanded;
     // console.debug('Panel will change:', panelId, expanded);
     if (!expanded) {
-      // this._showRow(null);
       this._showSelectedRow(null);
       return;
     }
     const rowIndex = panelId?.replace('row-', '');
     // console.debug('Row index expanded:', rowIndex);
-    // this._showRow(Number(rowIndex));
     this._showSelectedRow(Number(rowIndex));
     const panels = Array.from(this._expansionPanels).filter((p) => p.id !== panelId) as any[];
     // console.debug('Other panels:', panels);

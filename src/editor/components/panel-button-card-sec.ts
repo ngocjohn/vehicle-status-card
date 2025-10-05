@@ -132,7 +132,7 @@ export class PanelButtonCardSec extends BaseEditor {
     ev.stopPropagation();
     const index = (ev.currentTarget as any).btnIndex;
     const action = ev.detail.action;
-    console.debug('Button action', action, index);
+    // console.debug('Button action', action, index);
     const updateChange = (newConfig: BaseButtonCardItemConfig[]) => {
       this._buttonsChanged(newConfig);
     };
@@ -176,6 +176,21 @@ export class PanelButtonCardSec extends BaseEditor {
       index,
       config: btnConfig,
     };
+    if (btnConfig.hide_button) {
+      return;
+    }
+    // Auto highlight button after 300ms
+    setTimeout(() => {
+      if (this._subBtnEl) {
+        this._subBtnEl._btnLoading = true;
+        this._dispatchEditorEvent('show-button', { buttonIndex: index, keep: true });
+        this._subBtnEl._buttonHighlighted = true;
+        this._subBtnEl._toggleHighlightButton(true);
+        setTimeout(() => {
+          if (this._subBtnEl) this._subBtnEl._btnLoading = false;
+        }, 3000);
+      }
+    }, 300);
   }
 
   private _closeSubEditor = () => {

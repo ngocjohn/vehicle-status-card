@@ -2,21 +2,21 @@ import { css, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { COMPONENT } from '../../constants/const';
-import { computeEntityName, computeStateName, fireEvent } from '../../ha';
-import { computeCssColor } from '../../ha/common/color/compute-color';
-import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
-import { handleAction } from '../../ha/panels/common/handle-actions';
-import '../shared/vsc-indicator-badge';
-import '../shared/vsc-state-display';
-import { hasAction } from '../../types/config/actions-config';
+import { COMPONENT } from '../../../constants/const';
+import { computeEntityName, computeStateName, fireEvent } from '../../../ha';
+import { computeCssColor } from '../../../ha/common/color/compute-color';
+import { actionHandler, ActionHandlerEvent } from '../../../ha/panels/common/directives/action-handler-directive';
+import { handleAction } from '../../../ha/panels/common/handle-actions';
+import './vsc-indicator-badge';
+import '../vsc-state-display';
+import { hasAction } from '../../../types/config/actions-config';
 import {
   GlobalAppearanceConfig,
   IndicatorEntityConfig,
   IndicatorRowGroupConfig,
-} from '../../types/config/card/row-indicators';
-import { VscIndicatorItemBase } from '../../utils/base-indicator';
-import { VscIndicatorBadge } from '../shared/vsc-indicator-badge';
+} from '../../../types/config/card/row-indicators';
+import { VscIndicatorItemBase } from '../../../utils/base-indicator';
+import { VscIndicatorBadge } from './vsc-indicator-badge';
 
 declare global {
   interface HASSDomEvents {

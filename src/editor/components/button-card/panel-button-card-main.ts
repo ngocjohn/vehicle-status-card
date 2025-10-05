@@ -1,7 +1,7 @@
 import { capitalize } from 'es-toolkit';
-import { omit } from 'es-toolkit/compat';
+import { isEmpty, omit } from 'es-toolkit/compat';
 import { html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, query, state } from 'lit/decorators.js';
 
 import { fireEvent } from '../../../ha';
 import { ButtonArea } from '../../../types/config-area';
@@ -21,6 +21,7 @@ import './panel-button-card-default';
 import './panel-button-card-tire';
 import { SUB_PANEL } from '../../editor-const';
 import { MAIN_BUTTON_SCHEMA } from '../../form';
+import { PanelButtonDefaultCard } from './panel-button-card-default';
 
 declare global {
   interface HASSDomEvents {
@@ -34,17 +35,18 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
   @state() private _selectedArea: ButtonArea = ButtonArea.BASE;
   @state() private _yamlActive: boolean = false;
   @state() private _customCardConfig?: SubElementEditorConfig;
+  @state() private _subLabelSecondary?: { label: string; secondary: string | null };
+
+  @query(SUB_PANEL.BTN_DEFAULT_CARD) _defaultCardPanel?: PanelButtonDefaultCard;
 
   constructor() {
     super();
   }
   connectedCallback(): void {
     super.connectedCallback();
-    console.debug('PanelButtonCardMain connected:', this.buttonArea);
   }
   disconnectCallback(): void {
     super.disconnectedCallback();
-    console.debug('PanelButtonCardMain disconnected:', this.buttonArea);
   }
 
   protected updated(_changedProperties: PropertyValues): void {
@@ -71,11 +73,14 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
 
   protected render(): TemplateResult {
     const infoState = this._computeInfoState();
+    const isDefaultCardActive = this._subLabelSecondary !== undefined;
+
     return html`
       <sub-editor-header
         ._label=${infoState.label}
         .secondary=${infoState.secondary}
         .hidePrimaryAction=${this._yamlActive}
+        .hidePrimaryIcon=${isDefaultCardActive}
         .primaryIcon=${infoState.icon}
         .secondaryAction=${createSecondaryCodeLabel(this._yamlActive)}
         @primary-action=${this._goBack}
@@ -101,12 +106,12 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     const area = this._selectedArea;
     const btnConfig = this._btnConfig!;
     if (area === ButtonArea.BASE) {
-      return this._createVscYamlEditor(btnConfig);
+      return this._createVscYamlEditor(btnConfig, undefined, undefined, false);
     }
     const data = btnConfig?.sub_card?.[area];
     const key = 'sub_card';
     const subKey = area;
-    return this._createVscYamlEditor(data, key, subKey);
+    return this._createVscYamlEditor(data, key, subKey, false);
   }
 
   private _renderBaseEditor(): TemplateResult {
@@ -115,6 +120,9 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
       ...data,
       button_type: data.button_type ?? 'default',
       card_type: data.card_type ?? 'default',
+      icon_type: data.icon_type ?? 'icon',
+      primary_info: data.primary_info ?? 'name',
+      layout: data.layout ?? 'horizontal',
     };
     const baseButtonSchema = MAIN_BUTTON_SCHEMA(data);
     const baseForm = this._createVscForm(data, baseButtonSchema, 'base');
@@ -148,6 +156,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
         ._store=${this._store}
         ._defaultCardConfig=${defaultConfig}
         @default-card-changed=${this._handleCustomCardConfigChanged}
+        @card-item-label-secondary-changed=${this._handleLabelSecondaryChanged}
       ></panel-button-card-default>
     `;
   }
@@ -212,13 +221,25 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     const area = this._selectedArea;
     const isBase = area === ButtonArea.BASE;
     let label = isBase ? 'Main Configuration' : capitalize(area.replace('_', ' '));
-    const secondary = isBase ? btnIndexLabel : `${btnIndexLabel} · Sub-Card`;
+    let secondary = isBase ? btnIndexLabel : `${btnIndexLabel} · Sub-Card`;
     const icon = isBase ? 'close' : 'back';
+    if (area === ButtonArea.DEFAULT_CARD && !isEmpty(this._subLabelSecondary)) {
+      label = this._subLabelSecondary.label;
+      if (this._subLabelSecondary.secondary) {
+        // label += ` · ${this._subLabelSecondary.secondary}`;
+        secondary = this._subLabelSecondary.secondary;
+      }
+    }
+
     return { label, secondary, icon };
   }
 
+  private _handleLabelSecondaryChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    this._subLabelSecondary = isEmpty(ev.detail) ? undefined : ev.detail;
+  }
+
   private _handleSelectSubCard(cardType: PreviewType): void {
-    console.debug('Select sub card type:', cardType);
     const subCardConfig = this._btnConfig?.sub_card;
     const typeKey = cardType === 'custom_card' ? 'vertical-stack' : cardType;
     const subConfig =
@@ -286,28 +307,27 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (!ev.detail || !this._btnConfig || !this._customCardConfig) {
       return;
     }
-    console.debug('Handle Custom Card Config Changed (PanelButtonCardMain)');
+
     const currentElementConfig = { ...this._customCardConfig.elementConfig } as any;
     const incoming = ev.detail.config as any;
-    console.debug('incoming config:', incoming);
-    // Check if there are actual changes
     if (JSON.stringify(currentElementConfig) === JSON.stringify(incoming)) {
-      console.debug('No changes detected in custom card config');
+      // console.debug('No changes detected in custom card config');
       return;
     }
-    // update sub-element config
-    console.debug('Custom card config changed, updating...');
+
     // re-add sub_card if exists
     this._customCardConfig = {
       ...this._customCardConfig,
       elementConfig: incoming,
     };
+
     const subKey = this._customCardConfig.sub_card_type as 'custom_card' | 'default_card' | 'tire_card';
     let value = incoming;
     if (subKey === 'custom_card') {
       value = incoming.cards || [];
     }
-    console.debug('Updating button config sub_card:', subKey, value);
+
+    // console.debug('Updating button config sub_card:', subKey);
     // update button config
     const btnConfig = { ...(this._btnConfig || {}) } as BaseButtonCardItemConfig;
     btnConfig.sub_card = {
@@ -322,7 +342,7 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     if (!ev.detail || !this._btnConfig) {
       return;
     }
-    console.debug('onYamlChanged (PanelButtonCardMain)');
+    // console.debug('onYamlChanged (PanelButtonCardMain)');
     const { key, subKey } = ev.currentTarget as any;
     const value = ev.detail;
     // console.debug('YAML changed:', { key, subKey, value });
@@ -348,15 +368,21 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
 
   protected _onValueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
-    console.debug('onValueChanged (PanelButtonCardMain)');
     if (!ev.detail || !this._btnConfig) {
       return;
     }
     const currentConfig = { ...(this._btnConfig ?? {}) } as BaseButtonCardItemConfig;
     const incoming = ev.detail.value as Partial<Omit<BaseButtonCardItemConfig, 'sub_card'>>;
+    // strip out sub_card from current config
     const baseConfig = omit(currentConfig, ['sub_card']);
+    // Check if there are actual changes before proceeding
+    if (JSON.stringify(baseConfig) === JSON.stringify(incoming)) {
+      // console.debug('No changes detected in base config');
+      return;
+    }
     // merge with cleanup
     let changed = this.mergeWithCleanup(baseConfig, incoming);
+
     // ---- normalize state_content against include_state_template ----
     const include = !!baseConfig.include_state_template;
     const raw = baseConfig.state_content as string | string[] | undefined;
@@ -385,6 +411,13 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
       ...baseConfig,
       sub_card: currentConfig.sub_card ? { ...currentConfig.sub_card } : undefined,
     };
+    // delete show_name | show_primary from config
+    if ('show_name' in newConfig) {
+      delete newConfig.show_name;
+    }
+    if ('show_state' in newConfig) {
+      delete newConfig.show_state;
+    }
     this._btnConfigChanged(newConfig);
   }
 

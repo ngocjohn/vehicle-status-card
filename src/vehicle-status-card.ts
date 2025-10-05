@@ -14,7 +14,6 @@ import { EditorEventParams } from './editor/base-editor';
 import { EDITOR_AREA_SELECTED, EDITOR_SUB_CARD_PREVIEW } from './events';
 // Ha utils
 import {
-  fireEvent,
   forwardHaptic,
   HomeAssistant,
   LovelaceCard,
@@ -39,12 +38,17 @@ import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
+import { isCardInEditPreview } from './utils/helpers-dom';
+import { checkCardLatest } from './utils/loader_card_latest';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
 
 @customElement(CARD_NAME)
 export class VehicleStatusCard extends BaseElement implements LovelaceCard {
+  constructor() {
+    super();
+  }
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     Store.selectedConfigArea = ConfigArea.DEFAULT;
     return document.createElement('vehicle-status-card-editor');
@@ -71,13 +75,10 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   private _onEditorConfigAreaSelected = (e: Event) => this._handleEditorConfigAreaSelected(e);
   private _onEditorSubCardPreview = (e: Event) => this._handleEditorSubCardPreview(e);
 
-  constructor() {
-    super();
-  }
-
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
   @property({ attribute: false }) public layout?: string;
+  @property({ attribute: false }) public preview?: boolean | undefined;
   @property({ attribute: false }) public isPanel?: boolean;
 
   @state() public _activeCardIndex: null | number | string = null;
@@ -112,13 +113,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     const newConfig = JSON.parse(JSON.stringify(config));
-    if (newConfig.button_card && newConfig.button_card.length) {
-      console.debug('legacy button_card config found');
-      // Backward compatibility for legacy button_card config
-      this._buttonCardConfigItem = newConfig.button_card as ButtonCardConfig[];
-      console.debug('config button_card:', this._buttonCardConfigItem);
-    }
-    // this._config = newConfig;
+    // if (newConfig.button_card && newConfig.button_card.length) {
+    //   console.debug('legacy button_card config found');
+    //   // Backward compatibility for legacy button_card config
+    //   this._buttonCardConfigItem = newConfig.button_card as ButtonCardConfig[];
+    //   console.debug('config button_card:', this._buttonCardConfigItem);
+    // }
+
     this._config = {
       ...updateDeprecatedConfig(newConfig),
     };
@@ -139,6 +140,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
+    this._connected = true;
     if (this.isEditorPreview) {
       window.addEventListener('editor-event', this._onEditorEvent);
       document.addEventListener(EDITOR_AREA_SELECTED, this._onEditorConfigAreaSelected);
@@ -695,12 +697,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     this.requestUpdate();
   }
 
-  toggleMoreInfo(entity: string | undefined): void {
-    if (!entity) return;
-    console.log('Toggled more info:', entity);
-    fireEvent(this, 'hass-more-info', { entityId: entity });
-  }
-
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
 
   protected _handleEditorConfigAreaSelected = (ev: Event): void => {
@@ -708,7 +704,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const evArgs = (ev as CustomEvent).detail;
     const selectedArea = evArgs.section as SECTION;
     if (this.configSection !== selectedArea) {
-      console.debug('Area changed from', this.configSection, 'to', selectedArea);
+      // console.debug('Area changed from', this.configSection, 'to', selectedArea);
       if (selectedArea === SECTION.DEFAULT) {
         this._setEditorSection(SECTION.DEFAULT);
         return;
@@ -717,7 +713,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       const sectionIsEmpty = this.isSectionConfigEmpty(selectedArea) === true;
 
       // If the selected area is hidden or has no config, default to SECTION.DEFAULT
-      const newArea = isHidden ? SECTION.DEFAULT : sectionIsEmpty ? SECTION.DEFAULT : selectedArea;
+      const newArea = isHidden || sectionIsEmpty ? SECTION.DEFAULT : selectedArea;
 
       this._setEditorSection(newArea);
     } else {
@@ -746,12 +742,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (!this._config || section === SECTION.DEFAULT) {
       return false;
     }
-    if (section === SECTION.BUTTONS) {
-      return isEmpty(this._config.button_cards);
-    } else if (section === SECTION.INDICATORS) {
-      section = SECTION.INDICATOR_ROWS;
-    }
-    return isEmpty(this._config[section]);
+    const secConfig =
+      section === SECTION.BUTTONS
+        ? this._config.button_cards
+        : section === SECTION.INDICATORS
+        ? this._config.indicator_rows
+        : this._config[section];
+    return isEmpty(secConfig);
   }
 
   public _handleEditorEvent(ev: CustomEvent<EditorEventParams>): void {
@@ -761,7 +758,8 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     switch (type) {
       case 'show-button':
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
-        this._secButtonsGroup?.peekButton(data.buttonIndex);
+        // console.debug('Peeking button', data.buttonIndex, data.keep);
+        this._secButtonsGroup?.peekButton(data.buttonIndex, data.keep);
         break;
 
       case 'show-image':
@@ -769,11 +767,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         this._secImages?.showImage(data.index);
         break;
 
-      case 'toggle-helper':
-        console.log('Toggling helper for section:', data);
-
-        // this._toggleHelper(data);
-        break;
       case 'toggle-indicator-row':
         const peek = data.peek ?? false;
         this._toggleIndicatorRow(data, peek);
@@ -789,7 +782,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._handleEditorSubCardPreview.bind(this), { once: true });
         break;
       case 'highlight-button':
-        console.debug('Highlighting button', data.buttonIndex);
+        // console.debug('Highlighting button', data.buttonIndex);
         if (this._isSectionHidden(SECTION.BUTTONS)) return;
         this._secButtonsGroup?.highlightButton(data.buttonIndex);
         break;
@@ -817,8 +810,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   get isEditorPreview(): boolean {
-    const parentElementClassPreview = this.offsetParent?.classList.contains('element-preview');
-    return parentElementClassPreview || false;
+    return isCardInEditPreview(this);
   }
 
   get isGroupIndiActive(): boolean {
@@ -859,3 +851,4 @@ declare global {
 }
 // Load and clean extra map resources
 loadAndCleanExtraMap().catch(console.error);
+checkCardLatest();

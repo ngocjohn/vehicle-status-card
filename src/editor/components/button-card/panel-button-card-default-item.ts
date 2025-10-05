@@ -1,15 +1,16 @@
 import { mdiDelete, mdiDrag, mdiPencil } from '@mdi/js';
-import { html, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import memoizeOne from 'memoize-one';
 
 import { fireEvent } from '../../../ha';
 import { HaFormSchema } from '../../../ha/panels/ha-form/types';
+import { ButtonArea } from '../../../types/config-area';
 import { CardDefaultConfig, DefaultCardItemConfig } from '../../../types/config/card/button-card';
 import { processCardItemEntities } from '../../../utils';
-import { ButtonCardBaseEditor } from '../../button-card-base';
 import '../../../utils/editor/sub-editor-header';
+import { ButtonCardBaseEditor } from '../../button-card-base';
 import { SUB_PANEL } from '../../editor-const';
 const CARD_DEFAULT_SCHEMA = [
   {
@@ -73,19 +74,21 @@ declare global {
   interface HASSDomEvents {
     'card-item-closed': undefined;
     'card-item-changed': { config: CardDefaultConfig };
+    'card-item-label-secondary-changed': { label: string; secondary: string | null } | undefined;
   }
 }
 @customElement(SUB_PANEL.BTN_DEFAULT_CARD_ITEM)
 export class PanelButtonCardDefaultItem extends ButtonCardBaseEditor {
   constructor() {
-    super();
+    super(ButtonArea.DEFAULT_CARD);
   }
   @property({ attribute: false }) _baseCardConfig!: CardDefaultConfig;
-
+  @property({ attribute: false }) _index!: number;
   @state() private _catConfig?: CardDefaultConfig;
   @state() private _catItems?: DefaultCardItemConfig[];
 
-  @state() private _selectedItem: number | null = null;
+  @state() public _selectedItem: number | null = null;
+  @state() public _labelSecondary?: { label: string; secondary: string | null };
 
   protected willUpdate(_changedProperties: PropertyValues): void {
     super.willUpdate(_changedProperties);
@@ -95,18 +98,23 @@ export class PanelButtonCardDefaultItem extends ButtonCardBaseEditor {
     this._catItems = this._catConfig?.items ? processCardItemEntities(this._catConfig.items) : [];
   }
 
-  protected render(): TemplateResult {
-    if (this._selectedItem !== null) {
-      return this._renderSelectedItem();
+  protected updated(_changedProperties: PropertyValues): void {
+    super.updated(_changedProperties);
+    if (_changedProperties.has('_selectedItem') || _changedProperties.has('_catConfig')) {
+      this._computeLabelSecondary();
+      fireEvent(this, 'card-item-label-secondary-changed', this._labelSecondary);
     }
+  }
+
+  protected render(): TemplateResult {
     const DATA = { ...this._baseCardConfig };
     const defaultForm = this._createVscForm(DATA, CARD_DEFAULT_SCHEMA, 'category');
+    const secondary = this._selectedItem !== null ? 'Back to items' : 'Back to Category';
 
     return html`
       <sub-editor-header
         hide-secondary
-        ._label=${this._catConfig?.title || 'Default Card'}
-        .secondary=${this._selectedItem !== null ? 'Edit Item' : ''}
+        .secondary=${secondary}
         .primaryIcon=${'back'}
         @primary-action=${this._handleBack}
       ></sub-editor-header>
@@ -192,6 +200,20 @@ export class PanelButtonCardDefaultItem extends ButtonCardBaseEditor {
     `;
   }
 
+  private _computeLabelSecondary(): { label: string; secondary: string | null } {
+    let label = `Category #${this._index + 1}`;
+    if (this._catConfig?.title && this._catConfig.title !== '') {
+      label += `: ${this._catConfig.title}`;
+    }
+    let secondary: string | null = null;
+    if (this._selectedItem !== null) {
+      const item = this._catItems![this._selectedItem];
+      secondary = item.name || item.entity || `Item #${this._selectedItem + 1}`;
+    }
+    this._labelSecondary = { label, secondary };
+    return { label, secondary };
+  }
+
   private _entityMoved(ev: CustomEvent): void {
     ev.stopPropagation();
     const { oldIndex, newIndex } = ev.detail;
@@ -272,6 +294,28 @@ export class PanelButtonCardDefaultItem extends ButtonCardBaseEditor {
   private _dispatchConfigChange(config: CardDefaultConfig): void {
     const newConfig = { ...this._baseCardConfig, ...config };
     fireEvent(this, 'card-item-changed', { config: newConfig });
+  }
+
+  static get styles(): CSSResultGroup {
+    return [
+      super.styles,
+      css`
+        .add-entity {
+          display: block;
+          margin-left: 36px;
+          margin-inline-start: 36px;
+          margin-inline-end: calc(2 * (var(--mdc-icon-button-size, 48px) + var(--vic-gutter-gap)));
+          direction: var(--direction);
+          margin-bottom: var(--vic-card-padding);
+        }
+        .sub-content {
+          margin-bottom: unset;
+        }
+        .header-row.no-padding {
+          padding: 0 !important;
+        }
+      `,
+    ];
   }
 }
 

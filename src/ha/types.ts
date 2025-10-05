@@ -88,6 +88,8 @@ export interface AreaRegistryEntry {
   picture: string | null;
 }
 
+export type EntityNameType = 'entity' | 'device' | 'area' | 'floor';
+
 export interface HomeAssistant {
   auth: Auth & { external?: any };
   connection: Connection;
@@ -149,6 +151,7 @@ export interface HomeAssistant {
   formatEntityState(stateObj: HassEntity, state?: string): string;
   formatEntityAttributeValue(stateObj: HassEntity, attribute: string, value?: any): string;
   formatEntityAttributeName(stateObj: HassEntity, attribute: string): string;
+  formatEntityName(stateObj: HassEntity, type: EntityNameType | EntityNameType[], separator?: string): string;
 }
 
 export type Constructor<T = any> = new (...args: any[]) => T;

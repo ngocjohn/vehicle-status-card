@@ -4,14 +4,14 @@ import { customElement, state, property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 // components items
-import { COMPONENT } from '../constants/const';
-import { RenderTemplateResult, subscribeRenderTemplate } from '../ha';
-import { VehicleStatusCardConfig } from '../types/config/card/card-config';
-import { IndicatorGroupConfig } from '../types/config/card/indicators';
-import './shared/vsc-indicator-single';
-import './shared/vsc-indicator-group-item';
-import { BaseElement } from '../utils/base-element';
-import { VscIndicatorGroupItem } from './shared/vsc-indicator-group-item';
+import { COMPONENT } from '../../../constants/const';
+import { RenderTemplateResult, subscribeRenderTemplate } from '../../../ha';
+import { VehicleStatusCardConfig } from '../../../types/config/card/card-config';
+import { IndicatorGroupConfig } from '../../../types/config/card/indicators';
+import './vsc-indicator-single';
+import './vsc-indicator-group-item';
+import { BaseElement } from '../../../utils/base-element';
+import { VscIndicatorGroupItem } from './vsc-indicator-group-item';
 
 const TEMPLATE_KEYS = ['color', 'visibility'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];

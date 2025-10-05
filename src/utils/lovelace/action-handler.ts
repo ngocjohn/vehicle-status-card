@@ -71,7 +71,7 @@ class ActionHandler {
     const moveThreshold = 20;
 
     if (deltaX > moveThreshold || deltaY > moveThreshold) {
-      console.log('Swipe detected, ignoring actions');
+      // console.log('Swipe detected, ignoring actions');
       return;
     }
 
@@ -85,10 +85,10 @@ class ActionHandler {
     if (holdDuration > 300) {
       tapAllowed = false;
       if (this.options.hasHold) {
-        console.log('Hold detected');
+        // console.log('Hold detected');
         this.sendActionEvent(this.element, this.options, 'hold');
       } else {
-        console.log('Hold ignored (no action)');
+        // console.log('Hold ignored (no action)');
       }
       return;
     }
@@ -110,7 +110,7 @@ class ActionHandler {
     if (this.options.hasClick) {
       this.tapTimeout = window.setTimeout(() => {
         if (tapAllowed) {
-          console.log('Single tap detected');
+          // console.log('Single tap detected');
           this.sendActionEvent(this.element, this.options, 'tap');
         }
       }, doubleTapDelay);

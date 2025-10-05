@@ -400,14 +400,6 @@ export class PanelIndicatorItem extends BaseEditor {
     };
     this._showSelectedRow(previewConfig.rowIndex, previewConfig.groupIndex, previewConfig.entity_index);
   }
-  // _toggleGroupPreview(groupIndex: number | null, entity_index: number | null): void {
-  //   const previewConfig = {
-  //     row_index: this.rowIndex,
-  //     group_index: groupIndex,
-  //     entity_index: entity_index,
-  //   };
-  //   this._setPreviewConfig(EDITOR_PREVIEW.ROW_GROUP, previewConfig);
-  // }
 
   private _rowConfigChanged(config: IndicatorRowConfig): void {
     const detail = {

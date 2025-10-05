@@ -48,3 +48,58 @@ export const stopAndPrevent = (ev) => {
   ev.stopPropagation();
   ev.preventDefault();
 };
+
+/**
+ * Find the closest matching element in a chain of nested, slotted custom elements.
+ *
+ * @param selector selector used to find the element; values are case-sensitive.
+ * @param base element to start searching from; specify `this` to start searching from the current element.
+ * @returns a matching element if found; otherwise, null.
+ *
+ * examples:
+ * - find element by it's `id=` value:
+ *   const container = this.closestElement('#spcPlayer', this);
+ * - find element by it's html tag name (e.g. `<spc-player>`):
+ *   const container = this.closestElement('spc-player', this);
+ */
+export function closestElement(selector: string, base: Element) {
+  function __closestFrom(el: Element | Window | Document | null): Element | null {
+    if (!el || el === document || el === window) return null;
+    if ((el as Slottable).assignedSlot) el = (el as Slottable).assignedSlot;
+
+    const found = (el as Element).closest(selector);
+    return found ? found : __closestFrom(((el as Element).getRootNode() as ShadowRoot).host);
+  }
+  return __closestFrom(base);
+}
+
+export function isCardInEditPreview(cardElement: Element) {
+  // get parent element data.
+  if (cardElement) {
+    // check for "<hui-card>" tag reference;
+    const cardHuiObj = closestElement('hui-card', cardElement) as Element;
+    if (cardHuiObj) {
+      // console.log(
+      //   'isCardInEditPreview - closestElement found "<hui-card>" tag; checking for ".element-preview" class parent'
+      // );
+
+      // check for "element-preview" class reference;
+      // if found, then the card is being edited.
+      const cardPreviewObj = closestElement('.element-preview', cardHuiObj) as Element;
+      if (cardPreviewObj) {
+        // console.log('isCardInEditPreview - closestElement found ".element-preview" class; card is in edit mode');
+        return true;
+      } else {
+        // console.log(
+        //   'isCardInEditPreview - closestElement did NOT find ".element-preview" class; card is NOT in edit mode'
+        // );
+        return false;
+      }
+    } else {
+      return false;
+    }
+  } else {
+    // console.log('isCardInEditPreview - cardElement object not supplied; card is NOT in edit mode');
+    return false;
+  }
+}

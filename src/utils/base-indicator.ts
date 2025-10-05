@@ -14,7 +14,7 @@ import { stateColorCss } from '../ha/common/entity/state_color';
 import { isGroupEntity } from '../ha/data/group';
 import { RenderTemplateResult, hasTemplate, subscribeRenderTemplate } from '../ha/data/ws-templates';
 import '../components/shared/vsc-state-display';
-import '../components/shared/vsc-indicator-badge';
+import '../components/shared/indicator-row/vsc-indicator-badge';
 import { hasItemAction } from '../types/config/actions-config';
 import {
   IndicatorRowItem,

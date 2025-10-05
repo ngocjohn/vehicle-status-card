@@ -39,21 +39,20 @@ export const VALUE_ALIGNMENT_SCHEMA = (disabled: boolean) => {
   ] as const;
 };
 
-export const RANGE_ITEM_BASE_SCHEMA = (entityId: string) =>
+export const RANGE_ITEM_BASE_SCHEMA = () =>
   [
-    {
-      name: 'attribute',
-      label: 'Attribute',
-      selector: {
-        attribute: {
-          entity_id: entityId,
-        },
-      },
-    },
     {
       name: 'icon',
       label: 'Icon',
       selector: { icon: {} },
+      context: { icon_entity: 'entity' },
+    },
+    {
+      name: 'hide_icon',
+      label: 'Hide Icon',
+      type: 'boolean',
+      default: false,
+      helper: 'Hide the icon even if set',
     },
     {
       name: 'value_position',
@@ -80,11 +79,20 @@ export const RANGE_ITEM_SCHEMA = memoizeOne((entityId: string, required: boolean
   ...(entityId && entityId !== ''
     ? [
         {
+          name: 'attribute',
+          label: 'Attribute',
+          selector: {
+            attribute: {
+              entity_id: entityId,
+            },
+          },
+        },
+        {
           name: '',
           type: 'grid',
           flatten: true,
           schema: [
-            ...RANGE_ITEM_BASE_SCHEMA(entityId),
+            ...RANGE_ITEM_BASE_SCHEMA(),
             ...(valueAligment ? VALUE_ALIGNMENT_SCHEMA(valueAligment) : []),
             ...(required === true
               ? [

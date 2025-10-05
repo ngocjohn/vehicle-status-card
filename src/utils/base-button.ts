@@ -141,8 +141,8 @@ export class BaseButton extends BaseElement {
   }
 
   protected get _hasAction(): boolean {
-    if (this._btnConfig?.button_type !== 'action') {
-      return false;
+    if (this._btnConfig?.button_type === 'default') {
+      return true;
     }
     return hasItemAction(this._btnActionConfig);
   }
@@ -153,18 +153,6 @@ export class BaseButton extends BaseElement {
       hasAction(this._btnConfig?.icon_hold_action) ||
       hasAction(this._btnConfig?.icon_double_tap_action)
     );
-  }
-
-  protected get _iconActionConfig(): Pick<
-    BaseButtonCardItemConfig,
-    'entity' | 'icon_tap_action' | 'icon_hold_action' | 'icon_double_tap_action'
-  > {
-    return {
-      entity: this._btnConfig?.entity,
-      icon_tap_action: this._btnConfig?.icon_tap_action,
-      icon_hold_action: this._btnConfig?.icon_hold_action,
-      icon_double_tap_action: this._btnConfig?.icon_double_tap_action,
-    };
   }
 
   protected get _iconActions() {

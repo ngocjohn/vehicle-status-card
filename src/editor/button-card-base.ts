@@ -14,7 +14,10 @@ export class ButtonCardBaseEditor extends BaseEditor {
   @state() public _activePreview: PreviewType | null = null;
   @state() public _buttonHighlighted: boolean = false;
 
+  @state() public _subDefaultItemActive!: boolean;
+
   @state() private _connected: boolean = false;
+  @state() public _btnLoading: boolean = false;
 
   protected buttonArea?: ButtonArea;
 
@@ -24,15 +27,15 @@ export class ButtonCardBaseEditor extends BaseEditor {
       this.buttonArea = area;
     }
   }
+
   connectedCallback(): void {
     super.connectedCallback();
     this._connected = true;
-    console.debug('ButtonCardBaseEditor connected:', this.buttonArea, this._connected);
   }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._connected = false;
-    console.debug('ButtonCardBaseEditor disconnected:', this.buttonArea, this._connected);
   }
 
   set activePreview(preview: PreviewType | null) {
@@ -61,16 +64,30 @@ export class ButtonCardBaseEditor extends BaseEditor {
   }
 
   private _renderHighlightBtn(): TemplateResult {
-    const label = this._buttonHighlighted ? 'Unhighlight Button' : 'Highlight Button';
-    const variant = this._buttonHighlighted ? 'warning' : 'brand';
+    const btnIsHidden = this._btnConfig?.hide_button;
+    if (btnIsHidden) {
+      if (this._buttonHighlighted) {
+        this._buttonHighlighted = false;
+      }
+      return html``;
+    }
+    const isHighlighted = this._buttonHighlighted;
+    const label = isHighlighted ? 'Unhighlight Button' : 'Highlight Button';
+    const variant = isHighlighted ? 'warning' : 'brand';
     return html`
-      <ha-button size="small" variant=${variant} appearance="plain" @click=${() => this._toggleHighlightButton()}>
+      <ha-button
+        .loading=${this._btnLoading}
+        size="small"
+        variant=${variant}
+        appearance="plain"
+        @click=${() => this._toggleHighlightButton()}
+      >
         ${label}
       </ha-button>
     `;
   }
 
-  protected _toggleHighlightButton(reload: boolean = false): void {
+  public _toggleHighlightButton(reload: boolean = false): void {
     const dispatchEvent = (index: number | null) => {
       setTimeout(() => {
         this._dispatchEditorEvent('highlight-button', { buttonIndex: index });
@@ -94,6 +111,7 @@ export class ButtonCardBaseEditor extends BaseEditor {
       if (this._connected) {
         this.updateComplete.then(() => {
           this._dispatchEditorArea(this._editorArea);
+          this._toggleHighlightButton(true);
         });
       }
       return;

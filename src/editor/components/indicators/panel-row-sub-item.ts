@@ -52,12 +52,20 @@ export class PanelRowSubItem extends BaseEditor {
 
   connectedCallback(): void {
     super.connectedCallback();
+    window.addEventListener('group-active', this._onGroupActive, { capture: true });
   }
 
-  protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
-    super.firstUpdated(_changedProperties);
-    await this.updateComplete;
+  disconnectedCallback(): void {
+    window.removeEventListener('group-active', this._onGroupActive, { capture: true });
+    super.disconnectedCallback();
   }
+
+  private _onGroupActive = (ev: any): void => {
+    ev.stopPropagation();
+    const active = ev.detail as boolean;
+    this._groupPreviewActive = active;
+    // this.requestUpdate();
+  };
 
   protected updated(_changedProperties: PropertyValues): void {
     super.updated(_changedProperties);
@@ -93,7 +101,6 @@ export class PanelRowSubItem extends BaseEditor {
     }
     const name = this._computeItemLabel(this._subItemConfig);
     const headerLabel = `Row ${this.rowIndex + 1} › ${this.isGroup ? 'Group' : 'Entity'}`;
-    this._groupPreviewActive = this._isPreviewGroup;
     return html`
       <sub-editor-header
         ?hidden=${this._groupItemIndex !== null}
@@ -305,21 +312,10 @@ export class PanelRowSubItem extends BaseEditor {
   // === helpers ===
   private _handleGroupPreviewToggle(): void {
     console.debug('Toggling group preview');
-    const group_index = this._isPreviewGroup ? null : this.itemIndex;
+    const group_index = this._groupPreviewActive ? null : this.itemIndex;
     this._showSelectedRow(this.rowIndex, group_index, null);
-    this._groupPreviewActive = this._isPreviewGroup;
     this.requestUpdate();
   }
-
-  // private _handleGroupPreviewToggle() {
-  //   console.debug('Toggling group preview');
-  //   const isPreview = this._isPreviewGroup;
-  //   this._setPreviewConfig('row_group_preview', {
-  //     row_index: this.rowIndex,
-  //     group_index: isPreview ? null : this.itemIndex,
-  //     entity_index: this.itemIndex,
-  //   });
-  // }
 
   private _computeItemLabel(config: IndicatorRowItem | IndicatorBaseItemConfig): string {
     if ('name' in config && config.name) return config.name;
