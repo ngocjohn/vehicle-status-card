@@ -187,7 +187,7 @@ export class PanelButtonCardSec extends BaseEditor {
         this._subBtnEl._buttonHighlighted = true;
         this._subBtnEl._toggleHighlightButton(true);
         setTimeout(() => {
-          this._subBtnEl!._btnLoading = false;
+          if (this._subBtnEl) this._subBtnEl._btnLoading = false;
         }, 3000);
       }
     }, 300);
