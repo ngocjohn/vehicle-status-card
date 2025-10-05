@@ -517,11 +517,9 @@ export class PanelButtonCard extends BaseEditor {
         switch (action) {
           case 'edit-button':
             this._buttonIndex = buttonIndex!;
-            this._setPreviewConfig('active_button', buttonIndex!);
             break;
           case 'back-to-list':
             this._buttonIndex = null;
-            this._setPreviewConfig('active_button', null);
             break;
           case 'category-back':
             this._cardIndex = null;

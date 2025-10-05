@@ -28,7 +28,6 @@ export class BaseElement extends LitElement {
     super.connectedCallback();
     if (this.section && this._store !== undefined && this.isBaseInEditor) {
       document.addEventListener(EDITOR_AREA_SELECTED, this._onAreaSelected);
-      console.debug('add listener for', this.section);
     }
   }
 
@@ -36,7 +35,6 @@ export class BaseElement extends LitElement {
     super.disconnectedCallback();
     if (this.section && this._store !== undefined && this.isBaseInEditor) {
       document.removeEventListener(EDITOR_AREA_SELECTED, this._onAreaSelected);
-      console.debug('remove listener for', this.section);
     }
   }
 

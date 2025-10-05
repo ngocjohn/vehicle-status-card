@@ -42,7 +42,39 @@ export class VscButtonsGroup extends BaseElement {
     if (this.useSwiper) {
       this._initSwiper();
     }
+    this._setUpButtonAnimation();
   }
+
+  private _setUpButtonAnimation(): void {
+    if (this._store.card._hasAnimated || this._store.card.isEditorPreview || !this.shadowRoot) return;
+    this._store.card._hasAnimated = true;
+
+    const runAnimation = () => {
+      const buttons = this.shadowRoot?.querySelectorAll('vsc-button-card-item');
+      if (!buttons || buttons.length === 0) return;
+
+      buttons.forEach((btn: VscButtonCardItem) => {
+        requestAnimationFrame(() => {
+          btn._zoomInEffect();
+        });
+      });
+      observer.disconnect();
+    };
+
+    const observer = new MutationObserver(() => {
+      const buttons = this.shadowRoot?.querySelectorAll('vsc-button-card-item') as NodeListOf<HTMLElement>;
+
+      if (buttons && buttons.length > 0) {
+        requestAnimationFrame(() => runAnimation());
+      }
+    });
+
+    observer.observe(this.shadowRoot, { childList: true, subtree: true });
+
+    // Fallback in case MutationObserver doesn't trigger
+    requestAnimationFrame(() => runAnimation());
+  }
+
   protected render(): TemplateResult {
     const buttons = this.buttons;
     const { rows, columns } = this._store.gridConfig;
@@ -94,7 +126,7 @@ export class VscButtonsGroup extends BaseElement {
   _handleClickIndex(ev: Event): void {
     ev.stopPropagation();
     const index = (ev.target as any).itemIndex;
-    console.debug('Button index clicked:', index);
+    // console.debug('Button index clicked:', index);
     setTimeout(() => {
       this._store.card._currentSwipeIndex = this.activeSlideIndex;
       this._store.card._activeCardIndex = index;
@@ -120,6 +152,7 @@ export class VscButtonsGroup extends BaseElement {
   }
 
   private _initSwiper(): void {
+    if (!this.useSwiper) return;
     const swiperCon = this.shadowRoot?.querySelector('.swiper-container');
     if (!swiperCon) return;
 
@@ -165,8 +198,8 @@ export class VscButtonsGroup extends BaseElement {
       if (this.useSwiper && this.swiper) {
         const slideIndex = (buttonEl as any).slideIndex;
         if (slideIndex !== -1) {
-          console.debug('Highlight to slide index', slideIndex);
-          this.swiper.slideTo(slideIndex);
+          // console.debug('Highlight to slide index', slideIndex);
+          this.swiper.slideTo(slideIndex, 0);
         }
       }
       buttonEls.forEach((btn, idx) => {
@@ -175,41 +208,38 @@ export class VscButtonsGroup extends BaseElement {
     });
   };
 
-  public peekButton = (index: number): void => {
+  public peekButton = (index: number, keep: boolean = false): void => {
     this.updateComplete.then(() => {
       const buttonEls = this._buttonItems;
       const buttonEl = buttonEls[index];
       if (!buttonEl) {
         return;
       }
-      if (this.useSwiper && this.swiper) {
+      buttonEl.dimmedInEditor = false;
+      if (this.swiper) {
         const slideIndex = (buttonEl as any).slideIndex;
         if (slideIndex !== -1) {
-          console.debug('Peek to slide index', slideIndex);
-          this.swiper.slideTo(slideIndex);
-          this.swiper.once('slideChangeTransitionEnd', () => {
-            this._peekBtn(buttonEl);
-          });
+          // console.debug('Peek to slide index', slideIndex);
+          this.swiper.slideTo(slideIndex, 0);
         }
-      } else {
-        this._peekBtn(buttonEl);
       }
+      this._peekBtn(buttonEl, keep);
     });
   };
 
-  private _peekBtn(buttonEl: VscButtonCardItem): void {
+  private _peekBtn(buttonEl: VscButtonCardItem, keep: boolean = false): void {
+    if (!buttonEl) return;
+
     const filtredBtns = Array.from(this._buttonItems).filter((btn) => btn !== buttonEl);
     const haCard = buttonEl._haCard;
     filtredBtns.forEach((btn) => (btn.dimmedInEditor = true));
     buttonEl._toggleHighlight();
-    haCard!.addEventListener(
-      'animationend',
-      () => {
-        filtredBtns.forEach((btn) => (btn.dimmedInEditor = false));
-      },
-      { once: true }
-    );
+    if (keep) return;
+    haCard!.addEventListener('animationend', () => {
+      filtredBtns.forEach((btn) => (btn.dimmedInEditor = false));
+    });
   }
+
   static get styles(): CSSResultGroup {
     return [
       super.styles,

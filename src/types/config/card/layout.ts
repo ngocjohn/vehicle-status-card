@@ -66,9 +66,9 @@ export type ButtonGridConfig = {
 
 type RANGE_INFO_LAYOUT = 'column' | 'row';
 
-type RangeInfoConfig = Partial<{
-  layout: RANGE_INFO_LAYOUT;
-}>;
+interface RangeInfoConfig {
+  layout?: RANGE_INFO_LAYOUT;
+}
 
 type THEME_MODE = 'auto' | 'light' | 'dark';
 type ThemeConfig = Partial<{

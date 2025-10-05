@@ -24,13 +24,11 @@ const PRIMARY_ICON: Record<PrimaryActionTypes | string, string> = {
 };
 
 export const createSecondaryCodeLabel = (yamlMode: boolean): TemplateResult => {
-  const icon = yamlMode ? ICON.LIST_BOX_OUTLINE : ICON.CODE_JSON;
-  const label = yamlMode ? 'Show UI editor' : 'Edit YAML';
+  // const label = yamlMode ? 'Close code editor' : 'Edit YAML';
+  const variant = yamlMode ? 'warning' : 'neutral';
+  const icon = yamlMode ? 'mdi:table-edit' : 'mdi:code-json';
   return html`
-    <ha-button size="small" variant="neutral" appearance="filled">
-      <ha-svg-icon slot="end" .path=${icon}></ha-svg-icon>
-      ${label}
-    </ha-button>
+    <ha-button size="small" variant=${variant} appearance="filled"><ha-icon .icon=${icon}></ha-icon></ha-button>
   `;
 };
 
@@ -53,12 +51,15 @@ export const createAddBtnLabel = (label = 'Add'): TemplateResult => {
 export class SubEditorHeader extends LitElement {
   @property({ type: Boolean, attribute: 'hide-primary', reflect: true }) public hidePrimaryAction = false;
   @property({ type: Boolean, attribute: 'hide-secondary', reflect: true }) public hideSecondaryAction = false;
+  @property({ type: Boolean, attribute: 'left-btn', reflect: true }) public leftBtn = false;
+  @property({ type: Boolean, attribute: 'hide-primary-icon', reflect: true }) public hidePrimaryIcon = false;
+
   @property({ attribute: false }) public secondaryAction?: TemplateResult;
   @property({ attribute: false }) public thirdAction?: TemplateResult;
   @property({ attribute: false }) public extraActions?: TemplateResult;
 
   @property({ attribute: false }) public primaryIcon: string | PrimaryActionTypes = 'back';
-  @property({ type: Boolean, attribute: 'left-btn', reflect: true }) public leftBtn = false;
+
   @property() public defaultAction?: string;
   @property() public _label?: string;
   @property() public secondary?: string;
@@ -77,11 +78,16 @@ export class SubEditorHeader extends LitElement {
               ? nothing
               : html`
                   <div class="back-title">
-                    <ha-icon-button .path=${primaryIcon} @click=${this._handlePrimaryAction}></ha-icon-button>
+                    ${this.hidePrimaryIcon
+                      ? nothing
+                      : html`
+                          <ha-icon-button .path=${primaryIcon} @click=${this._handlePrimaryAction}></ha-icon-button>
+                        `}
+
                     <slot name="title">
-                      ${this._label
-                        ? html` <div class="title">
-                            <span class="primary">${this._label}</span>
+                      ${this._label || this.secondary
+                        ? html`<div class="title">
+                            ${this._label ? html`<span class="primary">${this._label}</span>` : nothing}
                             ${this.secondary ? html`<span class="secondary">${this.secondary}</span>` : nothing}
                           </div>`
                         : nothing}
@@ -158,19 +164,25 @@ export class SubEditorHeader extends LitElement {
           gap: 8px;
         }
         .primary-action {
-          flex: 1;
+          flex: auto;
+          margin-inline-end: auto;
         }
 
         .secondary-action {
-          width: 100%;
           max-width: fit-content;
           justify-content: flex-end;
+          flex: 0 1 auto;
+          flex-wrap: wrap;
         }
         .back-title {
           display: flex;
           align-items: center;
           margin-inline-end: auto;
         }
+        .back-title > ha-icon-button {
+          color: var(--secondary-text-color);
+        }
+
         ha-icon-button {
           --mdc-icon-button-size: 36px;
           margin-inline-end: 0.5em;

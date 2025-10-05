@@ -5,11 +5,11 @@ import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 
 // Utils
-import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../../ha';
-import { hasItemAction } from '../../types/config/actions-config';
-import { IndicatorItemConfig } from '../../types/config/card/indicators';
-import { BaseElement } from '../../utils/base-element';
-import { addActions } from '../../utils/lovelace/tap-action';
+import { hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../../../ha';
+import { hasItemAction } from '../../../types/config/actions-config';
+import { IndicatorItemConfig } from '../../../types/config/card/indicators';
+import { BaseElement } from '../../../utils/base-element';
+import { addActions } from '../../../utils/lovelace/tap-action';
 
 const TEMPLATE_KEYS = ['state_template', 'icon_template', 'color'] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];

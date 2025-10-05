@@ -5,14 +5,14 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import hash from 'object-hash/dist/object_hash.js';
 
-import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, isActive } from '../../ha';
-import { actionHandler, ActionHandlerEvent } from '../../ha/panels/common/directives/action-handler-directive';
-import { handleAction } from '../../ha/panels/common/handle-actions';
-import { ButtonGridConfig, hasAction } from '../../types/config';
-import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../types/config/card/button';
-import { strStartsWith } from '../../utils';
-import { BaseElement } from '../../utils/base-element';
-import { CacheManager } from '../../utils/cache-manager';
+import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, isActive } from '../../../ha/';
+import { actionHandler, ActionHandlerEvent } from '../../../ha/panels/common/directives/action-handler-directive';
+import { handleAction } from '../../../ha/panels/common/handle-actions';
+import { ButtonGridConfig, hasAction } from '../../../types/config';
+import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../../types/config/card/button';
+import { strStartsWith } from '../../../utils';
+import { BaseElement } from '../../../utils/base-element';
+import { CacheManager } from '../../../utils/cache-manager';
 
 const templateCache = new CacheManager<TemplateResults>(1000);
 

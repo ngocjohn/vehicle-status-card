@@ -6,12 +6,12 @@ import Swiper from 'swiper';
 import { Pagination } from 'swiper/modules';
 import swipercss from 'swiper/swiper-bundle.css';
 
-import './shared/vsc-button-single';
-import { COMPONENT } from '../constants/const';
-import { ButtonCardConfig } from '../types/config';
-import { SECTION } from '../types/section';
-import { BaseElement } from '../utils/base-element';
-import { VehicleButtonSingle } from './shared/vsc-button-single';
+import './vsc-button-single';
+import { COMPONENT } from '../../../constants/const';
+import { ButtonCardConfig } from '../../../types/config';
+import { SECTION } from '../../../types/section';
+import { BaseElement } from '../../../utils/base-element';
+import { VehicleButtonSingle } from './vsc-button-single';
 
 @customElement(COMPONENT.BUTTONS_GRID)
 export class VehicleButtonsGrid extends BaseElement {

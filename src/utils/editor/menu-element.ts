@@ -126,7 +126,7 @@ export class MenuElement extends BaseEditor {
         <div class="move-sec">
           <ha-icon-button
             ?hidden=${isHidden}
-            .path=${ICON.MINUS}
+            .path=${ICON.CHEVRON_UP}
             .disabled=${indexInOrder === 0}
             @click=${this._moveSectionUp.bind(this, section)}
           ></ha-icon-button>
@@ -140,7 +140,7 @@ export class MenuElement extends BaseEditor {
           </ha-icon-button>
           <ha-icon-button
             ?hidden=${isHidden}
-            .path=${ICON.PLUS}
+            .path=${ICON.CHEVRON_DOWN}
             .disabled=${indexInOrder === total - 1}
             @click=${this._moveSectionDown.bind(this, section)}
           ></ha-icon-button>

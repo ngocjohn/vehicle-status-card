@@ -3,8 +3,8 @@ import { customElement, property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 
-import { COMPONENT } from '../../constants/const';
-import { ICON } from '../../utils/mdi-icons';
+import { COMPONENT } from '../../../constants/const';
+import { ICON } from '../../../utils/mdi-icons';
 
 type BadgeType = 'entity' | 'group';
 

@@ -1,8 +1,8 @@
 import { capitalize } from 'es-toolkit';
-import { html, TemplateResult, CSSResultGroup, css } from 'lit';
+import { html, TemplateResult, CSSResultGroup, css, PropertyValues } from 'lit';
 
 import '../../../utils/editor/sub-editor-header';
-import { customElement, queryAll, state } from 'lit/decorators.js';
+import { customElement, query, queryAll, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { computeStateName, fireEvent } from '../../../ha';
@@ -19,6 +19,7 @@ import { preventDefault, stopAndPrevent, stopPropagation } from '../../../utils/
 import './panel-button-card-default-item';
 import { ButtonCardBaseEditor } from '../../button-card-base';
 import { ELEMENT, SUB_PANEL } from '../../editor-const';
+import { PanelButtonCardDefaultItem } from './panel-button-card-default-item';
 
 interface SubDefaultCardItemConfig {
   index: number;
@@ -40,6 +41,14 @@ export class PanelButtonDefaultCard extends ButtonCardBaseEditor {
   @state() private _subDefaultCardConfig?: SubDefaultCardItemConfig;
 
   @queryAll(ELEMENT.HA_EXPANSION_PANEL) _expansionPanels?: Element[];
+  @query(SUB_PANEL.BTN_DEFAULT_CARD_ITEM) _subDefaultItemEl?: PanelButtonCardDefaultItem;
+
+  protected willUpdate(changedProperties: PropertyValues): void {
+    if (changedProperties.has('_subDefaultCardConfig')) {
+      this._subDefaultItemActive = Boolean(this._subDefaultCardConfig);
+      console.debug('Sub default item active:', this._subDefaultItemActive);
+    }
+  }
 
   protected render(): TemplateResult {
     if (this._subDefaultCardConfig) {
@@ -50,7 +59,10 @@ export class PanelButtonDefaultCard extends ButtonCardBaseEditor {
           ._baseCardConfig=${this._subDefaultCardConfig.itemConfig || {}}
           ._index=${this._subDefaultCardConfig.index}
           @card-item-changed=${this._subCardChanged}
-          @card-item-closed=${() => (this._subDefaultCardConfig = undefined)}
+          @card-item-closed=${() => {
+            this._subDefaultCardConfig = undefined;
+            fireEvent(this, 'card-item-label-secondary-changed', undefined);
+          }}
         ></panel-button-card-default-item>
       `;
     }
@@ -213,6 +225,15 @@ export class PanelButtonDefaultCard extends ButtonCardBaseEditor {
         catConfig.items = items;
         this._defaultCardConfig[catIndex] = catConfig;
         this._defaultCardChanged(this._defaultCardConfig);
+        break;
+      case 'edit-item':
+        this._subDefaultCardConfig = {
+          index: catIndex,
+          itemConfig: { ...catConfig },
+        };
+        if (this._subDefaultItemEl && this._subDefaultItemEl.hasUpdated) {
+          this._subDefaultItemEl._selectedItem = itemIndex;
+        }
         break;
     }
   }
