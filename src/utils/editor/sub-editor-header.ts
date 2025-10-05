@@ -24,9 +24,12 @@ const PRIMARY_ICON: Record<PrimaryActionTypes | string, string> = {
 };
 
 export const createSecondaryCodeLabel = (yamlMode: boolean): TemplateResult => {
-  const label = yamlMode ? 'Close code editor' : 'Edit YAML';
+  // const label = yamlMode ? 'Close code editor' : 'Edit YAML';
   const variant = yamlMode ? 'warning' : 'neutral';
-  return html` <ha-button size="small" variant=${variant} appearance="filled"> ${label} </ha-button> `;
+  const icon = yamlMode ? 'mdi:table-edit' : 'mdi:code-json';
+  return html`
+    <ha-button size="small" variant=${variant} appearance="filled"><ha-icon .icon=${icon}></ha-icon></ha-button>
+  `;
 };
 
 export const createThirdActionBtn = (previewActive: boolean): TemplateResult => {

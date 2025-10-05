@@ -1,4 +1,4 @@
-import { html, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, queryAssignedElements, state } from 'lit/decorators.js';
 
 import { COMPONENT } from '../../constants/const';
@@ -115,7 +115,31 @@ export class VscIndicatorsGroup extends BaseElement {
   }
 
   protected render(): TemplateResult {
-    return html`<slot></slot>`;
+    return html`
+      <div class="container" style=${this._computeStyle()}>
+        <slot></slot>
+      </div>
+    `;
+  }
+
+  private _computeStyle(): string | undefined {
+    if (this.parentElement?.previousElementSibling !== null) {
+      return 'margin-top: var(--vic-gutter-gap, 8px);';
+    }
+    return undefined;
+  }
+  static get styles(): CSSResultGroup {
+    return [
+      super.styles,
+      css`
+        .container {
+          display: flex;
+          flex-direction: column;
+          gap: var(--vic-gutter-gap, 8px);
+          width: 100%;
+        }
+      `,
+    ];
   }
 }
 

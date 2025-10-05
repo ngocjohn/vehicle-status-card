@@ -100,10 +100,6 @@ export class BaseEditor extends LitElement {
     return this._store._editor!;
   }
 
-  get _isPreviewGroup(): boolean {
-    return this._cardInPreview?.isGroupIndiActive || false;
-  }
-
   protected get _cardConfig(): VehicleStatusCardConfig | undefined {
     return this._editor?._config as VehicleStatusCardConfig;
   }
