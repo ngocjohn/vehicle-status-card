@@ -39,6 +39,7 @@ import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
+import { isCardInEditPreview } from './utils/helpers-dom';
 import { checkCardLatest } from './utils/loader_card_latest';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
@@ -79,6 +80,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) public _config!: VehicleStatusCardConfig;
   @property({ attribute: false }) public layout?: string;
+  @property({ attribute: false }) public preview?: boolean | undefined;
   @property({ attribute: false }) public isPanel?: boolean;
 
   @state() public _activeCardIndex: null | number | string = null;
@@ -140,10 +142,12 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   connectedCallback(): void {
     super.connectedCallback();
     window.VehicleCard = this;
+    this._connected = true;
     if (this.isEditorPreview) {
       window.addEventListener('editor-event', this._onEditorEvent);
       document.addEventListener(EDITOR_AREA_SELECTED, this._onEditorConfigAreaSelected);
       document.addEventListener(EDITOR_SUB_CARD_PREVIEW, this._onEditorSubCardPreview, { once: true });
+      console.debug('Added editor event listener');
     }
   }
   disconnectedCallback(): void {
@@ -709,7 +713,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const evArgs = (ev as CustomEvent).detail;
     const selectedArea = evArgs.section as SECTION;
     if (this.configSection !== selectedArea) {
-      console.debug('Area changed from', this.configSection, 'to', selectedArea);
+      // console.debug('Area changed from', this.configSection, 'to', selectedArea);
       if (selectedArea === SECTION.DEFAULT) {
         this._setEditorSection(SECTION.DEFAULT);
         return;
@@ -718,7 +722,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       const sectionIsEmpty = this.isSectionConfigEmpty(selectedArea) === true;
 
       // If the selected area is hidden or has no config, default to SECTION.DEFAULT
-      const newArea = isHidden ? SECTION.DEFAULT : sectionIsEmpty ? SECTION.DEFAULT : selectedArea;
+      const newArea = isHidden || sectionIsEmpty ? SECTION.DEFAULT : selectedArea;
 
       this._setEditorSection(newArea);
     } else {
@@ -747,12 +751,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     if (!this._config || section === SECTION.DEFAULT) {
       return false;
     }
-    if (section === SECTION.BUTTONS) {
-      return isEmpty(this._config.button_cards);
-    } else if (section === SECTION.INDICATORS) {
-      section = SECTION.INDICATOR_ROWS;
-    }
-    return isEmpty(this._config[section]);
+    const secConfig =
+      section === SECTION.BUTTONS
+        ? this._config.button_cards
+        : section === SECTION.INDICATORS
+        ? this._config.indicator_rows
+        : this._config[section];
+    return isEmpty(secConfig);
   }
 
   public _handleEditorEvent(ev: CustomEvent<EditorEventParams>): void {
@@ -814,8 +819,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   }
 
   get isEditorPreview(): boolean {
-    const parentElementClassPreview = this.offsetParent?.classList.contains('element-preview');
-    return parentElementClassPreview || false;
+    return isCardInEditPreview(this);
   }
 
   get isGroupIndiActive(): boolean {
