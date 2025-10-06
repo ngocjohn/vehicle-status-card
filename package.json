@@ -31,6 +31,7 @@
     "@babel/core": "^7.28.4",
     "@dotenvx/dotenvx": "^1.51.0",
     "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.2",
     "@rollup/plugin-terser": "^0.4.4",
@@ -53,7 +54,6 @@
     "npm": "^11.6.1",
     "postcss-preset-env": "^10.4.0",
     "rollup": "^4.52.4",
-    "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-postcss-lit": "^2.2.0",
     "rollup-plugin-serve": "1.1.1",
@@ -64,13 +64,13 @@
   },
   "scripts": {
     "start": "rollup -c rollup.config.js --bundleConfigAsCjs --watch",
-    "build": "npm run lint && npm run rollup",
+    "build": "pnpm run lint && pnpm run rollup",
     "lint": "eslint src/**/*.ts",
     "rollup": "rollup -c rollup.config.js --bundleConfigAsCjs",
     "prepare": "husky",
     "clean": "rm -rf dist build && mkdir -p dist build",
-    "dev-serve": "cross-env PORT=8222 npm run dev",
-    "clean_cache": "npm run clean_delfiles && npm run clean_deldirs",
+    "dev-serve": "cross-env PORT=8222 pnpm run dev",
+    "clean_cache": "pnpm run clean_delfiles && pnpm run clean_deldirs",
     "clean_delfiles": "rm -rf node_modules/.cache/rollup-plugin-typescript2/*",
     "clean_deldirs": "rm -rf node_modules/.cache/rollup-plugin-typescript2/rpt2_*"
   }
