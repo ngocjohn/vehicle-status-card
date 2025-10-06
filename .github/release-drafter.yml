@@ -11,7 +11,7 @@ categories:
       - 'bugfix'
       - 'bug'
   - title: '🧰 Maintenance'
-    label:
+    labels:
       - 'chore'
       - 'refactor'
   - title: Other Changes
@@ -28,9 +28,16 @@ version-resolver:
   minor:
     labels:
       - 'minor'
+      - 'feature'
+      - 'enhancement'
   patch:
     labels:
       - 'patch'
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+      - 'chore'
+      - 'refactor'
   default: patch
 autolabeler:
   - label: 'chore'
@@ -53,6 +60,8 @@ autolabeler:
       - '/feat/i'
     body:
       - '/JIRA-[0-9]{1,4}/'
+exclude-labels:
+  - 'skip-changelog'
 template: |
   ## What's Changed
 
