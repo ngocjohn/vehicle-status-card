@@ -1,11 +1,11 @@
-import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
 @customElement('vsc-btn-state-info')
 export class VscBtnStateInfo extends LitElement {
   @property({ attribute: false }) public primary?: string | TemplateResult<1>;
-  @property({ attribute: false }) public secondary?: string | TemplateResult<1>;
+  @property({ attribute: false }) public secondary?: TemplateResult;
   @property({ type: Boolean }) public multiline_secondary?: boolean = false;
 
   protected render(): TemplateResult {
@@ -16,7 +16,7 @@ export class VscBtnStateInfo extends LitElement {
           ? html`<span class=${classMap({ secondary: true, multiline_secondary: this.multiline_secondary! })}
               >${this.secondary}</span
             >`
-          : nothing}
+          : html``}
       </div>
     `;
   }
@@ -43,7 +43,7 @@ export class VscBtnStateInfo extends LitElement {
         font-weight: var(--card-secondary-font-weight, 400);
         font-size: var(--card-secondary-font-size, 12px);
         line-height: var(--card-secondary-line-height, 16px);
-        color: var(--card-secondary-color, var(--secondary-text-color));
+        color: var(--card-secondary-color, var(--primary-text-color));
         letter-spacing: var(--card-secondary-letter-spacing, 0.4px);
         text-overflow: ellipsis;
         overflow: hidden;
