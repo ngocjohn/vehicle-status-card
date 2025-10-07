@@ -1,11 +1,12 @@
 import { html, css, CSSResultGroup, TemplateResult, nothing, PropertyValues } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { COMPONENT } from '../../../constants/const';
 import './vsc-btn-card';
 import './vsc-state-item';
 import './vsc-btn-badge';
+import { COMPONENT } from '../../../constants/const';
 import { handleAction } from '../../../ha/panels/common/handle-actions';
 import { hasAction } from '../../../types/config';
 import { BaseButton } from '../../../utils/base-button';
@@ -24,34 +25,36 @@ export class VscButtonCardItem extends BaseButton {
 
   protected firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties);
-    this._addIconAction();
-    this._addCardAction();
+    this._addActions();
   }
+  private _addActions(): void {
+    if (!Boolean(this._hasAction || this._hasIconAction)) {
+      return;
+    }
+    const clickable = this.shadowRoot?.querySelector('#clickable-background') as HTMLElement;
+    const icon = this.shadowRoot?.querySelector('vsc-btn-shape-icon') as HTMLElement;
 
-  private _addIconAction(): void {
-    if (!this._hasIconAction) {
-      return;
-    }
-    const icon = this.renderRoot.querySelector('vsc-btn-shape-icon') as HTMLElement;
-    if (!icon) {
-      return;
-    }
-    const config = this._iconActions;
-    addActions(icon, config);
-  }
-
-  private _addCardAction(): void {
-    const card = this.renderRoot.querySelector('#clickable-background') as HTMLElement;
-    if (!card) {
-      return;
-    }
     const handlerOptions: ActionHandleOpts = {
       hasHold: true,
       hasDoubleClick: true,
       hasClick: true,
     };
-    addActionHandler(card, handlerOptions);
-    card.addEventListener('action', this._handleCardEvent.bind(this) as EventListener);
+
+    if (clickable) {
+      addActionHandler(clickable, handlerOptions);
+      clickable.addEventListener('action', this._handleCardEvent.bind(this) as EventListener);
+    }
+    if (icon) {
+      // Separate handlers for icon actions
+      if (this._hasIconAction) {
+        // If icon has its own actions, use those instead of the main handlers
+        const iconActionSpec = this._iconActions;
+        addActions(icon, iconActionSpec);
+      } else {
+        addActionHandler(icon, handlerOptions);
+        icon.addEventListener('action', this._handleCardEvent.bind(this) as EventListener);
+      }
+    }
   }
 
   protected render(): TemplateResult | typeof nothing {
@@ -73,14 +76,16 @@ export class VscButtonCardItem extends BaseButton {
     const notifyColor = this._getTemplateValue('notify_color');
 
     const _hasAction = this._hasAction;
+    const _hasIconAction = this._hasIconAction;
+    const _btnHasAction = Boolean(_hasAction || _hasIconAction);
 
     return html`
       <ha-card ?transparent=${btnShowConfig.transparent} style=${styleMap(iconStyle)}>
         <div
           id="clickable-background"
           class="background"
-          role=${_hasAction ? 'button' : undefined}
-          tabindex=${_hasAction ? '0' : undefined}
+          role=${ifDefined(_hasAction ? 'button' : undefined)}
+          tabindex=${ifDefined(_hasAction ? '0' : undefined)}
         >
           <ha-ripple .disabled=${!_hasAction}></ha-ripple>
         </div>
@@ -90,10 +95,10 @@ export class VscButtonCardItem extends BaseButton {
             >
             <vsc-btn-shape-icon
               slot="icon"
-              .interactive=${this._hasIconAction}
+              .interactive=${_hasIconAction}
               .imageSrc=${imageUrl}
-              role=${this._hasIconAction ? 'button' : undefined}
-              tabindex=${this._hasIconAction ? '0' : undefined}
+              role=${ifDefined(_btnHasAction ? 'button' : undefined)}
+              tabindex=${ifDefined(_btnHasAction ? '0' : undefined)}
             >
               <ha-state-icon
                 slot="icon"
@@ -111,7 +116,7 @@ export class VscButtonCardItem extends BaseButton {
                   >
                     ${notifyText
                       ? html`<span>${notifyText}</span>`
-                      : html`<ha-icon .icon=${notifyIcon || 'mdi:circle'}></ha-icon>`}
+                      : html`<ha-icon .icon=${notifyIcon || 'mdi:alert-circle-outline'}></ha-icon>`}
                   </vsc-btn-badge>`
                 : nothing
             }
