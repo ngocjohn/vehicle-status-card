@@ -1,5 +1,5 @@
-import 'leaflet-providers/leaflet-providers.js';
 import L from 'leaflet';
+import 'leaflet-providers/leaflet-providers.js';
 import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
