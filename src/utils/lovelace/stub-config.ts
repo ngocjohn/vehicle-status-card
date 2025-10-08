@@ -32,9 +32,6 @@ const DEFAULT_CONFIG: Partial<VehicleStatusCardConfig> = {
       rows: 2,
       columns: 2,
       swipe: true,
-      button_layout: 'horizontal',
-      transparent: false,
-      hide_notify_badge: false,
     },
     images_swipe: {
       height: 150,
