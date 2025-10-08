@@ -23,14 +23,19 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install axios js-yaml
+        run: pnpm install axios js-yaml
 
       - name: Update Bug Report Template
         run: node scripts/update-bug-template.js
