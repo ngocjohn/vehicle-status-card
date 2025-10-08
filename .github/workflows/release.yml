@@ -5,11 +5,15 @@ on:
       - "v*"
   workflow_dispatch:
 
-permissions:
-  contents: read
+
+
 
 jobs:
   release:
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,8 +42,6 @@ jobs:
           name: ${{ github.ref_name }}
           tag: ${{ github.ref_name }}
           publish: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
