@@ -1,4 +1,4 @@
-import { pick } from 'es-toolkit/compat';
+import pick from 'es-toolkit/compat/pick';
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { html, TemplateResult } from 'lit';

@@ -1,5 +1,6 @@
-import { capitalize } from 'es-toolkit';
-import { isEmpty, omit } from 'es-toolkit/compat';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import omit from 'es-toolkit/compat/omit';
+import { capitalize } from 'es-toolkit/string';
 import { html, TemplateResult, CSSResultGroup, css, PropertyValues, nothing } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 
@@ -224,10 +225,12 @@ export class PanelButtonCardMain extends ButtonCardBaseEditor {
     let secondary = isBase ? btnIndexLabel : `${btnIndexLabel} · Sub-Card`;
     const icon = isBase ? 'close' : 'back';
     if (area === ButtonArea.DEFAULT_CARD && !isEmpty(this._subLabelSecondary)) {
-      label = this._subLabelSecondary.label;
-      if (this._subLabelSecondary.secondary) {
-        // label += ` · ${this._subLabelSecondary.secondary}`;
-        secondary = this._subLabelSecondary.secondary;
+      const subLabelSecondary = this._subLabelSecondary;
+      if (subLabelSecondary) {
+        label = subLabelSecondary.label;
+        if (subLabelSecondary.secondary) {
+          secondary = subLabelSecondary.secondary;
+        }
       }
     }
 

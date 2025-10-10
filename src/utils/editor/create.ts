@@ -46,7 +46,7 @@ export const ExpansionPanel = ({
     >
       ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
       ${slotIcons ? slotIcons : nothing}
-      <div class="card-config" style="margin-block: var(--vic-gutter-gap);">${content}</div>
+      <div class="card-config" style="margin-block: var(--vic-gutter-gap, 8px);">${content}</div>
     </ha-expansion-panel>
   `;
 };

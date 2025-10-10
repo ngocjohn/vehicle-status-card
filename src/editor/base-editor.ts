@@ -1,4 +1,4 @@
-import { isEmpty } from 'es-toolkit/compat';
+import isEmpty from 'es-toolkit/compat/isEmpty';
 import { HomeAssistantStylesManager } from 'home-assistant-styles-manager';
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -8,12 +8,13 @@ import { EditorConfigAreaSelectedEvent } from '../events';
 import { EditorIndicatorRowSelectedEvent } from '../events/editor-indicator-row';
 import { fireEvent, HomeAssistant } from '../ha';
 import { showFormDialog } from '../ha/dialogs/form/show-form-dialog';
+import { showToast } from '../ha/panels/lovelace/toast';
 import { SectionOrder, VehicleStatusCardConfig } from '../types/config';
 import { ConfigArea } from '../types/config-area';
 import { SECTION } from '../types/section';
 import { Create } from '../utils';
 import { getSectionFromConfigArea } from '../utils/editor/area-select';
-import { selectTree } from '../utils/helpers-dom';
+import * as DomHelper from '../utils/helpers-dom';
 import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import { VehicleStatusCardEditor } from './editor';
@@ -57,7 +58,7 @@ export class BaseEditor extends LitElement {
   @property({ attribute: false }) public _hass!: HomeAssistant;
   @property({ attribute: false }) protected _store!: Store;
 
-  @property() _domHelper = selectTree;
+  @property({ attribute: false }) _domHelper = DomHelper;
 
   protected _stylesManager: HomeAssistantStylesManager;
 
@@ -122,6 +123,16 @@ export class BaseEditor extends LitElement {
       return !isEmpty(secConfig);
     });
   }
+
+  protected showToast = (message: string, duration = 3000) => {
+    const localId = this.localName || 'base-editor';
+    const params = {
+      id: localId,
+      message,
+      duration,
+    };
+    return showToast(this, params);
+  };
 
   protected _getButtonGridCols(): number {
     const cols = this._cardConfig?.layout_config?.button_grid?.columns || 2;
