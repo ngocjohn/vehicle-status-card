@@ -68,13 +68,11 @@ export const loadPictureCard = async (): Promise<void> => {
     return;
   }
 
-  if (!customElements.get(HUI_PICTURE_CARD)) {
-    console.log('Loading picture card...');
-    helpers.createCardElement({
-      type: 'picture',
-      image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
-    });
-  }
+  console.log('Loading picture card...');
+  helpers.createCardElement({
+    type: 'picture',
+    image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
+  });
 };
 
 // get the ha-picture-upload editor to load the upload form component

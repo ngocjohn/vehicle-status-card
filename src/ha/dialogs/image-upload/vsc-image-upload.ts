@@ -277,7 +277,7 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
     console.debug('Media picked:', value);
   };
 
-  private async _handleFilePicked(ev) {
+  private async _handleFilePicked(ev: CustomEvent) {
     ev.stopPropagation();
     const files = ev.detail.files as FileList;
     if (!files || files.length === 0) return;

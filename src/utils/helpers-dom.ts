@@ -121,13 +121,12 @@ export const getHaPictureUpload = async (): Promise<HaPictureUpload> => {
       const haPictureUpload = document.createElement(ELEMENT.HA_PICTURE_UPLOAD) as HaPictureUpload;
       return haPictureUpload;
     }
-    // @ts-ignore
+
     const haPictureUpload = document.createElement(ELEMENT.HA_PICTURE_UPLOAD) as HaPictureUpload;
     await customElements.whenDefined(ELEMENT.HA_PICTURE_UPLOAD).then(() => {
       try {
         customElements.upgrade(haPictureUpload);
-        // eslint-disable-next-line unused-imports/no-unused-vars
-      } catch (err) {
+      } catch {
         // do nothing
       }
     });
