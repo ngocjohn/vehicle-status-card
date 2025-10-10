@@ -1,3 +1,5 @@
+import { TemplateResult } from 'lit';
+
 import { NAMESPACE_TITLE } from '../../constants/const';
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 let helpers: any;
@@ -46,7 +48,7 @@ export const showPromptDialog = async (
   return result;
 };
 
-export const showAlertDialog = async (element: HTMLElement, message: string): Promise<void> => {
+export const showAlertDialog = async (element: HTMLElement, message: string | TemplateResult): Promise<void> => {
   await helpers.showAlertDialog(element, {
     title: NAMESPACE_TITLE,
     text: message,

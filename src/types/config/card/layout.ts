@@ -20,7 +20,7 @@ export interface LayoutConfig {
 
 type SWIPE_EFFECT = 'slide' | 'fade' | 'coverflow';
 
-interface ImagesSwipeConfig {
+export interface ImagesSwipeConfig {
   autoplay?: boolean;
   loop?: boolean;
   delay?: number;

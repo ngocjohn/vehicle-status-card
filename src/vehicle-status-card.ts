@@ -1,4 +1,4 @@
-import { isEmpty } from 'es-toolkit/compat';
+import isEmpty from 'es-toolkit/compat/isEmpty';
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';

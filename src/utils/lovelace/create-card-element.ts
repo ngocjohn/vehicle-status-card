@@ -60,3 +60,40 @@ export const loadVerticalStackCard = async (): Promise<void> => {
     });
   }
 };
+
+const HUI_PICTURE_CARD = 'hui-picture-card';
+export const loadPictureCard = async (): Promise<void> => {
+  if (customElements.get(HUI_PICTURE_CARD)) {
+    // console.log('Picture card already loaded');
+    return;
+  }
+
+  console.log('Loading picture card...');
+  helpers.createCardElement({
+    type: 'picture',
+    image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
+  });
+};
+
+// get the ha-picture-upload editor to load the upload form component
+export const loadPictureCardHelper = async (hass: HomeAssistant): Promise<void> => {
+  await loadPictureCard();
+  const picConfig = {
+    type: 'picture',
+    image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
+  };
+  const pictureEditor = await (customElements.get(HUI_PICTURE_CARD) as any).getConfigElement();
+  pictureEditor.setConfig(picConfig);
+  pictureEditor.hass = hass;
+  const dummy = document.createElement('div');
+  dummy.style.display = 'none';
+  dummy.appendChild(pictureEditor);
+  document.body.appendChild(dummy);
+  // remove the dummy element after a delay to ensure the upload form is loaded.
+  window.setTimeout(() => {
+    if (dummy.parentNode) {
+      dummy.parentNode.removeChild(dummy);
+    }
+  }, 100);
+  return;
+};

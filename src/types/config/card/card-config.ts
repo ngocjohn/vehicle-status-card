@@ -20,7 +20,6 @@ import { IndicatorRowConfig } from './row-indicators';
 export interface VehicleStatusCardConfig extends LovelaceCardConfig {
   name?: string;
   button_cards?: BaseButtonCardItemConfig[];
-
   range_info?: RangeInfoConfig[];
   images?: (ImageItem | ImageConfig)[];
   mini_map?: MiniMapConfig;

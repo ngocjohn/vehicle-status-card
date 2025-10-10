@@ -245,6 +245,7 @@ export enum ELEMENT {
   HA_EXPANSION_PANEL = 'ha-expansion-panel',
   CHIP_INPUT = 'ha-input-chip',
   HA_BUTTON_MENU = 'ha-button-menu',
+  HA_PICTURE_UPLOAD = 'ha-picture-upload',
 }
 
 export enum SELECTOR {

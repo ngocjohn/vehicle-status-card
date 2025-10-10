@@ -1,16 +1,17 @@
-import { html, TemplateResult, PropertyValues, CSSResultGroup } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { html, TemplateResult, PropertyValues, CSSResultGroup, css } from 'lit';
 
 import './panel-images-preview';
 import '../../../utils/editor/sub-editor-header';
+import { customElement, property, state } from 'lit/decorators.js';
+
 import { fireEvent } from '../../../ha';
-import { showFormDialog } from '../../../ha/dialogs/form/show-form-dialog';
+import { showImageUploadDialog } from '../../../ha/dialogs/image-upload/show-image-upload';
 import { ImageItem, VehicleStatusCardConfig } from '../../../types/config';
 import { ConfigArea } from '../../../types/config-area';
 import { ICON } from '../../../utils';
+import { loadPictureCardHelper } from '../../../utils/lovelace/create-card-element';
 import { BaseEditor } from '../../base-editor';
 import { PANEL } from '../../editor-const';
-import { ImageSchema } from '../../form';
 
 type ACTIVE_VIEW = 'grid' | 'settings' | 'yaml';
 
@@ -33,16 +34,13 @@ export class PanelImagesEditor extends BaseEditor {
     super(ConfigArea.IMAGES);
   }
 
-  connectedCallback(): void {
+  connectedCallback() {
     super.connectedCallback();
+    void loadPictureCardHelper(this._hass!);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-  }
-
-  static get styles(): CSSResultGroup {
-    return [super.styles];
   }
 
   protected willUpdate(_changedProperties: PropertyValues): void {
@@ -68,12 +66,13 @@ export class PanelImagesEditor extends BaseEditor {
   private _renderHeader(): TemplateResult {
     const isActive = (key: ACTIVE_VIEW) => this._selectedView === key;
     return html`<sub-editor-header hide-primary hide-secondary>
-      <ha-button slot="primary-action" size="small" appearance="filled" @click=${() => this._showAddImage()}
+      <ha-button slot="primary-action" size="small" appearance="filled" @click=${this._showAddImage}
         ><ha-svg-icon .path=${ICON.PLUS} slot="start"></ha-svg-icon>Add image</ha-button
       >
       <span slot="secondary-action">
         ${ActiveViews.map(
           (view) => html` <ha-icon-button
+            class="view-button"
             .viewType=${view}
             ?active=${isActive(view)}
             .path=${VIEW_ICON[view]}
@@ -103,9 +102,8 @@ export class PanelImagesEditor extends BaseEditor {
   protected _onYamlChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     console.debug('YAML changed (PanelImagesEditor)');
-    const { key, subKey } = ev.target as any;
+    const { key } = ev.target as any;
     const value = ev.detail;
-    console.debug('YAML changed:', { key, subKey, value });
     if (key === 'images') {
       if (value === undefined || !Array.isArray(value)) {
         this._images = [];
@@ -114,7 +112,7 @@ export class PanelImagesEditor extends BaseEditor {
         return;
       }
       this._images = value;
-      fireEvent(this, 'config-changed', { config: this.config });
+      this._configChanged(this._images);
     }
   }
 
@@ -124,21 +122,23 @@ export class PanelImagesEditor extends BaseEditor {
     const viewType = button.viewType as ACTIVE_VIEW;
     if (viewType && this._selectedView !== viewType) {
       this._selectedView = viewType;
-      console.log('View changed to:', this._selectedView);
+      // console.log('View changed to:', this._selectedView);
+    } else {
+      // switch back to grid view
+      this._selectedView = 'grid';
     }
   }
-  private async _showAddImage() {
-    const newImage = await showFormDialog(this, {
+  private _showAddImage = async () => {
+    const newImage = await showImageUploadDialog(this, {
       title: 'Add New Image',
-      schema: [...ImageSchema],
       data: {},
-      submitText: 'Add',
     });
     if (!newImage || newImage === null) return;
-    const imagesList = [...this._images];
-    imagesList.push(newImage);
-    this._configChanged(imagesList);
-  }
+    const updatedImages = [...this._images, ...newImage.images];
+    this._configChanged(updatedImages);
+    console.debug('New image added (PanelImagesEditor):', newImage);
+  };
+
   private _handleImageChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     const newImages = ev.detail.images;
@@ -150,6 +150,19 @@ export class PanelImagesEditor extends BaseEditor {
     this.config = { ...this.config, images: images };
     this._images = images;
     fireEvent(this, 'config-changed', { config: this.config });
+  }
+  static get styles(): CSSResultGroup {
+    return [
+      super.styles,
+      css`
+        ha-icon-button.view-button {
+          color: var(--secondary-text-color);
+        }
+        ha-icon-button.view-button[active] {
+          color: var(--primary-color);
+        }
+      `,
+    ];
   }
 }
 
