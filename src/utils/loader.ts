@@ -23,35 +23,6 @@ export const loadHaComponents = () => {
   }
 };
 
-export const stickyPreview = () => {
-  // Get the root and required elements
-  const root = document.querySelector('body > home-assistant')?.shadowRoot;
-  const dialog = root?.querySelector('hui-dialog-edit-card')?.shadowRoot;
-  const content = dialog?.querySelector('ha-dialog')?.shadowRoot?.getElementById('content');
-  const previewElement = dialog?.querySelector('div.element-preview') as HTMLElement;
-  const editorElement = dialog?.querySelector('div.element-editor') as HTMLElement;
-  const previewHui = previewElement?.querySelector('hui-card') as HTMLElement;
-
-  // Exit early if any required element is missing
-  if (!content || !editorElement || !previewElement) return;
-
-  // Apply styles
-  Object.assign(content.style, { padding: '8px' });
-  Object.assign(editorElement.style, { margin: '0 8px' });
-  Object.assign(previewElement.style, {
-    position: 'sticky',
-    top: '0',
-    marginTop: '3em',
-
-    // justifyItems: 'center',
-  });
-  Object.assign(previewHui.style, {
-    padding: '4px',
-    margin: '3em auto',
-    // display: 'block',
-  });
-};
-
 let mql = window.matchMedia('(min-width: 1000px) and (max-width: 1440px)');
 
 export const refactorEditDialog = async () => {

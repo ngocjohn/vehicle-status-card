@@ -45,20 +45,13 @@ export default [
       {
         file: fileOutput,
         format: 'es',
-        sourcemap: dev,
         inlineDynamicImports: true,
-        banner: custombanner,
-        sourcemapIgnoreList: (relativeSourcePath, sourcemapPath) => {
-          // will ignore-list all files with node_modules in their paths
-          return relativeSourcePath.includes('node_modules');
-        },
+        sourcemap: dev,
+        banner: !dev ? custombanner : undefined,
       },
     ],
     watch: {
-      chokidar: {
-        // Workaround for WSL2-based Docker
-        usePolling: true,
-      },
+      exclude: 'node_modules/**',
     },
     plugins: [...defaultPlugins, ...plugins],
     moduleContext: (id) => {

@@ -1,6 +1,16 @@
 import { Unpromise } from '@watchable/unpromise';
 
+import { ELEMENT } from '../editor/editor-const';
+import { fireEvent, HomeAssistant } from '../ha';
+import { HaPictureUpload } from '../ha/dialogs/elements';
+
 const TIMEOUT_ERROR = 'SELECTTREE-TIMEOUT';
+
+declare global {
+  interface HASSDomEvents {
+    'hass-enable-shortcuts': HomeAssistant['enableShortcuts'];
+  }
+}
 
 export async function await_element(el: any, hard = false) {
   if (el.localName?.includes('-')) await customElements.whenDefined(el.localName);
@@ -101,5 +111,96 @@ export function isCardInEditPreview(cardElement: Element) {
   } else {
     // console.log('isCardInEditPreview - cardElement object not supplied; card is NOT in edit mode');
     return false;
+  }
+}
+
+export const getHaPictureUpload = async (): Promise<HaPictureUpload> => {
+  console.debug('getHaPictureUpload called');
+  try {
+    if (customElements.get(ELEMENT.HA_PICTURE_UPLOAD)) {
+      const haPictureUpload = document.createElement(ELEMENT.HA_PICTURE_UPLOAD) as HaPictureUpload;
+      return haPictureUpload;
+    }
+    // @ts-ignore
+    const haPictureUpload = document.createElement(ELEMENT.HA_PICTURE_UPLOAD) as HaPictureUpload;
+    await customElements.whenDefined(ELEMENT.HA_PICTURE_UPLOAD).then(() => {
+      try {
+        customElements.upgrade(haPictureUpload);
+        // eslint-disable-next-line unused-imports/no-unused-vars
+      } catch (err) {
+        // do nothing
+      }
+    });
+    console.debug('getHaPictureUpload:', haPictureUpload);
+    return haPictureUpload;
+  } catch (error) {
+    console.error('Error creating HaPictureUpload element:', error);
+    throw error;
+  }
+};
+
+const simulateKeyPressE = () => {
+  const event = new KeyboardEvent('keydown', {
+    key: 'e',
+    code: 'KeyE',
+    keyCode: 69,
+    charCode: 69,
+    bubbles: true,
+    cancelable: true,
+  });
+  document.dispatchEvent(event);
+};
+
+export async function toggleQuickBar(): Promise<void> {
+  if (customElements.get('ha-quick-bar')) {
+    // Component already loaded, skip loading
+    return;
+  }
+
+  console.debug('Loading ha-quick-bar component...');
+  const hassBaseEl = document.querySelector('home-assistant') as any;
+  const hass = hassBaseEl!.hass as HomeAssistant;
+
+  // check if shortcuts is enabled, if not, enable it then change it back later
+  let shouldChangeBack = false;
+  if (!hass.enableShortcuts) {
+    shouldChangeBack = true;
+    fireEvent(hassBaseEl, 'hass-enable-shortcuts', true);
+  }
+
+  // wait a bit to ensure the event is processed
+  await new Promise((r) => setTimeout(r, 100));
+
+  simulateKeyPressE();
+
+  const quick = await new Promise<any | null>((resolve) => {
+    const check = () => {
+      const quick = hassBaseEl.renderRoot?.querySelector('ha-quick-bar');
+      if (quick) {
+        resolve(quick as any);
+        observer.disconnect();
+        clearTimeout(timer);
+      }
+    };
+
+    const observer = new MutationObserver(check);
+    observer.observe(hassBaseEl.renderRoot, { childList: true });
+
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      resolve(null);
+    }, 2000);
+
+    check();
+  });
+
+  if (quick) {
+    quick.closeDialog();
+  } else {
+    console.warn('ha-quick-bar component failed to load');
+  }
+  // change back the shortcut enable state
+  if (shouldChangeBack) {
+    fireEvent(hassBaseEl, 'hass-enable-shortcuts', false);
   }
 }

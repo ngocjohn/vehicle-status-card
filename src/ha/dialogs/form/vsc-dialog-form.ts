@@ -1,5 +1,4 @@
-import { capitalize } from 'es-toolkit';
-import { css, html, LitElement, nothing, TemplateResult } from 'lit';
+import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import type { HomeAssistant } from '../../types';
@@ -48,16 +47,6 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
     if (!this._params || !this.hass) {
       return nothing;
     }
-    //eslint-disable-next-line
-    const haForm = html` <ha-form
-      dialogInitialFocus
-      .hass=${this.hass}
-      .computeLabel=${this._params?.computeLabel || this.computeLabel}
-      .computeHelper=${this._params?.computeHelper || this.computeHelper}
-      .data=${this._data}
-      .schema=${this._params.schema}
-      @value-changed=${this._valueChanged}
-    ></ha-form>`;
     return html`
       <ha-dialog
         open
@@ -83,18 +72,6 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
       </ha-dialog>
     `;
   }
-
-  private computeLabel = (schema: any): string | undefined => {
-    if (schema.name === 'entity' && !schema.context?.group_entity) {
-      return undefined;
-    }
-    const label = schema.label || schema.name || schema.title || '';
-    return capitalize(label.replace(/_/g, ' '));
-  };
-
-  private computeHelper = (schema: any): string | TemplateResult | undefined => {
-    return schema.helper || undefined;
-  };
 
   static styles = css`
     /* mwc-dialog (ha-dialog) styles */

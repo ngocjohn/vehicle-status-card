@@ -18,6 +18,7 @@ import { MenuElement } from '../utils/editor/menu-element';
 import { migrateLegacyIndicatorsConfig } from '../utils/editor/migrate-indicator';
 // Import struct
 import { selectTree } from '../utils/helpers-dom';
+import { loadPictureCard } from '../utils/lovelace/create-card-element';
 import { Store } from '../utils/store';
 import { VehicleStatusCard } from '../vehicle-status-card';
 import { BaseEditor } from './base-editor';
@@ -69,6 +70,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
 
   connectedCallback() {
     super.connectedCallback();
+    void loadPictureCard();
     void loadHaComponents();
     void refactorEditDialog();
     window.EditorManager = this;

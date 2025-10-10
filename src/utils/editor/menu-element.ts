@@ -97,20 +97,15 @@ export class MenuElement extends BaseEditor {
             )}
           </ha-button-menu>
         </div>
-        <div class="menu-wrapper">
-          <div class="menu-content-wrapper">
-            <div class="menu-label">
-              ${isDefault
-                ? html`
-                    <span class="primary">${DEFAULT.name}</span>
-                    <span class="secondary">${DEFAULT.description}</span>
-                  `
-                : html`<span class="primary">${selected?.name}</span>`}
-            </div>
-
-            ${isDefault || value === 'layout_config' ? nothing : this._renderSectionItem(value as SectionOrder)}
-          </div>
+        <div class="menu-label">
+          ${isDefault
+            ? html`
+                <span class="primary">${DEFAULT.name}</span>
+                <span class="secondary">${DEFAULT.description}</span>
+              `
+            : html`<span class="primary">${selected?.name}</span>`}
         </div>
+        ${isDefault || value === 'layout_config' ? nothing : this._renderSectionItem(value as SectionOrder)}
       </div>
 
       ${isDefault ? this._renderOptionsContent() : nothing}
@@ -331,7 +326,7 @@ export class MenuElement extends BaseEditor {
           height: 24px;
           width: 24px;
         }
-        .menu-content-wrapper .position-badge {
+        .position-badge {
           display: block;
           width: 24px;
           height: 24px;
@@ -357,7 +352,7 @@ export class MenuElement extends BaseEditor {
           max-height: 0px;
         }
 
-        .menu-content-wrapper .menu-label {
+        .menu-label {
           display: flex;
           flex-direction: column;
           height: 100%;
@@ -365,7 +360,7 @@ export class MenuElement extends BaseEditor {
           flex: 1;
         }
 
-        .menu-content-wrapper .menu-label .primary {
+        .menu-label .primary {
           font-weight: 500;
           font-size: 1rem;
           white-space: nowrap;
@@ -376,7 +371,7 @@ export class MenuElement extends BaseEditor {
           line-height: 1;
         }
 
-        .menu-content-wrapper .menu-label .secondary {
+        .menu-label .secondary {
           color: var(--secondary-text-color);
           /* text-transform: capitalize; */
           letter-spacing: 0.5px;

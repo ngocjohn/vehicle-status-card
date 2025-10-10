@@ -2,10 +2,9 @@ import { html, TemplateResult, CSSResultGroup, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { fireEvent } from '../../../ha';
+import { computeImageUrl, fireEvent, ImageEntity } from '../../../ha';
 import { showFormDialog } from '../../../ha/dialogs/form/show-form-dialog';
 import '../../shared/badge-editor-item';
-import '../../../components/shared/vsc-image-item';
 import { ImageItem } from '../../../types/config/card/images';
 import { IMAGE_MENU_ACTIONS } from '../../../utils/editor/create-actions-menu';
 import { showConfirmDialog } from '../../../utils/editor/show-dialog-box';
@@ -32,9 +31,9 @@ export class PanelImagesPreview extends BaseEditor {
     return html`
       <ha-sortable handle-selector=".handle" @item-moved=${this._entityMoved} .noStyle=${true}>
         <div class="image-preview">
-          ${repeat(
-            this.images,
-            (image, index) => html`
+          ${repeat(this.images, (image, index) => {
+            const imageUrl = this._getImageUrl(image);
+            return html`
               <badge-editor-item
                 class="handle"
                 .index=${index}
@@ -42,15 +41,26 @@ export class PanelImagesPreview extends BaseEditor {
                 .defaultAction=${'show-image'}
                 @badge-action-item=${this._handleImageAction}
               >
-                <div class="image-item">
-                  <vsc-image-item .hass=${this._hass} ._imageConfig=${image}> </vsc-image-item>
-                </div>
+                <div class="image-item"><img src=${imageUrl || ''} /></div>
               </badge-editor-item>
-            `
-          )}
+            `;
+          })}
         </div>
       </ha-sortable>
     `;
+  }
+
+  private _getImageUrl(image: ImageItem): string | undefined {
+    let imageUrl: string | undefined;
+    if (image.image_entity && this._hass) {
+      const entity = this._hass.states[image.image_entity];
+      if (entity) {
+        imageUrl = computeImageUrl(entity as ImageEntity);
+      }
+    } else if (image.image) {
+      imageUrl = image.image;
+    }
+    return imageUrl;
   }
 
   private _entityMoved(ev: CustomEvent): void {
@@ -90,8 +100,14 @@ export class PanelImagesPreview extends BaseEditor {
     if (!newImage) {
       return;
     }
+    // check incoming data, if all properties are empty, remove the item
+    const isEmpty = Object.values(newImage).every((value) => value === '' || value === null || value === undefined);
     const newImages = this.images?.concat() || [];
-    newImages[index] = { ...newImages[index], ...newImage };
+    if (isEmpty) {
+      newImages.splice(index, 1);
+    } else {
+      newImages[index] = newImage;
+    }
     this._updateImages(newImages);
   }
 
@@ -119,7 +135,7 @@ export class PanelImagesPreview extends BaseEditor {
       css`
         .image-preview {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
           gap: 8px;
           padding: 4px;
         }
@@ -129,11 +145,19 @@ export class PanelImagesPreview extends BaseEditor {
           align-items: center;
           width: 100%;
           height: 100%;
+          max-height: 100px;
           min-height: 100px;
           border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
           border: 1px solid var(--divider-color);
           transition: border 0.3s ease;
+          box-sizing: border-box;
+        }
+        .image-item img {
+          object-fit: cover;
+          width: 100%;
+          height: 100%;
+          border-radius: 8px;
         }
       `,
     ];

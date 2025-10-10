@@ -124,7 +124,7 @@ export class ImagesSlide extends BaseElement {
 
   private _computeStyle() {
     const slideConfig = this.config.layout_config?.images_swipe as ImagesSwipeConfig;
-    const { height, width, hide_pagination } = slideConfig;
+    const { height, width, hide_pagination } = slideConfig || {};
 
     let styleImages: Record<string, string> = {};
     if (height) {
