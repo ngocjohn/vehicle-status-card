@@ -5,10 +5,11 @@ import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import * as SEC from './components';
 import './components';
 import './editor/editor';
 import './utils/custom-tire-card';
-import * as SEC from './components';
+import { CardMapPosition } from './components';
 import { COMPONENT, CARD_NAME } from './constants/const';
 import { EditorEventParams } from './editor/base-editor';
 import { EDITOR_AREA_SELECTED, EDITOR_SUB_CARD_PREVIEW } from './events';
@@ -37,6 +38,8 @@ import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
+// Debuger
+import { debug } from './utils/debuglog';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
 import { isCardInEditPreview } from './utils/helpers-dom';
 import { checkCardLatest } from './utils/loader_card_latest';
@@ -106,6 +109,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @query(COMPONENT.INDICATORS) _secIndicatorsLegacy!: SEC.VscIndicators;
 
   @query('#main-wrapper', true) _mainWrapper!: HTMLElement;
+  @query('ha-card', true) _haCard!: any;
 
   public setConfig(config: VehicleStatusCardConfig): void {
     if (!config) {
@@ -132,7 +136,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       console.debug('Updating store config');
       this._store._config = this._config;
     } else {
-      // console.debug('Store not found, will create on first update');
+      debug('Store not found, will create on first update');
       this._createStore();
     }
   }
@@ -175,10 +179,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         this.applyTheme(newTheme);
       }
     }
-  }
-
-  protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
-    super.firstUpdated(changedProps);
   }
 
   private _createMapElement(): void {
@@ -246,13 +246,14 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     );
 
     const headerDimmed = this.isEditorPreview && this.configSection !== SECTION.DEFAULT && !notMainCard;
-
+    const isEditorPreview = this.isEditorPreview;
     return html`
       <ha-card
         class=${this._computeClasses(notMainCard)}
+        .raised=${isEditorPreview}
         ?notMainCard=${notMainCard}
         ?no-header=${headerHidden}
-        ?preview=${this.isEditorPreview}
+        ?preview=${isEditorPreview}
       >
         ${!headerHidden
           ? html`<div class="card-header" id="name" ?header-dimmed=${headerDimmed}>${this._config.name}</div>`
@@ -410,14 +411,14 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       return this._showWarning('Device tracker not available');
     }
     const miniMapConfig = this._config.mini_map;
-
+    // const cardMapPos = this._computeMapPosition();
     return html`
-      <div id=${SECTION.MINI_MAP} style=${this._computeMapStyles()}>
+      <div id=${SECTION.MINI_MAP}>
         <vsc-mini-map
           ._hass=${this._hass}
+          ._store=${this._store}
           .mapConfig=${miniMapConfig}
           .isDark=${this.isDark}
-          ._store=${this._store}
         ></vsc-mini-map>
       </div>
     `;
@@ -612,6 +613,28 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       __map_bottom: mapBottom,
     });
   }
+
+  private _computeMapPosition = (): CardMapPosition => {
+    let position: CardMapPosition = 'default';
+    const mainWrapper = this._mainWrapper;
+    if (!mainWrapper) return position;
+    const mapSec = mainWrapper.children.namedItem(SECTION.MINI_MAP) as HTMLElement | null;
+    if (!mapSec) return position;
+
+    const { previousElementSibling, nextElementSibling } = mapSec;
+
+    if (!previousElementSibling && !nextElementSibling) {
+      position = 'single';
+    } else if (!previousElementSibling && nextElementSibling) {
+      position = 'top';
+    } else if (previousElementSibling && !nextElementSibling) {
+      position = 'bottom';
+    } else {
+      position = 'default';
+    }
+    console.debug(`Card: ${this._config.name} - Map position:`, position);
+    return position;
+  };
 
   private _computeMapStyles() {
     const sectionOrder = this._config.layout_config!.section_order || [];
@@ -820,9 +843,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _createStore() {
     if (!this._store) {
-      // console.log('Creating store for VehicleStatusCard', this._config.name);
+      debug('Creating store', this._config.name);
       this._store = new Store(this, this._config);
-      super.requestUpdate();
+      // super.requestUpdate();
     }
   }
 
