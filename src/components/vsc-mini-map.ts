@@ -1,12 +1,19 @@
+// debugger
+import { debug } from '../utils/debuglog';
+
+const debuglog = debug.extend('mini-map');
+
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
 import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { COMPONENT } from '../constants/const';
 import { Address, MapData, MiniMapConfig } from '../types/config';
 import { SECTION } from '../types/section';
+import { isSafari } from '../utils';
 import { BaseElement } from '../utils/base-element';
 import { _getMapAddress } from '../utils/lovelace/create-map-card';
 import { showHaMapDialog } from '../utils/lovelace/show-map-dialog';
@@ -14,15 +21,33 @@ import { showHaMapDialog } from '../utils/lovelace/show-map-dialog';
 export const DEFAULT_HOURS_TO_SHOW = 0;
 export const DEFAULT_ZOOM = 14;
 
+export const CARD_MAP_POSITION = ['default', 'top', 'bottom', 'single'] as const;
+export type CardMapPosition = (typeof CARD_MAP_POSITION)[number];
+
+const MAP_FILTER: Record<CardMapPosition, string> = {
+  default: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
+  top: 'linear-gradient(to bottom, black 90%, transparent 100%)',
+  bottom: 'linear-gradient(to bottom, transparent 0%, black 10%)',
+  single: 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)',
+};
+
+const DEBUG_NO_FETCH = process.env.DEBUG === 'true' && true;
+const DEV_ADDRESS = {
+  streetName: '123 Example St',
+  sublocality: 'Example Suburb',
+  city: 'Example City',
+};
+
 @customElement(COMPONENT.MINI_MAP)
 export class MiniMapBox extends BaseElement {
   constructor() {
     super(SECTION.MINI_MAP);
   }
 
-  @property({ attribute: false }) mapConfig!: MiniMapConfig;
+  @property({ attribute: false }) public mapConfig!: MiniMapConfig;
   @property({ attribute: 'is-dark', type: Boolean, reflect: true })
   isDark!: boolean;
+  @property({ type: String, reflect: true, attribute: 'map-position' }) public mapPosition: CardMapPosition = 'default';
   @state() private mapData?: MapData;
 
   @state() private map: L.Map | null = null;
@@ -144,9 +169,20 @@ export class MiniMapBox extends BaseElement {
     return true;
   }
 
+  protected firstUpdated(): void {
+    this.mapPosition = this._computeMapPosition();
+  }
+
   private async _getAddress(): Promise<void> {
+    // Avoid fetching address in debug mode
+    if (DEBUG_NO_FETCH) {
+      this._addressReady = true;
+      this._address = DEV_ADDRESS;
+      return;
+    }
+
     const { lat, lon } = this.mapData!;
-    // console.log('Getting adress...');
+    debuglog('Getting adress...');
     const address = await _getMapAddress(this.mapConfig, lat, lon);
     if (address) {
       this._address = address;
@@ -237,9 +273,13 @@ export class MiniMapBox extends BaseElement {
   }
 
   protected render(): TemplateResult {
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const mapStyle = {
+      '--vic-map-mask-image': MAP_FILTER[this.mapPosition] || MAP_FILTER['default'],
+      height: `${this.mapConfig?.map_height || 150}px`,
+    };
+
     return html`
-      <div class="map-wrapper" ?safari=${isSafari} style=${`height: ${this.mapConfig?.map_height || 150}px;`}>
+      <div class="map-wrapper" ?safari=${isSafari} style=${styleMap(mapStyle)}>
         <div id="overlay-container">
           <div class="reset-button" @click=${this.resetMap} .hidden=${this._locateIconVisible}>
             <ha-icon icon="mdi:compass"></ha-icon>
@@ -293,6 +333,24 @@ export class MiniMapBox extends BaseElement {
     console.log('Opening map dialog...', params);
     showHaMapDialog(this, params);
   }
+
+  private _computeMapPosition = (): CardMapPosition => {
+    const mapSec = this.parentNode as HTMLElement | null;
+    if (!mapSec) return 'default';
+    const { previousElementSibling, nextElementSibling } = mapSec;
+
+    let position: CardMapPosition = 'default';
+    if (!previousElementSibling && !nextElementSibling) {
+      position = 'single';
+    } else if (!previousElementSibling && nextElementSibling) {
+      position = 'top';
+    } else if (previousElementSibling && !nextElementSibling) {
+      position = 'bottom';
+    } else {
+      position = 'default';
+    }
+    return position;
+  };
 
   static get styles(): CSSResultGroup {
     return [

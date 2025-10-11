@@ -31,7 +31,7 @@ export function logCardInfo(version) {
 }
 
 export const defaultPlugins = [
-  nodeResolve({ preferBuiltins: false }),
+  nodeResolve(),
   commonjs(),
   babel({
     babelHelpers: 'bundled',

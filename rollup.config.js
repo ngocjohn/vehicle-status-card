@@ -1,12 +1,16 @@
 import typescript from 'rollup-plugin-typescript2';
 import terser from '@rollup/plugin-terser';
+import replace from '@rollup/plugin-replace';
 import serve from 'rollup-plugin-serve';
+
 import { logCardInfo, defaultPlugins } from './rollup.config.helper.mjs';
 
 import { version } from './package.json';
 
 const dev = process.env.ROLLUP_WATCH;
 const port = process.env.PORT || 8235;
+const debug = process.env.DEBUG;
+
 const currentVersion = dev ? 'DEVELOPMENT' : `v${version}`;
 const custombanner = logCardInfo(currentVersion);
 
@@ -29,12 +33,17 @@ const terserOpt = {
   },
 };
 
+const replaceOpts = {
+  preventAssignment: true,
+  'process.env.DEBUG': JSON.stringify(debug),
+};
+
 const plugins = [
   dev && serve(serveopts),
   !dev && terser(terserOpt),
   typescript({
     sourceMap: dev,
-    outputToFilesystem: true,
+    outputToFilesystem: false,
   }),
 ];
 
@@ -47,13 +56,13 @@ export default [
         format: 'es',
         inlineDynamicImports: true,
         sourcemap: dev,
-        banner: !dev ? custombanner : undefined,
+        banner: custombanner,
       },
     ],
     watch: {
       exclude: 'node_modules/**',
     },
-    plugins: [...defaultPlugins, ...plugins],
+    plugins: [replace(replaceOpts), ...defaultPlugins, ...plugins],
     moduleContext: (id) => {
       const thisAsWindowForModules = [
         'node_modules/@formatjs/intl-utils/lib/src/diff.js',
