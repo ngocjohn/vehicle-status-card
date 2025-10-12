@@ -229,7 +229,7 @@ export const createMapCard = (config: MiniMapConfig): LovelaceCard | undefined =
       // @ts-ignore
       const element = document.createElement(tag, config) as LovelaceCard;
       element.setConfig(mapConfig);
-      console.log('Map element already exists, reusing:', element);
+      // console.log('Map element already exists, reusing:', element);
       return element;
     }
     // @ts-ignore

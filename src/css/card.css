@@ -131,7 +131,7 @@ ha-card .card-header {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: clip;
   place-self: center;
   min-width: calc(100% + (var(--vic-card-padding) * 2));
 }
