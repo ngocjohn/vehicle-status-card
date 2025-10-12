@@ -124,31 +124,6 @@ export enum ACTIONS {
   UNHIDE_BUTTON = 'unhide-button',
 }
 
-type IMAGE_CONFIG_ACTIONS =
-  | 'add'
-  | 'showDelete'
-  | 'delete'
-  | 'upload'
-  | 'add-new-url'
-  | 'show-image'
-  | 'yaml-editor'
-  | 'deselect-all'
-  | 'select-all'
-  | 'delete-selected';
-
-export enum IMAGE_ACTIONS {
-  ADD = 'add',
-  SHOW_DELETE = 'showDelete',
-  DELETE = 'delete',
-  UPLOAD = 'upload',
-  ADD_NEW_URL = 'add-new-url',
-  SHOW_IMAGE = 'show-image',
-  YAML_EDITOR = 'yaml-editor',
-  DESELECT_ALL = 'deselect-all',
-  SELECT_ALL = 'select-all',
-  DELETE_SELECTED = 'delete-selected',
-}
-
 export enum RANGE_ACTIONS {
   DELETE_ITEM = 'delete-item',
   EDIT_ITEM = 'edit-item',
@@ -194,15 +169,7 @@ enum ALERT_INFO {
   INDICATOR_ROW_URL = 'https://github.com/ngocjohn/vehicle-status-card/wiki/Indicators-Configuration',
 }
 
-export {
-  BUTTON_TYPE,
-  CARD_TYPES,
-  BUTTON_CARD_ACTIONS,
-  PREVIEW_CONFIG_TYPES,
-  NEW_BUTTON_CONFIG,
-  IMAGE_CONFIG_ACTIONS,
-  ALERT_INFO,
-};
+export { BUTTON_TYPE, CARD_TYPES, BUTTON_CARD_ACTIONS, PREVIEW_CONFIG_TYPES, NEW_BUTTON_CONFIG, ALERT_INFO };
 
 export const EDITOR_NAME = `${CARD_NAME}-editor`;
 

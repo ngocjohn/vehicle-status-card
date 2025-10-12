@@ -131,4 +131,8 @@ export class Store {
       hide_notify_badge: button_grid?.hide_notify_badge ?? false,
     };
   }
+
+  public get hasCardName(): boolean {
+    return Boolean(this.layoutConfig?.hide_card_name !== true && this._config.name !== undefined);
+  }
 }

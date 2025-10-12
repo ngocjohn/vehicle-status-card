@@ -1,15 +1,18 @@
+// Debuger
+import { debug } from './utils/debuglog';
+const debuglog = debug.extend('card');
+
 import isEmpty from 'es-toolkit/compat/isEmpty';
+import { getPromisableResult } from 'get-promisable-result';
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import * as SEC from './components';
 import './components';
 import './editor/editor';
 import './utils/custom-tire-card';
-import { CardMapPosition } from './components';
 import { COMPONENT, CARD_NAME } from './constants/const';
 import { EditorEventParams } from './editor/base-editor';
 import { EDITOR_AREA_SELECTED, EDITOR_SUB_CARD_PREVIEW } from './events';
@@ -38,11 +41,8 @@ import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
-// Debuger
-import { debug } from './utils/debuglog';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
 import { isCardInEditPreview } from './utils/helpers-dom';
-import { checkCardLatest } from './utils/loader_card_latest';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
@@ -90,12 +90,13 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   @state() _currentSwipeIndex?: number;
 
   @state() _connected = false;
-  @state() private _extraMapCard?: LovelaceCard; // Extra map card instance
+  @state() private _extraMapCard?: any; // Extra map card element for single map mode
 
   @state() _buttonCardConfigItem?: ButtonCardConfig[]; // Button card configuration items
   @state() private _newButtonConfig!: BaseButtonCardItemConfig[]; // New button card configuration items
   @state() private configSection!: SECTION | undefined;
   @state() private subCardPreviewConfig?: ButtonSubCardPreviewConfig;
+  @state() private _usingSingleMap: boolean = false;
 
   // section queries
   @query(COMPONENT.BUTTONS_GROUP) _secButtonsGroup!: SEC.VscButtonsGroup;
@@ -133,11 +134,20 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
 
     if (this._store != null) {
-      console.debug('Updating store config');
+      debug('Store found, updating config');
       this._store._config = this._config;
     } else {
-      debug('Store not found, will create on first update');
+      // debug('Store not found, will create on first update');
       this._createStore();
+    }
+    if (
+      this._config.mini_map?.single_map_card === true &&
+      this._config.mini_map?.device_tracker !== undefined &&
+      this._config.mini_map?.maptiler_api_key !== undefined
+    ) {
+      debuglog('Single map card mode enabled');
+      this._usingSingleMap = true;
+      this._extraMapCard = this._createMapElement();
     }
   }
 
@@ -159,17 +169,17 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     super.disconnectedCallback();
   }
 
-  protected async willUpdate(changedProps: PropertyValues): Promise<void> {
+  protected willUpdate(changedProps: PropertyValues): void {
     super.willUpdate(changedProps);
-    if (
-      changedProps.has('_config') &&
-      this._config.mini_map?.single_map_card === true &&
-      this._config.mini_map?.device_tracker !== undefined &&
-      this._config.mini_map?.maptiler_api_key !== undefined
-    ) {
-      console.log('Creating single map card');
+
+    if (changedProps.has('_usingSingleMap') && this._usingSingleMap) {
       // this.createSingleMapCard();
-      this._createMapElement();
+      // this._extraMapCard = this._createMapElement();
+      debuglog('extra map card created', this._extraMapCard);
+      if (this._extraMapCard && this._hass) {
+        this._extraMapCard.hass = this._hass;
+        debuglog('extra map card hass set', this._extraMapCard.hass);
+      }
     }
 
     if (changedProps.has('_config') && this._config.layout_config?.theme_config?.theme) {
@@ -181,19 +191,15 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
   }
 
-  private _createMapElement(): void {
-    if (!this._config.mini_map) return;
+  private _createMapElement(): LovelaceCard | undefined {
+    if (!this._config.mini_map) return undefined;
     const miniMapConfig = this._config.mini_map;
     const element = createMapCard(miniMapConfig);
     if (element) {
-      if (this._hass) {
-        element.hass = this._hass;
-      }
-      element.isPanel = this.isPanel;
-      element.layout = this.layout;
-      this._extraMapCard = element;
-      // console.log('Map element created:', this._extraMapCard);
+      debuglog('Map card element created:', element);
+      return element;
     }
+    return undefined;
   }
 
   protected async updated(changedProps: PropertyValues): Promise<void> {
@@ -221,6 +227,14 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
   }
 
+  protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
+    super.firstUpdated(changedProps);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // wait for 100ms to ensure all children are rendered
+    if (this._usingSingleMap) {
+      this._forceDrawPath();
+    }
+  }
+
   _isSectionHidden(section: SECTION): boolean {
     return !this._config.layout_config?.section_order?.includes(section);
   }
@@ -236,9 +250,10 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       return this._renderSubCardPreview();
     }
 
-    if (_config.mini_map?.single_map_card === true && this._extraMapCard) {
+    if (this._usingSingleMap && this._extraMapCard) {
       return html`${this._extraMapCard}`;
     }
+
     const notMainCard = this._activeCardIndex !== null;
 
     const headerHidden = Boolean(
@@ -246,6 +261,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     );
 
     const headerDimmed = this.isEditorPreview && this.configSection !== SECTION.DEFAULT && !notMainCard;
+
     const isEditorPreview = this.isEditorPreview;
     return html`
       <ha-card
@@ -411,7 +427,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       return this._showWarning('Device tracker not available');
     }
     const miniMapConfig = this._config.mini_map;
-    // const cardMapPos = this._computeMapPosition();
     return html`
       <div id=${SECTION.MINI_MAP}>
         <vsc-mini-map
@@ -601,61 +616,22 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         __not_main_card: true,
       });
     }
-    const section_order = this._config.layout_config?.section_order || [];
-    const lastItem = section_order[section_order.length - 1];
-    const firstItem = section_order[0];
-    const mapSingle = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
-    const mapBottom = !section_order.includes(SECTION.BUTTONS) && lastItem === SECTION.MINI_MAP;
+    // const section_order = this._config.layout_config?.section_order || [];
+    // const lastItem = section_order[section_order.length - 1];
+    // const firstItem = section_order[0];
+    // const mapSingle = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
+    // const mapBottom = !section_order.includes(SECTION.BUTTONS) && lastItem === SECTION.MINI_MAP;
+    // return classMap({
+    //   __map_last: lastItem === SECTION.MINI_MAP && firstItem !== SECTION.MINI_MAP,
+    //   __map_first: firstItem === SECTION.MINI_MAP && lastItem !== SECTION.MINI_MAP,
+    //   __map_single: mapSingle,
+    //   __map_bottom: mapBottom,
+    // });
     return classMap({
-      __map_last: lastItem === SECTION.MINI_MAP && firstItem !== SECTION.MINI_MAP,
-      __map_first: firstItem === SECTION.MINI_MAP && lastItem !== SECTION.MINI_MAP,
-      __map_single: mapSingle,
-      __map_bottom: mapBottom,
-    });
-  }
-
-  private _computeMapPosition = (): CardMapPosition => {
-    let position: CardMapPosition = 'default';
-    const mainWrapper = this._mainWrapper;
-    if (!mainWrapper) return position;
-    const mapSec = mainWrapper.children.namedItem(SECTION.MINI_MAP) as HTMLElement | null;
-    if (!mapSec) return position;
-
-    const { previousElementSibling, nextElementSibling } = mapSec;
-
-    if (!previousElementSibling && !nextElementSibling) {
-      position = 'single';
-    } else if (!previousElementSibling && nextElementSibling) {
-      position = 'top';
-    } else if (previousElementSibling && !nextElementSibling) {
-      position = 'bottom';
-    } else {
-      position = 'default';
-    }
-    console.debug(`Card: ${this._config.name} - Map position:`, position);
-    return position;
-  };
-
-  private _computeMapStyles() {
-    const sectionOrder = this._config.layout_config!.section_order || [];
-    const noHeader = this._config.layout_config?.hide_card_name || this._config.name?.trim() === '';
-    const firstItem = sectionOrder[0] === SECTION.MINI_MAP && noHeader;
-    const lastItem = sectionOrder[sectionOrder.length - 1] === SECTION.MINI_MAP;
-    const singleItem = sectionOrder.length === 1 && sectionOrder[0] === SECTION.MINI_MAP;
-
-    let maskImage = 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)';
-
-    if (lastItem && !firstItem) {
-      maskImage = 'linear-gradient(to bottom, transparent 0%, black 10%)';
-    } else if (firstItem && !lastItem) {
-      maskImage = 'linear-gradient(to bottom, black 90%, transparent 100%)';
-    } else if (singleItem) {
-      maskImage = 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)';
-    } else {
-      maskImage;
-    }
-    return styleMap({
-      '--vic-map-mask-image': maskImage,
+      __map_last: false,
+      __map_first: false,
+      __map_single: false,
+      __map_bottom: false,
     });
   }
 
@@ -719,6 +695,33 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }, 100);
     this.requestUpdate();
   }
+
+  private _forceDrawPath = async (): Promise<void> => {
+    if (this._extraMapCard && this._extraMapCard.updateComplete) {
+      await this._extraMapCard.updateComplete;
+      debuglog('extra map card first updated');
+      const hasHistorySubsribed = await getPromisableResult(
+        () => {
+          return this._extraMapCard._subscribed !== null;
+        },
+        (result: boolean) => result === true,
+        { retries: 50, delay: 100, rejectMessage: 'Extra map card did not subscribe after {{retries}} retries' }
+      );
+      if (hasHistorySubsribed) {
+        debuglog('extra map card has history subscribed');
+        // Wait for another 500ms to ensure the history data is loaded
+        setTimeout(() => {
+          if (this._extraMapCard && this._extraMapCard._mapTiler.drawPath) {
+            this._extraMapCard._mapTiler.drawPath();
+            debuglog('extra map card drawPath called');
+          }
+        }, 500);
+      } else {
+        debuglog('extra map card did not subscribe to history in time');
+        return;
+      }
+    }
+  };
 
   /* -------------------------- EDITOR EVENT HANDLER -------------------------- */
 
@@ -874,4 +877,3 @@ declare global {
 }
 // Load and clean extra map resources
 loadAndCleanExtraMap().catch(console.error);
-checkCardLatest();

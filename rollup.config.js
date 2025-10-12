@@ -1,4 +1,4 @@
-import typescript from 'rollup-plugin-typescript2';
+import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import replace from '@rollup/plugin-replace';
 import serve from 'rollup-plugin-serve';
@@ -42,8 +42,7 @@ const plugins = [
   dev && serve(serveopts),
   !dev && terser(terserOpt),
   typescript({
-    sourceMap: dev,
-    outputToFilesystem: false,
+    sourceMap: true,
   }),
 ];
 

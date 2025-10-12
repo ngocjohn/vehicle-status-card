@@ -3,7 +3,6 @@ import { HassEntity, UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import hash from 'object-hash/dist/object_hash.js';
 
 import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate, isActive } from '../../../ha/';
 import { actionHandler, ActionHandlerEvent } from '../../../ha/panels/common/directives/action-handler-directive';
@@ -12,9 +11,6 @@ import { ButtonGridConfig, hasAction } from '../../../types/config';
 import { ButtonCardConfig, BUTTON_TEMPLATE_KEYS, ButtonTemplateKey } from '../../../types/config/card/button';
 import { strStartsWith } from '../../../utils';
 import { BaseElement } from '../../../utils/base-element';
-import { CacheManager } from '../../../utils/cache-manager';
-
-const templateCache = new CacheManager<TemplateResults>(1000);
 
 type TemplateResults = Partial<Record<ButtonTemplateKey, RenderTemplateResult | undefined>>;
 
@@ -39,17 +35,6 @@ export class VehicleButtonSingle extends BaseElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._tryDisconnect();
-
-    if (this._buttonConfig && this._templateResults) {
-      const key = this._computeCacheKey();
-      templateCache.set(key, this._templateResults);
-      // console.debug(`Cached template results for key: ${key}`);
-    }
-  }
-
-  private _computeCacheKey() {
-    // console.debug('Computing cache key for button config');
-    return hash(this._buttonConfig);
   }
 
   private get _stateColor(): boolean {
@@ -70,15 +55,6 @@ export class VehicleButtonSingle extends BaseElement {
       const button = this._buttonConfig.button;
       if (button.secondary && button.secondary.entity) {
         this._entityStateObj = this.hass.states[button.secondary.entity];
-      }
-    }
-
-    if (!this._templateResults) {
-      const key = this._computeCacheKey();
-      if (templateCache.has(key)) {
-        this._templateResults = templateCache.get(key)!;
-      } else {
-        this._templateResults = {};
       }
     }
   }

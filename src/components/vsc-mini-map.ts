@@ -25,10 +25,17 @@ export const CARD_MAP_POSITION = ['default', 'top', 'bottom', 'single'] as const
 export type CardMapPosition = (typeof CARD_MAP_POSITION)[number];
 
 const MAP_FILTER: Record<CardMapPosition, string> = {
-  default: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
-  top: 'linear-gradient(to bottom, black 90%, transparent 100%)',
-  bottom: 'linear-gradient(to bottom, transparent 0%, black 10%)',
+  default: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
+  top: 'linear-gradient(to bottom, black 80%, transparent 100%)',
+  bottom: 'linear-gradient(to bottom, transparent 0%, black 20%)',
   single: 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)',
+};
+
+const MARGIN_BLOCK: Record<CardMapPosition, string> = {
+  default: 'auto',
+  top: 'calc(-1 * var(--vic-card-padding)) auto',
+  bottom: 'auto calc(-1 * var(--vic-card-padding))',
+  single: `calc(-1 * var(--vic-card-padding))`,
 };
 
 const DEBUG_NO_FETCH = process.env.DEBUG === 'true' && true;
@@ -171,6 +178,7 @@ export class MiniMapBox extends BaseElement {
 
   protected firstUpdated(): void {
     this.mapPosition = this._computeMapPosition();
+    debuglog('Computed map position:', this.mapPosition);
   }
 
   private async _getAddress(): Promise<void> {
@@ -338,17 +346,21 @@ export class MiniMapBox extends BaseElement {
     const mapSec = this.parentNode as HTMLElement | null;
     if (!mapSec) return 'default';
     const { previousElementSibling, nextElementSibling } = mapSec;
-
+    const hasCardName = this._store.hasCardName;
     let position: CardMapPosition = 'default';
     if (!previousElementSibling && !nextElementSibling) {
       position = 'single';
-    } else if (!previousElementSibling && nextElementSibling) {
+    } else if (!previousElementSibling && nextElementSibling && !hasCardName) {
       position = 'top';
     } else if (previousElementSibling && !nextElementSibling) {
       position = 'bottom';
     } else {
       position = 'default';
     }
+
+    this.style.setProperty('margin-block', MARGIN_BLOCK[position]);
+    debuglog('final map position:', position, 'margin-block:', MARGIN_BLOCK[position]);
+
     return position;
   };
 
@@ -358,6 +370,9 @@ export class MiniMapBox extends BaseElement {
       unsafeCSS(mapstyle),
       css`
         :host {
+          display: block;
+          width: 100%;
+          height: 100%;
           --vic-map-marker-color: var(--primary-color);
           --vic-marker-filter: none;
           --vic-map-tiles-filter: grayscale(1) contrast(1.1);
@@ -402,10 +417,6 @@ export class MiniMapBox extends BaseElement {
           left: 0;
           width: 100%;
           height: 100%;
-          /* background-color: var(--ha-card-background, var(--card-background-color)); */
-          /* background-color: rgb(from var(--ha-card-background, var(--card-background-color)) r g b / 15%); */
-          /* opacity: 0.6; */
-          /* pointer-events: none; */
         }
 
         #map {

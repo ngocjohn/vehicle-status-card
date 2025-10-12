@@ -4,7 +4,7 @@ export const CARD_VERSION = `v${version}`;
 export const NAMESPACE_TITLE = 'Vehicle Status Card';
 export const CARD_NAME = 'vehicle-status-card';
 
-export const PREFIX_NAME = 'vsc';
+const PREFIX_NAME = 'vsc';
 
 export enum COMPONENT {
   BUTTONS_GRID = `${PREFIX_NAME}-buttons-grid`,
@@ -19,7 +19,3 @@ export enum COMPONENT {
   BUTTONS_GROUP = `${PREFIX_NAME}-buttons-group`,
   BUTTON_CARD_ITEM = `${PREFIX_NAME}-button-card-item`,
 }
-
-export type ComponentType = COMPONENT;
-
-export const COMPONENTS = Object.values(COMPONENT) as ComponentType[];
