@@ -32,7 +32,7 @@ export class VscButtonsGroup extends BaseElement {
   protected willUpdate(_changedProperties: PropertyValues): void {
     super.willUpdate(_changedProperties);
     if (_changedProperties.has('_store') && this._store) {
-      this.useSwiper = this._store.gridConfig.swipe!;
+      this.useSwiper = this._store.gridConfig.swipe || false;
       this.buttons = this._store.visibleButtons as BaseButtonCardItemConfig[];
     }
   }
@@ -78,13 +78,14 @@ export class VscButtonsGroup extends BaseElement {
   protected render(): TemplateResult {
     const buttons = this.buttons;
     const { rows, columns } = this._store.gridConfig;
+    const useSwiper = this.useSwiper;
     const total = this.useSwiper ? rows! * columns! : buttons.length;
 
     return html`
       <div
         class=${classMap({
           'buttons-group': true,
-          'swiper-container': this.useSwiper,
+          'swiper-container': useSwiper,
         })}
         style=${this._computeStyle()}
       >
