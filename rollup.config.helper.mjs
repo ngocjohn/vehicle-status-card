@@ -32,7 +32,6 @@ export function logCardInfo(version) {
 
 export const defaultPlugins = [
   nodeResolve({
-    browser: true,
     preferBuiltins: false,
   }),
   commonjs(),
