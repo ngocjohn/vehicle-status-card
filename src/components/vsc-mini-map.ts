@@ -1,6 +1,6 @@
 // debugger
 import { debug } from '../utils/debuglog';
-
+// eslint-disable-next-line
 const debuglog = debug.extend('mini-map');
 
 import L from 'leaflet';
@@ -8,7 +8,6 @@ import 'leaflet-providers/leaflet-providers.js';
 import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import { COMPONENT } from '../constants/const';
 import { Address, MapData, MiniMapConfig } from '../types/config';
@@ -27,7 +26,7 @@ export type CardMapPosition = (typeof CARD_MAP_POSITION)[number];
 const MAP_FILTER: Record<CardMapPosition, string> = {
   default: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
   top: 'linear-gradient(to bottom, black 80%, transparent 100%)',
-  bottom: 'linear-gradient(to bottom, transparent 0%, black 20%)',
+  bottom: 'linear-gradient(to bottom, transparent 5%, black 20%)',
   single: 'linear-gradient(to bottom, transparent 0%, black 0%, black 100%, transparent 100%)',
 };
 
@@ -36,13 +35,6 @@ const MARGIN_BLOCK: Record<CardMapPosition, string> = {
   top: 'calc(-1 * var(--vic-card-padding)) auto',
   bottom: 'auto calc(-1 * var(--vic-card-padding))',
   single: `calc(-1 * var(--vic-card-padding))`,
-};
-
-const DEBUG_NO_FETCH = process.env.DEBUG === 'true' && true;
-const DEV_ADDRESS = {
-  streetName: '123 Example St',
-  sublocality: 'Example Suburb',
-  city: 'Example City',
 };
 
 @customElement(COMPONENT.MINI_MAP)
@@ -178,19 +170,10 @@ export class MiniMapBox extends BaseElement {
 
   protected firstUpdated(): void {
     this.mapPosition = this._computeMapPosition();
-    debuglog('Computed map position:', this.mapPosition);
   }
 
   private async _getAddress(): Promise<void> {
-    // Avoid fetching address in debug mode
-    if (DEBUG_NO_FETCH) {
-      this._addressReady = true;
-      this._address = DEV_ADDRESS;
-      return;
-    }
-
     const { lat, lon } = this.mapData!;
-    debuglog('Getting adress...');
     const address = await _getMapAddress(this.mapConfig, lat, lon);
     if (address) {
       this._address = address;
@@ -281,13 +264,8 @@ export class MiniMapBox extends BaseElement {
   }
 
   protected render(): TemplateResult {
-    const mapStyle = {
-      '--vic-map-mask-image': MAP_FILTER[this.mapPosition] || MAP_FILTER['default'],
-      height: `${this.mapConfig?.map_height || 150}px`,
-    };
-
     return html`
-      <div class="map-wrapper" ?safari=${isSafari} style=${styleMap(mapStyle)}>
+      <div class="map-wrapper" ?safari=${isSafari}>
         <div id="overlay-container">
           <div class="reset-button" @click=${this.resetMap} .hidden=${this._locateIconVisible}>
             <ha-icon icon="mdi:compass"></ha-icon>
@@ -343,11 +321,11 @@ export class MiniMapBox extends BaseElement {
   }
 
   private _computeMapPosition = (): CardMapPosition => {
+    let position: CardMapPosition = 'default';
     const mapSec = this.parentNode as HTMLElement | null;
-    if (!mapSec) return 'default';
+    if (!mapSec) return position;
     const { previousElementSibling, nextElementSibling } = mapSec;
     const hasCardName = this._store.hasCardName;
-    let position: CardMapPosition = 'default';
     if (!previousElementSibling && !nextElementSibling) {
       position = 'single';
     } else if (!previousElementSibling && nextElementSibling && !hasCardName) {
@@ -358,8 +336,16 @@ export class MiniMapBox extends BaseElement {
       position = 'default';
     }
 
-    this.style.setProperty('margin-block', MARGIN_BLOCK[position]);
-    debuglog('final map position:', position, 'margin-block:', MARGIN_BLOCK[position]);
+    const mapStyle = {
+      '--vic-map-mask-image': MAP_FILTER[position],
+      height: `${this.mapConfig?.map_height || 150}px`,
+      'margin-block': MARGIN_BLOCK[position],
+    };
+    Object.entries(mapStyle).forEach(([key, value]) => {
+      this.style.setProperty(key, value);
+    });
+
+    // debuglog('final map position:', position, 'margin-block:', MARGIN_BLOCK[position]);
 
     return position;
   };
