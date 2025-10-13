@@ -36,6 +36,7 @@ const terserOpt = {
 const replaceOpts = {
   preventAssignment: true,
   'process.env.DEBUG': JSON.stringify(debug),
+  __DEBUG__: debug || false,
 };
 
 const plugins = [

@@ -75,7 +75,7 @@
     "build": "pnpm run lint && pnpm run rollup",
     "dev": "pnpm run start",
     "dev-serve": "cross-env PORT=8222 pnpm start",
-    "debug": "cross-env DEBUG=true pnpm run dev",
+    "debug": "cross-env DEBUG=true pnpm start",
     "prepare": "husky",
     "clean": "rm -rf dist build && mkdir -p dist build",
     "clean_cache": "pnpm run clean_delfiles && pnpm run clean_deldirs",
