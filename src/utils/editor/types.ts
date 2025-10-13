@@ -12,6 +12,7 @@ declare global {
   var __STATIC_PATH__: string;
   var __BACKWARDS_COMPAT__: boolean;
   var __SUPERVISOR__: boolean;
+  var __DEBUG__: boolean;
 
   interface Window {
     // Custom panel entry point url

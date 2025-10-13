@@ -1,7 +1,3 @@
-// Debuger
-import { debug } from './utils/debuglog';
-const debuglog = debug.extend('card');
-
 import isEmpty from 'es-toolkit/compat/isEmpty';
 import { getPromisableResult } from 'get-promisable-result';
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
@@ -41,11 +37,15 @@ import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
+// Debuger
+import { debug } from './utils/debuglog';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
 import { isCardInEditPreview } from './utils/helpers-dom';
 import { createMapCard } from './utils/lovelace/create-map-card';
 import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
+
+console.log('ENV DEBUG:', __DEBUG__);
 
 @customElement(CARD_NAME)
 export class VehicleStatusCard extends BaseElement implements LovelaceCard {
@@ -145,7 +145,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       this._config.mini_map?.device_tracker !== undefined &&
       this._config.mini_map?.maptiler_api_key !== undefined
     ) {
-      debuglog('Single map card mode enabled');
       this._usingSingleMap = true;
       this._extraMapCard = this._createMapElement();
     }
@@ -173,12 +172,8 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     super.willUpdate(changedProps);
 
     if (changedProps.has('_usingSingleMap') && this._usingSingleMap) {
-      // this.createSingleMapCard();
-      // this._extraMapCard = this._createMapElement();
-      debuglog('extra map card created', this._extraMapCard);
       if (this._extraMapCard && this._hass) {
         this._extraMapCard.hass = this._hass;
-        debuglog('extra map card hass set', this._extraMapCard.hass);
       }
     }
 
@@ -196,7 +191,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const miniMapConfig = this._config.mini_map;
     const element = createMapCard(miniMapConfig);
     if (element) {
-      debuglog('Map card element created:', element);
+      debug('Map card element created:', element);
       return element;
     }
     return undefined;
@@ -229,9 +224,10 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   protected async firstUpdated(changedProps: PropertyValues): Promise<void> {
     super.firstUpdated(changedProps);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // wait for 100ms to ensure all children are rendered
     if (this._usingSingleMap) {
-      this._forceDrawPath();
+      this.updateComplete.then(() => {
+        this._forceDrawPath();
+      });
     }
   }
 
@@ -699,25 +695,23 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   private _forceDrawPath = async (): Promise<void> => {
     if (this._extraMapCard && this._extraMapCard.updateComplete) {
       await this._extraMapCard.updateComplete;
-      debuglog('extra map card first updated');
-      const hasHistorySubsribed = await getPromisableResult(
+      debug('extra map card first updated');
+      const mapTilerEl = await getPromisableResult<HTMLElement>(
         () => {
-          return this._extraMapCard._subscribed !== null;
+          const mapTiler = this._extraMapCard._mapTiler;
+          return mapTiler;
         },
-        (result: boolean) => result === true,
-        { retries: 50, delay: 100, rejectMessage: 'Extra map card did not subscribe after {{retries}} retries' }
+        (el: HTMLElement | null) => el !== null && (el as any)._loaded === true,
+        { retries: 10, delay: 200, rejectMessage: 'Extra map card did not subscribe after {{retries}} retries' }
       );
-      if (hasHistorySubsribed) {
-        debuglog('extra map card has history subscribed');
-        // Wait for another 500ms to ensure the history data is loaded
-        setTimeout(() => {
-          if (this._extraMapCard && this._extraMapCard._mapTiler.drawPath) {
-            this._extraMapCard._mapTiler.drawPath();
-            debuglog('extra map card drawPath called');
-          }
-        }, 500);
+      if (mapTilerEl) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (mapTilerEl && typeof (mapTilerEl as any)._drawPaths === 'function') {
+          (mapTilerEl as any)._drawPaths();
+          debug('extra map card path drawn');
+        }
       } else {
-        debuglog('extra map card did not subscribe to history in time');
+        debug('extra map card did not subscribe to history in time');
         return;
       }
     }
@@ -831,8 +825,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       return true;
     } else if (themeMode === 'light') {
       return false;
+    } else {
+      return this.hass.themes.darkMode || isDarkTheme(this);
     }
-    return this.hass.themes.darkMode || isDarkTheme(this);
   }
 
   get isEditorPreview(): boolean {
@@ -846,7 +841,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
   private _createStore() {
     if (!this._store) {
-      debug('Creating store', this._config.name);
       this._store = new Store(this, this._config);
       // super.requestUpdate();
     }
