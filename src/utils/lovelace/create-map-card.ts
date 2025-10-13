@@ -1,5 +1,3 @@
-import memoizeOne from 'memoize-one';
-
 import { HomeAssistant, LovelaceCard, LovelaceCardConfig } from '../../ha';
 import {
   type VehicleStatusCardConfig,
@@ -27,36 +25,49 @@ export const getMapData = (hass: HomeAssistant, config: VehicleStatusCardConfig)
   return mapData;
 };
 
-export const _getMapAddress = memoizeOne(
-  async (config: MiniMapConfig, lat: number, lon: number): Promise<Address | undefined> => {
-    if (config?.hide_map_address === true) {
-      return undefined;
-    }
+const DEV_ADDRESS = {
+  streetNumber: '123',
+  streetName: 'Example St',
+  sublocality: 'Example Suburb',
+  city: 'Example City',
+} as const;
 
-    // console.log('Getting map address');
-
-    const maptilerKey = config?.maptiler_api_key;
-    const apiKey = config?.google_api_key;
-
-    const address = maptilerKey
-      ? await getAddressFromMapTiler(lat, lon, maptilerKey)
-      : apiKey
-      ? await getAddressFromGoggle(lat, lon, apiKey)
-      : await getAddressFromOpenStreet(lat, lon);
-
-    if (!address) return undefined;
-
-    let formattedAddress: string;
-    if (config?.us_format) {
-      formattedAddress = `${address.streetNumber} ${address.streetName}`;
-    } else {
-      formattedAddress = `${address.streetName} ${address.streetNumber}`;
-    }
-    address.streetName = formattedAddress;
-
-    return address;
+export const _getMapAddress = async (config: MiniMapConfig, lat: number, lon: number): Promise<Address | undefined> => {
+  if (config?.hide_map_address === true) {
+    return undefined;
   }
-);
+  const address = await (() => {
+    if (__DEBUG__) {
+      return DEV_ADDRESS;
+    } else {
+      const maptilerKey = config?.maptiler_api_key;
+      const apiKey = config?.google_api_key;
+
+      return maptilerKey
+        ? getAddressFromMapTiler(lat, lon, maptilerKey)
+        : apiKey
+        ? getAddressFromGoggle(lat, lon, apiKey)
+        : getAddressFromOpenStreet(lat, lon);
+    }
+  })();
+
+  if (!address) return undefined;
+
+  // Format address based on us_format setting
+  const formattedAddress =
+    config?.us_format === true
+      ? `${address.streetNumber} ${address.streetName}`
+      : `${address.streetName} ${address.streetNumber}`;
+
+  const finalAddress: Address = {
+    streetName: formattedAddress.trim(),
+    sublocality: address?.sublocality || '',
+    city: address?.city || '',
+  };
+
+  // utilDebug('Formatted address:', { address, finalAddress });
+  return finalAddress;
+};
 
 export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: string): Promise<Address | null> {
   // console.log('Getting address from MapTiler');
@@ -191,24 +202,6 @@ export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssis
   }
   return mapElement;
 }
-// export async function createSingleMapCard(config: MiniMapConfig, hass: HomeAssistant): Promise<LovelaceCardConfig[]> {
-//   const useMaptiler = config?.maptiler_api_key && config?.maptiler_api_key !== '';
-//   const mapConfig = config as MiniMapConfig;
-//   let extra_entities = mapConfig.extra_entities || [];
-
-//   let extraMapConfig: ExtraMapCardConfig = _convertToExtraMapConfig(
-//     mapConfig,
-//     [...(extra_entities as MapEntityConfig[])],
-//     Boolean(useMaptiler)
-//   ) as ExtraMapCardConfig;
-
-//   const mapElement = (await createCardElement(hass, [extraMapConfig])) as LovelaceCardConfig[];
-//   if (!mapElement) {
-//     console.error('Failed to create map element');
-//     return [];
-//   }
-//   return mapElement;
-// }
 
 export const createMapCard = (config: MiniMapConfig): LovelaceCard | undefined => {
   if (!config || !config.device_tracker) {

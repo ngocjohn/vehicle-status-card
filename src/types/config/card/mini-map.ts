@@ -5,12 +5,12 @@ export type LABEL_MODE = 'name' | 'state' | 'attribute' | 'icon';
 export type HISTORY_PERIOD = 'today' | 'yesterday';
 export type MAP_THEME_MODE = 'auto' | 'dark' | 'light';
 
-export type Address = Partial<{
-  streetNumber: string;
-  streetName: string;
-  sublocality: string;
-  city: string;
-}>;
+export interface Address {
+  streetNumber?: string;
+  streetName?: string;
+  sublocality?: string;
+  city?: string;
+}
 export interface MapData {
   lat: number;
   lon: number;
