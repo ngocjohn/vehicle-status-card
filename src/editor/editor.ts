@@ -1,16 +1,18 @@
 // External
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-// Internal
 
+// Internal
 import { EditorConfigAreaSelectedEvent } from '../events/editor-config-area';
-// Import all components
-import './components/';
 // Import styles
 import { HomeAssistant, LovelaceCardEditor, LovelaceConfig, fireEvent } from '../ha';
+// Import all components
+import './components/';
 import { configHasDeprecatedProps, updateDeprecatedConfig, VehicleStatusCardConfig } from '../types/config';
 import { ConfigArea } from '../types/config-area';
 import { loadHaComponents, Create, refactorEditDialog } from '../utils';
+// Debuger
+import { editorDebug } from '../utils/debuglog';
 import '../utils/editor/menu-element';
 import { getSectionFromConfigArea } from '../utils/editor/area-select';
 import { cleanConfig } from '../utils/editor/clean-config';
@@ -99,7 +101,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       this.createStore();
     }
     this.updateComplete.then(() => {
-      console.debug('Editor setConfig called from:', this.configArea);
+      editorDebug('Editor setConfig called from: %s', this.configArea);
       const selectedArea = getSectionFromConfigArea(this.configArea);
       document.dispatchEvent(EditorConfigAreaSelectedEvent(selectedArea));
       this._panelButtons?._reloadPreview();
