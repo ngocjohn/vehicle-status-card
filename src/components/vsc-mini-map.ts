@@ -1,7 +1,7 @@
 // debugger
-import { debug } from '../utils/debuglog';
+import createDebug from '../utils/debugger';
 // eslint-disable-next-line
-const debuglog = debug.extend('mini-map');
+const debuglog = createDebug('card', 'mini-map');
 
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
@@ -175,6 +175,7 @@ export class MiniMapBox extends BaseElement {
   private async _getAddress(): Promise<void> {
     const { lat, lon } = this.mapData!;
     const address = await _getMapAddress(this.mapConfig, lat, lon);
+    // debuglog('Fetched address:', address);
     if (address) {
       this._address = address;
       this.mapData!.address = address;

@@ -41,6 +41,11 @@ const DEFAULT_CONFIG: Partial<VehicleStatusCardConfig> = {
 };
 
 export const createStubConfig = async (hass: HomeAssistant): Promise<VehicleStatusCardConfig> => {
+  const storageConfig = await loadStubConfig();
+  if (storageConfig) {
+    return storageConfig;
+  }
+
   const deviceTracker = getEntitiesByDomain(hass.states, 1, ['device_tracker']);
   const buttonCardConfig = generateButtonCardConfig(hass);
   const indicatorRows = getIndicatorRows(hass);
