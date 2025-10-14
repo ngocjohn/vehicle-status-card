@@ -14,7 +14,7 @@ const debug = process.env.DEBUG;
 const currentVersion = dev ? 'DEVELOPMENT' : `v${version}`;
 const custombanner = logCardInfo(currentVersion);
 
-const fileOutput = dev ? './dist/vehicle-status-card.js' : './build/vehicle-status-card.js';
+const fileOutput = dev ? 'dist/vehicle-status-card.js' : 'build/vehicle-status-card.js';
 
 const serveopts = {
   contentBase: ['./dist'],
@@ -39,13 +39,7 @@ const replaceOpts = {
   __DEBUG__: debug || false,
 };
 
-const plugins = [
-  dev && serve(serveopts),
-  !dev && terser(terserOpt),
-  typescript({
-    sourceMap: true,
-  }),
-];
+const plugins = [dev && serve(serveopts), !dev && terser(terserOpt)];
 
 export default [
   {
@@ -62,7 +56,7 @@ export default [
     watch: {
       exclude: 'node_modules/**',
     },
-    plugins: [replace(replaceOpts), ...defaultPlugins, ...plugins],
+    plugins: [replace(replaceOpts), typescript({ declaration: false }), ...defaultPlugins, ...plugins],
     moduleContext: (id) => {
       const thisAsWindowForModules = [
         'node_modules/@formatjs/intl-utils/lib/src/diff.js',
