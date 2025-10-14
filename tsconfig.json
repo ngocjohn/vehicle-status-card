@@ -13,9 +13,6 @@
     "skipLibCheck": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
     "strict": true,
     "rootDir": "."
   },

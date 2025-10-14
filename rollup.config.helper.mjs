@@ -5,7 +5,7 @@ import json from '@rollup/plugin-json';
 import postcss from 'rollup-plugin-postcss';
 import postcssPresetEnv from 'postcss-preset-env';
 import postcssLit from 'rollup-plugin-postcss-lit';
-import { description, repository } from './package.json';
+import { description, homepage } from './package.json';
 
 export function logCardInfo(version) {
   const part1 = '🚘 VEHICLE-STATUS-CARD 🚘';
@@ -14,7 +14,7 @@ export function logCardInfo(version) {
     'background-color: #83818f;color: #fff;padding: 2px 4px;border: 1px solid #83818f;border-radius: 2px 0 0 2px;font-family: Roboto,Verdana,Geneva,sans-serif;text-shadow: 0 1px 0 rgba(1, 1, 1, 0.3)';
   const part2Style =
     'background-color: transparent;color: #83818f;padding: 2px 3px;border: 1px solid #83818f; border-radius: 0 2px 2px 0;font-family: Roboto,Verdana,Geneva,sans-serif';
-  const repo = `Github: ${repository.url}`;
+  const repo = `Github: ${homepage}`;
   const sponsor = 'If you like the card, consider supporting the developer: https://github.com/sponsors/ngocjohn';
 
   return `
