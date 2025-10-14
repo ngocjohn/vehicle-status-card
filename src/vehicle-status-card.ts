@@ -1,3 +1,7 @@
+// Debuger
+import createDebug from './utils/debugger';
+const debug = createDebug('card');
+
 import isEmpty from 'es-toolkit/compat/isEmpty';
 import { getPromisableResult } from 'get-promisable-result';
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
@@ -7,8 +11,6 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import * as SEC from './components';
 import './components';
-import './editor/editor';
-import './utils/custom-tire-card';
 import { COMPONENT, CARD_NAME } from './constants/const';
 import { EditorEventParams } from './editor/base-editor';
 import { EDITOR_AREA_SELECTED, EDITOR_SUB_CARD_PREVIEW } from './events';
@@ -32,17 +34,14 @@ import {
   ButtonCardSubCardConfig,
   CardDefaultConfig,
 } from './types/config';
-import { ConfigArea } from './types/config-area';
 import { SECTION_KEYS } from './types/config/card/layout';
 import { SECTION } from './types/section';
 import { applyThemesOnElement, loadAndCleanExtraMap, isDarkTheme, ICON } from './utils';
 import { BaseElement } from './utils/base-element';
-// Debuger
-import { debug } from './utils/debuglog';
 import { ButtonSubCardPreviewConfig } from './utils/editor/types';
 import { isCardInEditPreview } from './utils/helpers-dom';
 import { createMapCard } from './utils/lovelace/create-map-card';
-import { createStubConfig, loadStubConfig } from './utils/lovelace/stub-config';
+import { createStubConfig } from './utils/lovelace/stub-config';
 import { Store } from './utils/store';
 
 console.log('ENV DEBUG:', __DEBUG__);
@@ -53,16 +52,16 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     super();
   }
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    Store.selectedConfigArea = ConfigArea.DEFAULT;
-    return document.createElement('vehicle-status-card-editor');
+    await import('./editor/editor');
+    return document.createElement('vehicle-status-card-editor') as LovelaceCardEditor;
   }
 
-  public static getStubConfig = async (hass: HomeAssistant): Promise<VehicleStatusCardConfig> => {
-    const DEFAULT_CONFIG = (await loadStubConfig()) ?? (await createStubConfig(hass));
+  public static async getStubConfig(hass: HomeAssistant): Promise<VehicleStatusCardConfig> {
+    const DEFAULT_CONFIG = await createStubConfig(hass);
     return {
       ...DEFAULT_CONFIG,
     };
-  };
+  }
 
   set hass(hass: HomeAssistant) {
     this._hass = hass;

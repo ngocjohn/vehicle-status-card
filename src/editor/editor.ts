@@ -1,3 +1,6 @@
+// Debuger
+import createDebug from '../utils/debugger';
+const debuglog = createDebug('editor');
 // External
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
@@ -11,8 +14,6 @@ import './components/';
 import { configHasDeprecatedProps, updateDeprecatedConfig, VehicleStatusCardConfig } from '../types/config';
 import { ConfigArea } from '../types/config-area';
 import { loadHaComponents, Create, refactorEditDialog } from '../utils';
-// Debuger
-import { editorDebug } from '../utils/debuglog';
 import '../utils/editor/menu-element';
 import { getSectionFromConfigArea } from '../utils/editor/area-select';
 import { cleanConfig } from '../utils/editor/clean-config';
@@ -101,7 +102,7 @@ export class VehicleStatusCardEditor extends BaseEditor implements LovelaceCardE
       this.createStore();
     }
     this.updateComplete.then(() => {
-      editorDebug('Editor setConfig called from: %s', this.configArea);
+      debuglog('Editor setConfig called from: %s', this.configArea);
       const selectedArea = getSectionFromConfigArea(this.configArea);
       document.dispatchEvent(EditorConfigAreaSelectedEvent(selectedArea));
       this._panelButtons?._reloadPreview();

@@ -12,4 +12,4 @@ export * from './loader_extra_map';
 export * from './mdi-icons';
 export * from './lovelace/create-custom-card';
 export * from './base-button';
-export * from './debuglog';
+export * from './debugger';
