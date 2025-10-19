@@ -1,6 +1,6 @@
 {
   "name": "vehicle-status-card",
-  "version": "1.17.1-beta.0",
+  "version": "1.17.2-beta.0",
   "description": "Lovelace custom card for tracking Vehicle status",
   "scripts": {
     "start": "rollup -c rollup.config.js --bundleConfigAsCjs --watch",
