@@ -49,14 +49,24 @@ export const configHasDeprecatedProps = (config: VehicleStatusCardConfig): boole
     config.mini_map.extra_entities.length
   );
   const hasButtonLegacy = !!config.button_card?.length;
+  const hasButtonGridLegacy = !!(
+    config.layout_config &&
+    config.layout_config.button_grid &&
+    (config.layout_config.button_grid.button_layout !== undefined ||
+      config.layout_config.button_grid.transparent !== undefined ||
+      config.layout_config.button_grid.hide_notify_badge !== undefined)
+  );
   // const needsUpdate = Boolean(hasImageLegacyConfig || hasLayoutHide || hasMiniMapExtraEntities);
-  const needsUpdate = Boolean(hasImageLegacyConfig || hasLayoutHide || hasMiniMapExtraEntities || hasButtonLegacy);
+  const needsUpdate = Boolean(
+    hasImageLegacyConfig || hasLayoutHide || hasMiniMapExtraEntities || hasButtonLegacy || hasButtonGridLegacy
+  );
   if (needsUpdate) {
     console.debug('Config needs update:', {
       hasImageLegacyConfig,
       hasLayoutHide,
       hasMiniMapExtraEntities,
       hasButtonLegacy,
+      hasButtonGridLegacy,
     });
   }
   return needsUpdate;
@@ -117,10 +127,16 @@ export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): Vehicle
 
     newConfig.button_cards = migrateButtonCardConfig(config.button_card).map((btn) => ({ ...layoutForBtn, ...btn }));
     console.debug('Button cards migrated');
-
     delete newConfig.button_card; // Remove deprecated button_card property
-    delete newConfig.layout_config?.button_grid?.button_layout;
-    delete newConfig.layout_config?.button_grid?.transparent;
+  }
+
+  if (newConfig.layout_config?.button_grid) {
+    const updatedButtonGrid = { ...newConfig.layout_config.button_grid };
+    delete updatedButtonGrid.button_layout;
+    delete updatedButtonGrid.transparent;
+    delete updatedButtonGrid.hide_notify_badge;
+    newConfig.layout_config.button_grid = updatedButtonGrid;
+    console.debug('Updated button_grid config');
   }
 
   return newConfig;
