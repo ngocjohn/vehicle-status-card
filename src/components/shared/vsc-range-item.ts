@@ -1,6 +1,7 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { RenderTemplateResult, subscribeRenderTemplate, hasTemplate } from '../../ha';
@@ -148,18 +149,48 @@ export class VscRangeItem extends BaseElement {
             color: var(--range-bar-color);
           }
         }
-        ha-tooltip .charge-target {
+        .charge-target {
           position: absolute;
-          top: 50%;
-          left: var(--vsc-bar-charge-target);
           width: 3px;
-          height: calc(var(--vsc-bar-height) - 3px);
+          height: calc(100% - 6px);
           background-color: var(--vsc-bar-target-color);
           border-radius: var(--vsc-bar-radius);
           box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-          transform: translateY(-50%);
+          /* transform: translateY(-50%); */
           display: var(--vsc-bar-target-display, none);
-          z-index: 4;
+          z-index: 3;
+          inset: 3px calc(100% - var(--vsc-bar-charge-target)) auto auto;
+          border: none;
+          box-sizing: border-box;
+        }
+
+        .charge-target.tooltip::after {
+          content: attr(data-title);
+          position: absolute;
+          top: 50%;
+          transform: translate(-108%, -55%);
+          background-color: var(--primary-text-color, #000000);
+          color: var(--card-background-color, #ffffff);
+          padding: 0 12px;
+          border-radius: 8px;
+          white-space: nowrap;
+          box-sizing: content-box;
+          opacity: 0;
+        }
+
+        .charge-target:hover::after {
+          animation: slideIn 0.3s ease-in-out forwards;
+        }
+
+        @keyframes slideIn {
+          from {
+            max-width: 0;
+            opacity: 0;
+          }
+          to {
+            max-width: 1000px;
+            opacity: 1;
+          }
         }
       `,
     ];
@@ -505,14 +536,10 @@ export class VscRangeItem extends BaseElement {
       <div class="info-box range" style=${styleMap(styles)}>
         ${energyItem}
         <div class="fuel-container" ?itemsInside=${itemsInside}>
-          <ha-tooltip
-            content="Target: ${get('targetEntityState')}"
-            placement="right"
-            distance="10"
-            ?disabled=${!get('targetTooltip')}
-          >
-            <div class="charge-target"></div>
-          </ha-tooltip>
+          <div
+            class=${classMap({ 'charge-target': true, tooltip: get('targetTooltip') })}
+            data-title="Target: ${get('targetEntityState')}"
+          ></div>
           <div class="fuel-wrapper">
             <div class="fuel-level-background"></div>
             <div class="fuel-level-bar" ?charging=${get('chargingState')} align=${get('energyAlignment')}>
