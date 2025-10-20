@@ -32,6 +32,18 @@ export default {
         npmPublish: false,
       },
     ],
+    [
+      '@semantic-release/git',
+      {
+        assets: ['CHANGELOG.md', 'README.md', 'package.json'],
+      },
+    ],
+    [
+      '@semantic-release/github',
+      {
+        assets: 'build/*.js',
+      },
+    ],
   ],
   preset: 'conventionalcommits',
   branches: [{ name: 'main' }, { name: 'dev', channel: 'beta', prerelease: true }],
