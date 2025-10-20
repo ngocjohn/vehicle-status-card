@@ -75,3 +75,14 @@ type ThemeConfig = Partial<{
   mode: THEME_MODE;
   theme: string;
 }>;
+
+export const hasButtonGridLegacy = (btnConfig?: ButtonGridConfig): boolean => {
+  if (!btnConfig) {
+    return false;
+  }
+  return (
+    btnConfig.button_layout !== undefined ||
+    btnConfig.transparent !== undefined ||
+    btnConfig.hide_notify_badge !== undefined
+  );
+};

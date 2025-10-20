@@ -553,13 +553,8 @@ export class PanelRangeInfo extends BaseEditor {
       return html` <div class="sub-panel section">
         <div class="sub-header">
           <span>${title}</span>
-          ${helper
-            ? html`
-                <ha-tooltip content=${helper}>
-                  <ha-icon class="tooltip-icon" icon="mdi:help-circle"></ha-icon>
-                </ha-tooltip>
-              `
-            : nothing}
+          ${helper ? html` <ha-icon id=${key} class="tooltip-icon" icon="mdi:help-circle"></ha-icon> ` : nothing}
+          <ha-tooltip .for=${key} placement="left-start"> ${helper} </ha-tooltip>
         </div>
         ${config}
       </div>`;
