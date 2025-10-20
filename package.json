@@ -3,18 +3,14 @@
   "version": "1.17.2-beta.0",
   "description": "Lovelace custom card for tracking Vehicle status",
   "scripts": {
-    "start": "rollup -c rollup.config.js --bundleConfigAsCjs --watch",
-    "lint": "eslint src/**/*.ts",
-    "rollup": "rollup -c rollup.config.js --bundleConfigAsCjs",
     "build": "pnpm run lint && pnpm run rollup",
-    "dev": "pnpm run start",
-    "dev-serve": "cross-env PORT=8222 pnpm start",
+    "rollup": "rollup -c rollup.config.js --bundleConfigAsCjs",
+    "lint": "eslint src/**/*.ts",
+    "start": "rollup -c rollup.config.js --bundleConfigAsCjs --watch",
     "debug": "cross-env DEBUG=true pnpm start",
     "prepare": "husky",
-    "clean": "rm -rf dist build && mkdir -p dist build",
-    "clean_cache": "pnpm run clean_delfiles && pnpm run clean_deldirs",
-    "clean_delfiles": "rm -rf node_modules/.cache/rollup-plugin-typescript2/*",
-    "clean_deldirs": "rm -rf node_modules/.cache/rollup-plugin-typescript2/rpt2_*"
+    "clean:build": "rm -rf dist build && mkdir -p dist build",
+    "clean:cache": "rm -rf node_modules/.cache/rollup-plugin-typescript2/* && rm -rf node_modules/.cache/rollup-plugin-typescript2/rpt2_* "
   },
   "keywords": [
     "home-assistant",

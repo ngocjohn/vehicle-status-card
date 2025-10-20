@@ -3,15 +3,15 @@ root = true
 
 [*]
 charset = utf-8
-indent_style = space
-indent_size = 2
 insert_final_newline = true
 trim_trailing_whitespace = true
-max_line_length = 100
+end_of_line = lf
 
-[*.ts]
+[*.{js,json,ts,tsx}]
 quote_type = single
+indent_style = space
+indent_size = 2
 
-[*.md]
+[*.{md,markdown}]
 max_line_length = off
 trim_trailing_whitespace = false
