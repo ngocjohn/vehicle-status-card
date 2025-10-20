@@ -4,6 +4,7 @@
   --vic-icon-size: 36px;
   --vic-icon-border-radius: 18px;
   --vic-icon-bg-opacity: 0.2;
+  --vsc-unit: 40px;
   /* Default rgb colors */
   --rgb-disabled-color: 189, 189, 189;
   --rgb-red-color: 244, 67, 54;
@@ -136,16 +137,9 @@ ha-card .card-header {
   min-width: calc(100% + (var(--vic-card-padding) * 2));
 }
 
-/* #indicators {
-  margin-bottom: var(--vic-gutter-gap);
-} */
-
-#range {
-  margin-top: var(--vic-gutter-gap);
-}
 
 #indicators[noMargin],
-#range[noMargin] {
+#range_info[noMargin] {
   margin-top: unset;
 }
 
@@ -301,7 +295,14 @@ ha-card .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  --mdc-icon-button-size: var(--vsc-unit);
+  --mdc-icon-size: calc(var(--vsc-unit) * 0.6);
+}
 
+.added-card-header ha-icon {
+  display: flex;
+  width: calc(var(--vsc-unit) * 0.6);
+  height: calc(var(--vsc-unit) * 0.6);
 }
 
 .added-card-header .headder-btn {
@@ -314,7 +315,15 @@ ha-card .card-header {
   opacity: 1;
 }
 
+ha-icon-button.headder-btn,
+.header-btn .mdc-icon-button {
+  width: var(--vsc-unit) !important;
+  height: var(--vsc-unit) !important;
+}
 
+ha-icon-button ha-icon {
+  display: flex;
+}
 
 .added-card-header .card-toggle {
   display: flex;

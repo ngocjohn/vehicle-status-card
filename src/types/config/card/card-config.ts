@@ -8,7 +8,7 @@ import { ButtonCardConfig } from './button';
 import { BaseButtonCardItemConfig } from './button-card';
 import { hasImageLegacy, ImageConfig, ImageItem, migrateImageConfig } from './images';
 import { IndicatorsConfig } from './indicators';
-import { LayoutConfig } from './layout';
+import { hasButtonGridLegacy, LayoutConfig } from './layout';
 import { MiniMapConfig } from './mini-map';
 import { RangeInfoConfig } from './range-info';
 import { IndicatorRowConfig } from './row-indicators';
@@ -130,13 +130,14 @@ export const updateDeprecatedConfig = (config: VehicleStatusCardConfig): Vehicle
     delete newConfig.button_card; // Remove deprecated button_card property
   }
 
-  if (newConfig.layout_config?.button_grid) {
-    const updatedButtonGrid = { ...newConfig.layout_config.button_grid };
-    delete updatedButtonGrid.button_layout;
-    delete updatedButtonGrid.transparent;
-    delete updatedButtonGrid.hide_notify_badge;
-    newConfig.layout_config.button_grid = updatedButtonGrid;
-    console.debug('Updated button_grid config');
+  if (hasButtonGridLegacy(newConfig.layout_config?.button_grid)) {
+    // remove deprecated properties from button_grid
+    ['button_layout', 'transparent', 'hide_notify_badge'].forEach((prop) => {
+      if (prop in newConfig.layout_config!.button_grid!) {
+        delete newConfig.layout_config!.button_grid![prop];
+        console.debug(`Removed deprecated button_grid property: ${prop}`);
+      }
+    });
   }
 
   return newConfig;

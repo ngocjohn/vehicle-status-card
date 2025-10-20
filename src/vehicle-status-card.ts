@@ -6,7 +6,6 @@ import isEmpty from 'es-toolkit/compat/isEmpty';
 import { getPromisableResult } from 'get-promisable-result';
 import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
-import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import * as SEC from './components';
@@ -260,7 +259,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const isEditorPreview = this.isEditorPreview;
     return html`
       <ha-card
-        class=${this._computeClasses(notMainCard)}
         .raised=${isEditorPreview}
         ?notMainCard=${notMainCard}
         ?no-header=${headerHidden}
@@ -437,8 +435,9 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
   private _renderRangeInfo(): TemplateResult {
     const { range_info } = this._config;
     if (this._isSectionHidden(SECTION.RANGE_INFO) || !range_info) return html``;
+    const inFirstSection = this._config.layout_config?.section_order![0] === SECTION.RANGE_INFO;
     const rangeLayout = this._config.layout_config?.range_info_config?.layout || 'column';
-    return html`<div id="${SECTION.RANGE_INFO}">
+    return html`<div id="${SECTION.RANGE_INFO}" ?noMargin=${inFirstSection}>
       <vsc-range-info
         ._hass=${this._hass}
         .rangeConfig=${range_info}
@@ -603,31 +602,6 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
         }
       });
     }
-  }
-
-  private _computeClasses(notMainCard: boolean = false) {
-    if (notMainCard) {
-      return classMap({
-        __not_main_card: true,
-      });
-    }
-    // const section_order = this._config.layout_config?.section_order || [];
-    // const lastItem = section_order[section_order.length - 1];
-    // const firstItem = section_order[0];
-    // const mapSingle = section_order.includes(SECTION.MINI_MAP) && section_order.length === 1;
-    // const mapBottom = !section_order.includes(SECTION.BUTTONS) && lastItem === SECTION.MINI_MAP;
-    // return classMap({
-    //   __map_last: lastItem === SECTION.MINI_MAP && firstItem !== SECTION.MINI_MAP,
-    //   __map_first: firstItem === SECTION.MINI_MAP && lastItem !== SECTION.MINI_MAP,
-    //   __map_single: mapSingle,
-    //   __map_bottom: mapBottom,
-    // });
-    return classMap({
-      __map_last: false,
-      __map_first: false,
-      __map_single: false,
-      __map_bottom: false,
-    });
   }
 
   /* --------------------------- THEME CONFIGURATION -------------------------- */
