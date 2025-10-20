@@ -4,9 +4,14 @@ on:
   pull_request:
     branches:
       - '*'
+    paths:
+      - 'src/**'
   push:
     branches:
       - '*'
+    paths:
+      - 'src/**'
+
 
 jobs:
   lint:
@@ -29,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Lint code
-        run: pnpm run lint --if-present
+        run: pnpm run lint
   build:
     runs-on: ubuntu-latest
     strategy:
