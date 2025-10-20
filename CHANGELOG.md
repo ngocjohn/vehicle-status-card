@@ -1,3 +1,9 @@
+## [1.18.1-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1-dev.1) (2025-10-20)
+
+### Bug Fixes
+
+* **charge-target:**  replace `ha-tooltip` with pseudo element for tooltip ([#214](https://github.com/ngocjohn/vehicle-status-card/issues/214)) ([dfaaa61](https://github.com/ngocjohn/vehicle-status-card/commit/dfaaa615356b0680af53255cbb8532fc183994e3))
+
 ## [1.18.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.17.0...v1.18.0) (2025-10-20)
 
 ### Features
