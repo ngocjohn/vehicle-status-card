@@ -55,4 +55,4 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Build project
-        run: pnpm run build --if-present
+        run: pnpm run build
