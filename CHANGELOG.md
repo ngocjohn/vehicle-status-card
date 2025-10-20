@@ -1,3 +1,16 @@
+## [1.18.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.17.0...v1.18.0) (2025-10-20)
+
+### Features
+
+* **images:** enhance image slider with multiple file upload support ([#209](https://github.com/ngocjohn/vehicle-status-card/issues/209)) ([eee496b](https://github.com/ngocjohn/vehicle-status-card/commit/eee496b69200da42f8891077e2cb8bc10c529a5a))
+
+### Bug Fixes
+
+* **button:** Update button grid legacy checks and update migration logic ([#213](https://github.com/ngocjohn/vehicle-status-card/issues/213)) ([93be63d](https://github.com/ngocjohn/vehicle-status-card/commit/93be63d6517d38eeb2f450aff6739bc56ce0f6f4))
+* ensure swiper usage defaults to false and remove debug logs in color utility ([a67f2ae](https://github.com/ngocjohn/vehicle-status-card/commit/a67f2ae46d1cc217d80dadd56f75630869ddb017))
+* icon action handler method ([#207](https://github.com/ngocjohn/vehicle-status-card/issues/207)) ([76e2e09](https://github.com/ngocjohn/vehicle-status-card/commit/76e2e0965401cfac608b14e2cd35322f26dcb684))
+* Import of leaflet-providers ([#205](https://github.com/ngocjohn/vehicle-status-card/issues/205)) ([963a62d](https://github.com/ngocjohn/vehicle-status-card/commit/963a62da0a2288a9cd446b5b0c98967f2d2817a7))
+
 <a id="v1.15.2"></a>
 # [v1.15.2](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.15.2) - 2025-07-16
 
