@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## [1.18.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1) (2025-10-22)
 
 ### Bug Fixes
@@ -10,6 +11,8 @@
 =======
 =======
 >>>>>>> 206f100 (chore(release): 1.18.1-dev.1 [skip ci])
+=======
+>>>>>>> 8e082a8 (chore(release): 1.18.1 [skip ci])
 ## [1.18.1-dev.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.2...v1.18.1-dev.3) (2025-11-18)
 
 ### Bug Fixes
@@ -26,6 +29,14 @@
 
 =======
 >>>>>>> e1dedb3 (chore(release): 1.18.1-dev.1 [skip ci])
+=======
+## [1.18.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1) (2025-10-22)
+
+### Bug Fixes
+
+* **charge-target:**  replace `ha-tooltip` with pseudo element for tooltip ([#214](https://github.com/ngocjohn/vehicle-status-card/issues/214)) ([0909258](https://github.com/ngocjohn/vehicle-status-card/commit/0909258ab61f390f5a134e7f884bec526e81c632))
+
+>>>>>>> 33ebecb (chore(release): 1.18.1 [skip ci])
 ## [1.18.1-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1-dev.1) (2025-10-20)
 
 ### Bug Fixes

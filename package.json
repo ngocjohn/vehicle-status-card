@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "1.18.1",
 =======
   "version": "1.18.1-dev.2",
@@ -11,11 +12,19 @@
   "version": "1.18.1-dev.3",
 >>>>>>> 2a6e34b (chore(release): 1.18.1-dev.3 [skip ci])
 =======
+=======
+>>>>>>> 8e082a8 (chore(release): 1.18.1 [skip ci])
   "version": "1.18.1-dev.3",
 =======
   "version": "1.18.1-dev.1",
 >>>>>>> e1dedb3 (chore(release): 1.18.1-dev.1 [skip ci])
+<<<<<<< HEAD
 >>>>>>> 206f100 (chore(release): 1.18.1-dev.1 [skip ci])
+=======
+=======
+  "version": "1.18.1",
+>>>>>>> 33ebecb (chore(release): 1.18.1 [skip ci])
+>>>>>>> 8e082a8 (chore(release): 1.18.1 [skip ci])
   "description": "Lovelace custom card for tracking Vehicle status",
   "scripts": {
     "build": "pnpm run lint && pnpm run rollup",
