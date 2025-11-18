@@ -280,6 +280,25 @@ export class PanelRowSubItem extends BaseEditor {
 
     let changed = this.mergeWithCleanup(currentConfig, incoming);
 
+    // ---- normalize state_content against include_state_template ----
+    const include = !!currentConfig.include_state_template;
+    const raw = currentConfig.state_content as string | string[] | undefined;
+    const normalized = this._applyTemplateFlagStable(this._toArray(raw), include);
+    const normalizedOrUndef = normalized.length ? normalized : undefined;
+
+    // only set/delete if it actually changes something
+    const before = Array.isArray(raw) ? raw : this._toArray(raw);
+    if (normalizedOrUndef === undefined) {
+      if ('state_content' in currentConfig) {
+        delete currentConfig.state_content;
+        changed = true;
+      }
+    } else if (!this._arrayEq(before, normalizedOrUndef)) {
+      currentConfig.state_content = normalizedOrUndef;
+      changed = true;
+    }
+    // ---------------------------------------------------------------
+
     if (!changed) return;
     console.debug('Sub-group item config changed:', changed, this._groupItemIndex, currentConfig);
     const newGroupItems = (this._subItemConfig as IndicatorRowGroupConfig).items!.concat();
