@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 ## [1.18.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1) (2025-10-22)
 
 ### Bug Fixes
 
 * **charge-target:**  replace `ha-tooltip` with pseudo element for tooltip ([#214](https://github.com/ngocjohn/vehicle-status-card/issues/214)) ([0909258](https://github.com/ngocjohn/vehicle-status-card/commit/0909258ab61f390f5a134e7f884bec526e81c632))
+=======
+## [1.18.1-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.1...v1.18.1-dev.2) (2025-11-18)
+
+### Bug Fixes
+
+* improve handling of the `state_template` for indicator subgroup items by normalizing the state content based on the `include_state_template` configuration. ([#221](https://github.com/ngocjohn/vehicle-status-card/issues/221)) ([8179a8a](https://github.com/ngocjohn/vehicle-status-card/commit/8179a8a6a6f3cc4a4d39e59c36b61e732249bd3a))
+>>>>>>> 3468e9d (chore(release): 1.18.1-dev.2 [skip ci])
 
 ## [1.18.1-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1-dev.1) (2025-10-20)
 
