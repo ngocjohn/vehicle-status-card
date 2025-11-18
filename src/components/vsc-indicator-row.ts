@@ -251,7 +251,7 @@ export class VscIndicatorRow extends BaseElement {
 
     return html`${subItems.map((item) => {
       return html`
-        <vsc-indicator-item .hass=${this.hass} ._config=${item} ._store=${this._store}></vsc-indicator-item>
+        <vsc-indicator-item ._hass=${this._hass} ._config=${item} ._store=${this._store}></vsc-indicator-item>
       `;
     })}`;
   }
