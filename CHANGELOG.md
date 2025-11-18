@@ -1,3 +1,9 @@
+## [1.18.1-dev.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.2...v1.18.1-dev.3) (2025-11-18)
+
+### Bug Fixes
+
+* **mini-map:** refactor marker styles and improve device tracker warning display ([#222](https://github.com/ngocjohn/vehicle-status-card/issues/222)) ([b0d7f96](https://github.com/ngocjohn/vehicle-status-card/commit/b0d7f960e30a91373657113b8e2c3f0b5879d64e))
+
 ## [1.18.1-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.1...v1.18.1-dev.2) (2025-11-18)
 
 ### Bug Fixes
