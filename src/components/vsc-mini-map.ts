@@ -212,8 +212,8 @@ export class MiniMapBox extends BaseElement {
       const bounds = this.map!.getBounds();
       const isMarkerVisible = bounds.contains(this.marker!.getLatLng());
       this._locateIconVisible = isMarkerVisible;
-      // console.log('Marker visible:', isMarkerVisible);
     });
+
     this._mapInitialized = true;
   }
 
@@ -243,9 +243,6 @@ export class MiniMapBox extends BaseElement {
   private _createMarker(map: L.Map): L.Marker {
     const { lat, lon } = this.mapData!;
     const customIcon = L.divIcon({
-      html: `<div class="marker">
-            </div>`,
-      iconSize: [24, 24],
       className: 'marker',
     });
 
@@ -360,6 +357,7 @@ export class MiniMapBox extends BaseElement {
           display: block;
           width: 100%;
           height: 100%;
+          --vsc-marker-size: 24px;
           --vic-map-marker-color: var(--primary-color);
           --vic-marker-filter: none;
           --vic-map-tiles-filter: grayscale(1) contrast(1.1);
@@ -423,16 +421,21 @@ export class MiniMapBox extends BaseElement {
         }
         .marker {
           position: relative;
-          width: 24px;
-          height: 24px;
+          width: var(--vsc-marker-size, 24px) !important;
+          height: var(--vsc-marker-size, 24px) !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          background-color: transparent !important;
+          border-radius: 50%;
           /* filter: var(--vic-marker-filter); */
         }
 
         .marker::before {
           content: '';
           position: absolute;
-          width: calc(100% + 1rem);
-          height: calc(100% + 1rem);
+          width: calc(100% * 1.5);
+          height: calc(100% * 1.5);
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -441,46 +444,25 @@ export class MiniMapBox extends BaseElement {
             transparent 0%,
             rgb(from var(--vic-map-marker-color) r g b / 25%) 100%
           );
-          border-radius: 50%;
-          border: none !important;
-          /* opacity: 0.6; */
-        }
-
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 0;
-          }
-          30% {
-            opacity: 0.5;
-          }
-          60% {
-            transform: scale(2);
-            opacity: 0;
-          }
-          100% {
-            opacity: 0;
-          }
+          border-radius: inherit;
         }
 
         .marker::after {
           content: '';
           position: absolute;
-          width: 50%;
-          height: 50%;
+          width: calc(100% * 0.5);
+          height: calc(100% * 0.5);
           background-color: var(--vic-map-marker-color);
-          border-radius: 50%;
+          border-radius: inherit;
           top: 50%;
           left: 50%;
-          /* border: 1px solid white; */
           transform: translate(-50%, -50%);
           opacity: 1;
           transition: all 0.2s ease;
         }
 
         .marker:hover::after {
-          width: calc(60% + 1px);
-          height: calc(60% + 1px);
+          transform: translate(-50%, -50%) scale(1.2);
         }
 
         .leaflet-control-container {
