@@ -417,7 +417,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const deviceTracker = this._config.mini_map?.device_tracker;
     const stateObj = deviceTracker ? this._hass.states[deviceTracker] : null;
     if (!deviceTracker || !stateObj || /(unknown)/.test(stateObj.state)) {
-      return this._showWarning('Device tracker not available');
+      return html`<div id=${SECTION.MINI_MAP}>${this._showWarning('Device tracker not available')}</div>`;
     }
     const miniMapConfig = this._config.mini_map;
     return html`
