@@ -1,10 +1,19 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## [1.18.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1) (2025-10-22)
 
 ### Bug Fixes
 
 * **charge-target:**  replace `ha-tooltip` with pseudo element for tooltip ([#214](https://github.com/ngocjohn/vehicle-status-card/issues/214)) ([0909258](https://github.com/ngocjohn/vehicle-status-card/commit/0909258ab61f390f5a134e7f884bec526e81c632))
 =======
+=======
+## [1.18.1-dev.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.2...v1.18.1-dev.3) (2025-11-18)
+
+### Bug Fixes
+
+* **mini-map:** refactor marker styles and improve device tracker warning display ([#222](https://github.com/ngocjohn/vehicle-status-card/issues/222)) ([b0d7f96](https://github.com/ngocjohn/vehicle-status-card/commit/b0d7f960e30a91373657113b8e2c3f0b5879d64e))
+
+>>>>>>> 2a6e34b (chore(release): 1.18.1-dev.3 [skip ci])
 ## [1.18.1-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.1...v1.18.1-dev.2) (2025-11-18)
 
 ### Bug Fixes
