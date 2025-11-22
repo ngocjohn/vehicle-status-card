@@ -1,35 +1,22 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 ## [1.18.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1) (2025-10-22)
 
 ### Bug Fixes
 
 * **charge-target:**  replace `ha-tooltip` with pseudo element for tooltip ([#214](https://github.com/ngocjohn/vehicle-status-card/issues/214)) ([0909258](https://github.com/ngocjohn/vehicle-status-card/commit/0909258ab61f390f5a134e7f884bec526e81c632))
-=======
-=======
-=======
->>>>>>> 206f100 (chore(release): 1.18.1-dev.1 [skip ci])
-=======
->>>>>>> 8e082a8 (chore(release): 1.18.1 [skip ci])
+
 ## [1.18.1-dev.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.2...v1.18.1-dev.3) (2025-11-18)
 
 ### Bug Fixes
 
 * **mini-map:** refactor marker styles and improve device tracker warning display ([#222](https://github.com/ngocjohn/vehicle-status-card/issues/222)) ([b0d7f96](https://github.com/ngocjohn/vehicle-status-card/commit/b0d7f960e30a91373657113b8e2c3f0b5879d64e))
 
->>>>>>> 2a6e34b (chore(release): 1.18.1-dev.3 [skip ci])
 ## [1.18.1-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1-dev.1...v1.18.1-dev.2) (2025-11-18)
 
 ### Bug Fixes
 
 * improve handling of the `state_template` for indicator subgroup items by normalizing the state content based on the `include_state_template` configuration. ([#221](https://github.com/ngocjohn/vehicle-status-card/issues/221)) ([8179a8a](https://github.com/ngocjohn/vehicle-status-card/commit/8179a8a6a6f3cc4a4d39e59c36b61e732249bd3a))
->>>>>>> 3468e9d (chore(release): 1.18.1-dev.2 [skip ci])
 
-=======
->>>>>>> e1dedb3 (chore(release): 1.18.1-dev.1 [skip ci])
-=======
 ## [1.18.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1) (2025-10-22)
 
 ### Bug Fixes
@@ -62,7 +49,7 @@
 <!-- Release notes generated using configuration in .github/release.yml at v1.15.2 -->
 
 ## What's Changed
-### 🐛 Fixes 
+### 🐛 Fixes
 * Implement load and clean duplicatied resources for extra map component [@ngocjohn](https://github.com/ngocjohn) ([#167](https://github.com/ngocjohn/vehicle-status-card/issues/167))
 ## 🧰 Maintenance
 * Update dependencies and improve development scripts [@ngocjohn](https://github.com/ngocjohn) ([#162](https://github.com/ngocjohn/vehicle-status-card/issues/162))
@@ -81,7 +68,7 @@
 This update introduces improved support for range calculations and enhances MapTiler popups with multi-entity support, making the Vehicle Status Card more flexible and informative.
 ### 🚀 New Features
 - **Enhanced MapTiler popups**: Now supports displaying multiple entities in a single popup. [#159](https://github.com/ngocjohn/vehicle-status-card/pull/159)
-  
+
 ![map-popup](https://github.com/user-attachments/assets/bf2f2495-80ae-4670-8bd3-5d9611aeef7f)
 
 - **`max_value` support for range items**: Added `max_value` configuration for range-based items, improving precision in value calculations. [#153](https://github.com/ngocjohn/vehicle-status-card/pull/153)
@@ -98,12 +85,12 @@ This update introduces improved support for range calculations and enhances MapT
 
 ## What's Changed
 ### New Features 🎉
-- **Add configurable color thresholds and visual styles to range info bars**  
+- **Add configurable color thresholds and visual styles to range info bars**
   This update introduces support for custom color thresholds that dynamically change the progress bar's appearance. You can now choose between smooth gradients or segmented color blocks to represent energy levels visually.  [#149](https://github.com/ngocjohn/vehicle-status-card/pull/149) [#151](https://github.com/ngocjohn/vehicle-status-card/pull/151)
 ![colorthresholds](https://github.com/user-attachments/assets/48a03327-b0f0-4311-a4fa-304d73665654)
 
 ### Other Changes
-- **Update README with new feature examples and assets**  
+- **Update README with new feature examples and assets**
   Documentation now includes usage examples and screenshots of the new color features.  [#147](https://github.com/ngocjohn/vehicle-status-card/pull/147)
 
 
@@ -139,7 +126,7 @@ This release adds new layout and configuration features for range info and butto
 * **Charging Template & Target Support**
 Add charging template and charge target support in the range info progress bar. [#133](https://github.com/ngocjohn/vehicle-status-card/pull/133)
 * **Range Info Layout Options**
-Add layout configuration for range info bars.[#140](https://github.com/ngocjohn/vehicle-status-card/pull/140)  
+Add layout configuration for range info bars.[#140](https://github.com/ngocjohn/vehicle-status-card/pull/140)
 ![2025-06-09 22 13 27](https://github.com/user-attachments/assets/665c8577-9da0-4790-a4de-b5a8271e4881)
 
 * **Transparent Button Background & State Colors**
@@ -164,7 +151,7 @@ Support transparent background and state-specific color styling for buttons. Enh
 ## What's Changed
 
 ### 🛠 Fixes
-- **Indicator Config Bug**: Fixed a bug where indicators could be `undefined` if the configuration was missing or incomplete.  
+- **Indicator Config Bug**: Fixed a bug where indicators could be `undefined` if the configuration was missing or incomplete.
   [#131](https://github.com/ngocjohn/vehicle-status-card/pull/131)
 
 ### ✨ Improvements
@@ -186,17 +173,17 @@ Support transparent background and state-specific color styling for buttons. Enh
 This release introduces several highly requested features, UI enhancements, and internal improvements for a better user experience and customization flexibility.
 
 ## ✨ New Features
-- **Vertical Button Layout**  
-  Easily switch the button grid layout to vertical orientation for compact UIs.  [#125](https://github.com/ngocjohn/vehicle-status-card/pull/125) 
+- **Vertical Button Layout**
+  Easily switch the button grid layout to vertical orientation for compact UIs.  [#125](https://github.com/ngocjohn/vehicle-status-card/pull/125)
 ![vsc-vertical-layout](https://github.com/user-attachments/assets/a1971290-afed-4dfe-9586-b7007818d60c)
 
-- **Customizable Notification Badges**  
+- **Customizable Notification Badges**
   Buttons now support customizable notification badge styles, letting you highlight states more effectively. [#126](https://github.com/ngocjohn/vehicle-status-card/pull/126)
 
-- **Color Template for Indicator Groups Item**  
+- **Color Template for Indicator Groups Item**
   Indicator group items can now use color templates for enhanced visual clarity.  [#127](https://github.com/ngocjohn/vehicle-status-card/pull/127)
 
-- **Tap Action for Range Info Entities**  
+- **Tap Action for Range Info Entities**
   You can now define a tap action on range info entities for better interactivity.
 
 ## 🛠 Other Improvements
@@ -274,14 +261,14 @@ Added support for displaying the mini map as a full, standalone card on the dash
 ## What's Changed
 
 ### New Features 🎉
-* Introduced label mode and attribute configuration options for map markers.  
+* Introduced label mode and attribute configuration options for map markers.
   This allows more control over how marker data is displayed, making the map more informative and customizable. [#101](https://github.com/ngocjohn/vehicle-status-card/pull/101)
 
-* Added support for aspect ratio configuration.  
+* Added support for aspect ratio configuration.
   Users can now adjust the map popup's layout proportions to better fit different dashboard designs. [#102](https://github.com/ngocjohn/vehicle-status-card/pull/102)
 
 ### Other Changes
-* Refactored components to implement `VicTab` and `VicTabBar`.  
+* Refactored components to implement `VicTab` and `VicTabBar`.
 [#103](https://github.com/ngocjohn/vehicle-status-card/pull/103)
 
 **Full Changelog**: [v1.9.0...v1.10.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.9.0...v1.10.0)
@@ -298,25 +285,25 @@ Added support for displaying the mini map as a full, standalone card on the dash
 
 ### New Features 🎉
 
-- **Zone Name Display on Mini Map**  [#89](https://github.com/ngocjohn/vehicle-status-card/pull/89)  
+- **Zone Name Display on Mini Map**  [#89](https://github.com/ngocjohn/vehicle-status-card/pull/89)
   You can now choose to display the Home Assistant Zone name on the mini map when your vehicle is parked within a defined zone. If the vehicle is outside any zone, the address will be shown instead. This feature is controlled via a new boolean configuration option.
 
 ![map-zone](https://github.com/user-attachments/assets/d5fe1f88-085a-4ab4-8a05-78adac09e2ec)
 
 
-- **Enhanced Progress Bar Styling**  [#96](https://github.com/ngocjohn/vehicle-status-card/pull/96)  
+- **Enhanced Progress Bar Styling**  [#96](https://github.com/ngocjohn/vehicle-status-card/pull/96)
   Added new styling options for the progress bar, allowing customization of height, width, and border radius to better match your theme.
 
 ![progress-bar](https://github.com/user-attachments/assets/996e4ac7-2023-44b3-94a9-7d527819b773)
 
 ### Fixes 🐛
 
-- **Improved Button Actions & Swipe Detection**  [#93](https://github.com/ngocjohn/vehicle-status-card/pull/93)  
+- **Improved Button Actions & Swipe Detection**  [#93](https://github.com/ngocjohn/vehicle-status-card/pull/93)
   Refactored the handling of button actions and swipe gestures to improve responsiveness and reliability.
 
 ### Other Changes
 
-- **Dynamic Pagination Bullets for Image Slider**  [#90](https://github.com/ngocjohn/vehicle-status-card/pull/90)  
+- **Dynamic Pagination Bullets for Image Slider**  [#90](https://github.com/ngocjohn/vehicle-status-card/pull/90)
   Added support for dynamic bullets in the image slider's pagination and included an option to hide pagination bullets entirely.
 
 ---
@@ -331,8 +318,8 @@ Added support for displaying the mini map as a full, standalone card on the dash
 
 ## What's Changed
 
-🚀 **The card is now available in [HACS](https://hacs.xyz/)!**  
-If you find this card helpful, please consider giving the repository a ⭐ on GitHub or [Buy me a coffee](https://buymeacoffee.com/ngocjohn) ☕ 
+🚀 **The card is now available in [HACS](https://hacs.xyz/)!**
+If you find this card helpful, please consider giving the repository a ⭐ on GitHub or [Buy me a coffee](https://buymeacoffee.com/ngocjohn) ☕
 
 Thank you!
 
@@ -396,9 +383,9 @@ Thank you!
 <!-- Release notes generated using configuration in .github/release.yml at v1.7.0 -->
 
 ## What's Changed
-This release introduces support for the MapTiler API key, providing a new popup map design and improved mapping functionality. 
+This release introduces support for the MapTiler API key, providing a new popup map design and improved mapping functionality.
 
-If you find this card helpful, please consider giving the repository a ⭐! 
+If you find this card helpful, please consider giving the repository a ⭐!
 
 ### New Features 🎉
 * Added icon_template to with picture_template. Allows more dynamic icon display.  [#72](https://github.com/ngocjohn/vehicle-status-card/pull/72)
@@ -425,7 +412,7 @@ Introduce support for image entities, allowing dynamic image rendering based on 
 ### Fixes 🐛
 * Improve action configuration handling by [@ngocjohn](https://github.com/ngocjohn) in [#57](https://github.com/ngocjohn/vehicle-status-card/pull/57)
 
-If you find this card helpful, please consider giving the repository a ⭐! 
+If you find this card helpful, please consider giving the repository a ⭐!
 
 **Full Changelog**: https://github.com/ngocjohn/vehicle-status-card/compare/v1.5.0...v1.6.0
 
@@ -440,7 +427,7 @@ If you find this card helpful, please consider giving the repository a ⭐!
 ## What's Changed
 This release introduces exciting new features, including section order customization, enhanced map functionality with address display.
 
-If you find this card helpful, please consider giving the repository a ⭐! 
+If you find this card helpful, please consider giving the repository a ⭐!
 
 ### New Features 🎉
 * **Section Order Customization** [#47](https://github.com/ngocjohn/vehicle-status-card/pull/47)
@@ -453,7 +440,7 @@ Introduced the ability to define the order of sections in the card, providing gr
 * Add charging entity support and an animated charging icon [#53](https://github.com/ngocjohn/vehicle-status-card/pull/53)
 ![charging-icon](https://github.com/user-attachments/assets/c4dae2e8-822f-44bb-8905-7f0327e30ece)
 
-* Add action configuration handling for indicators [#55](https://github.com/ngocjohn/vehicle-status-card/issues/55) 
+* Add action configuration handling for indicators [#55](https://github.com/ngocjohn/vehicle-status-card/issues/55)
 Introduce action configuration for single and group indicator items, enabling customizable actions based on user interactions.
 
 ### 🛠️ Improvements
@@ -605,10 +592,10 @@ This update includes several exciting new features to enhance the user experienc
 This update introduces two major features:
 
 1. **Tire Pressures Card**: A new customizable card that allows users to monitor and display their vehicle’s tire pressures with real-time data. You can upload a custom car image, assign entities to each tire, and adjust the size, position, and layout of the card for a personalized experience.
-  
+
 2. **Image Slides with Swiper Config**: Added advanced options for configuring image slides, including autoplay, loop, delay, speed, and transition effects (`slide`, `fade`, `coverflow`). Users can now create a more dynamic and visually engaging slideshow.
 
-If you enjoy these new features, consider giving the repo a ⭐ to show your support! 🚀 
+If you enjoy these new features, consider giving the repo a ⭐ to show your support! 🚀
 
 
   ![tire-card-v110](https://github.com/user-attachments/assets/96cf9106-8a2b-4ce0-926b-bc510a67847e)
@@ -633,7 +620,7 @@ If you enjoy these new features, consider giving the repo a ⭐ to show your sup
 <a id="v1.0.0"></a>
 # [v1.0.0](https://github.com/ngocjohn/vehicle-status-card/releases/tag/v1.0.0) - 2024-09-18
 
-# Initial release 
+# Initial release
 
 v1.0.0
 
