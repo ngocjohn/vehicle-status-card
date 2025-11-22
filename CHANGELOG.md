@@ -1,3 +1,9 @@
+## [1.18.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1...v1.18.2) (2025-11-22)
+
+### Bug Fixes
+
+* improve handling of the `state_template` for indicator subgroup items by normalizing the state content based on the `include_state_template` configuration. ([#221](https://github.com/ngocjohn/vehicle-status-card/issues/221)) ([d33c73c](https://github.com/ngocjohn/vehicle-status-card/commit/d33c73cde34c1de84952046348e6595774c68208))
+* **mini-map:** refactor marker styles and improve device tracker warning display ([#222](https://github.com/ngocjohn/vehicle-status-card/issues/222)) ([313d567](https://github.com/ngocjohn/vehicle-status-card/commit/313d567c2c4b20547cc9d6faf549a77aa6f74d08))
 
 ## [1.18.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.0...v1.18.1) (2025-10-22)
 
