@@ -1,3 +1,9 @@
+## [1.18.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.2...v1.18.3) (2025-11-23)
+
+### Bug Fixes
+
+* **tire-card:** background upload handling with media selector and improved image processing ([#224](https://github.com/ngocjohn/vehicle-status-card/issues/224)) ([d8312e4](https://github.com/ngocjohn/vehicle-status-card/commit/d8312e4283f6fd662780f6808528dd785e4254c5))
+
 ## [1.18.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.1...v1.18.2) (2025-11-22)
 
 ### Bug Fixes
