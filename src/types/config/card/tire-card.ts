@@ -2,9 +2,11 @@
  * TireTemplateConfig Interface
  */
 
+import { MediaSelectorValue } from '../../../ha/data/media_source';
+
 export interface TireCardLayout {
   title?: string;
-  background?: string;
+  background?: string | MediaSelectorValue;
   background_entity?: string;
   horizontal?: boolean;
   image_size?: number;
