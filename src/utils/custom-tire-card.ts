@@ -6,6 +6,7 @@ import type { TireCardLayout } from '../types/config/card/tire-card';
 
 import { TIRE_BG } from '../constants/img-const';
 import { computeImageUrl, HomeAssistant } from '../ha';
+import { generateImageThumbnailUrl, getIdFromUrl } from '../ha/data/image_upload';
 
 @customElement('custom-tire-card')
 export class CustomTireCard extends LitElement {
@@ -62,7 +63,12 @@ export class CustomTireCard extends LitElement {
       const bgState = this.hass.states[layout.background_entity];
       background = computeImageUrl(bgState as any);
     } else if (layout.background) {
-      background = layout.background;
+      if (typeof layout.background === 'object' && layout.background.media_content_id) {
+        const mediaId = getIdFromUrl(layout.background.media_content_id);
+        background = generateImageThumbnailUrl(mediaId!, undefined, true);
+      } else {
+        background = layout.background as string;
+      }
     }
 
     return {

@@ -38,3 +38,17 @@ export const removeLocalMedia = async (hass: HomeAssistant, media_content_id: st
     type: 'media_source/local_source/remove',
     media_content_id,
   });
+
+export interface MediaSelectorValue {
+  entity_id?: string;
+  media_content_id?: string;
+  media_content_type?: string;
+  metadata?: {
+    title?: string;
+    thumbnail?: string | null;
+    media_class?: string;
+    children_media_class?: string | null;
+    navigateIds?: { media_content_type: string; media_content_id: string }[];
+    browse_entity_id?: string;
+  };
+}
