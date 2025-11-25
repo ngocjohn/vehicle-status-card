@@ -1,3 +1,5 @@
+import { TireTemplateConfig } from './tire-card';
+
 // List of all section keys
 export const SECTION_KEYS = ['indicators', 'range_info', 'images', 'mini_map', 'buttons'];
 // section order type is array of section keys, e.g. ['indicators', 'buttons', 'mini_map']
@@ -11,6 +13,10 @@ export interface LayoutConfig {
   theme_config?: ThemeConfig;
   section_order?: SectionOrder[];
   range_info_config?: RangeInfoConfig;
+  single_tire_card?: {
+    enabled?: boolean;
+    tire_card?: TireTemplateConfig;
+  };
   hide_card_name?: boolean;
   /**
    * @deprecated is replaced by 'section_order' option

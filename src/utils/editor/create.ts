@@ -166,12 +166,13 @@ export const HaButton = ({
   onClick: (ev?: Event) => void;
   option?: any;
 }): TemplateResult => {
-  if (option?.disabled) {
+  if (option?.hidden) {
     return html``;
   }
   if (option?.type === 'add') {
     option = { ...option, appearance: 'accent', variant: 'success' };
   }
+  const style = option?.style || '';
   return html`
     <ha-button
       size=${option?.size || 'small'}
@@ -179,6 +180,7 @@ export const HaButton = ({
       variant=${option?.variant || 'brand'}
       .disabled=${option?.disabled || false}
       @click=${onClick}
+      style=${style}
     >
       ${option?.type === 'add' ? html`<ha-svg-icon slot="start" .path=${ICON.PLUS}></ha-svg-icon>` : ''} ${label}
     </ha-button>

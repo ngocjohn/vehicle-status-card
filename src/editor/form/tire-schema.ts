@@ -9,19 +9,59 @@ const DEFAULT_TIRE_ENTITY: TireEntityConfig = {
   color: '',
 };
 
-export const DEFAULT_TIRE_CONFIG: TireTemplateConfig = {
-  title: '',
-  background: '',
+export const DEFAULT_LAYOUT = {
   horizontal: false,
   hide_rotation_button: false,
   image_size: 100,
   value_size: 100,
   top: 50,
   left: 50,
+  aspect_ratio: '1/1',
+};
+export const DEFAULT_TIRE_CONFIG: TireTemplateConfig = {
+  title: '',
+  background: '',
   front_left: DEFAULT_TIRE_ENTITY,
   front_right: DEFAULT_TIRE_ENTITY,
   rear_left: DEFAULT_TIRE_ENTITY,
   rear_right: DEFAULT_TIRE_ENTITY,
+  ...DEFAULT_LAYOUT,
+};
+
+const DIMENSION_SCHEMA = (isHorizontal: boolean) => {
+  return [
+    {
+      name: '',
+      flatten: true,
+      type: 'grid',
+      schema: [
+        {
+          name: 'image_size',
+          label: 'Base image size',
+          selector: { number: { max: 200, min: 0, mode: 'slider', step: 1 } },
+          default: 100,
+        },
+        {
+          name: 'value_size',
+          label: 'Name & Value size',
+          selector: { number: { max: 150, min: 50, mode: 'slider', step: 1 } },
+          default: 100,
+        },
+        {
+          name: 'top',
+          label: `${!isHorizontal ? 'Top' : 'Left'} position`,
+          default: 50,
+          selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
+        },
+        {
+          name: 'left',
+          label: `${!isHorizontal ? 'Left' : 'Top'} position`,
+          default: 50,
+          selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
+        },
+      ],
+    },
+  ] as const;
 };
 
 export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
@@ -39,30 +79,6 @@ export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
         type: 'grid',
         schema: [
           {
-            name: 'image_size',
-            label: 'Base image size',
-            selector: { number: { max: 200, min: 0, mode: 'slider', step: 1 } },
-            default: 100,
-          },
-          {
-            name: 'value_size',
-            label: 'Name & Value size',
-            selector: { number: { max: 150, min: 50, mode: 'slider', step: 1 } },
-            default: 100,
-          },
-          {
-            name: 'top',
-            label: `${!isHorizontal ? 'Top' : 'Left'} position`,
-            default: 50,
-            selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
-          },
-          {
-            name: 'left',
-            label: `${!isHorizontal ? 'Left' : 'Top'} position`,
-            default: 50,
-            selector: { number: { max: 100, min: 0, mode: 'slider', step: 1 } },
-          },
-          {
             name: 'horizontal',
             label: 'Horizontal',
             default: false,
@@ -74,8 +90,15 @@ export const TIRE_APPEARANCE_SCHEMA = memoizeOne(
             default: false,
             selector: { boolean: {} },
           },
+          {
+            name: 'aspect_ratio',
+            label: 'Aspect Ratio',
+            selector: { text: { type: 'text' } },
+            default: '1/1',
+          },
         ],
       },
+      ...DIMENSION_SCHEMA(isHorizontal),
     ] as const
 );
 

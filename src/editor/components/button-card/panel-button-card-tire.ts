@@ -10,7 +10,7 @@ import { Create } from '../../../utils';
 import { ExpansionPanelParams } from '../../../utils/editor/create';
 import { ButtonCardBaseEditor } from '../../button-card-base';
 import { ELEMENT, SUB_PANEL } from '../../editor-const';
-import { TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../../form';
+import { DEFAULT_LAYOUT, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../../form';
 
 enum PANEL {
   BACKGROUND = 0,
@@ -23,14 +23,7 @@ declare global {
     'tire-card-changed': { config: TireTemplateConfig };
   }
 }
-const DEFAULT_LAYOUT = {
-  horizontal: false,
-  hide_rotation_button: false,
-  image_size: 100,
-  value_size: 100,
-  top: 50,
-  left: 50,
-};
+
 @customElement(SUB_PANEL.BTN_TIRE_CARD)
 export class PanelButtonCardTire extends ButtonCardBaseEditor {
   constructor() {
@@ -83,11 +76,31 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
   private _renderAppearance(): TemplateResult {
     const isHorizontal = this._tireConfig?.horizontal || false;
     const DATA = pick(this._tireConfig || {}, [...TireLayoutKeys]);
+    // Check if there is any difference from default layout, only defined values are compared
+    const hasDiff = Object.entries(DEFAULT_LAYOUT).some(([key, value]) => {
+      const v = DATA[key as keyof TireTemplateConfig];
+      return v !== undefined && v !== value;
+    });
+    // console.log('hasDiff', DEFAULT_LAYOUT, DATA, hasDiff);
     const appearanceForm = this._createVscForm(DATA, TIRE_APPEARANCE_SCHEMA(isHorizontal));
+    const resetButton = Create.HaButton({
+      label: 'Reset',
+      onClick: this._handleResetAppearance.bind(this),
+      option: { disabled: !hasDiff, style: 'display: flex; margin-top: 1em;' },
+    });
 
-    return this._createPanel(PANEL.APPEARANCE, 'Appearance', 'mdi:move-resize', appearanceForm);
+    const content = html`${appearanceForm}${resetButton}`;
+
+    return this._createPanel(PANEL.APPEARANCE, 'Appearance', 'mdi:move-resize', content);
   }
 
+  private _handleResetAppearance(): void {
+    const newConfig = {
+      ...this._tireConfig,
+      ...DEFAULT_LAYOUT,
+    };
+    fireEvent(this, 'tire-card-changed', { config: newConfig });
+  }
   private _renderTires(): TemplateResult {
     const DATA = { ...this._tireConfig };
     const createEntityForm = (tirePos: string) => {

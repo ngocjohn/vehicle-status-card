@@ -6,6 +6,7 @@ import type { TireCardLayout } from '../types/config/card/tire-card';
 
 import { TIRE_BG } from '../constants/img-const';
 import { computeImageUrl, HomeAssistant } from '../ha';
+import parseAspectRatio from '../ha/common/util/parse-aspect-ratio';
 import { generateImageThumbnailUrl, getIdFromUrl } from '../ha/data/image_upload';
 
 @customElement('custom-tire-card')
@@ -21,14 +22,22 @@ export class CustomTireCard extends LitElement {
     super.disconnectedCallback();
   }
 
+  private _getAspectRatio(input: string): string {
+    const ratio = parseAspectRatio(input);
+    // console.log('Parsed aspect ratio:', ratio);
+    if (ratio && ratio.w > 0 && ratio.h > 0) {
+      return `${ratio.w} / ${ratio.h}`;
+    }
+    return '1 / 1';
+  }
+
   protected render(): TemplateResult {
-    const layout = this.tireLayout || {};
+    const layout = this.tireLayout;
     const cardStyles = this._computeBackgroundStyle(layout);
 
     const title = layout?.title ?? undefined;
     const hideRotationButton = layout?.hide_rotation_button ?? false;
     const isHorizontal = this.horizontal;
-
     return html`
       <div class="container" style=${styleMap(cardStyles)}>
         ${title ? html`<div class="title">${title}</div>` : nothing}
@@ -53,11 +62,14 @@ export class CustomTireCard extends LitElement {
       </div>
     `;
   }
+
   private _computeBackgroundStyle(layout: TireCardLayout): Record<string, string> {
-    const tireTop = layout.top ?? 50;
-    const tireLeft = layout.left ?? 50;
-    const tireSize = layout.image_size ?? 100;
-    const tireValueSize = layout.value_size ?? 100;
+    const image_size = layout.image_size ?? 100;
+    const value_size = layout.value_size ?? 100;
+    const top = layout.top ?? 50;
+    const left = layout.left ?? 50;
+    const aspect_ratio = this._getAspectRatio(layout.aspect_ratio ?? '1/1');
+
     let background: string | undefined = TIRE_BG;
     if (layout.background_entity) {
       const bgState = this.hass.states[layout.background_entity];
@@ -72,11 +84,12 @@ export class CustomTireCard extends LitElement {
     }
 
     return {
-      '--vic-tire-top': `${tireTop}%`,
-      '--vic-tire-left': `${tireLeft}%`,
-      '--vic-tire-size': `${tireSize}%`,
-      '--vic-tire-value-size': `${tireValueSize / 100}`,
+      '--vic-tire-top': `${top}%`,
+      '--vic-tire-left': `${left}%`,
+      '--vic-tire-size': `${image_size}%`,
+      '--vic-tire-value-size': `${value_size / 100}`,
       '--vic-tire-background': `url(${background})`,
+      '--vic-tire-aspect-ratio': `${aspect_ratio}`,
     };
   }
 
@@ -93,10 +106,10 @@ export class CustomTireCard extends LitElement {
       }
       .container {
         position: relative;
-        width: 100%;
-        height: 100%;
+        width: auto;
+        height: auto;
         overflow: hidden;
-        aspect-ratio: 1 / 1;
+        aspect-ratio: var(--vic-tire-aspect-ratio);
         transition: all 400ms ease-in-out;
         background: var(--ha-card-background-color, var(--secondary-background-color));
         box-shadow: var(--ha-card-box-shadow);
@@ -111,7 +124,6 @@ export class CustomTireCard extends LitElement {
         top: 0;
         left: 0;
         right: 0;
-
         width: 100%;
         font-size: var(--ha-card-header-font-size, 24px);
         z-index: 2;
@@ -139,7 +151,7 @@ export class CustomTireCard extends LitElement {
         position: relative;
         width: 100%;
         height: 100%;
-        aspect-ratio: 1;
+        /* aspect-ratio: 1; */
         transition: all 0.5s ease-in-out;
       }
       .tyre-wrapper[horizontal] {
@@ -180,10 +192,12 @@ export class CustomTireCard extends LitElement {
         align-items: center;
         justify-items: center;
         gap: 0.5rem;
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+        /* text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3); */
         transform: scale(var(--vic-tire-value-size, 1));
         transition: transform 0.5s ease-in-out;
         color: var(--primary-text-color, white);
+        user-select: none;
+        pointer-events: none;
       }
       .tyre-wrapper .tyre-items-grid ::slotted([slot='front_left']) {
         grid-area: front_left;

@@ -14,6 +14,7 @@ export interface TireCardLayout {
   top?: number;
   left?: number;
   hide_rotation_button?: boolean;
+  aspect_ratio?: string;
 }
 export interface TireEntityConfig {
   entity?: string;
@@ -39,6 +40,7 @@ export const TireLayoutKeys = [
   'top',
   'left',
   'hide_rotation_button',
+  'aspect_ratio',
 ] as const;
 
 export const TireBackgroundKeys = ['background', 'background_entity'] as const;
