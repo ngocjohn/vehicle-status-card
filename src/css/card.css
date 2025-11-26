@@ -57,8 +57,7 @@ ha-card {
   width: auto;
   height: auto;
   padding: var(--vic-card-padding);
-  background-color: var(--card-background-color);
-  /* max-width: 500px; */
+  background: var(--card-background-color, var(--ha-card-background, white));
 }
 
 ha-card.peek-border {

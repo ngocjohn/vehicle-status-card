@@ -144,7 +144,7 @@ export class VscTireItem extends BaseElement {
     return [
       super.styles,
       css`
-        .tire-container {
+        /* .tire-container {
           width: 100%;
           height: 100%;
           display: flex;
@@ -154,21 +154,32 @@ export class VscTireItem extends BaseElement {
           gap: 0.5rem;
           text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
           transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
+        } */
+        .tire-container {
+          width: inherit;
+          height: inherit;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 0.5rem;
+          /* text-shadow: rgba(255, 255, 255, 0.3) 0px 1px 0px; */
+          transition: 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
+          align-items: anchor-center;
         }
 
         .tire-value {
           font-size: 1.5rem;
-          text-align: center;
+          /* text-align: center; */
           margin: 0;
           color: var(--primary-text-color);
         }
 
         .tire-name {
           color: var(--secondary-text-color);
-          text-align: left;
+          /* text-align: left; */
           margin: 0;
           text-transform: uppercase;
-          letter-spacing: 1.5px;
+          /* letter-spacing: 1.5px; */
           white-space: nowrap;
         }
       `,

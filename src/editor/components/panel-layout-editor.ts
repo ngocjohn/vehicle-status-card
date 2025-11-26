@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 
 import { LayoutConfig, VehicleStatusCardConfig } from '../../types/config';
 import { ConfigArea } from '../../types/config-area';
+import { Create } from '../../utils';
 import { BaseEditor } from '../base-editor';
 import { PANEL } from '../editor-const';
 import {
@@ -12,6 +13,7 @@ import {
   NAME_SCHEMA,
   HIDE_CARD_NAME_SCHEMA,
   IMAGES_LAYOUT_SCHEMA,
+  SINGLE_TIRE_ENABLED_SCHEMA,
 } from '../form';
 
 @customElement(PANEL.LAYOUT_EDITOR)
@@ -44,12 +46,48 @@ export class PanelLayoutEditor extends BaseEditor {
       BUTTON_GRID_LAYOUT_SCHEMA(!LAYOUT_DATA.button_grid?.swipe, 'button_grid'),
       IMAGES_LAYOUT_SCHEMA(LAYOUT_DATA.images_swipe, 'images_swipe'),
       CARD_THEME_SCHEMA,
-    ];
-    const createForm = (form: any) => {
-      return this._createVscForm(LAYOUT_DATA, form, 'layout_config');
+    ].map((schema) => this._createVscForm(LAYOUT_DATA, schema, 'layout_config'));
+
+    const singleTireSection = this._renderSingleTireConfig(LAYOUT_DATA);
+
+    return html` <div class="sub-panel-config">${nameForm} ${schemasForms} ${singleTireSection}</div> `;
+  }
+
+  private _renderSingleTireConfig(layoutData: LayoutConfig): TemplateResult {
+    const enabledForm = this._createVscForm(layoutData, SINGLE_TIRE_ENABLED_SCHEMA, 'layout_config');
+    const tireConfig = html`
+      <panel-button-card-tire
+        ._hass=${this.hass}
+        ._store=${this._store}
+        .tireConfig=${layoutData.single_tire_card?.tire_card || {}}
+        @tire-card-changed=${this._handleTireCardChanged}
+      ></panel-button-card-tire>
+    `;
+    const panelOpts = {
+      header: 'Standalone Tire Card',
+      icon: 'mdi:car-tire-alert',
+      elId: 'tire-card-config',
     };
 
-    return html` <div class="sub-panel-config">${nameForm} ${schemasForms.map((form) => createForm(form))}</div> `;
+    return Create.ExpansionPanel({
+      content: html`${enabledForm} ${tireConfig}`,
+      options: panelOpts,
+    });
+  }
+  private _handleTireCardChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const incoming = ev.detail.config;
+    const layoutConfig = {
+      ...this._config.layout_config,
+      single_tire_card: {
+        ...this._config.layout_config?.single_tire_card,
+        tire_card: {
+          ...incoming,
+        },
+      },
+    };
+
+    this._cardConfigChanged({ layout_config: layoutConfig });
   }
 }
 

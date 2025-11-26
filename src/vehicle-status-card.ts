@@ -248,6 +248,10 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
       return html`${this._extraMapCard}`;
     }
 
+    if (_config.layout_config?.single_tire_card?.enabled === true) {
+      return this._renderTireCard(_config.layout_config.single_tire_card.tire_card as TireTemplateConfig, true);
+    }
+
     const notMainCard = this._activeCardIndex !== null;
 
     const headerHidden = Boolean(
@@ -515,9 +519,10 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     return html` <vsc-default-card .hass=${this._hass} ._data=${data} ._store=${this._store}></vsc-default-card> `;
   }
 
-  private _renderTireCard(tireCardConfig: TireTemplateConfig): TemplateResult {
+  private _renderTireCard(tireCardConfig: TireTemplateConfig, singleCard: boolean = false): TemplateResult {
     return html`
-      <vsc-tire-card .hass=${this._hass} .tireConfig=${tireCardConfig} ._store=${this._store}> </vsc-tire-card>
+      <vsc-tire-card .hass=${this._hass} .tireConfig=${tireCardConfig} ._store=${this._store} ?single=${singleCard}>
+      </vsc-tire-card>
     `;
   }
 

@@ -1,5 +1,5 @@
 import { pick } from 'es-toolkit';
-import { CSSResultGroup, html, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, TemplateResult } from 'lit';
 
 import '../shared/vsc-tire-item';
 import '../../utils/custom-tire-card';
@@ -21,6 +21,7 @@ import { BaseElement } from '../../utils/base-element';
 @customElement('vsc-tire-card')
 export class VehicleTireCard extends BaseElement {
   @property({ attribute: false }) private tireConfig!: TireTemplateConfig;
+  @property({ type: Boolean, reflect: true, attribute: 'single' }) single = false;
 
   constructor() {
     super();
@@ -44,6 +45,7 @@ export class VehicleTireCard extends BaseElement {
       .hass=${this.hass}
       .tireLayout=${tireLayout}
       ?horizontal=${tireLayout.horizontal ?? false}
+      ?single=${this.single}
     >
       ${Object.entries(tireEntities).map(([key, entity]) => {
         return html`<vsc-tire-item
@@ -57,7 +59,7 @@ export class VehicleTireCard extends BaseElement {
     </custom-tire-card>`;
   }
   static get styles(): CSSResultGroup {
-    return [super.styles];
+    return [super.styles, css``];
   }
 }
 

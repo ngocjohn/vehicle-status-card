@@ -104,15 +104,19 @@ export class CustomTireCard extends LitElement {
         --vic-tire-size: 100%;
         --vic-tire-value-size: 1;
       }
+      :host([single]) .container {
+        background: var(--ha-card-background, var(--card-background-color, #fff)) !important;
+        box-shadow: var(--ha-card-box-shadow);
+      }
       .container {
         position: relative;
-        width: auto;
+        width: inherit;
         height: auto;
         overflow: hidden;
         aspect-ratio: var(--vic-tire-aspect-ratio);
         transition: all 400ms ease-in-out;
-        background: var(--ha-card-background-color, var(--secondary-background-color));
-        box-shadow: var(--ha-card-box-shadow);
+        background: var(--ha-card-background, var(--secondary-background-color));
+        box-shadow: none;
         box-sizing: border-box;
         border-radius: var(--ha-card-border-radius, 12px);
         border-width: var(--ha-card-border-width, 1px);
@@ -154,13 +158,6 @@ export class CustomTireCard extends LitElement {
         /* aspect-ratio: 1; */
         transition: all 0.5s ease-in-out;
       }
-      .tyre-wrapper[horizontal] {
-        transform: rotate(90deg);
-      }
-      .tyre-wrapper[horizontal] .tyre-items-grid ::slotted(*) {
-        transform: rotate(-90deg);
-        transition: transform 0.5s ease-in-out;
-      }
       .tyre-wrapper::before {
         content: '';
         background-image: var(--vic-tire-background);
@@ -174,7 +171,16 @@ export class CustomTireCard extends LitElement {
         background-size: contain;
         background-repeat: no-repeat;
         overflow: hidden;
-        filter: drop-shadow(2px 4px 1rem #000000d8);
+        /* filter: drop-shadow(2px 4px 1rem #000000d8); */
+        filter: drop-shadow(2px 4px 1rem var(--clear-background-color, var(--secondary-background-color, #000000d8)));
+      }
+
+      .tyre-wrapper[horizontal]::before {
+        transform: rotate(90deg);
+      }
+      .tyre-wrapper[horizontal] .tyre-items-grid ::slotted(*) {
+        transform: rotate(-90deg);
+        transition: transform 0.5s ease-in-out;
       }
 
       .tyre-wrapper .tyre-items-grid {
@@ -198,6 +204,11 @@ export class CustomTireCard extends LitElement {
         color: var(--primary-text-color, white);
         user-select: none;
         pointer-events: none;
+      }
+      .tyre-items-grid ::slotted(*) {
+        width: 100%;
+        height: auto;
+        display: block;
       }
       .tyre-wrapper .tyre-items-grid ::slotted([slot='front_left']) {
         grid-area: front_left;

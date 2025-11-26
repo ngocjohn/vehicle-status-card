@@ -43,7 +43,7 @@ const DIMENSION_SCHEMA = (isHorizontal: boolean) => {
         },
         {
           name: 'value_size',
-          label: 'Name & Value size',
+          label: 'Name/Value scale size (%)',
           selector: { number: { max: 150, min: 50, mode: 'slider', step: 1 } },
           default: 100,
         },
@@ -111,7 +111,7 @@ export const TIRE_BACKGROUND_SCHEMA = [
         accept: ['image/*'] as string[],
         clearable: true,
         image_upload: true,
-        hide_content_type: true,
+        hide_content_type: false,
       },
     },
     helper:
@@ -161,3 +161,20 @@ export const TIRE_ENTITY_SCHEMA = memoizeOne(
       },
     ] as const
 );
+
+export const SINGLE_TIRE_ENABLED_SCHEMA = [
+  {
+    name: 'single_tire_card',
+    type: 'grid',
+    flatten: false,
+    schema: [
+      {
+        name: 'enabled',
+        label: 'Enable Standalone Tire Card',
+        helper: 'If enabled, the tire card will be displayed as a single card.',
+        type: 'boolean',
+        default: false,
+      },
+    ],
+  },
+] as const;

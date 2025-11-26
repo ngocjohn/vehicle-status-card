@@ -84,7 +84,7 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
     // console.log('hasDiff', DEFAULT_LAYOUT, DATA, hasDiff);
     const appearanceForm = this._createVscForm(DATA, TIRE_APPEARANCE_SCHEMA(isHorizontal));
     const resetButton = Create.HaButton({
-      label: 'Reset',
+      label: 'Reset to defaults',
       onClick: this._handleResetAppearance.bind(this),
       option: { disabled: !hasDiff, style: 'display: flex; margin-top: 1em;' },
     });
