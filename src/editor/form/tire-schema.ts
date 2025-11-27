@@ -37,7 +37,7 @@ const DIMENSION_SCHEMA = (isHorizontal: boolean) => {
       schema: [
         {
           name: 'image_size',
-          label: 'Base image size',
+          label: 'Base image size scale (%)',
           selector: { number: { max: 200, min: 0, mode: 'slider', step: 1 } },
           default: 100,
         },
@@ -125,8 +125,45 @@ export const TIRE_BACKGROUND_SCHEMA = [
   },
 ] as const;
 
+export const TIRE_CUSTOM_POSITION_SCHEMA = (useCustomPosition: boolean = false, isHorizontal: boolean = false) => {
+  return [
+    {
+      type: 'expandable',
+      label: 'Custom Position',
+      flatten: true,
+      schema: [
+        {
+          name: 'use_custom_position',
+          label: 'Use Custom Position',
+          type: 'boolean',
+          default: false,
+          helper: 'Enable to set a custom position for this tire item.',
+        },
+        {
+          name: 'position',
+          label: 'Position (%)',
+          type: 'grid',
+          flatten: false,
+          disabled: !useCustomPosition,
+          schema: [
+            {
+              name: 'top',
+              label: `${!isHorizontal ? 'Top' : 'Left'} (%)`,
+              type: 'float',
+            },
+            {
+              name: 'left',
+              label: `${!isHorizontal ? 'Left' : 'Top'} (%)`,
+              type: 'float',
+            },
+          ],
+        },
+      ],
+    },
+  ];
+};
 export const TIRE_ENTITY_SCHEMA = memoizeOne(
-  (tirePosition: string, tireEntity: string) =>
+  (tirePosition: string, tireEntity: string, useCustomPosition: boolean = false, isHorizontal: boolean = false) =>
     [
       {
         name: tirePosition,
@@ -157,6 +194,7 @@ export const TIRE_ENTITY_SCHEMA = memoizeOne(
             helper:
               'Customize the color based on a template. The template should return a valid color name or hex code.',
           },
+          ...TIRE_CUSTOM_POSITION_SCHEMA(useCustomPosition, isHorizontal),
         ],
       },
     ] as const

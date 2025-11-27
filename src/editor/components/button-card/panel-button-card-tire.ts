@@ -105,7 +105,9 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
     const DATA = { ...this._tireConfig };
     const createEntityForm = (tirePos: string) => {
       const tireEntity = this._tireConfig?.[tirePos]?.entity || '';
-      return this._createVscForm(DATA, TIRE_ENTITY_SCHEMA(tirePos, tireEntity));
+      const useCustomPosition = this._tireConfig?.[tirePos]?.use_custom_position || false;
+      const isHorizontal = this._tireConfig?.horizontal || false;
+      return this._createVscForm(DATA, TIRE_ENTITY_SCHEMA(tirePos, tireEntity, useCustomPosition, isHorizontal));
     };
 
     const entitiesForm = html`${repeat(

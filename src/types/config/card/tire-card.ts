@@ -4,6 +4,11 @@
 
 import { MediaSelectorValue } from '../../../ha/data/media_source';
 
+type CustomPosition = {
+  top?: string;
+  left?: string;
+};
+
 export interface TireCardLayout {
   title?: string;
   background?: string | MediaSelectorValue;
@@ -21,6 +26,8 @@ export interface TireEntityConfig {
   attribute?: string;
   name?: string;
   color?: string;
+  use_custom_position?: boolean;
+  position?: CustomPosition;
 }
 
 export interface TireTemplateEntities {

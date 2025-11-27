@@ -104,7 +104,7 @@ export class VscTireItem extends BaseElement {
   }
 
   private _getTemplateResult(key: TemplateKey): string | undefined {
-    return this._templateResults[key]?.result || this._tireItem[key];
+    return this._templateResults[key]?.result || this._tireItem?.[key] || undefined;
   }
 
   private getValue(type: 'state' | 'name' | 'color'): string {
@@ -131,7 +131,7 @@ export class VscTireItem extends BaseElement {
   protected render(): TemplateResult {
     const state = this.getValue('state');
     const name = this.getValue('name');
-    const color = this.getValue('color');
+    const color = this.getValue('color') || 'var(--primary-text-color)';
     return html`
       <div class="tire-container">
         <div class="tire-value" style=${`color: ${color};`}>${state}</div>
@@ -144,17 +144,6 @@ export class VscTireItem extends BaseElement {
     return [
       super.styles,
       css`
-        /* .tire-container {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          flex-direction: column;
-          justify-content: center;
-          gap: 0.5rem;
-          text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
-          transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
-        } */
         .tire-container {
           width: inherit;
           height: inherit;
@@ -169,9 +158,9 @@ export class VscTireItem extends BaseElement {
 
         .tire-value {
           font-size: 1.5rem;
-          /* text-align: center; */
           margin: 0;
           color: var(--primary-text-color);
+          white-space: nowrap;
         }
 
         .tire-name {
