@@ -31,21 +31,33 @@ export const ExpansionPanel = ({
   expandedWillChange,
   expandedChangedCallback,
 }: ExpansionPanelParams): TemplateResult => {
+  const style = html`<style>
+    :host {
+      --ha-card-border-radius: var(--ha-border-radius-md, 8px);
+    }
+    ha-svg-icon[slot='leading-icon'],
+    ha-icon[slot='leading-icon'] {
+      color: var(--secondary-text-color);
+    }
+    ha-expansion-panel[outlined],
+    .top {
+      border-radius: var(--ha-border-radius-md, 8px);
+    }
+  </style>`;
   return html`
     <ha-expansion-panel
       id=${ifDefined(options?.elId)}
       .outlined=${options?.outlined || true}
       .expanded=${options?.expanded || false}
       .noCollapse=${options?.noCollapse || false}
-      .header=${options.header}
       .secondary=${options?.secondary || ''}
       .leftChevron=${options?.leftChevron || false}
       @expanded-will-change=${expandedWillChange}
       @expanded-changed=${expandedChangedCallback}
-      style="border-radius: 6px"
     >
-      ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
+      ${style} ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
       ${slotIcons ? slotIcons : nothing}
+      <div slot="header" role="heading" aria-level="3">${options.header}</div>
       <div class="card-config" style="margin-block: var(--vic-gutter-gap, 8px);">${content}</div>
     </ha-expansion-panel>
   `;
@@ -166,12 +178,13 @@ export const HaButton = ({
   onClick: (ev?: Event) => void;
   option?: any;
 }): TemplateResult => {
-  if (option?.disabled) {
+  if (option?.hidden) {
     return html``;
   }
   if (option?.type === 'add') {
     option = { ...option, appearance: 'accent', variant: 'success' };
   }
+  const style = option?.style || '';
   return html`
     <ha-button
       size=${option?.size || 'small'}
@@ -179,6 +192,7 @@ export const HaButton = ({
       variant=${option?.variant || 'brand'}
       .disabled=${option?.disabled || false}
       @click=${onClick}
+      style=${style}
     >
       ${option?.type === 'add' ? html`<ha-svg-icon slot="start" .path=${ICON.PLUS}></ha-svg-icon>` : ''} ${label}
     </ha-button>

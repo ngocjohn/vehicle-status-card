@@ -1,6 +1,7 @@
 import type { LovelaceCardConfig } from '../../ha';
 
 import { HomeAssistant } from '../../ha';
+import { LovelaceElement, LovelaceElementConfig } from '../../ha/panels/lovelace/elements/types';
 
 const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
 // Load the helpers and ensure they are available
@@ -97,3 +98,17 @@ export const loadPictureCardHelper = async (hass: HomeAssistant): Promise<void> 
   }, 100);
   return;
 };
+
+export async function createHuiElement(elementConfig: LovelaceElementConfig): Promise<LovelaceElement> {
+  const element = (await helpers.createHuiElement(elementConfig)) as LovelaceElement;
+  if (element.tagName !== 'HUI-CONDITIONAL-ELEMENT') {
+    element.classList.add('element');
+  }
+
+  if (elementConfig.style) {
+    Object.keys(elementConfig.style).forEach((prop) => {
+      element.style.setProperty(prop, elementConfig.style![prop]);
+    });
+  }
+  return element;
+}

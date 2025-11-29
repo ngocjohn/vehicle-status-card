@@ -8,6 +8,7 @@ export * from './common/entity/compute_state_domain';
 export * from './common/entity/compute_device_name';
 export * from './common/entity/strip_prefix_from_entity_name';
 export * from './common/translations/localize';
+export * from './common/util/parse-aspect-ratio';
 export * from './data/entity';
 export * from './data/entity_registry';
 export * from './data/sensor';

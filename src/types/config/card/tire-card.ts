@@ -2,7 +2,13 @@
  * TireTemplateConfig Interface
  */
 
-import { MediaSelectorValue } from '../../../ha/data/media_source';
+import type { MediaSelectorValue } from '../../../ha/data/media_source';
+import type { LovelaceElementConfig } from '../../../ha/panels/lovelace/elements/types';
+
+type CustomPosition = {
+  top?: string;
+  left?: string;
+};
 
 export interface TireCardLayout {
   title?: string;
@@ -14,12 +20,15 @@ export interface TireCardLayout {
   top?: number;
   left?: number;
   hide_rotation_button?: boolean;
+  aspect_ratio?: string;
 }
 export interface TireEntityConfig {
   entity?: string;
   attribute?: string;
   name?: string;
   color?: string;
+  use_custom_position?: boolean;
+  position?: CustomPosition;
 }
 
 export interface TireTemplateEntities {
@@ -29,7 +38,9 @@ export interface TireTemplateEntities {
   rear_right?: TireEntityConfig;
 }
 
-export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities {}
+export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities {
+  elements?: LovelaceElementConfig[];
+}
 
 export const TireLayoutKeys = [
   'title',
@@ -39,6 +50,7 @@ export const TireLayoutKeys = [
   'top',
   'left',
   'hide_rotation_button',
+  'aspect_ratio',
 ] as const;
 
 export const TireBackgroundKeys = ['background', 'background_entity'] as const;
