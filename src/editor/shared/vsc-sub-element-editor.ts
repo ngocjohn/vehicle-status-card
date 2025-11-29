@@ -17,7 +17,7 @@ declare global {
     };
   }
 }
-
+const EDITOR_TYPES_HIDE_ELEMENTS = ['map', 'custom:extra-map-card', 'vertical-stack', 'picture-elements'];
 @customElement('vsc-sub-element-editor')
 export class VscSubElementEditor extends BaseEditor {
   @property({ attribute: false }) public _config!: SubElementEditorConfig;
@@ -102,7 +102,7 @@ export class VscSubElementEditor extends BaseEditor {
     const editorEl = this._cardEditorEl?.shadowRoot;
     if (!editorEl) return;
     const configType = this._config?.type;
-    if (!['map', 'custom:extra-map-card', 'vertical-stack'].includes(configType)) {
+    if (!EDITOR_TYPES_HIDE_ELEMENTS.includes(configType)) {
       console.debug('Config type not supported for hiding elements:', configType);
       return;
     }
@@ -112,7 +112,6 @@ export class VscSubElementEditor extends BaseEditor {
       configElement = this._cardEditorEl?._configElement;
     }
     if (!configElement) return;
-
     switch (configType) {
       case 'custom:extra-map-card': {
         const selectors = (await selectTree(
@@ -135,6 +134,15 @@ export class VscSubElementEditor extends BaseEditor {
       case 'vertical-stack': {
         const haFormTitle = configElement.shadowRoot?.querySelector('ha-form') as HTMLElement | null;
         haFormTitle?.style.setProperty('display', 'none');
+        break;
+      }
+      case 'picture-elements': {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        const elementsToHide = (await Promise.all([
+          selectTree(configElement.shadowRoot, 'ha-form'),
+          selectTree(configElement.shadowRoot, 'hui-picture-elements-card-row-editor$h3'),
+        ])) as (HTMLElement | null)[];
+        elementsToHide.forEach((el) => el?.style.setProperty('display', 'none'));
         break;
       }
     }

@@ -163,13 +163,14 @@ export const TIRE_CUSTOM_POSITION_SCHEMA = (useCustomPosition: boolean = false, 
   ];
 };
 export const TIRE_ENTITY_SCHEMA = memoizeOne(
-  (tirePosition: string, tireEntity: string, useCustomPosition: boolean = false, isHorizontal: boolean = false) =>
-    [
+  (tirePosition: string, tireEntity: string, useCustomPosition: boolean = false, isHorizontal: boolean = false) => {
+    const tireLabel = tirePosition.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    return [
       {
         name: tirePosition,
         type: 'expandable',
         flatten: false,
-        label: tirePosition.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+        label: tireLabel,
         schema: [
           {
             name: 'entity',
@@ -185,11 +186,12 @@ export const TIRE_ENTITY_SCHEMA = memoizeOne(
             name: 'name',
             label: 'Name',
             selector: { text: { type: 'text' } },
+            default: tireLabel,
             helper: 'Name of the tire',
           },
           {
             name: 'color',
-            label: 'Color Template',
+            label: 'Color Template for value',
             selector: { template: {} },
             helper:
               'Customize the color based on a template. The template should return a valid color name or hex code.',
@@ -197,7 +199,8 @@ export const TIRE_ENTITY_SCHEMA = memoizeOne(
           ...TIRE_CUSTOM_POSITION_SCHEMA(useCustomPosition, isHorizontal),
         ],
       },
-    ] as const
+    ] as const;
+  }
 );
 
 export const SINGLE_TIRE_ENABLED_SCHEMA = [

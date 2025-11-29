@@ -2,7 +2,8 @@
  * TireTemplateConfig Interface
  */
 
-import { MediaSelectorValue } from '../../../ha/data/media_source';
+import type { MediaSelectorValue } from '../../../ha/data/media_source';
+import type { LovelaceElementConfig } from '../../../ha/panels/lovelace/elements/types';
 
 type CustomPosition = {
   top?: string;
@@ -37,7 +38,9 @@ export interface TireTemplateEntities {
   rear_right?: TireEntityConfig;
 }
 
-export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities {}
+export interface TireTemplateConfig extends TireCardLayout, TireTemplateEntities {
+  elements?: LovelaceElementConfig[];
+}
 
 export const TireLayoutKeys = [
   'title',

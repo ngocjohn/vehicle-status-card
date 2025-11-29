@@ -8,6 +8,7 @@ import { TIRE_BG } from '../constants/img-const';
 import { computeImageUrl, HomeAssistant } from '../ha';
 import parseAspectRatio from '../ha/common/util/parse-aspect-ratio';
 import { generateImageThumbnailUrl, getIdFromUrl } from '../ha/data/image_upload';
+import { LovelaceElement } from '../ha/panels/lovelace/elements/types';
 
 const DEFAULT_BG_URL = `:host {
   --vic-tire-background: url(${TIRE_BG});
@@ -17,7 +18,7 @@ export class CustomTireCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public tireLayout!: TireCardLayout;
   @property({ type: Boolean, reflect: true, attribute: 'horizontal' }) public horizontal = false;
-
+  @property({ attribute: false }) _elements?: LovelaceElement[];
   connectedCallback(): void {
     super.connectedCallback();
   }
@@ -55,10 +56,11 @@ export class CustomTireCard extends LitElement {
             ></ha-icon>`
           : nothing}
         <div class="tyre-wrapper" ?horizontal=${isHorizontal}>
+          <div class="tyre-background"><img /></div>
           <div class="tyre-items-grid">
             <slot name="grid-item"></slot>
           </div>
-          <slot name="custom"></slot>
+          ${this._elements}
         </div>
       </div>
     `;
@@ -119,6 +121,11 @@ export class CustomTireCard extends LitElement {
           background: var(--ha-card-background, var(--card-background-color, #fff)) !important;
           box-shadow: var(--ha-card-box-shadow);
         }
+        :host([debug]) .tyre-items-grid ::slotted(.element),
+        :host([debug]) .tyre-background,
+        :host([debug]) .element {
+          outline: 1px solid red;
+        }
         .container {
           position: relative;
           width: inherit;
@@ -170,9 +177,7 @@ export class CustomTireCard extends LitElement {
           /* aspect-ratio: 1; */
           transition: all 0.5s ease-in-out;
         }
-        .tyre-wrapper::before {
-          content: '';
-          background-image: var(--vic-tire-background);
+        .tyre-background {
           position: absolute;
           width: var(--vic-tire-image-size, 100%);
           height: var(--vic-tire-image-size, 100%);
@@ -180,29 +185,32 @@ export class CustomTireCard extends LitElement {
           top: var(--vic-tire-top, 50%);
           left: var(--vic-tire-left, 50%);
           transform: translate(-50%, -50%);
-          background-size: contain;
-          background-repeat: no-repeat;
           overflow: hidden;
           filter: drop-shadow(2px 4px 1rem var(--clear-background-color, var(--secondary-background-color, #000000d8)));
         }
+        .tyre-background img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          content: var(--vic-tire-background);
+        }
 
         .tyre-wrapper[horizontal] {
-          /* transform: rotate(90deg); */
           rotate: 90deg;
-          transition: rotate 0.5s ease-in-out;
         }
         .tyre-wrapper[horizontal] .tyre-items-grid ::slotted(*),
-        .tyre-wrapper[horizontal] ::slotted([slot='custom']) {
-          /* transform: rotate(-90deg); */
+        .tyre-wrapper[horizontal] .element {
           rotate: -90deg;
-          transition: rotate 0.5s ease-in-out;
         }
-        .tyre-wrapper ::slotted([slot='custom']) {
+        .tyre-items-grid ::slotted(.element),
+        .tyre-wrapper .element {
           position: absolute;
-          scale: var(--vic-tire-value-size, 1);
           transform: translate(-50%, -50%);
         }
-
+        .tyre-items-grid ::slotted(*),
+        .tyre-wrapper .element {
+          transition: all 0.5s ease-in-out;
+        }
         .tyre-wrapper .tyre-items-grid {
           position: absolute;
           width: 100%;
@@ -222,13 +230,6 @@ export class CustomTireCard extends LitElement {
           transform: scale(var(--vic-tire-value-size, 1));
           transition: all 0.5s ease-in-out;
           color: var(--primary-text-color, white);
-          user-select: none;
-          pointer-events: none;
-        }
-        .tyre-items-grid ::slotted(*) {
-          width: 100%;
-          height: auto;
-          display: block;
           user-select: none;
           pointer-events: none;
         }

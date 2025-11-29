@@ -210,7 +210,7 @@ export class BaseEditor extends LitElement {
     return;
   }
 
-  protected _createAlert(message: string): TemplateResult {
+  protected _createAlert(message: string | TemplateResult): TemplateResult {
     return Create.HaAlert({
       message,
     });
