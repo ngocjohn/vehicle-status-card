@@ -1,3 +1,9 @@
+## [1.19.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.3...v1.19.0) (2025-11-29)
+
+### Features
+
+* **tire-card:** Standalone tire card support ([#226](https://github.com/ngocjohn/vehicle-status-card/issues/226)) ([c29a048](https://github.com/ngocjohn/vehicle-status-card/commit/c29a0483a249ba4e36ff0aece57907fa4c7349f4))
+
 ## [1.18.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.2...v1.18.3) (2025-11-23)
 
 ### Bug Fixes
