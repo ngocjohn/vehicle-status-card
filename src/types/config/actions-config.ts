@@ -19,3 +19,5 @@ export function hasItemAction(config?: ActionsSharedConfig): boolean {
       .some((action) => hasAction(config[action]))
   );
 }
+
+export const ACTION_SHARED_KEYS = ['tap_action', 'hold_action', 'double_tap_action'] as const;

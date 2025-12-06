@@ -1,16 +1,18 @@
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, queryAll } from 'lit/decorators.js';
 
 import { COMPONENT } from '../constants/const';
-import './shared/vsc-range-item';
+import './shared/range/vsc-range-item';
 import { RangeInfoConfig } from '../types/config/card/range-info';
 import { SECTION } from '../types/section';
 import { BaseElement } from '../utils/base-element';
+import { VscRangeItem } from './shared/range/vsc-range-item';
 
 @customElement(COMPONENT.RANGE_INFO)
 export class VscRangeInfo extends BaseElement {
   @property({ attribute: false }) rangeConfig!: RangeInfoConfig[];
   @property({ type: Boolean, reflect: true }) public row = false;
+  @queryAll(COMPONENT.RANGE_INFO_ITEM) rangeItems!: NodeListOf<VscRangeItem>;
   constructor() {
     super(SECTION.RANGE_INFO);
   }
