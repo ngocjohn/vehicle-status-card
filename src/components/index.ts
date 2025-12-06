@@ -1,6 +1,5 @@
 export * from './vsc-images-slide';
 export * from './vsc-mini-map';
-export * from './vsc-range-info';
 
 // Btn components
 export * from './vsc-buttons-group';
@@ -12,6 +11,10 @@ export * from './shared/button/vsc-state-item';
 export * from './vsc-indicator-row';
 export * from './shared/indicator-row/vsc-indicator-badge';
 export * from './shared/indicator-row/vsc-indicator-item';
+
+// Range Info components
+export * from './vsc-range-info';
+export * from './shared/range/vsc-range-item';
 
 // legacy buttons grid
 export * from './shared/legacy-button/vsc-buttons-grid';

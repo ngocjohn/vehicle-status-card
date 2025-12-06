@@ -18,4 +18,5 @@ export enum COMPONENT {
   INDICATORS_GROUP = `${PREFIX_NAME}-indicators-group`,
   BUTTONS_GROUP = `${PREFIX_NAME}-buttons-group`,
   BUTTON_CARD_ITEM = `${PREFIX_NAME}-button-card-item`,
+  RANGE_INFO_ITEM = `${PREFIX_NAME}-range-item`,
 }

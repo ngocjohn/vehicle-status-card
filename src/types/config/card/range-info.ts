@@ -51,3 +51,14 @@ export type ChargeTargetConfig = Partial<{
 export const RANGE_INFO_TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
 
 export type RangeInfoTemplateKey = (typeof RANGE_INFO_TEMPLATE_KEYS)[number];
+
+export const RANGE_LAYOUT_KEYS = [
+  'progress_color',
+  'color_template',
+  'bar_background',
+  'color_blocks',
+  'color_thresholds',
+  'bar_height',
+  'bar_width',
+  'bar_radius',
+] as const;
