@@ -248,10 +248,12 @@ export class MiniMapBox extends BaseElement {
 
     // Add marker to map
     const marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
-    // Add click event listener to marker
-    marker.on('click', () => {
-      this._toggleDialog();
-    });
+    // Add event listener to marker
+    if (this.mapPopup) {
+      marker.on('click', () => {
+        this._toggleDialog();
+      });
+    }
 
     return marker;
   }
@@ -309,7 +311,6 @@ export class MiniMapBox extends BaseElement {
   }
 
   private _toggleDialog(): void {
-    if (!this.mapPopup) return;
     const params = {
       map_config: this.mapConfig,
       use_map_tiler: this.useMapTiler,
@@ -423,8 +424,8 @@ export class MiniMapBox extends BaseElement {
           position: relative;
           width: var(--vsc-marker-size, 24px) !important;
           height: var(--vsc-marker-size, 24px) !important;
-          margin: 0 !important;
-          padding: 0 !important;
+          margin-left: calc(var(--vsc-marker-size, 24px) / -2) !important;
+          margin-top: calc(var(--vsc-marker-size, 24px) / -2) !important;
           border: none !important;
           background-color: transparent !important;
           border-radius: 50%;
