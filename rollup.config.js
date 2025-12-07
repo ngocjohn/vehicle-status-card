@@ -56,7 +56,7 @@ export default [
     watch: {
       exclude: 'node_modules/**',
     },
-    plugins: [replace(replaceOpts), typescript({ declaration: false }), ...defaultPlugins, ...plugins],
+    plugins: [replace(replaceOpts), typescript({}), ...defaultPlugins, ...plugins],
     moduleContext: (id) => {
       const thisAsWindowForModules = [
         'node_modules/@formatjs/intl-utils/lib/src/diff.js',

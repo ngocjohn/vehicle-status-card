@@ -3,22 +3,41 @@ import { css, CSSResultGroup, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { DEFAULT_HA_MAP_STYLES } from '../../constants/maptiler-const';
-import { HomeAssistant, LovelaceCardConfig, fireEvent } from '../../ha';
+import { HassDialog, HomeAssistant, LovelaceCardConfig, fireEvent } from '../../ha';
 import { MiniMapConfig } from '../../types/config';
 import { createSingleMapCard } from '../../utils/lovelace/create-map-card';
 import { MapDialogParams } from '../../utils/lovelace/show-map-dialog';
 
+enum CARD_TAG {
+  HUI_MAP = 'hui-map-card',
+  EXTRA_MAP = 'extra-map-card',
+}
+
 @customElement('vsc-dialog-ha-map')
-export class VscDialogHaMap extends LitElement {
+export class VscDialogHaMap extends LitElement implements HassDialog<MapDialogParams> {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) public _mapConfig!: MiniMapConfig;
-  @property({ attribute: false }) private _mapCard?: LovelaceCardConfig[];
-  @property({ attribute: false }) public useMapTiler: boolean = false;
+  @state() private _params?: MapDialogParams;
+  @state() private _mapConfig?: MiniMapConfig;
+  @state() private _mapCard?: LovelaceCardConfig[];
+  @state() private useMapTiler: boolean = false;
 
   @state() private _open: boolean = false;
   @state() private _loaded: boolean = false;
 
   @state() private _resizeObserver?: ResizeObserver;
+
+  public async showDialog(params: MapDialogParams): Promise<void> {
+    this._params = params;
+    this._mapConfig = params.map_config;
+    this.useMapTiler = params.use_map_tiler ?? false;
+    this._open = true;
+    if (!this._mapCard) {
+      this._mapCard = await createSingleMapCard(this._mapConfig, this.hass);
+      this._mapCard.map((card) => (card.hass = this.hass));
+      this._loaded = true;
+      this._setObserver();
+    }
+  }
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -37,7 +56,7 @@ export class VscDialogHaMap extends LitElement {
 
   private _setObserver(): void {
     this.updateComplete.then(() => {
-      const mapTagName = this.useMapTiler ? 'extra-map-card' : 'hui-map-card';
+      const mapTagName = this.useMapTiler ? CARD_TAG.EXTRA_MAP : CARD_TAG.HUI_MAP;
       const root = this.shadowRoot
         ?.querySelector(mapTagName)
         ?.shadowRoot?.querySelector('ha-card')
@@ -55,24 +74,14 @@ export class VscDialogHaMap extends LitElement {
     });
   }
 
-  public async showDialog(params: MapDialogParams): Promise<void> {
-    this._mapConfig = params.map_config;
-    this.useMapTiler = params.use_map_tiler ?? false;
-    this._open = true;
-    if (!this._mapCard) {
-      this._mapCard = await createSingleMapCard(this._mapConfig, this.hass);
-      this._mapCard.map((card) => (card.hass = this.hass));
-      this._loaded = true;
-      this._setObserver();
-    }
-  }
-
   public closeDialog() {
-    this._open = false;
+    this._params = undefined;
+    this._mapConfig = undefined;
     this._mapCard = undefined;
     this._loaded = false;
     this._resizeObserver?.disconnect();
     this._resizeObserver = undefined;
+    this._open = false;
     fireEvent(this, 'dialog-closed', { dialog: this.localName });
     return true;
   }
