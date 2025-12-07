@@ -1,3 +1,13 @@
+## [1.20.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.19.0...v1.20.0) (2025-12-07)
+
+### Features
+
+* **mini-map:** add user location option ([#231](https://github.com/ngocjohn/vehicle-status-card/issues/231)) ([1ed6498](https://github.com/ngocjohn/vehicle-status-card/commit/1ed6498ecae6a76663d6cd4cc1675074d2bbeb31))
+
+### Bug Fixes
+
+* **range-info:** Adjust the z-index for range level value in range info bar ([#229](https://github.com/ngocjohn/vehicle-status-card/issues/229)) ([afe5620](https://github.com/ngocjohn/vehicle-status-card/commit/afe5620b8b11a1e8d1020483754145b4240275f4))
+
 ## [1.19.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.18.3...v1.19.0) (2025-11-29)
 
 ### Features
