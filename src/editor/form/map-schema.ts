@@ -16,7 +16,7 @@ export const BASE_MAP_SCHEMA = [
   },
 ] as const;
 
-const LAYOUT_BOOL = ['enable_popup', 'us_format', 'hide_map_address', 'use_zone_name'] as const;
+const LAYOUT_BOOL = ['enable_popup', 'us_format', 'hide_map_address', 'use_zone_name', 'user_location'] as const;
 
 export const MINI_MAP_LAYOUT_SCHEMA = [
   {
@@ -33,6 +33,12 @@ export const MINI_MAP_LAYOUT_SCHEMA = [
             name,
             selector: { boolean: {} },
           })),
+        ] as const,
+      },
+      {
+        type: 'grid',
+        flatten: true,
+        schema: [
           {
             name: 'map_zoom',
             default: 14,
@@ -48,53 +54,6 @@ export const MINI_MAP_LAYOUT_SCHEMA = [
     ],
   },
 ];
-// export const MINI_MAP_LAYOUT_SCHEMA = [
-//   {
-//     type: 'expandable',
-//     flatten: true,
-//     title: 'Mini Map Layout',
-//     iconPath: mdiMap,
-//     schema: [
-//       {
-//         type: 'grid',
-//         flatten: true,
-//         schema: [
-//           {
-//             name: 'enable_popup',
-//             default: false,
-//             type: 'boolean',
-//           },
-//           {
-//             name: 'us_format',
-//             default: false,
-//             type: 'boolean',
-//           },
-//           {
-//             name: 'hide_map_address',
-//             default: false,
-//             type: 'boolean',
-//           },
-//           {
-//             name: 'use_zone_name',
-//             default: false,
-//             type: 'boolean',
-//           },
-//           {
-//             name: 'map_zoom',
-//             default: 14,
-//             valueMin: 0,
-//             type: 'integer',
-//           },
-//           {
-//             name: 'map_height',
-//             default: 150,
-//             selector: { number: { mode: 'box', min: 150, max: 500, step: 10 } },
-//           },
-//         ] as const satisfies readonly HaFormSchema[],
-//       },
-//     ],
-//   },
-// ];
 
 export const BASE_MAP_CONFIG_SCHEMA = (data: any) => {
   const noEntity = !data?.device_tracker || data?.device_tracker === '';

@@ -6,13 +6,15 @@ const debuglog = createDebug('card', 'mini-map');
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
 import mapstyle from 'leaflet/dist/leaflet.css';
-import { css, CSSResultGroup, html, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
+import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { COMPONENT } from '../constants/const';
+import { DecoratedMarker } from '../ha/common/map/decorated_marker';
+import { showToast } from '../ha/panels/lovelace/toast';
 import { Address, MapData, MiniMapConfig } from '../types/config';
 import { SECTION } from '../types/section';
-import { isSafari } from '../utils';
+import { isSafari, randomHexColor } from '../utils';
 import { BaseElement } from '../utils/base-element';
 import { _getMapAddress } from '../utils/lovelace/create-map-card';
 import { showHaMapDialog } from '../utils/lovelace/show-map-dialog';
@@ -41,6 +43,7 @@ const MARGIN_BLOCK: Record<CardMapPosition, string> = {
 export class MiniMapBox extends BaseElement {
   constructor() {
     super(SECTION.MINI_MAP);
+    window.VscMiniMap = this;
   }
 
   @property({ attribute: false }) public mapConfig!: MiniMapConfig;
@@ -50,17 +53,18 @@ export class MiniMapBox extends BaseElement {
   @state() private mapData?: MapData;
 
   @state() private map: L.Map | null = null;
-
   @state() private latLon: L.LatLng | null = null;
   @state() private marker: L.Marker | null = null;
 
+  private _userMarker: DecoratedMarker | null = null;
+
+  @state() private _userLocationActive = false;
   @state() private _addressReady = false;
   @state() private _locateIconVisible = false;
-  private _address: Partial<Address> | null = null;
-
   @state() private _mapInitialized = false;
 
   private resizeObserver?: ResizeObserver;
+  private _address: Partial<Address> | null = null;
 
   private get mapPopup(): boolean {
     return this.mapConfig?.enable_popup || false;
@@ -72,6 +76,10 @@ export class MiniMapBox extends BaseElement {
 
   private get useMapTiler(): boolean {
     return !!this.mapConfig.maptiler_api_key;
+  }
+
+  private get userLocationEnabled(): boolean {
+    return this.mapConfig?.user_location || false;
   }
 
   private get _deviceState(): string {
@@ -90,11 +98,12 @@ export class MiniMapBox extends BaseElement {
   connectedCallback() {
     super.connectedCallback();
     this.resizeObserver = new ResizeObserver(() => {
-      this.map?.invalidateSize();
+      this.map?.invalidateSize(false);
     });
     this.updateComplete.then(() => {
       const container = this.shadowRoot?.getElementById('map');
       if (container) {
+        // console.log('Observing map container for resize...');
         this.resizeObserver!.observe(container);
       }
     });
@@ -109,7 +118,7 @@ export class MiniMapBox extends BaseElement {
     super.willUpdate(changedProperties);
     if (!this.mapConfig) return;
     if (changedProperties.has('mapConfig') && this.mapConfig) {
-      // console.log('Map config changed, resetting map...');
+      console.log('Map config changed, resetting map...');
       const deviceTracker = this.mapConfig.device_tracker!;
       const stateObj = this._hass.states[deviceTracker];
       if (stateObj) {
@@ -124,23 +133,31 @@ export class MiniMapBox extends BaseElement {
         this.marker = null;
       }
     }
-
-    if (changedProperties.has('_mapInitialized') && this._mapInitialized && this.map) {
-      this.latLon = this._getTargetLatLng(this.map);
-      this.map.invalidateSize();
-      this.map.setView(this.latLon, this.zoom);
-    }
   }
 
   protected updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
 
     if (changedProperties.has('mapData') && this.mapData && this.mapData !== undefined && !this.map) {
-      // console.log('Map data changed, initializing map...');
+      console.log('Map data changed, initializing map...');
       this.initMap();
       if (this.mapConfig?.hide_map_address !== true) {
         this._getAddress();
       }
+    }
+
+    if (changedProperties.has('_mapInitialized') && this._mapInitialized) {
+      setTimeout(() => {
+        if (this.latLon && this.map) {
+          console.log('Map initialized, adjusting view...');
+
+          // this.map.invalidateSize();
+          this.map.setView(this.latLon, this.zoom);
+          if (!this.marker) {
+            this.marker = this._createMarker(this.map);
+          }
+        }
+      }, 100);
     }
   }
 
@@ -155,6 +172,7 @@ export class MiniMapBox extends BaseElement {
           console.log('Updating map position...', { newLat: latitude, newLon: longitude });
           // Update map position
           this._addressReady = false;
+          this._address = null;
           this.mapData.lat = latitude;
           this.mapData.lon = longitude;
           this.latLon = this._getTargetLatLng(this.map);
@@ -172,13 +190,18 @@ export class MiniMapBox extends BaseElement {
     this.mapPosition = this._computeMapPosition();
   }
 
-  private async _getAddress(): Promise<void> {
-    const { lat, lon } = this.mapData!;
+  private async _getAddress(latLon?: L.LatLngLiteral): Promise<void> {
+    let lat: number, lon: number;
+    if (latLon) {
+      ({ lat, lng: lon } = latLon);
+    } else {
+      ({ lat, lon } = this.mapData!);
+    }
+
     const address = await _getMapAddress(this.mapConfig, lat, lon);
     // debuglog('Fetched address:', address);
     if (address) {
       this._address = address;
-      this.mapData!.address = address;
       this._addressReady = true;
     } else if (!this._address) {
       this._addressReady = true;
@@ -187,7 +210,7 @@ export class MiniMapBox extends BaseElement {
 
   private initMap(): void {
     if (this._mapInitialized || this.map) return;
-    // console.log('Initializing map...');
+    console.log('Initializing map...');
     const { lat, lon } = this.mapData!;
     const defaultZoom = this.zoom;
     const mapOptions = {
@@ -201,29 +224,82 @@ export class MiniMapBox extends BaseElement {
     if (!mapContainer) return;
 
     this.map = L.map(mapContainer, mapOptions).setView([lat, lon]);
-
+    this.latLon = this._getTargetLatLng(this.map);
     // Add tile layer to map
     this._createTileLayer(this.map);
-    // Add marker to map
-    this.marker = this._createMarker(this.map);
 
     this.map.on('moveend zoomend', () => {
       // check visibility of marker icon on view
       const bounds = this.map!.getBounds();
-      const isMarkerVisible = bounds.contains(this.marker!.getLatLng());
+      const isMarkerVisible = bounds.contains([lat, lon]);
       this._locateIconVisible = isMarkerVisible;
     });
+
+    if (this.userLocationEnabled) {
+      console.log('User location enabled, adding location handlers...');
+      this.map.on('locationfound', (e) => {
+        this._handleLocationFound(e as L.LocationEvent);
+      });
+      this.map.on('locationerror', (e: L.ErrorEvent) => {
+        console.log(e);
+        showToast(this, { message: e.message, duration: 3000, dismissable: true });
+        this._userLocationActive = false;
+        if (this._userMarker) {
+          this._userMarker.remove();
+        }
+      });
+    }
 
     this._mapInitialized = true;
   }
 
   private _getTargetLatLng(map: L.Map): L.LatLng {
+    console.log('Calculating target LatLng for map centering...');
     const { lat, lon } = this.mapData!;
     const mapSizeSplit = map.getSize().x;
     const targetPoint = map.project([lat, lon], this.zoom).subtract([mapSizeSplit / 5, 3]);
     const targetLatLng = map.unproject(targetPoint, this.zoom);
     return targetLatLng;
   }
+
+  private _addCirclePoint(latLon: L.LatLng, radius: number = 12): L.Circle {
+    const color = randomHexColor() || '#30f';
+    const circle = L.circle(latLon, {
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.3,
+      fillRule: 'evenodd',
+      opacity: 0.8,
+      radius: radius,
+      interactive: false,
+    });
+    return circle;
+  }
+
+  private _handleLocationFound = async (e: L.LocationEvent): Promise<void> => {
+    // console.log('User location found:', e);
+    if (!this.map) return;
+
+    if (this._userMarker) {
+      this._userMarker.remove();
+    }
+
+    const circle = this._addCirclePoint(e.latlng, 12);
+    const customIcon = L.divIcon({
+      html: `<ha-icon icon="mdi:map-marker-radius"></ha-icon>`,
+      iconSize: [24, 24],
+      className: 'user-location-marker',
+    });
+    const popupContent = await this._createPopupContent(e.latlng);
+    const userMarker = new DecoratedMarker(e.latlng, circle, {
+      icon: customIcon,
+      interactive: true,
+    });
+    userMarker.bindPopup(popupContent);
+    userMarker.addTo(this.map);
+    this._userMarker = userMarker;
+    this._userLocationActive = true;
+  };
 
   private _createTileLayer(map: L.Map): L.TileLayer {
     const retina = L.Browser.retina;
@@ -258,22 +334,56 @@ export class MiniMapBox extends BaseElement {
     return marker;
   }
 
+  private _createPopupContent = async (latLon: L.LatLngLiteral): Promise<string> => {
+    const { lat, lng: lon } = latLon;
+    const address = await _getMapAddress(this.mapConfig, lat, lon);
+    if (address) {
+      return `<b>You are here</b><br>${address.streetName || ''}<br>${address.sublocality || ''} ${address.city || ''}`;
+    }
+    return `<b>You are here</b><br>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+  };
+
   private resetMap() {
     if (!this.map || !this.latLon) return;
     this.map.flyTo(this.latLon, this.zoom);
+  }
+
+  private _handleUserLocate(): void {
+    if (!this.map) return;
+    if (this._userLocationActive) {
+      this._userLocationActive = false;
+      this._userMarker?.remove();
+      this.resetMap();
+    } else {
+      this.map.locate({ setView: true, maxZoom: this.zoom });
+    }
   }
 
   protected render(): TemplateResult {
     return html`
       <div class="map-wrapper" ?safari=${isSafari}>
         <div id="overlay-container">
-          <div class="reset-button" @click=${this.resetMap} .hidden=${this._locateIconVisible}>
-            <ha-icon icon="mdi:compass"></ha-icon>
+          <div class="control-button">
+            ${this._renderLocateButton()}
+            <ha-icon icon="mdi:compass" @click=${this.resetMap} .hidden=${this._locateIconVisible}></ha-icon>
           </div>
           ${this._renderAddress()}
         </div>
         <div id="map"></div>
       </div>
+    `;
+  }
+
+  private _renderLocateButton(): TemplateResult | typeof nothing {
+    if (!this.userLocationEnabled) return nothing;
+    const userLocActive = this._userLocationActive;
+    return html`
+      <ha-icon
+        .icon=${userLocActive ? 'mdi:navigation-variant' : 'mdi:navigation-variant-outline'}
+        ?active=${userLocActive}
+        @click=${() => this._handleUserLocate()}
+      >
+      </ha-icon>
     `;
   }
 
@@ -315,7 +425,6 @@ export class MiniMapBox extends BaseElement {
       map_config: this.mapConfig,
       use_map_tiler: this.useMapTiler,
     };
-    console.log('Opening map dialog...', params);
     showHaMapDialog(this, params);
   }
 
@@ -466,20 +575,38 @@ export class MiniMapBox extends BaseElement {
           transform: translate(-50%, -50%) scale(1.2);
         }
 
+        .user-location-marker {
+          display: flex;
+          justify-content: center;
+          align-items: anchor-center;
+        }
+        .user-location-marker ha-icon {
+          color: var(--secondary-text-color);
+        }
         .leaflet-control-container {
           display: none;
         }
 
-        .reset-button {
+        .control-button {
           position: absolute;
           top: 1rem;
           right: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
           z-index: 2;
+          transition: all 0.3s ease;
+        }
+        .control-button ha-icon {
           cursor: pointer;
           opacity: 0.5;
           &:hover {
             opacity: 1;
           }
+        }
+        .control-button ha-icon[active] {
+          color: var(--primary-color);
+          opacity: 1;
         }
 
         .address-line {
