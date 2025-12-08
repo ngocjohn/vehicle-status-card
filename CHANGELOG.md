@@ -1,3 +1,9 @@
+## [1.21.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.20.0...v1.21.0) (2025-12-08)
+
+### Features
+
+* **image-action:** enhance image configuration with action support ([#233](https://github.com/ngocjohn/vehicle-status-card/issues/233)) ([d1e5d09](https://github.com/ngocjohn/vehicle-status-card/commit/d1e5d09abaafa8a0edfa802944df979412c189de))
+
 ## [1.20.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.19.0...v1.20.0) (2025-12-07)
 
 ### Features
