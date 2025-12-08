@@ -14,7 +14,7 @@ import { showAlertDialog } from '../../../utils/editor/show-dialog-box';
 import { getHaPictureUpload, toggleQuickBar } from '../../../utils/helpers-dom';
 import { fireEvent } from '../../common/dom/fire_event';
 import { computeImageUrl, ImageEntity } from '../../data/image';
-import { createImage, generateImageThumbnailUrl } from '../../data/image_upload';
+import { createImage, generateImageThumbnailUrl, getIdFromUrl } from '../../data/image_upload';
 import { showToast } from '../../panels/lovelace/toast';
 
 const IMAGE_ENTITY_SCHEMA = [
@@ -245,7 +245,12 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
         imageUrl = computeImageUrl(entity as ImageEntity);
       }
     } else if (image.image) {
-      imageUrl = image.image;
+      if (typeof image.image === 'object' && image.image.media_content_id) {
+        const mediaId = getIdFromUrl(image.image.media_content_id);
+        imageUrl = generateImageThumbnailUrl(mediaId!, undefined, true);
+      } else {
+        imageUrl = image.image as string;
+      }
     }
     return imageUrl;
   }

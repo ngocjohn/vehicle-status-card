@@ -1,3 +1,5 @@
+import { MediaSelectorValue } from '../../../ha/data/media_source';
+import { ActionsSharedConfig } from '../actions-config';
 import { EntityConfig } from '../entity-config';
 
 /**
@@ -12,8 +14,9 @@ export interface ImageConfig {
 }
 
 export interface ImageItem {
-  image?: string; // URL of the image
+  image?: string | MediaSelectorValue;
   image_entity?: string; // Entity ID to fetch the image from
+  action?: ActionsSharedConfig; // Optional action configuration
 }
 
 export const hasImageLegacy = (configImages: (ImageItem | ImageConfig)[]): boolean => {
