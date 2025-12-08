@@ -3,7 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 
 import { HomeAssistant, type ImageEntity, computeImageUrl } from '../../ha';
 import { isMediaSourceContentId, resolveMediaSource } from '../../ha/data/media_source';
-import { ImageItem } from '../../types/config';
+import { hasItemAction, ImageItem } from '../../types/config';
+import { addActions } from '../../utils';
 
 @customElement('vsc-image-item')
 export class VscImageItem extends LitElement {
@@ -21,19 +22,18 @@ export class VscImageItem extends LitElement {
     const imageChanged =
       _changedProperties.has('_imageConfig') &&
       _changedProperties.get('_imageConfig')?.image !== this._imageConfig.image;
+    const image =
+      (typeof this._imageConfig?.image === 'object' && this._imageConfig.image.media_content_id) ||
+      (this._imageConfig.image as string | undefined);
 
-    if (
-      (firstHass || imageChanged) &&
-      typeof this._imageConfig.image === 'string' &&
-      isMediaSourceContentId(this._imageConfig.image)
-    ) {
+    if ((firstHass || imageChanged) && typeof image === 'string' && isMediaSourceContentId(image)) {
       // Resolve media source URL
       this._resolvedImage = undefined;
-      resolveMediaSource(this.hass, this._imageConfig?.image).then((resp) => {
+      resolveMediaSource(this.hass, image).then((resp) => {
         this._resolvedImage = resp.url;
       });
     } else if (imageChanged) {
-      this._resolvedImage = this._imageConfig?.image;
+      this._resolvedImage = image;
     }
   }
 
@@ -51,6 +51,24 @@ export class VscImageItem extends LitElement {
       }
     }
     return true;
+  }
+
+  protected firstUpdated(_changedProperties: PropertyValues): void {
+    super.firstUpdated(_changedProperties);
+    this._addActionHandlers();
+  }
+
+  // add action handlers
+  private _addActionHandlers(): void {
+    if (!this._imageConfig.action || !hasItemAction(this._imageConfig.action)) {
+      return;
+    }
+    const imageElement = this.shadowRoot?.getElementById('image');
+    if (!imageElement) {
+      return;
+    }
+    console.log('Adding actions to image item', this._imageConfig.action);
+    addActions(imageElement, this._imageConfig.action);
   }
 
   protected render() {
@@ -78,7 +96,7 @@ export class VscImageItem extends LitElement {
       return nothing;
     }
 
-    return html` <img src="${this.hass.hassUrl(image)}" alt="Image" /> `;
+    return html` <img id="image" src="${this.hass.hassUrl(image)}" /> `;
   }
 
   static styles = css`

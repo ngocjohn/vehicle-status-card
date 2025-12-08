@@ -3,8 +3,9 @@ import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { computeImageUrl, fireEvent, ImageEntity } from '../../../ha';
-import { showFormDialog } from '../../../ha/dialogs/form/show-form-dialog';
+import { generateImageThumbnailUrl, getIdFromUrl } from '../../../ha/data/image_upload';
 import '../../shared/badge-editor-item';
+import { showFormDialog } from '../../../ha/dialogs/form/show-form-dialog';
 import { ImageItem } from '../../../types/config/card/images';
 import { IMAGE_MENU_ACTIONS } from '../../../utils/editor/create-actions-menu';
 import { showConfirmDialog } from '../../../utils/editor/show-dialog-box';
@@ -58,7 +59,12 @@ export class PanelImagesPreview extends BaseEditor {
         imageUrl = computeImageUrl(entity as ImageEntity);
       }
     } else if (image.image) {
-      imageUrl = image.image;
+      if (typeof image.image === 'object' && image.image.media_content_id) {
+        const mediaId = getIdFromUrl(image.image.media_content_id);
+        imageUrl = generateImageThumbnailUrl(mediaId!, undefined, true);
+      } else {
+        imageUrl = image.image as string;
+      }
     }
     return imageUrl;
   }
@@ -85,6 +91,8 @@ export class PanelImagesPreview extends BaseEditor {
         break;
       case 'delete-image':
         this._deleteItem(index);
+        break;
+      default:
         break;
     }
   }

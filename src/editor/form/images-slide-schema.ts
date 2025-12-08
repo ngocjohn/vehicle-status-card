@@ -1,12 +1,20 @@
-import { mdiGestureSwipe, mdiImage } from '@mdi/js';
+import { mdiGestureSwipe, mdiGestureTap, mdiImage } from '@mdi/js';
 
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
+import { computeOptionalActionSchemaFull } from './actions-config';
 
 export const ImageSchema = [
   {
     name: 'image',
     required: false,
-    selector: { image: { original: true } },
+    selector: {
+      media: {
+        accept: ['image/*'] as string[],
+        clearable: true,
+        image_upload: true,
+        hide_content_type: false,
+      },
+    },
   },
   {
     name: 'image_entity',
@@ -14,9 +22,19 @@ export const ImageSchema = [
     selector: { entity: { domain: 'image' } },
   },
   {
-    name: 'title',
+    name: 'action',
     required: false,
-    selector: { text: {} },
+    type: 'expandable',
+    title: 'Interaction',
+    iconPath: mdiGestureTap,
+    flatten: false,
+    schema: [
+      {
+        name: 'entity',
+        selector: { entity: {} },
+      },
+      ...computeOptionalActionSchemaFull(),
+    ],
   },
 ] as const;
 
