@@ -4,12 +4,13 @@ const debug = createDebug('card');
 
 import isEmpty from 'es-toolkit/compat/isEmpty';
 import { getPromisableResult } from 'get-promisable-result';
-import { CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
+import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
-import * as SEC from './components';
 import './components';
+import * as SEC from './components';
 import { COMPONENT, CARD_NAME } from './constants/const';
 import { EditorEventParams } from './editor/base-editor';
 import { EDITOR_AREA_SELECTED, EDITOR_SUB_CARD_PREVIEW } from './events';
@@ -22,6 +23,7 @@ import {
   LovelaceCardEditor,
   LovelaceGridOptions,
 } from './ha';
+import { generateImageThumbnailUrl, getIdFromUrl } from './ha/data/image_upload';
 import {
   ButtonCardConfig,
   DefaultCardConfig,
@@ -261,12 +263,15 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     const headerDimmed = this.isEditorPreview && this.configSection !== SECTION.DEFAULT && !notMainCard;
 
     const isEditorPreview = this.isEditorPreview;
+    const hasBacground = _config.layout_config?.custom_background?.url && _config.layout_config?.custom_background.url;
     return html`
       <ha-card
         .raised=${isEditorPreview}
         ?notMainCard=${notMainCard}
         ?no-header=${headerHidden}
         ?preview=${isEditorPreview}
+        ?background=${hasBacground}
+        style=${styleMap(this._computeStyle())}
       >
         ${!headerHidden
           ? html`<div class="card-header" id="name" ?header-dimmed=${headerDimmed}>${this._config.name}</div>`
@@ -824,8 +829,40 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
     }
   }
 
+  private _computeStyle() {
+    const backgroundConfig = this._config.layout_config?.custom_background;
+    if (!backgroundConfig?.url || backgroundConfig.url === '') {
+      return {};
+    }
+    const styles: Record<string, string> = {};
+    let backgroundUrl: string;
+    if (typeof backgroundConfig.url === 'object' && backgroundConfig.url.media_content_id) {
+      const mediaId = getIdFromUrl(backgroundConfig.url.media_content_id);
+      backgroundUrl = generateImageThumbnailUrl(mediaId!, undefined, true);
+    } else {
+      backgroundUrl = backgroundConfig.url as string;
+    }
+    styles['--vsc-card-background-image'] = `url('${backgroundUrl}')`;
+    Object.entries(backgroundConfig).forEach(([key, value]) => {
+      if (key !== 'url' && value !== undefined) {
+        styles[`--vsc-card-background-${key}`] = value.toString();
+      }
+    });
+    return styles;
+  }
+
   static get styles(): CSSResultGroup {
-    return [super.styles];
+    return [
+      super.styles,
+      css`
+        ha-card[background] {
+          background-size: var(--vsc-card-background-size, cover);
+          background-position: var(--vsc-card-background-position, center);
+          background-repeat: no-repeat;
+          background-image: var(--vsc-card-background-image, none);
+        }
+      `,
+    ];
   }
 }
 

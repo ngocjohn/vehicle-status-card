@@ -14,6 +14,7 @@ import {
   HIDE_CARD_NAME_SCHEMA,
   IMAGES_LAYOUT_SCHEMA,
   SINGLE_TIRE_ENABLED_SCHEMA,
+  CUSTOM_BACKGROUND_SCHEMA,
 } from '../form';
 
 @customElement(PANEL.LAYOUT_EDITOR)
@@ -46,6 +47,7 @@ export class PanelLayoutEditor extends BaseEditor {
       BUTTON_GRID_LAYOUT_SCHEMA(!LAYOUT_DATA.button_grid?.swipe, 'button_grid'),
       IMAGES_LAYOUT_SCHEMA(LAYOUT_DATA.images_swipe, 'images_swipe'),
       CARD_THEME_SCHEMA,
+      CUSTOM_BACKGROUND_SCHEMA,
     ].map((schema) => this._createVscForm(LAYOUT_DATA, schema, 'layout_config'));
 
     const singleTireSection = this._renderSingleTireConfig(LAYOUT_DATA);

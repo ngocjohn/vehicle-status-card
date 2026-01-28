@@ -145,3 +145,71 @@ export const CARD_THEME_SCHEMA = [
     ],
   },
 ] as const;
+
+const BG_SIZE = ['cover', 'contain', 'auto'] as const;
+const BG_POSITION = [
+  'left',
+  'center',
+  'right',
+  'top',
+  'bottom',
+  'top left',
+  'top right',
+  'bottom left',
+  'bottom right',
+] as const;
+export const CUSTOM_BACKGROUND_SCHEMA = [
+  {
+    title: 'Custom Background',
+    name: 'custom_background',
+    type: 'expandable',
+    flatten: false,
+    icon: 'mdi:image-multiple',
+    schema: [
+      {
+        name: 'url',
+        label: 'Background Image',
+        required: false,
+        selector: {
+          media: {
+            accept: ['image/*'] as string[],
+            clearable: true,
+            image_upload: true,
+            hide_content_type: false,
+          },
+        },
+      },
+      {
+        name: 'size',
+        label: 'Background Size',
+        required: false,
+        default: 'cover',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            custom_value: true,
+            options: BG_SIZE.map((size) => ({
+              value: size,
+              label: capitalizeFirstLetter(size),
+            })),
+          },
+        },
+      },
+      {
+        name: 'position',
+        label: 'Background Position',
+        required: false,
+        default: 'center',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: BG_POSITION.map((position) => ({
+              value: position,
+              label: capitalizeFirstLetter(position),
+            })),
+          },
+        },
+      },
+    ],
+  },
+] as const;
