@@ -1,3 +1,4 @@
+import { MediaSelectorValue } from '../../../ha/data/media_source';
 import { TireTemplateConfig } from './tire-card';
 
 // List of all section keys
@@ -18,6 +19,7 @@ export interface LayoutConfig {
     tire_card?: TireTemplateConfig;
   };
   hide_card_name?: boolean;
+  custom_background?: BackgroundImageConfig;
   /**
    * @deprecated is replaced by 'section_order' option
    */
@@ -92,3 +94,21 @@ export const hasButtonGridLegacy = (btnConfig?: ButtonGridConfig): boolean => {
     btnConfig.hide_notify_badge !== undefined
   );
 };
+
+type BACKGROUND_SIZE = 'cover' | 'contain' | 'auto';
+type BACKGROUND_POSITION =
+  | 'left'
+  | 'center'
+  | 'right'
+  | 'top'
+  | 'bottom'
+  | 'top left'
+  | 'top right'
+  | 'bottom left'
+  | 'bottom right';
+
+export interface BackgroundImageConfig {
+  url: string | MediaSelectorValue;
+  size?: BACKGROUND_SIZE | string;
+  position?: BACKGROUND_POSITION;
+}
