@@ -1,3 +1,10 @@
+## [1.22.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.21.0...v1.22.0) (2026-01-29)
+
+### Features
+
+* **custom-background:** Add custom background configuration to layout ([#241](https://github.com/ngocjohn/vehicle-status-card/issues/241)) ([aa95770](https://github.com/ngocjohn/vehicle-status-card/commit/aa95770dea9af2a73201827a78bd36d776b614a2))
+* **maptiler-map:** Add show_history_control option to map configurations ([#242](https://github.com/ngocjohn/vehicle-status-card/issues/242)) ([e7ea147](https://github.com/ngocjohn/vehicle-status-card/commit/e7ea1474a05e512a5f6a5865d324b217ca3d1a0c))
+
 ## [1.21.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.20.0...v1.21.0) (2025-12-08)
 
 ### Features
