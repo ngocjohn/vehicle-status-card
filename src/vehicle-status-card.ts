@@ -693,6 +693,7 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
           (mapTilerEl as any)._drawPaths();
           debug('extra map card path drawn');
         }
+        return;
       } else {
         debug('extra map card did not subscribe to history in time');
         return;

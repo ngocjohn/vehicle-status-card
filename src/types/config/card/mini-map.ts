@@ -67,6 +67,7 @@ export interface MaptilerPopupConfig {
   map_styles?: CustomStyles;
   label_mode?: LABEL_MODE;
   attribute?: string;
+  show_history_control?: boolean;
 }
 
 export type MiniMapConfig = MiniMapBaseConfig & MinimapLayoutConfig & MapPopupSharedConfig & MaptilerPopupConfig;
@@ -96,6 +97,7 @@ export interface ExtraMapCardConfig extends BaseMapCardConfig {
   use_more_info?: boolean;
   custom_styles?: CustomStyles;
   history_period?: HISTORY_PERIOD;
+  show_history_control?: boolean;
 }
 
 export type LovelaceMapPopupConfig = MapCardConfig | ExtraMapCardConfig;
@@ -118,6 +120,7 @@ export function computeExtraMapConfig(config: MiniMapConfig): Partial<ExtraMapCa
     custom_styles: config.map_styles,
     history_period: config.history_period,
     use_more_info: config.use_more_info,
+    show_history_control: config.show_history_control,
     ...mapCommonPopupConfig(config),
   };
 }
@@ -153,6 +156,7 @@ export function toPopupShared(
     map_styles: config.custom_styles,
     history_period: config.history_period,
     use_more_info: config.use_more_info,
+    show_history_control: config.show_history_control,
   };
   return sharedConfig;
 }
