@@ -26,12 +26,14 @@ export async function _getHass() {
   return base.hass;
 }
 
-async function getLatestNpmVersion(): Promise<string | null> {
+async function getLatestNpmVersion(beta: boolean = false): Promise<string | null> {
   try {
     const res = await fetch(`https://registry.npmjs.org/${EXTRA_MAP_NAME}`);
     if (!res.ok) throw new Error('Package not found');
     const data = await res.json();
-    return data['dist-tags']?.latest || null;
+    const distTags = data['dist-tags'] || {};
+    const version = beta ? distTags['beta'] : distTags['latest'];
+    return version || null;
   } catch (error) {
     console.error('Failed to fetch version:', error);
     return null;
@@ -50,13 +52,14 @@ export const loadAndCleanExtraMap = async (): Promise<void> => {
   if (window.__extraMapCardLoadPromise) return window.__extraMapCardLoadPromise;
 
   window.__extraMapCardLoadPromise = (async () => {
-    const latestVersion = await memoizedGetLatestNpmVersion();
+    const latestVersion = await memoizedGetLatestNpmVersion(false);
     if (!latestVersion) {
       console.warn(`${CARD_NAME}: Unable to fetch latest version of ${EXTRA_MAP_NAME}. Skipping loading.`);
       return;
     }
 
     const latestUrl = `${EXTRA_MAP_CARD_BASE}${latestVersion}${EXTRA_MAP_BUNDLE_PATH}`;
+
     const loadedScripts = Array.from(document.scripts);
 
     const exactScript = loadedScripts.find((s) => s.src === latestUrl);
