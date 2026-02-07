@@ -1,3 +1,9 @@
+## [1.22.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.22.0...v1.22.1) (2026-02-07)
+
+### Bug Fixes
+
+* **menu-button:** change ha-button-menu to ha-dropdown ([#244](https://github.com/ngocjohn/vehicle-status-card/issues/244)) ([396e82c](https://github.com/ngocjohn/vehicle-status-card/commit/396e82caf56c6805f37376d1514fd78cd5f64db4))
+
 ## [1.22.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.21.0...v1.22.0) (2026-01-29)
 
 ### Features
