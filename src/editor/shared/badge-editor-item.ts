@@ -154,36 +154,31 @@ export class BadgeEditorItem extends LitElement {
         ${this._menuAction.length === 1
           ? nothing
           : html`
-              <ha-button-menu
-                class="more"
-                corner="TOP_LEFT"
-                menu-corner="END"
-                .fixed=${true}
-                .naturalMenuWidth=${true}
-                .activatable=${true}
-                @closed=${(ev: Event) => {
+              <ha-dropdown
+                placement="top-left"
+                @wa-hide=${(ev: Event) => {
                   ev.stopPropagation();
                   this._menuOpened = false;
                 }}
-                @opened=${(ev: Event) => {
+                @wa-show=${(ev: Event) => {
                   ev.stopPropagation();
                   this._menuOpened = true;
                 }}
               >
-                <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL}> </ha-icon-button>
+                <ha-icon-button slot="trigger" class="more" .path=${ICON.DOTS_VERTICAL}> </ha-icon-button>
                 ${this._menuAction.map((item) => {
                   if (isDelete(item.action) && !deleteFound) {
                     deleteFound = true;
                     return this.noDelete
                       ? nothing
                       : html`
-                          <li divider role="separator"></li>
+                          <wa-divider></wa-divider>
                           ${this._renderActionItem(item)}
                         `;
                   }
                   return this._renderActionItem(item);
                 })}
-              </ha-button-menu>
+              </ha-dropdown>
             `}
       </div>
     `;

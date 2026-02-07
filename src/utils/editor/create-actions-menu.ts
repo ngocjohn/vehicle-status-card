@@ -97,9 +97,10 @@ export const _renderActionItem = ({
 }): TemplateResult => {
   const deleteClass = /(delete|remove)/.test(item.action) ? 'error' : '';
   return html`
-    <ha-list-item
+    <ha-dropdown-item
       graphic="icon"
       .action=${item.action}
+      .value=${item.action}
       @click=${onClick}
       class=${deleteClass}
       .index=${option?.index}
@@ -109,10 +110,10 @@ export const _renderActionItem = ({
       <ha-icon
         class=${deleteClass}
         .icon=${item.icon}
-        slot="graphic"
+        slot="icon"
         style="${item.color ? `color: ${item.color}` : ''}"
       ></ha-icon>
       ${item.title}
-    </ha-list-item>
+    </ha-dropdown-item>
   `;
 };

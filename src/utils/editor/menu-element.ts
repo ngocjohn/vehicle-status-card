@@ -22,7 +22,7 @@ const DEFAULT = {
   description: CONFIG_TYPES.description,
 } as const;
 
-const OptionKeys = Object.keys(CONFIG_TYPES.options) as Array<keyof typeof CONFIG_TYPES.options>;
+// const OptionKeys = Object.keys(CONFIG_TYPES.options) as Array<keyof typeof CONFIG_TYPES.options>;
 
 type MenuSelectParams = {
   value?: string;
@@ -71,11 +71,8 @@ export class MenuElement extends BaseEditor {
               `
             : nothing}
 
-          <ha-button-menu
-            .fullWidth=${true}
-            .fixed=${true}
-            .activatable=${true}
-            .naturalMenuWidth=${true}
+          <ha-dropdown
+            placement="bottom-end"
             @closed=${(ev: Event) => {
               ev.stopPropagation();
               this._open = false;
@@ -84,18 +81,16 @@ export class MenuElement extends BaseEditor {
               ev.stopPropagation();
               this._open = true;
             }}
-            @action=${this._handleItemClick}
+            @wa-select=${this._handleItemClick}
           >
             <div id="menu-trigger" class="menu-icon click-shrink" slot="trigger">
               <div class="menu-icon-inner"><ha-icon .icon=${menuIcon}></ha-icon></div>
             </div>
 
             ${Object.entries(options).map(
-              ([key, o]) => html`
-                <ha-list-item .value=${key} .activated=${this.value === key}> ${o.name} </ha-list-item>
-              `
+              ([key, o]) => html` <ha-dropdown-item .value=${key}> ${o.name} </ha-dropdown-item> `
             )}
-          </ha-button-menu>
+          </ha-dropdown>
         </div>
         <div class="menu-label">
           ${isDefault
@@ -141,19 +136,12 @@ export class MenuElement extends BaseEditor {
           ></ha-icon-button>
         </div>
         <div class="move-sec">
-          <ha-button-menu
-            .fixed=${true}
-            .naturalMenuWidth=${true}
-            .corner=${'BOTTOM_END'}
-            .menuCorner=${'END'}
-            @closed=${stopPropagation}
-            @opened=${stopPropagation}
-          >
+          <ha-dropdown placement="bottom-end" @wa-hide=${stopPropagation} @wa-show=${stopPropagation}>
             <ha-icon-button slot="trigger" .label=${'Options & Help'} .path=${ICON.DOTS_VERTICAL}></ha-icon-button>
             ${CONFIG_AREA_ACTIONS.map((item) => {
               return _renderActionItem({ item, onClick: this._handleAreaMenuAction });
             })}
-          </ha-button-menu>
+          </ha-dropdown>
         </div>
       </div>
     `;
@@ -200,7 +188,7 @@ export class MenuElement extends BaseEditor {
   }
 
   private _handleItemClick(event: CustomEvent | string): void {
-    const selectedValue = typeof event === 'string' ? event : OptionKeys[event.detail.index];
+    const selectedValue = typeof event === 'string' ? event : (event.detail as any).item.value;
     const value = selectedValue !== 'default' ? selectedValue : '';
     fireEvent(this, 'menu-value-changed', { value });
   }
