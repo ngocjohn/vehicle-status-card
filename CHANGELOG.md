@@ -1,3 +1,9 @@
+## [1.22.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.22.1...v1.22.2) (2026-02-09)
+
+### Bug Fixes
+
+* **default-card:** remove max-height constraint from expanded default card data-box ([#246](https://github.com/ngocjohn/vehicle-status-card/issues/246)) ([93e13e4](https://github.com/ngocjohn/vehicle-status-card/commit/93e13e4cfc7a604430b1a5014aa72b941651d5b0))
+
 ## [1.22.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.22.0...v1.22.1) (2026-02-07)
 
 ### Bug Fixes
