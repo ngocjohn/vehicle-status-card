@@ -70,7 +70,6 @@ export class VscDefaultCard extends BaseElement {
         .default-card .data-box {
           opacity: 1;
           /* padding-top: var(--vic-gutter-gap); */
-          max-height: 1000px;
           transition: all 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
         }
 
