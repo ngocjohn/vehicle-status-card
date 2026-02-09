@@ -15,7 +15,7 @@ import {
   BUTTON_DEFAULT_CARD_CATEGORY_ACTIONS,
   computeActionList,
 } from '../../../utils/editor/create-actions-menu';
-import { preventDefault, stopAndPrevent, stopPropagation } from '../../../utils/helpers-dom';
+import { preventDefault } from '../../../utils/helpers-dom';
 import './panel-button-card-default-item';
 import { ButtonCardBaseEditor } from '../../button-card-base';
 import { ELEMENT, SUB_PANEL } from '../../editor-const';
@@ -127,21 +127,13 @@ export class PanelButtonDefaultCard extends ButtonCardBaseEditor {
         @click=${this._handleRowAction}
       ></ha-icon-button>
       <div class="separator"></div>
-      <ha-button-menu
-        corner="BOTTOM_START"
-        menu-corner="END"
-        .fixed=${true}
-        .naturalMenuWidth=${true}
-        .activatable=${true}
-        @closed=${stopPropagation}
-        @opened=${stopAndPrevent}
-      >
+      <ha-dropdown placement="bottom-end">
         <ha-icon-button slot="trigger" .path=${ICON.DOTS_VERTICAL} @click=${preventDefault}> </ha-icon-button>
         ${BUTTON_DEFAULT_CARD_CATEGORY_ACTIONS.map((item) => {
           if (/(delete|remove)/.test(item.action) && !deleteFound) {
             deleteFound = true;
             return html`
-              <li divider role="separator"></li>
+              <wa-divider></wa-divider>
               ${_renderActionItem({
                 item,
                 onClick: this._handleRowAction,
@@ -155,7 +147,7 @@ export class PanelButtonDefaultCard extends ButtonCardBaseEditor {
             option: { index: catIndex },
           });
         })}
-      </ha-button-menu>
+      </ha-dropdown>
       <div class="separator"></div>
       <ha-svg-icon class="handle" .path=${ICON.DRAG} @click=${preventDefault}></ha-svg-icon>
     </div>`;
