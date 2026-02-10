@@ -1,3 +1,9 @@
+## [1.23.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.22.2...v1.23.0) (2026-02-10)
+
+### Features
+
+* **tire-card:** add support for additional entities in tire configuration ([#247](https://github.com/ngocjohn/vehicle-status-card/issues/247)) ([dddd8eb](https://github.com/ngocjohn/vehicle-status-card/commit/dddd8eb6c09ac04e720c8c6d81a4745d111ab2d5))
+
 ## [1.22.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.22.1...v1.22.2) (2026-02-09)
 
 ### Bug Fixes
