@@ -149,8 +149,12 @@ export class VscTireItem extends BaseElement {
     return html`
       <div class="tire-additional-content">
         ${entityConfig.prefix ?? ''}
-        <vsc-state-display .stateObj=${entityStateObj} .hass=${this._hass} .content=${entityConfig.state_content}>
-        </vsc-state-display>
+        ${!entityStateObj
+          ? 'N/A'
+          : html`
+              <vsc-state-display .stateObj=${entityStateObj} .hass=${this._hass} .content=${entityConfig.state_content}>
+              </vsc-state-display>
+            `}
         ${entityConfig.suffix ?? ''}
       </div>
     `;

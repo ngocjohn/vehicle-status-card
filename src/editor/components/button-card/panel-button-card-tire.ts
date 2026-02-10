@@ -131,7 +131,6 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
 
   private _renderTires(): TemplateResult {
     const isHorizontal = this._tireConfig?.horizontal || false;
-    // const DATA = { ...this._tireConfig };
     const createEntityForm = (tirePos: TireItem) => {
       const tirePosConfig = this._tireConfig?.[tirePos];
       const useCustomPosition = tirePosConfig?.use_custom_position || false;
