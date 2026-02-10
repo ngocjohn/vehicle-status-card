@@ -162,15 +162,48 @@ export const TIRE_CUSTOM_POSITION_SCHEMA = (useCustomPosition: boolean = false, 
     },
   ];
 };
+
+export const ADDITIONAL_ENTITY_SCHEMA = [
+  {
+    name: 'entity',
+    label: 'Entity',
+    selector: { entity: {} },
+    required: true,
+  },
+  {
+    name: 'state_content',
+    label: 'State content',
+    selector: {
+      ui_state_content: {
+        allow_context: true,
+      },
+    },
+    context: {
+      filter_entity: 'entity',
+    },
+  },
+  {
+    name: 'prefix',
+    label: 'Prefix',
+    selector: { text: { type: 'text' } },
+    required: false,
+  },
+  {
+    name: 'suffix',
+    label: 'Suffix',
+    selector: { text: { type: 'text' } },
+    required: false,
+  },
+] as const;
+
 export const TIRE_ENTITY_SCHEMA = memoizeOne(
-  (tirePosition: string, tireEntity: string, useCustomPosition: boolean = false, isHorizontal: boolean = false) => {
+  (tirePosition: string, useCustomPosition: boolean = false, isHorizontal: boolean = false) => {
     const tireLabel = tirePosition.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     return [
       {
-        name: tirePosition,
         type: 'expandable',
-        flatten: false,
-        label: tireLabel,
+        label: 'Main Value Entity',
+        flatten: true,
         schema: [
           {
             name: 'entity',
@@ -180,7 +213,10 @@ export const TIRE_ENTITY_SCHEMA = memoizeOne(
           {
             name: 'attribute',
             label: 'Attribute',
-            selector: { attribute: { entity_id: tireEntity } },
+            selector: { attribute: {} },
+            context: {
+              filter_entity: `entity`,
+            },
           },
           {
             name: 'name',
@@ -196,9 +232,9 @@ export const TIRE_ENTITY_SCHEMA = memoizeOne(
             helper:
               'Customize the color based on a template. The template should return a valid color name or hex code.',
           },
-          ...TIRE_CUSTOM_POSITION_SCHEMA(useCustomPosition, isHorizontal),
         ],
       },
+      ...TIRE_CUSTOM_POSITION_SCHEMA(useCustomPosition, isHorizontal),
     ] as const;
   }
 );

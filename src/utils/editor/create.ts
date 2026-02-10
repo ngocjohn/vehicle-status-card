@@ -52,12 +52,13 @@ export const ExpansionPanel = ({
       .noCollapse=${options?.noCollapse || false}
       .secondary=${options?.secondary || ''}
       .leftChevron=${options?.leftChevron || false}
+      .header=${options.header}
       @expanded-will-change=${expandedWillChange}
       @expanded-changed=${expandedChangedCallback}
     >
       ${style} ${options.icon ? html`<ha-icon slot="leading-icon" .icon=${options.icon}></ha-icon>` : nothing}
       ${slotIcons ? slotIcons : nothing}
-      <div slot="header" role="heading" aria-level="3">${options.header}</div>
+
       <div class="card-config" style="margin-block: var(--vic-gutter-gap, 8px);">${content}</div>
     </ha-expansion-panel>
   `;
@@ -97,17 +98,16 @@ export const HaAlert = ({ message, type, dismissable, options }: HaAlertOptions)
     >
       ${message}
       ${options?.action?.map(
-        (action) =>
-          html`
-            <ha-button
-              slot="action"
-              size="small"
-              appearance="outlined"
-              variant=${action.variant ?? 'brand'}
-              @click=${action.callback}
-              >${action.label?.toLocaleUpperCase() || 'MORE'}
-            </ha-button>
-          `
+        (action) => html`
+          <ha-button
+            slot="action"
+            size="small"
+            appearance="outlined"
+            variant=${action.variant ?? 'brand'}
+            @click=${action.callback}
+            >${action.label?.toLocaleUpperCase() || 'MORE'}
+          </ha-button>
+        `
       )}
     </ha-alert>
   `;

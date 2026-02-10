@@ -14,7 +14,7 @@ import {
   TireBackgroundKeys,
   TireCardLayout,
   TireEntityConfig,
-  TireItems,
+  TireItemsKeys,
   TireLayoutKeys,
   TireTemplateConfig,
   TireTemplateEntities,
@@ -58,7 +58,7 @@ export class VehicleTireCard extends BaseElement {
   protected render(): TemplateResult {
     const tireConfig = this.tireConfig;
     const tireLayout = pick(tireConfig || {}, [...TireLayoutKeys, ...TireBackgroundKeys]) as TireCardLayout;
-    const tireEntities = pick(tireConfig || {}, [...TireItems]) as TireTemplateEntities;
+    const tireEntities = pick(tireConfig || {}, [...TireItemsKeys]) as TireTemplateEntities;
 
     return html` <custom-tire-card
       .hass=${this.hass}
