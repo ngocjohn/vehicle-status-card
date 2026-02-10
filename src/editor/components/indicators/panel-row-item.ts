@@ -156,10 +156,11 @@ export class PanelIndicatorItem extends BaseEditor {
                 </div>
                 <div class="item-actions">
                   ${actions.map(
-                    (action) => html` <ha-icon-button
-                      .path=${action.path}
-                      @click=${() => action.callback(index)}
-                    ></ha-icon-button>`
+                    (action) =>
+                      html` <ha-icon-button
+                        .path=${action.path}
+                        @click=${() => action.callback(index)}
+                      ></ha-icon-button>`
                   )}
                 </div>
               </div>
@@ -207,21 +208,18 @@ export class PanelIndicatorItem extends BaseEditor {
 
     return html`
       <div class="action-footer">
-        <ha-button-menu
-          .fullWidth=${true}
-          .fixed=${true}
-          .activatable=${true}
-          .naturalMenuWidth=${true}
-          @closed=${(ev: Event) => ev.stopPropagation()}
-          @opened=${(ev: Event) => ev.stopPropagation()}
+        <ha-dropdown
+          placement="bottom"
+          @wa-hide=${(ev: Event) => ev.stopPropagation()}
+          @wa-show=${(ev: Event) => ev.stopPropagation()}
         >
           <span slot="trigger"> ${Create.HaButton(actions[0])} </span>
           ${actions.slice(1).map((action) => {
             return html`
-              <ha-list-item @click=${action.onClick} .value=${action.label}> ${action.label} </ha-list-item>
+              <ha-dropdown-item @click=${action.onClick} .value=${action.label}> ${action.label} </ha-dropdown-item>
             `;
           })}
-        </ha-button-menu>
+        </ha-dropdown>
       </div>
     `;
   }

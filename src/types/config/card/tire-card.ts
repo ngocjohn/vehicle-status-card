@@ -22,6 +22,13 @@ export interface TireCardLayout {
   hide_rotation_button?: boolean;
   aspect_ratio?: string;
 }
+export interface TireAdditionalEntityConfig {
+  entity: string;
+  state_content?: string[];
+  prefix?: string;
+  suffix?: string;
+}
+
 export interface TireEntityConfig {
   entity?: string;
   attribute?: string;
@@ -29,6 +36,7 @@ export interface TireEntityConfig {
   color?: string;
   use_custom_position?: boolean;
   position?: CustomPosition;
+  additional_entities?: TireAdditionalEntityConfig[];
 }
 
 export interface TireTemplateEntities {
@@ -55,4 +63,7 @@ export const TireLayoutKeys = [
 
 export const TireBackgroundKeys = ['background', 'background_entity'] as const;
 
-export const TireItems = ['front_left', 'front_right', 'rear_left', 'rear_right'] as const;
+export const TireItemsKeys = ['front_left', 'front_right', 'rear_left', 'rear_right'] as const;
+export type TireItem = (typeof TireItemsKeys)[number];
+
+export type TireItemsConfig = Pick<TireTemplateConfig, TireItem>;

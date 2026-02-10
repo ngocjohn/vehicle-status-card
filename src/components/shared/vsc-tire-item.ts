@@ -1,9 +1,9 @@
 import { UnsubscribeFunc } from 'home-assistant-js-websocket';
-import { html, css, TemplateResult, CSSResultGroup } from 'lit';
+import { html, css, TemplateResult, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { RenderTemplateResult, hasTemplate, subscribeRenderTemplate } from '../../ha/data/ws-templates';
-import { TireEntityConfig, TireTemplateEntities } from '../../types/config';
+import { TireAdditionalEntityConfig, TireEntityConfig, TireTemplateEntities } from '../../types/config';
 import { BaseElement } from '../../utils/base-element';
 
 const TEMPLATE_KEYS = ['color'] as const;
@@ -132,10 +132,26 @@ export class VscTireItem extends BaseElement {
     const state = this.getValue('state');
     const name = this.getValue('name');
     const color = this.getValue('color') || 'var(--primary-text-color)';
+    const additionalEntities = this._tireItem?.additional_entities || [];
     return html`
       <div class="tire-container">
         <div class="tire-value" style=${`color: ${color};`}>${state}</div>
+        ${additionalEntities.length > 0
+          ? additionalEntities.map((entityConfig) => this._renderAdditionalEntity(entityConfig))
+          : nothing}
         <div class="tire-name">${name}</div>
+      </div>
+    `;
+  }
+
+  private _renderAdditionalEntity(entityConfig: TireAdditionalEntityConfig): TemplateResult {
+    const entityStateObj = this._hass.states[entityConfig.entity];
+    return html`
+      <div class="tire-additional-content">
+        ${entityConfig.prefix ?? ''}
+        <vsc-state-display .stateObj=${entityStateObj} .hass=${this._hass} .content=${entityConfig.state_content}>
+        </vsc-state-display>
+        ${entityConfig.suffix ?? ''}
       </div>
     `;
   }
@@ -150,25 +166,32 @@ export class VscTireItem extends BaseElement {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          gap: 0.5rem;
+          /* gap: 0.5rem; */
           /* text-shadow: rgba(255, 255, 255, 0.3) 0px 1px 0px; */
           transition: 400ms cubic-bezier(0.3, 0, 0.8, 0.15);
           align-items: anchor-center;
         }
 
         .tire-value {
+          color: var(--primary-text-color);
           font-size: 1.5rem;
           margin: 0;
-          color: var(--primary-text-color);
           white-space: nowrap;
+          line-height: 1.2;
+        }
+        .tire-additional-content {
+          color: var(--secondary-text-color);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+          gap: 4px;
         }
 
         .tire-name {
           color: var(--secondary-text-color);
-          /* text-align: left; */
           margin: 0;
           text-transform: uppercase;
-          /* letter-spacing: 1.5px; */
           white-space: nowrap;
         }
       `,

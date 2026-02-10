@@ -4,21 +4,43 @@ import { customElement, property, queryAll, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { fireEvent } from '../../../ha';
-import { TireItems, TireLayoutKeys, TireTemplateConfig } from '../../../types/config';
+import { showFormDialog } from '../../../ha/dialogs/form/show-form-dialog';
+import { HaFormSchema } from '../../../ha/panels/ha-form/types';
+import {
+  TireAdditionalEntityConfig,
+  TireItem,
+  TireItemsKeys,
+  TireLayoutKeys,
+  TireTemplateConfig,
+} from '../../../types/config';
 import { ButtonArea } from '../../../types/config-area';
 import { Create } from '../../../utils';
 import { ExpansionPanelParams } from '../../../utils/editor/create';
+import '../../shared/vsc-sub-element-editor';
+import { computeActionList } from '../../../utils/editor/create-actions-menu';
 import { SubElementEditorConfig } from '../../../utils/editor/types';
 import { ButtonCardBaseEditor } from '../../button-card-base';
 import { ELEMENT, SUB_PANEL } from '../../editor-const';
-import { DEFAULT_LAYOUT, TIRE_APPEARANCE_SCHEMA, TIRE_BACKGROUND_SCHEMA, TIRE_ENTITY_SCHEMA } from '../../form';
-import '../../shared/vsc-sub-element-editor';
+import {
+  ADDITIONAL_ENTITY_SCHEMA,
+  DEFAULT_LAYOUT,
+  TIRE_APPEARANCE_SCHEMA,
+  TIRE_BACKGROUND_SCHEMA,
+  TIRE_ENTITY_SCHEMA,
+} from '../../form';
 enum PANEL {
   BACKGROUND = 0,
   APPEARANCE,
   TIRES,
   ELEMENTS,
 }
+
+const TIRE_POS_ICON: Record<TireItem, string> = {
+  front_left: 'mdi:arrow-top-left',
+  front_right: 'mdi:arrow-top-right',
+  rear_left: 'mdi:arrow-bottom-left',
+  rear_right: 'mdi:arrow-bottom-right',
+};
 
 declare global {
   interface HASSDomEvents {
@@ -108,16 +130,28 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
   }
 
   private _renderTires(): TemplateResult {
-    const DATA = { ...this._tireConfig };
-    const createEntityForm = (tirePos: string) => {
-      const tireEntity = this._tireConfig?.[tirePos]?.entity || '';
-      const useCustomPosition = this._tireConfig?.[tirePos]?.use_custom_position || false;
-      const isHorizontal = this._tireConfig?.horizontal || false;
-      return this._createVscForm(DATA, TIRE_ENTITY_SCHEMA(tirePos, tireEntity, useCustomPosition, isHorizontal));
+    const isHorizontal = this._tireConfig?.horizontal || false;
+    // const DATA = { ...this._tireConfig };
+    const createEntityForm = (tirePos: TireItem) => {
+      const tirePosConfig = this._tireConfig?.[tirePos];
+      const useCustomPosition = tirePosConfig?.use_custom_position || false;
+      const tireEntitySchemaForm = this._createVscForm(
+        { ...tirePosConfig },
+        TIRE_ENTITY_SCHEMA(tirePos, useCustomPosition, isHorizontal),
+        tirePos
+      );
+      const additionalEntitiesEl = this._renderTireAdditionalEntities(tirePos);
+      return Create.ExpansionPanel({
+        content: html` <div class="sub-panel-config">${tireEntitySchemaForm}${additionalEntitiesEl}</div>`,
+        options: {
+          header: tirePos.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+          icon: TIRE_POS_ICON[tirePos],
+        },
+      });
     };
 
     const entitiesForm = html`${repeat(
-      TireItems,
+      TireItemsKeys,
       (item) => item,
       (item) => createEntityForm(item)
     )}`;
@@ -129,6 +163,104 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
       html`<div class="base-config gap">${entitiesForm}</div>`
     );
   }
+
+  private _renderTireAdditionalEntities(tirePos: TireItem) {
+    const additionalEntities = this._tireConfig?.[tirePos]?.additional_entities || [];
+
+    const addBtn = Create.HaButton({
+      label: 'Add Additional Entity',
+      onClick: () => this._addAdditionalEntity(tirePos),
+      option: { type: 'add', style: 'display: block; margin-bottom: 8px;' },
+    });
+    const actions = computeActionList(['edit-item', 'delete-item']);
+    const entitiesList =
+      additionalEntities.length > 0
+        ? html`<div class="row-items">
+            ${repeat(additionalEntities, (entity, index) => {
+              const entityId = entity.entity;
+              return html`<badge-editor-item
+                .itemIndex=${index}
+                ._menuAction=${actions}
+                data-tire-pos=${tirePos}
+                @badge-action-item=${this._handleAdditionalEntityAction}
+              >
+                <ha-badge .label=${entityId}>
+                  <span>${entityId}</span>
+                </ha-badge>
+              </badge-editor-item>`;
+            })}
+          </div>`
+        : nothing;
+
+    return Create.ExpansionPanel({
+      content: html`${addBtn}${entitiesList}`,
+      options: {
+        header: 'Additional Entities (Optional)',
+        secondary: 'Entities for secondary info',
+      },
+    });
+  }
+
+  private _updateAdditionalEntities(
+    tirePos: TireItem,
+    update: (items: TireAdditionalEntityConfig[]) => TireAdditionalEntityConfig[]
+  ): void {
+    if (!this._tireConfig) return;
+    const currentEntities = this._tireConfig[tirePos]?.additional_entities || [];
+    const updatedEntities = update(currentEntities);
+    const newConfig = {
+      ...this._tireConfig,
+      [tirePos]: {
+        ...this._tireConfig[tirePos],
+        additional_entities: updatedEntities,
+      },
+    };
+    this._tireConfig = newConfig;
+    fireEvent(this, 'tire-card-changed', { config: newConfig });
+  }
+
+  private _handleAdditionalEntityAction = async (ev: CustomEvent) => {
+    ev.stopPropagation();
+    const action = ev.detail.action;
+    const index = (ev.target as any).itemIndex;
+    const tirePos = (ev.target as any).dataset.tirePos as TireItem;
+    const additionalEntities = this._tireConfig?.[tirePos]?.additional_entities || [];
+    const entityConfig = additionalEntities[index];
+    if (!entityConfig) return;
+
+    if (action === 'edit-item') {
+      const updatedEntityConfig = await showFormDialog(this, {
+        title: 'Edit Additional Entity',
+        schema: [...ADDITIONAL_ENTITY_SCHEMA] as HaFormSchema[],
+        data: entityConfig,
+        submitText: 'Update',
+      });
+      if (!updatedEntityConfig) return;
+      this._updateAdditionalEntities(tirePos, (items) => {
+        const nextItems = items.concat();
+        nextItems[index] = updatedEntityConfig as TireAdditionalEntityConfig;
+        return nextItems;
+      });
+    } else if (action === 'delete-item') {
+      this._updateAdditionalEntities(tirePos, (items) => items.filter((_, idx) => idx !== index));
+    }
+  };
+
+  private _addAdditionalEntity = async (tirePos: TireItem) => {
+    if (!this._tireConfig) return;
+    const newEntityData: TireAdditionalEntityConfig = {
+      entity: this._tireConfig[tirePos]?.entity || '',
+      state_content: ['last_updated'],
+    };
+    const newEntity = await showFormDialog(this, {
+      title: 'Add Additional Entity',
+      schema: [...ADDITIONAL_ENTITY_SCHEMA] as HaFormSchema[],
+      data: newEntityData,
+      submitText: 'Add',
+    });
+    if (!newEntity) return;
+    this._updateAdditionalEntities(tirePos, (items) => items.concat(newEntity as TireAdditionalEntityConfig));
+  };
 
   private _renderElementsEditor(): TemplateResult | null {
     if (!this._subElementConfig) return null;
@@ -193,10 +325,11 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
 
   protected _onValueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
+    const { key } = ev.target as any;
     const value = { ...ev.detail.value };
     const newConfig = {
       ...this._tireConfig,
-      ...value,
+      ...(key ? { [key]: value } : value),
     };
     fireEvent(this, 'tire-card-changed', { config: newConfig });
   }
@@ -218,7 +351,22 @@ export class PanelButtonCardTire extends ButtonCardBaseEditor {
   }
 
   static get styles(): CSSResultGroup {
-    return [super.styles, css``];
+    return [
+      super.styles,
+      css`
+        .row-items {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 8px;
+          width: -webkit-fill-available;
+          height: auto;
+          box-sizing: border-box;
+          align-items: center;
+          /* background-color: var(--primary-background-color); */
+        }
+      `,
+    ];
   }
 }
 
