@@ -25,6 +25,7 @@ export class VscDialogHaMap extends LitElement implements HassDialog<MapDialogPa
   @state() private _loaded: boolean = false;
 
   @state() private _resizeObserver?: ResizeObserver;
+  @state() private _large: boolean = false;
 
   public async showDialog(params: MapDialogParams): Promise<void> {
     this._params = params;
@@ -92,7 +93,15 @@ export class VscDialogHaMap extends LitElement implements HassDialog<MapDialogPa
     }
 
     return html`
-      <ha-dialog open hideActions flexContent @closed=${this.closeDialog}>
+      <ha-dialog
+        .hass=${this.hass}
+        .open=${this._open}
+        .width=${this._large ? 'full' : undefined}
+        without-header
+        hideActions
+        flexContent
+        @closed=${this.closeDialog}
+      >
         <div id="hamap-wrapper" style="overflow: hidden;">
           <ha-icon-button
             .label=${this.hass?.localize('ui.dialogs.generic.close') ?? 'Close'}
@@ -113,6 +122,7 @@ export class VscDialogHaMap extends LitElement implements HassDialog<MapDialogPa
 
   private _handleResize(root: HTMLElement): void {
     const mq = window.matchMedia('(max-width: 800px)');
+    this._large = mq.matches;
     if (mq.matches) {
       root.style.setProperty('height', '100%', 'important');
       root.style.setProperty('padding-bottom', '100%');
@@ -148,7 +158,7 @@ export class VscDialogHaMap extends LitElement implements HassDialog<MapDialogPa
           height: 100%;
           width: 100%;
         }
-        @media all and (max-width: 600px), all and (max-height: 500px) {
+        @media all and (max-width: 800px), all and (max-height: 500px) {
           #hamap-wrapper {
             overflow: hidden;
             width: 100vw;
