@@ -1,3 +1,9 @@
+## [1.23.1-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.23.0...v1.23.1-dev.1) (2026-03-11)
+
+### Bug Fixes
+
+* **map-dialog:** update ha-dialog styles ([4aa7786](https://github.com/ngocjohn/vehicle-status-card/commit/4aa7786e216e94c6bd3826242b420b7ad37070dd))
+
 ## [1.23.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.22.2...v1.23.0) (2026-02-10)
 
 ### Features
