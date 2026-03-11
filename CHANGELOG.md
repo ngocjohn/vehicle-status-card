@@ -1,3 +1,9 @@
+## [1.23.1-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.23.1-dev.1...v1.23.1-dev.2) (2026-03-11)
+
+### Bug Fixes
+
+* **vsc-dialog-form:** enhance form-dialog compability with wa-dialog ([a0107a6](https://github.com/ngocjohn/vehicle-status-card/commit/a0107a64c2a7b95c42da7e34b041bc9ccb47c57b))
+
 ## [1.23.1-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.23.0...v1.23.1-dev.1) (2026-03-11)
 
 ### Bug Fixes
