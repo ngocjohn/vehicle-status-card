@@ -1,6 +1,7 @@
 import { mdiImagePlus } from '@mdi/js';
 import { css, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 import type { HomeAssistant } from '../../types';
 import type { HassDialog } from '../dialog-manager';
@@ -8,6 +9,7 @@ import type { ImageUploadDialogData, ImageUploadDialogParams } from './show-imag
 
 import { ImageItem } from '../../../types/config';
 import '../../../editor/shared/vsc-editor-form';
+import { atLeastVersion } from '../../../utils/compare-version';
 import { createCloseHeading } from '../../../utils/editor/create';
 import { ExpansionPanel } from '../../../utils/editor/create';
 import { showAlertDialog } from '../../../utils/editor/show-dialog-box';
@@ -128,21 +130,28 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
     }
 
     const emptyData = !this._data.images || this._data.images.length === 0;
+    const beforeWaDialog = !atLeastVersion(this.hass.config.version, 2023, 3);
     return html`
       <ha-dialog
+        .hass=${this.hass}
         open
         scrimClickAction
         escapeKeyAction
+        flexContent
+        .headerTitle=${'VSC Image Upload'}
+        .hideActions=${true}
         .heading=${createCloseHeading(this.hass, this._params.title)}
         @closed=${this._cancel}
       >
         <div class="content" ?no-data=${emptyData}>${this._renderFormContainer()} ${this._renderPreview()}</div>
-        <ha-button appearance="plain" variant="warning" @click=${this._cancel} slot="secondaryAction">
-          ${this.hass.localize('ui.common.cancel')}
-        </ha-button>
-        <ha-button .disabled=${emptyData} @click=${this._submit} slot="primaryAction">
-          ${this.hass.localize('ui.common.save')}
-        </ha-button>
+        <div class="footer" slot=${ifDefined(beforeWaDialog ? 'footer' : undefined)}>
+          <ha-button size="small" appearance="plain" variant="warning" @click=${this._cancel} slot="secondaryAction">
+            ${this.hass.localize('ui.common.cancel')}
+          </ha-button>
+          <ha-button size="small" appearance="plain" .disabled=${emptyData} @click=${this._submit} slot="primaryAction">
+            ${this.hass.localize('ui.common.save')}
+          </ha-button>
+        </div>
       </ha-dialog>
     `;
   }
@@ -354,19 +363,19 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
     .content {
       display: flex;
       flex-direction: column;
+      align-items: center;
+      gap: 1em;
+    }
+    .footer {
+      display: flex;
+      justify-content: var(--justify-action-buttons, flex-end);
+      gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 1em;
     }
 
     @media (min-width: 1000px) {
-      ha-dialog {
-        --mdc-dialog-min-width: 400px;
-      }
-      .content {
-        width: calc(90vw - 48px);
-        max-width: 1000px;
-      }
-      .content {
-        flex-direction: row;
-      }
       .content[no-data] {
         max-width: unset;
         width: auto;
