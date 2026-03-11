@@ -1,13 +1,16 @@
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 import type { HomeAssistant } from '../../types';
 import type { HassDialog } from '../dialog-manager';
 import type { FormDialogData, FormDialogParams } from './show-form-dialog';
 
+import { NAMESPACE_TITLE } from '../../../constants/const';
+import '../../../editor/shared/vsc-editor-form';
+import { atLeastVersion } from '../../../utils/compare-version';
 import { createCloseHeading } from '../../../utils/editor/create';
 import { fireEvent } from '../../common/dom/fire_event';
-import '../../../editor/shared/vsc-editor-form';
 
 @customElement('vsc-dialog-form')
 export class VscDialogForm extends LitElement implements HassDialog<FormDialogData> {
@@ -47,11 +50,15 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
     if (!this._params || !this.hass) {
       return nothing;
     }
+    const beforeWaDialog = !atLeastVersion(this.hass.config.version, 2023, 3);
     return html`
       <ha-dialog
+        .hass=${this.hass}
         open
         scrimClickAction
         escapeKeyAction
+        flexContent
+        .headerTitle=${this._params.title || NAMESPACE_TITLE}
         .heading=${createCloseHeading(this.hass, this._params.title)}
         @closed=${this._cancel}
       >
@@ -62,13 +69,14 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
           .schema=${this._params.schema}
           @value-changed=${this._valueChanged}
         ></vsc-editor-form>
-
-        <ha-button appearance="plain" @click=${this._cancel} slot="secondaryAction">
-          ${this._params.cancelText || this.hass.localize('ui.common.cancel')}
-        </ha-button>
-        <ha-button @click=${this._submit} slot="primaryAction">
-          ${this._params.submitText || this.hass.localize('ui.common.save')}
-        </ha-button>
+        <div class="footer" slot=${ifDefined(beforeWaDialog ? 'footer' : undefined)}>
+          <ha-button size="small" appearance="plain" variant="warning" @click=${this._cancel} slot="secondaryAction">
+            ${this._params.cancelText || this.hass.localize('ui.common.cancel')}
+          </ha-button>
+          <ha-button size="small" appearance="plain" @click=${this._submit} slot="primaryAction">
+            ${this._params.submitText || this.hass.localize('ui.common.save')}
+          </ha-button>
+        </div>
       </ha-dialog>
     `;
   }
@@ -87,7 +95,15 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
     a {
       color: var(--primary-color);
     }
-
+    .footer {
+      display: flex;
+      gap: 12px;
+      justify-content: var(--justify-action-buttons, flex-end);
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 1em;
+    }
     /* make dialog fullscreen on small screens */
     @media all and (max-width: 450px), all and (max-height: 500px) {
       ha-dialog {
@@ -95,6 +111,10 @@ export class VscDialogForm extends LitElement implements HassDialog<FormDialogDa
         --mdc-dialog-max-width: calc(100vw - var(--safe-area-inset-right) - var(--safe-area-inset-left));
         --mdc-dialog-min-height: 100%;
         --mdc-dialog-max-height: 100%;
+        --ha-dialog-min-width: calc(100vw - var(--safe-area-inset-right) - var(--safe-area-inset-left));
+        --ha-dialog-max-width: calc(100vw - var(--safe-area-inset-right) - var(--safe-area-inset-left));
+        --ha-dialog-min-height: 100%;
+        --ha-dialog-max-height: 100%;
         --vertical-align-dialog: flex-end;
         --ha-dialog-border-radius: 0;
       }
