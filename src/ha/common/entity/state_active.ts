@@ -1,12 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 
-import memoizeOne from 'memoize-one';
-
-import { hsv2rgb, rgb2hex, rgb2hsv } from '../../../utils';
 import { isUnavailableState, OFF, UNAVAILABLE } from '../../data/entity';
-import { computeCssColor } from '../color/compute-color';
 import { computeDomain } from './compute_domain';
-import { stateColorCss } from './state_color';
 
 export function stateActive(stateObj: HassEntity, state?: string): boolean {
   const domain = computeDomain(stateObj.entity_id);
@@ -62,32 +57,3 @@ export function stateActive(stateObj: HassEntity, state?: string): boolean {
 
   return true;
 }
-
-export const _computeStateColor = memoizeOne((stateObj: HassEntity, color?: string) => {
-  if (!stateObj) {
-    return undefined;
-  }
-  // Use custom color if active
-  if (color) {
-    return stateActive(stateObj) ? computeCssColor(color) : undefined;
-  }
-
-  // Use light color if the light support rgb
-  if (computeDomain(stateObj.entity_id) === 'light' && stateObj.attributes.rgb_color) {
-    const hsvColor = rgb2hsv(stateObj.attributes.rgb_color);
-
-    // Modify the real rgb color for better contrast
-    if (hsvColor[1] < 0.4) {
-      // Special case for very light color (e.g: white)
-      if (hsvColor[1] < 0.1) {
-        hsvColor[2] = 225;
-      } else {
-        hsvColor[1] = 0.4;
-      }
-    }
-    return rgb2hex(hsv2rgb(hsvColor));
-  }
-
-  // Fallback to state color
-  return stateColorCss(stateObj);
-});

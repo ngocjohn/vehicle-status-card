@@ -2,7 +2,7 @@ import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } fr
 import { customElement } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { _computeStateColor } from '../../../ha/common/entity/state_active';
+import { computeStateColor } from '../../../ha/common/color/compute-state-color';
 import { ActionsSharedConfig, hasItemAction, RangeItemConfig } from '../../../types/config';
 import { VscBaseRange } from '../../../utils/base-range';
 import { generateColorBlocks, generateGradient, getColorForLevel, getNormalizedValue } from '../../../utils/colors';
@@ -240,7 +240,7 @@ export class VscRangeItem extends VscBaseRange {
       return nothing;
     }
     const levelStateObj = this.hass.states[entity!];
-    const iconColor = icon_state_color ? _computeStateColor(levelStateObj) : undefined;
+    const iconColor = icon_state_color ? computeStateColor(levelStateObj) : undefined;
     return html`
       <div class="item" id="${type}-item">
         ${!hide_icon
