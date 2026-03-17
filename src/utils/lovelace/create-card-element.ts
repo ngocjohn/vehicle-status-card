@@ -55,7 +55,7 @@ export const loadVerticalStackCard = async (): Promise<void> => {
   }
 
   if (!customElements.get(VERTICAL_STACK_TAG)) {
-    helpers.createCardElement({
+    await helpers.createCardElement({
       type: 'vertical-stack',
       cards: [],
     });
@@ -104,7 +104,7 @@ export const loadPictureCardHelper = async (hass: HomeAssistant): Promise<void> 
 };
 
 export async function createHuiElement(elementConfig: LovelaceElementConfig): Promise<LovelaceElement> {
-  const element = (await helpers.createHuiElement(elementConfig)) as LovelaceElement;
+  const element = await helpers?.createHuiElement(elementConfig);
   if (element.tagName !== 'HUI-CONDITIONAL-ELEMENT') {
     element.classList.add('element');
   }
