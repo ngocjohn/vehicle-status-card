@@ -68,9 +68,13 @@ export const loadPictureCard = async (): Promise<void> => {
     // console.log('Picture card already loaded');
     return;
   }
-
+  // Check if helpers were loaded and if createCardElement exists
+  if (!helpers || !helpers.createCardElement) {
+    console.error('Card helpers or createCardElement not available.');
+    return;
+  }
   console.log('Loading picture card...');
-  helpers.createCardElement({
+  await helpers.createCardElement({
     type: 'picture',
     image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
   });
