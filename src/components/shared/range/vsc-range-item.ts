@@ -2,11 +2,12 @@ import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } fr
 import { customElement } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { _computeStateColor } from '../../../ha/common/entity/state_active';
 import { ActionsSharedConfig, hasItemAction, RangeItemConfig } from '../../../types/config';
 import { VscBaseRange } from '../../../utils/base-range';
 import { generateColorBlocks, generateGradient, getColorForLevel, getNormalizedValue } from '../../../utils/colors';
-import { addActions } from '../../../utils/lovelace/tap-action';
 import './vsc-range-bar';
+import { addActions } from '../../../utils/lovelace/tap-action';
 
 @customElement('vsc-range-item')
 export class VscRangeItem extends VscBaseRange {
@@ -60,7 +61,7 @@ export class VscRangeItem extends VscBaseRange {
 
     const entityMax = r.energy_level?.max_value
       ? r.energy_level.max_value
-      : hass.states?.[r.energy_level?.entity || '']?.attributes?.max ?? 100;
+      : (hass.states?.[r.energy_level?.entity || '']?.attributes?.max ?? 100);
 
     switch (key) {
       case 'icon':
@@ -123,7 +124,7 @@ export class VscRangeItem extends VscBaseRange {
       case 'targetChargeVisibility':
         return r.charge_target_visibility
           ? this._templateResults['charge_target_visibility']?.result.toString() === 'true'
-          : r.charge_target_entity ?? false;
+          : (r.charge_target_entity ?? false);
 
       case 'targetTooltip':
         return r.charge_target_tooltip || false;
@@ -163,10 +164,11 @@ export class VscRangeItem extends VscBaseRange {
               ? this.getValue('barBackground')
               : r.color_thresholds[0]?.color || this.getValue('barBackground')
             : r.color_thresholds && r.energy_level?.value_alignment === 'end'
-            ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax) || this.getValue('barBackground')
-            : this.getValue('level') > 2
-            ? r.progress_color
-            : this.getValue('barBackground');
+              ? getColorForLevel(r.color_thresholds, this.getValue('level'), entityMax) ||
+                this.getValue('barBackground')
+              : this.getValue('level') > 2
+                ? r.progress_color
+                : this.getValue('barBackground');
 
         return currentColor;
       case 'rangeStateColor':
@@ -233,15 +235,23 @@ export class VscRangeItem extends VscBaseRange {
   private _renderLevelItem(type: 'energy' | 'range'): TemplateResult | typeof nothing {
     const levelState = type === 'energy' ? this.getValue('energyState') : this.getValue('rangeState');
     const levelConfig = type === 'energy' ? this._energyLevel : this._rangeLevel;
-    const { value_position, hide_icon, icon, entity } = levelConfig || {};
+    const { value_position, hide_icon, icon, entity, icon_state_color } = levelConfig || {};
     if (!levelState || value_position === 'off' || value_position === 'inside') {
       return nothing;
     }
     const levelStateObj = this.hass.states[entity!];
+    const iconColor = icon_state_color ? _computeStateColor(levelStateObj) : undefined;
     return html`
       <div class="item" id="${type}-item">
         ${!hide_icon
-          ? html` <ha-state-icon .hass=${this._hass} .stateObj=${levelStateObj} icon=${icon}></ha-state-icon> `
+          ? html`
+              <ha-state-icon
+                .hass=${this._hass}
+                .stateObj=${levelStateObj}
+                .icon=${icon}
+                style=${iconColor ? `color: ${iconColor};` : ''}
+              ></ha-state-icon>
+            `
           : nothing}
         <span>${levelState}</span>
         ${type === 'energy' ? this._renderChargingIcon() : nothing}
@@ -255,24 +265,22 @@ export class VscRangeItem extends VscBaseRange {
     const rangeInside = get('rangePosition') === 'inside';
     const insideItems: TemplateResult[] = [];
     if (enegyInside) {
-      insideItems.push(
-        html`
-          <div
-            slot="energy-level"
-            class="energy-inside-container"
-            ?charging=${get('chargingState')}
-            align=${get('energyAlignment')}
-          >
-            ${this._renderChargingIcon()}
-            <span id="energy-item" class="energy-inside">${get('energyState')}</span>
-          </div>
-        `
-      );
+      insideItems.push(html`
+        <div
+          slot="energy-level"
+          class="energy-inside-container"
+          ?charging=${get('chargingState')}
+          align=${get('energyAlignment')}
+        >
+          ${this._renderChargingIcon()}
+          <span id="energy-item" class="energy-inside">${get('energyState')}</span>
+        </div>
+      `);
     }
     if (rangeInside) {
-      insideItems.push(
-        html` <span id="range-item" class="range-inside" slot="range-level">${get('rangeState')}</span> `
-      );
+      insideItems.push(html`
+        <span id="range-item" class="range-inside" slot="range-level">${get('rangeState')}</span>
+      `);
     }
     return insideItems;
   }

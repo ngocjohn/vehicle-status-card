@@ -55,6 +55,13 @@ export const RANGE_ITEM_BASE_SCHEMA = () =>
       helper: 'Hide the icon even if set',
     },
     {
+      name: 'icon_state_color',
+      label: 'Icon State Color',
+      type: 'boolean',
+      default: false,
+      helper: 'Use the state color for the icon',
+    },
+    {
       name: 'value_position',
       label: 'Value Position',
       default: 'outside',
