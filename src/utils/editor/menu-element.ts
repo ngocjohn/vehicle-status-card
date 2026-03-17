@@ -62,35 +62,35 @@ export class MenuElement extends BaseEditor {
 
     return html`
       <div class="config-menu-wrapper">
-        <div class="left-icons">
-          ${!isDefault
-            ? html`
-                <div class="menu-icon click-shrink" @click=${() => this._handleItemClick('default')}>
-                  <div class="menu-icon-inner"><ha-icon icon="mdi:home"></ha-icon></div>
-                </div>
-              `
-            : nothing}
+        <div class="menu-info-icon-wrapper">
+          <div class="move-sec">
+            ${!isDefault
+              ? html`
+                  <ha-icon-button .path=${ICON.HOME} @click=${() => this._handleItemClick('default')}> </ha-icon-button>
+                `
+              : nothing}
 
-          <ha-dropdown
-            placement="bottom-end"
-            @closed=${(ev: Event) => {
-              ev.stopPropagation();
-              this._open = false;
-            }}
-            @opened=${(ev: Event) => {
-              ev.stopPropagation();
-              this._open = true;
-            }}
-            @wa-select=${this._handleItemClick}
-          >
-            <div id="menu-trigger" class="menu-icon click-shrink" slot="trigger">
-              <div class="menu-icon-inner"><ha-icon .icon=${menuIcon}></ha-icon></div>
-            </div>
+            <ha-dropdown
+              placement="bottom-end"
+              @closed=${(ev: Event) => {
+                ev.stopPropagation();
+                this._open = false;
+              }}
+              @opened=${(ev: Event) => {
+                ev.stopPropagation();
+                this._open = true;
+              }}
+              @wa-select=${this._handleItemClick}
+            >
+              <ha-icon-button id="menu-trigger" slot="trigger">
+                <ha-icon .icon=${menuIcon}></ha-icon>
+              </ha-icon-button>
 
-            ${Object.entries(options).map(
-              ([key, o]) => html` <ha-dropdown-item .value=${key}> ${o.name} </ha-dropdown-item> `
-            )}
-          </ha-dropdown>
+              ${Object.entries(options).map(
+                ([key, o]) => html` <ha-dropdown-item .value=${key}> ${o.name} </ha-dropdown-item> `
+              )}
+            </ha-dropdown>
+          </div>
         </div>
         <div class="menu-label">
           ${isDefault
@@ -208,48 +208,33 @@ export class MenuElement extends BaseEditor {
           width: 100%;
           box-sizing: border-box;
           margin-bottom: var(--vic-gutter-gap);
+          --ha-button-height: 40px !important;
+          --wa-form-control-height: var(--ha-button-height);
         }
         .config-menu-wrapper {
-          display: flex;
+          display: inline-flex;
+          box-sizing: border-box;
           align-items: center;
           height: 42px;
           margin-inline: 4px 8px;
-          /* padding-block-end: 8px; */
-        }
-        .config-menu-wrapper .left-icons {
-          display: inline-flex;
-        }
-
-        .config-menu-wrapper .menu-wrapper {
-          display: inline-flex;
           width: 100%;
-          height: 100%;
-          position: relative;
         }
 
         .config-menu-wrapper .menu-info-icon-wrapper {
           display: inline-flex;
           /* gap: var(--vic-card-padding); */
-          height: 100%;
-          align-items: center;
+          height: inherit;
           flex: 0;
         }
         .menu-info-icon-wrapper > .move-sec {
-          display: flex;
-          --mdc-icon-button-size: 36px;
-          --mdc-icon-size: 18px;
+          display: inline-flex;
           align-items: center;
         }
         ha-icon-button {
-          color: var(--primary-text-color);
-          /* width: 36px; */
-          /* padding: 0; */
-          margin: 0;
-          /* --mdc-icon-size: 20px; */
-          display: flex;
-          height: 36px;
+          color: var(--secondary-text-color);
+          display: inline-flex;
+          height: 100%;
           align-items: center;
-          align-content: stretch;
           justify-content: center;
         }
 

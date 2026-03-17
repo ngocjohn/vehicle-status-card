@@ -5,6 +5,7 @@ import {
   mdiPlus,
   mdiListBoxOutline,
   mdiDelete,
+  mdiHome,
   mdiContentCopy,
   mdiContentCut,
   mdiClose,
@@ -58,4 +59,5 @@ export const ICON = {
   ARROW_DOWN: mdiArrowDown,
   MINUS: mdiMinus,
   DOTS_HORIZONTAL: mdiDotsHorizontal,
+  HOME: mdiHome,
 };
