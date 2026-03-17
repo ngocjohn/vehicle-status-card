@@ -26,6 +26,7 @@ import {
 import { toCommon, isEntity } from '../types/config/card/row-indicators';
 import { rgb2hex, rgb2hsv, hsv2rgb } from '../utils/colors';
 import { BaseElement } from './base-element';
+import { computeStateColor } from '../ha/common/color/compute-state-color';
 
 const cameraUrlWithWidthHeight = (base_url: string, width: number, height: number) =>
   `${base_url}&width=${width}&height=${height}`;
@@ -212,32 +213,7 @@ export class VscIndicatorItemBase<T extends IndicatorRowItem> extends BaseElemen
   }
 
   protected _computeStateColor = memoizeOne((stateObj: HassEntity, color?: string) => {
-    if (!stateObj) {
-      return undefined;
-    }
-    // Use custom color if active
-    if (color) {
-      return stateActive(stateObj) ? computeCssColor(color) : undefined;
-    }
-
-    // Use light color if the light support rgb
-    if (computeDomain(stateObj.entity_id) === 'light' && stateObj.attributes.rgb_color) {
-      const hsvColor = rgb2hsv(stateObj.attributes.rgb_color);
-
-      // Modify the real rgb color for better contrast
-      if (hsvColor[1] < 0.4) {
-        // Special case for very light color (e.g: white)
-        if (hsvColor[1] < 0.1) {
-          hsvColor[2] = 225;
-        } else {
-          hsvColor[1] = 0.4;
-        }
-      }
-      return rgb2hex(hsv2rgb(hsvColor));
-    }
-
-    // Fallback to state color
-    return stateColorCss(stateObj);
+    return computeStateColor(stateObj, color);
   });
 
   protected _renderIcon(stateObj: HassEntity): TemplateResult {

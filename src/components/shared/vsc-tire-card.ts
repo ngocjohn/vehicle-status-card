@@ -32,6 +32,7 @@ export class VehicleTireCard extends BaseElement {
   constructor() {
     super();
   }
+
   connectedCallback(): void {
     super.connectedCallback();
   }
@@ -114,13 +115,13 @@ export class VehicleTireCard extends BaseElement {
     return element;
   }
 
-  private async _rebuildElement(elToReplace: LovelaceElement, config: LovelaceElementConfig): Promise<void> {
+  private _rebuildElement = async (elToReplace: LovelaceElement, config: LovelaceElementConfig): Promise<void> => {
     const newCardEl = await this._createElement(config);
     if (elToReplace.parentElement) {
       elToReplace.parentElement.replaceChild(newCardEl, elToReplace);
     }
     this._elements = this._elements!.map((curCardEl) => (curCardEl === elToReplace ? newCardEl : curCardEl));
-  }
+  };
   static get styles(): CSSResultGroup {
     return [super.styles, css``];
   }
