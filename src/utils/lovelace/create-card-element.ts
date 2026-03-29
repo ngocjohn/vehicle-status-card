@@ -3,15 +3,15 @@ import type { LovelaceCardConfig } from '../../ha';
 import { HomeAssistant } from '../../ha';
 import { LovelaceElement, LovelaceElementConfig } from '../../ha/panels/lovelace/elements/types';
 
-const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
-// Load the helpers and ensure they are available
-let helpers;
-if ((window as any).loadCardHelpers) {
-  helpers = await (window as any).loadCardHelpers();
-} else if (HELPERS) {
-  helpers = HELPERS;
-}
-
+let helpers = (window as any).cardHelpers;
+const helperPromise = new Promise<void>(async (resolve) => {
+  if (helpers) resolve();
+  if ((window as any).loadCardHelpers) {
+    helpers = await (window as any).loadCardHelpers();
+    (window as any).cardHelpers = helpers;
+    resolve();
+  }
+});
 /**
  *
  * @param hass Home Assistant instance
@@ -68,16 +68,17 @@ export const loadPictureCard = async (): Promise<void> => {
     // console.log('Picture card already loaded');
     return;
   }
-  // Check if helpers were loaded and if createCardElement exists
-  if (!helpers || !helpers.createCardElement) {
-    console.error('Card helpers or createCardElement not available.');
-    return;
-  }
-  console.log('Loading picture card...');
-  await helpers.createCardElement({
+  const config = {
     type: 'picture',
     image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
-  });
+  };
+  if (helpers) await helpers.createCardElement(config);
+  else {
+    await helperPromise;
+    await helpers.createCardElement(config).catch((error: any) => {
+      console.error('Error loading picture card:', error);
+    });
+  }
 };
 
 // get the ha-picture-upload editor to load the upload form component

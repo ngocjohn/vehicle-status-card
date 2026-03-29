@@ -1,12 +1,14 @@
+import { pick } from 'es-toolkit';
 import { html, TemplateResult, CSSResultGroup, nothing, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
+
+import '../shared/panel-yaml-editor';
 // utils
 import tinycolor from 'tinycolor2';
 
-import '../shared/panel-yaml-editor';
 import { findBatteryChargingEntity, findPowerEntities, fireEvent, getEntitiesByDomain, hasPercent } from '../../ha';
 import { RangeInfoConfig, RangeItemConfig, Threshold, VehicleStatusCardConfig } from '../../types/config';
 import { ConfigArea } from '../../types/config-area';
@@ -27,11 +29,13 @@ import { PANEL } from '../editor-const';
 import {
   CHARGE_TARGET_KEYS,
   CHARGE_TARGET_SCHEMA,
+  CHARGING_KEYS,
   CHARGING_STATE_SCHEMA,
   DIMENSION_KEYS,
   PROGRESS_BAR_SCHEMA,
   RANGE_ITEM_SCHEMA,
   RANGE_LAYOUT,
+  RANGE_VISIBILITY_SCHEMA,
 } from '../form';
 
 type ITEM_ACTION = 'add' | 'delete-item' | 'edit-item' | 'edit-yaml' | 'back-to-list';
@@ -241,7 +245,9 @@ export class PanelRangeInfo extends BaseEditor {
           border-radius: 50%;
           box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
           cursor: pointer;
-          transition: transform 200ms ease-in-out, opacity 200ms ease-in-out;
+          transition:
+            transform 200ms ease-in-out,
+            opacity 200ms ease-in-out;
           opacity: 0.8;
         }
 
@@ -513,6 +519,14 @@ export class PanelRangeInfo extends BaseEditor {
       },
     });
 
+    const extraTemplates = createSection({
+      visibility_template: {
+        title: 'Visibility Template',
+        helper: 'Template to control the visibility of this range info item',
+        config: this._renderVisibilityConfig(rangeItem),
+      },
+    });
+
     return html`
       ${this._renderHeader(`Range Info #${index + 1}`, undefined, headerActions, yamlEditorToggle)}
       ${this._yamlItemEditorActive
@@ -541,6 +555,10 @@ export class PanelRangeInfo extends BaseEditor {
               ${Create.ExpansionPanel({
                 content: customizationSection,
                 options: { header: 'Progress Bar Customization' },
+              })}
+              ${Create.ExpansionPanel({
+                content: extraTemplates,
+                options: { header: 'Extra Templates (Optional)' },
               })}
             </div>
           `}
@@ -708,20 +726,25 @@ export class PanelRangeInfo extends BaseEditor {
 
   private _renderChargingEntityConfig(config: RangeInfoConfig): TemplateResult {
     const DATA = {
-      charging_entity: config.charging_entity,
-      charging_template: config.charging_template,
-    };
+      ...pick(config, CHARGING_KEYS),
+    } as RangeInfoConfig;
 
-    return this._createHaForm(DATA, CHARGING_STATE_SCHEMA);
+    return this._createHaForm(DATA, CHARGING_STATE_SCHEMA());
   }
 
   private _renderChargeTargetEntityConfig(config: RangeInfoConfig): TemplateResult {
-    const DATA = CHARGE_TARGET_KEYS.reduce((acc, key) => {
-      acc[key] = config[key];
-      return acc;
-    }, {} as RangeInfoConfig);
+    const DATA = {
+      ...pick(config, CHARGE_TARGET_KEYS),
+    } as RangeInfoConfig;
 
     return this._createHaForm(DATA, CHARGE_TARGET_SCHEMA(DATA.charge_target_entity));
+  }
+
+  private _renderVisibilityConfig(config: RangeInfoConfig): TemplateResult {
+    const DATA = {
+      visibility_template: config.visibility_template,
+    };
+    return this._createHaForm(DATA, RANGE_VISIBILITY_SCHEMA);
   }
 
   private _renderBarBackground(config: RangeInfoConfig): TemplateResult {
@@ -942,7 +965,7 @@ export class PanelRangeInfo extends BaseEditor {
     const energyState = this._hass.states[energyConf?.entity || ''];
     const isPercent = hasPercent(energyState);
     const unit = isPercent ? '%' : energyState.attributes?.unit_of_measurement || '';
-    const max = energyConf?.max_value ? energyConf.max_value : energyState.attributes?.max ?? 100;
+    const max = energyConf?.max_value ? energyConf.max_value : (energyState.attributes?.max ?? 100);
 
     this._maxValue = max;
     const testValue = this._colorTestValue ?? max;
@@ -1269,25 +1292,37 @@ export class PanelRangeInfo extends BaseEditor {
     </div>`;
   }
 
-  private _createHaForm = (data: any, schema: any, configyType?: string) => {
+  private _createHaForm = (data: any, schema: any, configType?: string) => {
     return html`
-      <ha-form
+      <vsc-editor-form
         .hass=${this._hass}
-        .configType=${configyType}
         .data=${data}
         .schema=${schema}
-        .computeLabel=${this._computeLabel}
-        .computeHelper=${this._computeHelper}
+        .configType=${configType}
         @value-changed=${this._rangeItemValueChanged}
-      ></ha-form>
+      ></vsc-editor-form>
     `;
   };
-  private _computeLabel(schema: any) {
-    return schema.label || '';
-  }
-  private _computeHelper(schema: any) {
-    return schema.helper || '';
-  }
+
+  // private _createHaForm = (data: any, schema: any, configyType?: string) => {
+  //   return html`
+  //     <ha-form
+  //       .hass=${this._hass}
+  //       .configType=${configyType}
+  //       .data=${data}
+  //       .schema=${schema}
+  //       .computeLabel=${this._computeLabel}
+  //       .computeHelper=${this._computeHelper}
+  //       @value-changed=${this._rangeItemValueChanged}
+  //     ></ha-form>
+  //   `;
+  // };
+  // private _computeLabel(schema: any) {
+  //   return schema.label || '';
+  // }
+  // private _computeHelper(schema: any) {
+  //   return schema.helper || '';
+  // }
 
   private _rangeItemValueChanged(ev: CustomEvent<{ value: any }>): void {
     ev.stopPropagation();
