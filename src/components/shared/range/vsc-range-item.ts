@@ -20,6 +20,14 @@ export class VscRangeItem extends VscBaseRange {
     this._addActions();
   }
 
+  private get _visibility(): boolean {
+    return Boolean(this._templateResults['visibility_template']?.result ?? true);
+  }
+
+  private get _hasChargingIcon(): boolean {
+    return Boolean(this._templateResults['charging_icon_template']?.result ?? false);
+  }
+
   private _addActions(): void {
     const { _energyActionsConfig, _rangeActionsConfig } = this;
     if (hasItemAction(_energyActionsConfig)) {
@@ -193,7 +201,10 @@ export class VscRangeItem extends VscBaseRange {
         return chargingColor;
 
         break;
-
+      case 'chargingIcon':
+        return this._templateResults['charging_icon_template']?.result || undefined;
+      case 'chargingIconColor':
+        return this._templateResults['charging_icon_color_template']?.result || undefined;
       default:
         return undefined;
     }
@@ -201,6 +212,10 @@ export class VscRangeItem extends VscBaseRange {
 
   protected render(): TemplateResult | typeof nothing {
     if (!this.hass || !this.rangeItem) {
+      return nothing;
+    }
+
+    if (!this._visibility) {
       return nothing;
     }
 
@@ -221,12 +236,16 @@ export class VscRangeItem extends VscBaseRange {
     if (notCharging) {
       return html``;
     }
+    const customColor = this.getValue('chargingIconColor');
     const barColor = this.getValue('barColor');
+    const chargingIcon = this.getValue('chargingIcon');
     return html`
       <ha-icon
-        icon="mdi:battery-high"
+        .icon=${chargingIcon || 'mdi:battery-high'}
+        ?no-animation=${this._hasChargingIcon}
+        ?has-icon-color=${Boolean(customColor)}
         class="charging-icon"
-        style="--range-bar-color: ${barColor};"
+        style="--range-bar-color: ${customColor || barColor};"
         title="Charging"
       ></ha-icon>
     `;
@@ -329,7 +348,7 @@ export class VscRangeItem extends VscBaseRange {
         .energy-inside-container[charging][align='end'] {
           justify-content: space-between;
         }
-        .energy-inside-container > .charging-icon,
+        .energy-inside-container > .charging-icon:not([has-icon-color]),
         .energy-inside,
         .range-inside {
           filter: invert(1) grayscale(1) brightness(1.3) contrast(9000);
@@ -353,8 +372,11 @@ export class VscRangeItem extends VscBaseRange {
           transform: rotate(90deg) !important;
           margin-bottom: 0 !important;
         }
-
-        .energy-inside-container > .charging-icon {
+        .charging-icon[no-animation] {
+          animation: none;
+          transform: none !important;
+        }
+        .energy-inside-container > .charging-icon:not([has-icon-color]) {
           color: var(--vsc-bar-charging-color) !important;
         }
         /* .energy-inside-container > .charging-icon {

@@ -35,11 +35,14 @@ export type RangeInfoLayoutConfig = Partial<{
   bar_height: number;
   bar_width: number;
   bar_radius: number;
+  visibility_template: string;
 }>;
 
 export type ChargingConfig = Partial<{
   charging_entity: string;
   charging_template: string;
+  charging_icon_template: string;
+  charging_icon_color_template: string;
 }>;
 
 export type ChargeTargetConfig = Partial<{
@@ -49,7 +52,14 @@ export type ChargeTargetConfig = Partial<{
   charge_target_tooltip: boolean;
 }>;
 
-export const RANGE_INFO_TEMPLATE_KEYS = ['color_template', 'charging_template', 'charge_target_visibility'] as const;
+export const RANGE_INFO_TEMPLATE_KEYS = [
+  'color_template',
+  'charging_template',
+  'charging_icon_template',
+  'charging_icon_color_template',
+  'charge_target_visibility',
+  'visibility_template',
+] as const;
 
 export type RangeInfoTemplateKey = (typeof RANGE_INFO_TEMPLATE_KEYS)[number];
 
