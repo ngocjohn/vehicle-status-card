@@ -1,3 +1,16 @@
+## [1.24.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.23.0...v1.24.0) (2026-03-29)
+
+### Features
+
+* Add state icon color option in range progress bar ([#259](https://github.com/ngocjohn/vehicle-status-card/issues/259)) ([c85d8d4](https://github.com/ngocjohn/vehicle-status-card/commit/c85d8d4574b9420cdc682ce9f51b7a4980ba39ac))
+* **range-progress-bar:** Add visibility and charging icon configurations to range items ([#261](https://github.com/ngocjohn/vehicle-status-card/issues/261)) ([04c1731](https://github.com/ngocjohn/vehicle-status-card/commit/04c1731e2d287943830ac30ca56e9966c9c064e6))
+
+### Bug Fixes
+
+* add error handling for missing card helpers ([a03fd88](https://github.com/ngocjohn/vehicle-status-card/commit/a03fd884a699bb40ced6760ec4c4896e7c638eed))
+* **map-dialog:** update ha-dialog styles ([4aa7786](https://github.com/ngocjohn/vehicle-status-card/commit/4aa7786e216e94c6bd3826242b420b7ad37070dd))
+* **vsc-dialog-form:** enhance form-dialog compability with wa-dialog ([a0107a6](https://github.com/ngocjohn/vehicle-status-card/commit/a0107a64c2a7b95c42da7e34b041bc9ccb47c57b))
+
 ## [1.24.0-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.23.1-dev.2...v1.24.0-dev.1) (2026-03-17)
 
 ### Features
