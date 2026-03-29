@@ -6,15 +6,12 @@ import { property, state } from 'lit/decorators.js';
 import memoizeOne from 'memoize-one';
 
 import { HomeAssistant } from '../ha';
-import { computeCssColor } from '../ha/common/color/compute-color';
-import { computeDomain } from '../ha/common/entity/compute_domain';
+import { computeStateColor } from '../ha/common/color/compute-state-color';
 import { computeStateDomain } from '../ha/common/entity/compute_state_domain';
-import { stateActive } from '../ha/common/entity/state_active';
-import { stateColorCss } from '../ha/common/entity/state_color';
 import { isGroupEntity } from '../ha/data/group';
-import { RenderTemplateResult, hasTemplate, subscribeRenderTemplate } from '../ha/data/ws-templates';
 import '../components/shared/vsc-state-display';
 import '../components/shared/indicator-row/vsc-indicator-badge';
+import { RenderTemplateResult, hasTemplate, subscribeRenderTemplate } from '../ha/data/ws-templates';
 import { hasItemAction } from '../types/config/actions-config';
 import {
   IndicatorRowItem,
@@ -24,9 +21,7 @@ import {
   IndicatorCommon,
 } from '../types/config/card/row-indicators';
 import { toCommon, isEntity } from '../types/config/card/row-indicators';
-import { rgb2hex, rgb2hsv, hsv2rgb } from '../utils/colors';
 import { BaseElement } from './base-element';
-import { computeStateColor } from '../ha/common/color/compute-state-color';
 
 const cameraUrlWithWidthHeight = (base_url: string, width: number, height: number) =>
   `${base_url}&width=${width}&height=${height}`;
