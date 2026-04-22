@@ -1,4 +1,4 @@
-import { css, html, nothing, TemplateResult } from 'lit';
+import { css, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -30,7 +30,14 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
   @property({ type: Boolean, reflect: true }) public active = false;
   @property({ attribute: false }) private globalAppearance?: GlobalAppearanceConfig;
   @property({ type: Boolean, reflect: true, attribute: 'dimmed-in-editor' }) public dimmedInEditor = false;
+  @property({ type: Boolean, reflect: true, attribute: 'hidden' }) public hidden = false;
+
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
+
+  protected willUpdate(_changedProperties: PropertyValues): void {
+    super.willUpdate(_changedProperties);
+    this.hidden = !Boolean(this._visibility);
+  }
 
   private get _visibility(): boolean {
     return Boolean(this._getTemplateResult('visibility') ?? true);
@@ -40,9 +47,7 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
     if (!this._config || !this.hass) {
       return nothing;
     }
-    if (!Boolean(this._visibility)) {
-      return nothing;
-    }
+
     const isGroup = this.type === 'group';
     const hasGroupEntity = this._hasGroupEntity;
     const commonConfig = this.commonConfig;
@@ -163,6 +168,13 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
 
   static get styles() {
     return css`
+      :host[hidden] {
+        display: none;
+        max-height: 0;
+        max-width: 0;
+        overflow: hidden;
+      }
+
       :host([dimmed-in-editor]),
       :host(.dimmed) {
         opacity: 0.2;
