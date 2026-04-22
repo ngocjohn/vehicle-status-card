@@ -1,3 +1,9 @@
+## [1.24.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.24.0...v1.24.1) (2026-04-22)
+
+### Bug Fixes
+
+* Fix hidden indicator space release issue and enhance alignment handling ([#266](https://github.com/ngocjohn/vehicle-status-card/issues/266)) ([b2f183f](https://github.com/ngocjohn/vehicle-status-card/commit/b2f183fa4bc9368c5e1185f299ae3c55d934efca))
+
 ## [1.24.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.23.0...v1.24.0) (2026-03-29)
 
 ### Features
