@@ -9,7 +9,6 @@ import { showImageUploadDialog } from '../../../ha/dialogs/image-upload/show-ima
 import { ImageItem, VehicleStatusCardConfig } from '../../../types/config';
 import { ConfigArea } from '../../../types/config-area';
 import { ICON } from '../../../utils';
-import { loadPictureCardHelper } from '../../../utils/lovelace/create-card-element';
 import { BaseEditor } from '../../base-editor';
 import { PANEL } from '../../editor-const';
 
@@ -36,7 +35,6 @@ export class PanelImagesEditor extends BaseEditor {
 
   connectedCallback() {
     super.connectedCallback();
-    void loadPictureCardHelper(this._hass!);
   }
 
   disconnectedCallback(): void {
@@ -71,14 +69,15 @@ export class PanelImagesEditor extends BaseEditor {
       >
       <span slot="secondary-action">
         ${ActiveViews.map(
-          (view) => html` <ha-icon-button
-            class="view-button"
-            .viewType=${view}
-            ?active=${isActive(view)}
-            .path=${VIEW_ICON[view]}
-            @click=${this._handleViewChange}
-          >
-          </ha-icon-button>`
+          (view) =>
+            html` <ha-icon-button
+              class="view-button"
+              .viewType=${view}
+              ?active=${isActive(view)}
+              .path=${VIEW_ICON[view]}
+              @click=${this._handleViewChange}
+            >
+            </ha-icon-button>`
         )}
       </span>
     </sub-editor-header>`;

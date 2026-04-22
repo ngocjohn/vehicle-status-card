@@ -68,11 +68,12 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
   @state() private _data: ImageUploadDialogData = {};
 
   @state() private _imageEntities: string[] = [];
-  @state() private _imageUrls: string[] = [];
+  @state() private _imageUrls: ImageItem['image'][] = [];
 
   @state() private _uploading = false;
 
   @query('ha-file-upload') _fileUpload!: any;
+
   public async showDialog(params: ImageUploadDialogParams): Promise<void> {
     this._params = params;
     this._data = params.data || {};
@@ -199,6 +200,19 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
     `;
   }
 
+  // render the ha-selector with media source selector to load the image upload form, but keep it hidden.
+  private _renderFileUploadForm() {
+    const selector = {
+      media: {
+        accept: ['image/*'] as string[],
+        clearable: true,
+        image_upload: true,
+        hide_content_type: false,
+      },
+    };
+    return html` <ha-selector .hass=${this.hass} .selector=${selector} hidden> </ha-selector> `;
+  }
+
   private _renderFileUpload(): TemplateResult {
     const secondary = html`${this.hass!.localize('ui.components.picture-upload.secondary', {
       select_media: html`<button class="link" @click=${this._showMediaBrowser}>
@@ -206,6 +220,7 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
       </button>`,
     })}`;
     return html`
+      ${this._renderFileUploadForm()}
       <ha-file-upload
         .hass=${this.hass}
         .icon=${mdiImagePlus}
@@ -222,7 +237,7 @@ export class VscImageUpload extends LitElement implements HassDialog<ImageUpload
 
   private _renderImageUrlsEditor(): TemplateResult {
     const urlsData = {
-      urls: this._imageUrls.map((url) => ({ image: url })),
+      urls: this._imageUrls.map((url) => ({ image: typeof url === 'object' ? url.metadata?.thumbnail || '' : url })),
     };
 
     const urlsContent = html`
