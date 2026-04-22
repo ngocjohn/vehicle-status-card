@@ -3,8 +3,6 @@ import type { LovelaceCardConfig } from '../../ha';
 import { HomeAssistant } from '../../ha';
 import { LovelaceElement, LovelaceElementConfig } from '../../ha/panels/lovelace/elements/types';
 
-let helpers = (window as any).cardHelpers;
-
 /**
  *
  * @param hass Home Assistant instance
@@ -19,6 +17,7 @@ export async function createCardElement(
     return;
   }
 
+  const helpers = await (window as any).loadCardHelpers();
   // Check if helpers were loaded and if createCardElement exists
   if (!helpers || !helpers.createCardElement) {
     console.error('Card helpers or createCardElement not available.');
@@ -48,6 +47,7 @@ export const loadVerticalStackCard = async (): Promise<void> => {
   }
 
   if (!customElements.get(VERTICAL_STACK_TAG)) {
+    const helpers = await (window as any).loadCardHelpers();
     await helpers.createCardElement({
       type: 'vertical-stack',
       cards: [],
@@ -56,6 +56,7 @@ export const loadVerticalStackCard = async (): Promise<void> => {
 };
 
 export async function createHuiElement(elementConfig: LovelaceElementConfig): Promise<LovelaceElement> {
+  const helpers = await (window as any).loadCardHelpers();
   const element = await helpers?.createHuiElement(elementConfig);
   if (element.tagName !== 'HUI-CONDITIONAL-ELEMENT') {
     element.classList.add('element');

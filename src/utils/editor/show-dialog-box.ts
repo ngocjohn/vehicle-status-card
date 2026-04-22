@@ -77,7 +77,7 @@ export const showAlertDialog = async (element: HTMLElement, message: string | Te
   // Fallback for HA 2026.2+ where loadCardHelpers is not available
   // Use the native alert dialog
   return new Promise<void>((resolve) => {
-    window.alert(`${NAMESPACE_TITLE}\n\n${message}`);
+    window.alert(`${NAMESPACE_TITLE}\n\n${typeof message === 'string' ? message : ''}`);
     resolve();
   });
 };
