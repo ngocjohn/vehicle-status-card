@@ -1,14 +1,6 @@
 import { TemplateResult } from 'lit';
 
 import { NAMESPACE_TITLE } from '../../constants/const';
-const HELPERS = (window as any).loadCardHelpers ? (window as any).loadCardHelpers() : undefined;
-
-let helpers: any;
-if ((window as any).loadCardHelpers) {
-  helpers = await (window as any).loadCardHelpers();
-} else if (HELPERS) {
-  helpers = HELPERS;
-}
 
 export const showConfirmDialog = async (
   element: HTMLElement,
@@ -52,7 +44,7 @@ export const showPromptDialog = async (
       title: NAMESPACE_TITLE,
       text,
       placeholder,
-      confirmText,
+      confirmText: confirmText ?? 'Add',
       inputType: 'string',
       defaultValue: '',
       cancelText: cancelText ? cancelText : 'Cancel',

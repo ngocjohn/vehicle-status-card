@@ -1,4 +1,4 @@
-import { css, html, nothing, PropertyValues, TemplateResult } from 'lit';
+import { css, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -31,10 +31,6 @@ export class VscIndicatorItem extends VscIndicatorItemBase<IndicatorEntityConfig
   @property({ attribute: false }) private globalAppearance?: GlobalAppearanceConfig;
   @property({ type: Boolean, reflect: true, attribute: 'dimmed-in-editor' }) public dimmedInEditor = false;
   @query(COMPONENT.INDICATOR_BADGE) _badge!: VscIndicatorBadge;
-
-  protected willUpdate(_changedProperties: PropertyValues): void {
-    super.willUpdate(_changedProperties);
-  }
 
   private get _visibility(): boolean {
     return Boolean(this._getTemplateResult('visibility') ?? true);

@@ -27,7 +27,6 @@ import {
   SLIDE_SIZE_SCHEMA,
   SWIPE_BEHAVIOR_SCHEMA,
 } from './form';
-import * as CardHelpers from '../utils/lovelace/create-card-element';
 const EditorCommandTypes = [
   'show-button',
   'show-image',
@@ -64,7 +63,6 @@ export class BaseEditor extends LitElement {
 
   protected _editorArea?: ConfigArea;
 
-  _utils = { CARD_HELPERS: CardHelpers };
   constructor(area?: ConfigArea) {
     super();
     this._stylesManager = new HomeAssistantStylesManager({
