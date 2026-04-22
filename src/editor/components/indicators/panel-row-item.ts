@@ -348,10 +348,6 @@ export class PanelIndicatorItem extends BaseEditor {
     const config = { ...(this._rowConfig || {}) } as IndicatorRowConfig;
     if (!config) return;
     if (key === 'alignment') {
-      // If the alignment is not set, and the config has no alignment, we should not do anything
-      if (!value && !config.alignment) {
-        return;
-      }
       // If the alignment is not set, and the config has an alignment, we should remove it
       if (!value && config.alignment) {
         delete config.alignment;

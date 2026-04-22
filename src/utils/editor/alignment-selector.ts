@@ -3,9 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 
 import { HomeAssistant } from '../../ha';
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
-
-const ALIGNMENT = ['default', 'start', 'center', 'end', 'justify'] as const;
-type Alignment = (typeof ALIGNMENT)[number];
+import { ALIGNMENT, Alignment } from '../../types/config/card/row-indicators';
 
 const ICONS: Record<Alignment, string> = {
   default: 'mdi:format-align-left',
@@ -19,7 +17,7 @@ const ICONS: Record<Alignment, string> = {
 export class AlignmentSelector extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public label = '';
-  @property() public value?: string;
+  @property() public value?: Alignment;
   @property() public configValue = '';
 
   render() {
@@ -31,7 +29,6 @@ export class AlignmentSelector extends LitElement {
         .label=${this.label}
         .configValue=${this.configValue}
         .value=${this.value || 'default'}
-        @selected=${this._selectedChange}
         @closed=${(ev: any) => ev.stopPropagation()}
         fixedMenuPosition
         naturalMenuWidth
@@ -39,7 +36,14 @@ export class AlignmentSelector extends LitElement {
         <ha-icon slot="icon" .icon=${ICONS[value as Alignment]}></ha-icon>
         ${ALIGNMENT.map((alignment) => {
           return html`
-            <ha-list-item .value=${alignment} graphic="icon">
+            <ha-list-item
+              .value=${alignment}
+              graphic="icon"
+              @click=${(ev: Event) => {
+                ev.stopPropagation();
+                this._selectedChange(ev);
+              }}
+            >
               ${capitalizeFirstLetter(alignment)}
               <ha-icon slot="graphic" .icon=${ICONS[alignment]}></ha-icon>
             </ha-list-item>
@@ -50,13 +54,15 @@ export class AlignmentSelector extends LitElement {
   }
 
   _selectedChange(ev: Event) {
-    const value = (ev.target as HTMLSelectElement).value;
+    const value = (ev.target as any).value;
     if (value) {
       this.dispatchEvent(
         new CustomEvent('value-changed', {
           detail: {
-            value: value !== 'default' ? value : '',
+            value: value,
           },
+          bubbles: true,
+          composed: true,
         })
       );
     }
