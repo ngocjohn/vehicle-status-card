@@ -1,3 +1,10 @@
+import {
+  mdiAlignHorizontalDistribute,
+  mdiFormatAlignCenter,
+  mdiFormatAlignJustify,
+  mdiFormatAlignLeft,
+  mdiFormatAlignRight,
+} from '@mdi/js';
 import { css, CSSResultGroup, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
@@ -5,13 +12,27 @@ import { HomeAssistant } from '../../ha';
 import { capitalizeFirstLetter } from '../../ha/common/string/capitalize-first-letter';
 import { ALIGNMENT, Alignment } from '../../types/config/card/row-indicators';
 
+interface HaSelectOption {
+  value: string | number;
+  label?: string;
+  secondary?: string;
+  iconPath?: string;
+  disabled?: boolean;
+}
+
 const ICONS: Record<Alignment, string> = {
-  default: 'mdi:format-align-left',
-  start: 'mdi:format-align-left',
-  center: 'mdi:format-align-center',
-  end: 'mdi:format-align-right',
-  justify: 'mdi:format-align-justify',
+  default: mdiAlignHorizontalDistribute,
+  start: mdiFormatAlignLeft,
+  center: mdiFormatAlignCenter,
+  end: mdiFormatAlignRight,
+  justify: mdiFormatAlignJustify,
 };
+
+const ALIGNMENT_OPTIONS: HaSelectOption[] = ALIGNMENT.map((alignment) => ({
+  value: alignment,
+  label: capitalizeFirstLetter(alignment),
+  iconPath: ICONS[alignment],
+}));
 
 @customElement('vsc-alignment-selector')
 export class AlignmentSelector extends LitElement {
@@ -19,53 +40,24 @@ export class AlignmentSelector extends LitElement {
   @property() public label = '';
   @property() public value?: Alignment;
   @property() public configValue = '';
+  @property() _selectedChange = (): void => {};
 
   render() {
     const value = this.value || 'default';
 
     return html`
       <ha-select
-        icon
         .label=${this.label}
         .configValue=${this.configValue}
-        .value=${this.value || 'default'}
+        .value=${value}
+        @selected=${this._selectedChange}
         @closed=${(ev: any) => ev.stopPropagation()}
+        .options=${ALIGNMENT_OPTIONS}
         fixedMenuPosition
         naturalMenuWidth
       >
-        <ha-icon slot="icon" .icon=${ICONS[value as Alignment]}></ha-icon>
-        ${ALIGNMENT.map((alignment) => {
-          return html`
-            <ha-list-item
-              .value=${alignment}
-              graphic="icon"
-              @click=${(ev: Event) => {
-                ev.stopPropagation();
-                this._selectedChange(ev);
-              }}
-            >
-              ${capitalizeFirstLetter(alignment)}
-              <ha-icon slot="graphic" .icon=${ICONS[alignment]}></ha-icon>
-            </ha-list-item>
-          `;
-        })}
       </ha-select>
     `;
-  }
-
-  _selectedChange(ev: Event) {
-    const value = (ev.target as any).value;
-    if (value) {
-      this.dispatchEvent(
-        new CustomEvent('value-changed', {
-          detail: {
-            value: value,
-          },
-          bubbles: true,
-          composed: true,
-        })
-      );
-    }
   }
 
   static get styles(): CSSResultGroup {
