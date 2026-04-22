@@ -110,7 +110,7 @@ export class PanelIndicatorItem extends BaseEditor {
                   label="Alignment (optional)"
                   .value=${this._rowConfig?.alignment}
                   .key=${'alignment'}
-                  @value-changed=${this._onValueChanged}
+                  @selected=${this._onValueChanged}
                 ></vsc-alignment-selector>
                 ${noWrapEl}
               </div>
@@ -342,16 +342,13 @@ export class PanelIndicatorItem extends BaseEditor {
 
   protected _onValueChanged(ev: CustomEvent): void {
     ev.stopPropagation();
+    console.debug('Value changed', ev, ev.target, ev.detail);
     const { key } = ev.target as any;
     const value = ev.detail?.value;
     // console.debug('Value changed', key, subKey, value);
     const config = { ...(this._rowConfig || {}) } as IndicatorRowConfig;
     if (!config) return;
     if (key === 'alignment') {
-      // If the alignment is not set, and the config has no alignment, we should not do anything
-      if (!value && !config.alignment) {
-        return;
-      }
       // If the alignment is not set, and the config has an alignment, we should remove it
       if (!value && config.alignment) {
         delete config.alignment;

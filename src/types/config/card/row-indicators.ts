@@ -84,9 +84,12 @@ export interface GlobalAppearanceConfig {
  * into a single row configuration.
  */
 
+export const ALIGNMENT = ['default', 'start', 'center', 'end', 'justify'] as const;
+export type Alignment = (typeof ALIGNMENT)[number];
+
 export interface IndicatorRowConfig extends GlobalAppearanceConfig {
   row_items: IndicatorRowItem[]; // Array of indicator items in the row
-  alignment?: string;
+  alignment?: Alignment;
   no_wrap?: boolean;
 }
 

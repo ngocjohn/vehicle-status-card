@@ -27,7 +27,6 @@ import {
   SLIDE_SIZE_SCHEMA,
   SWIPE_BEHAVIOR_SCHEMA,
 } from './form';
-
 const EditorCommandTypes = [
   'show-button',
   'show-image',
@@ -118,8 +117,8 @@ export class BaseEditor extends LitElement {
         section === SECTION.BUTTONS
           ? config.button_cards
           : section === SECTION.INDICATORS
-          ? config.indicator_rows
-          : config[section];
+            ? config.indicator_rows
+            : config[section];
       return !isEmpty(secConfig);
     });
   }

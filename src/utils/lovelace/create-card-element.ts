@@ -3,15 +3,6 @@ import type { LovelaceCardConfig } from '../../ha';
 import { HomeAssistant } from '../../ha';
 import { LovelaceElement, LovelaceElementConfig } from '../../ha/panels/lovelace/elements/types';
 
-let helpers = (window as any).cardHelpers;
-const helperPromise = new Promise<void>(async (resolve) => {
-  if (helpers) resolve();
-  if ((window as any).loadCardHelpers) {
-    helpers = await (window as any).loadCardHelpers();
-    (window as any).cardHelpers = helpers;
-    resolve();
-  }
-});
 /**
  *
  * @param hass Home Assistant instance
@@ -26,6 +17,7 @@ export async function createCardElement(
     return;
   }
 
+  const helpers = await (window as any).loadCardHelpers();
   // Check if helpers were loaded and if createCardElement exists
   if (!helpers || !helpers.createCardElement) {
     console.error('Card helpers or createCardElement not available.');
@@ -55,6 +47,7 @@ export const loadVerticalStackCard = async (): Promise<void> => {
   }
 
   if (!customElements.get(VERTICAL_STACK_TAG)) {
+    const helpers = await (window as any).loadCardHelpers();
     await helpers.createCardElement({
       type: 'vertical-stack',
       cards: [],
@@ -62,49 +55,8 @@ export const loadVerticalStackCard = async (): Promise<void> => {
   }
 };
 
-const HUI_PICTURE_CARD = 'hui-picture-card';
-export const loadPictureCard = async (): Promise<void> => {
-  if (customElements.get(HUI_PICTURE_CARD)) {
-    // console.log('Picture card already loaded');
-    return;
-  }
-  const config = {
-    type: 'picture',
-    image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
-  };
-  if (helpers) await helpers.createCardElement(config);
-  else {
-    await helperPromise;
-    await helpers.createCardElement(config).catch((error: any) => {
-      console.error('Error loading picture card:', error);
-    });
-  }
-};
-
-// get the ha-picture-upload editor to load the upload form component
-export const loadPictureCardHelper = async (hass: HomeAssistant): Promise<void> => {
-  await loadPictureCard();
-  const picConfig = {
-    type: 'picture',
-    image: 'https://demo.home-assistant.io/stub_config/t-shirt-promo.png',
-  };
-  const pictureEditor = await (customElements.get(HUI_PICTURE_CARD) as any).getConfigElement();
-  pictureEditor.setConfig(picConfig);
-  pictureEditor.hass = hass;
-  const dummy = document.createElement('div');
-  dummy.style.display = 'none';
-  dummy.appendChild(pictureEditor);
-  document.body.appendChild(dummy);
-  // remove the dummy element after a delay to ensure the upload form is loaded.
-  window.setTimeout(() => {
-    if (dummy.parentNode) {
-      dummy.parentNode.removeChild(dummy);
-    }
-  }, 100);
-  return;
-};
-
 export async function createHuiElement(elementConfig: LovelaceElementConfig): Promise<LovelaceElement> {
+  const helpers = await (window as any).loadCardHelpers();
   const element = await helpers?.createHuiElement(elementConfig);
   if (element.tagName !== 'HUI-CONDITIONAL-ELEMENT') {
     element.classList.add('element');
