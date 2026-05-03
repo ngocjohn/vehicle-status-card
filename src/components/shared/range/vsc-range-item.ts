@@ -224,7 +224,7 @@ export class VscRangeItem extends VscBaseRange {
     const itemsInside = get('energyPosition') === 'inside' || get('rangePosition') === 'inside';
     return html` <div class="info-box range" style=${this._computeStyles()}>
       ${this._renderLevelItem('energy')}
-      <vsc-range-bar ?itemsInside=${itemsInside} ._targetChargeState=${targetState}>
+      <vsc-range-bar ?itemsInside=${itemsInside} ._targetChargeState=${targetState} ._getValue=${get}>
         ${this._renderInsideItems()}
       </vsc-range-bar>
       ${this._renderLevelItem('range')}
