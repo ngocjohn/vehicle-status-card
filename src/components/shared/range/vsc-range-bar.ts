@@ -5,11 +5,11 @@ import { customElement, property } from 'lit/decorators.js';
 export class VscRangeBar extends LitElement {
   @property({ type: Boolean, reflect: true }) public itemInside = false;
   @property({ attribute: false }) public _targetChargeState?: number;
-  @property({}) public _getValue!: (key: string) => any;
+  @property({ attribute: false }) public _getValue?: (key: string) => any;
 
   protected render(): TemplateResult {
     const dataTarget = this._targetChargeState !== undefined ? `Target: ${this._targetChargeState}%` : null;
-    const useTooltip = this._getValue('targetTooltip') && this._getValue('targetChargeVisibility');
+    const useTooltip = !!this._getValue?.('targetTooltip') && !!this._getValue?.('targetChargeVisibility');
     return html`
       <div class="fuel-container">
         ${dataTarget && useTooltip ? html`<div class="charge-target tooltip" data-title=${dataTarget}></div>` : nothing}
