@@ -89,7 +89,7 @@ export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: s
     if (data && data.features && data.features.length > 0) {
       let address: Partial<Address> = {};
 
-      // Iterate through each feature
+      // Iterate through each feature (top-level)
       data.features.forEach((feature: any) => {
         const placeType = feature.place_type[0]; // e.g. "address", "locality", "municipality"
         if (filterParams[placeType]) {
@@ -103,6 +103,18 @@ export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: s
           // Assign filtered data to the corresponding property in the address object
           address[key] = `${text}`;
           // console.log(`Found ${key}:`, address[key], 'from', placeType);
+        }
+
+        // Also scan feature.context for missing fields. MapTiler returns
+        // `municipality` (city) only inside the address feature's context array,
+        // never as a top-level feature, so the loop above misses it.
+        if (Array.isArray(feature.context)) {
+          feature.context.forEach((ctx: any) => {
+            const ctxType = (ctx.id || '').split('.')[0]; // e.g. "municipality" from "municipality.32280"
+            if (filterParams[ctxType] && !address[filterParams[ctxType]]) {
+              address[filterParams[ctxType]] = `${ctx.text}`;
+            }
+          });
         }
       });
 
