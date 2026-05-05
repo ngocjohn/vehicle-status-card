@@ -1,3 +1,10 @@
+## [1.24.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.24.1...v1.24.2) (2026-05-05)
+
+### Bug Fixes
+
+* Fix target charge visibility with tooltip condition ([#268](https://github.com/ngocjohn/vehicle-status-card/issues/268)) ([d1f6c5c](https://github.com/ngocjohn/vehicle-status-card/commit/d1f6c5c4557e7d6ed3153e12d709d4d6bcea8624))
+* **map:** scan feature.context for municipality in MapTiler reverse-geocode ([#272](https://github.com/ngocjohn/vehicle-status-card/issues/272)) ([e966805](https://github.com/ngocjohn/vehicle-status-card/commit/e9668055b11b0f2eb0713806593cf96ed482635c))
+
 ## [1.24.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.24.0...v1.24.1) (2026-04-22)
 
 ### Bug Fixes
