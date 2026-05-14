@@ -1,5 +1,5 @@
 import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { computeStateColor } from '../../../ha/common/color/compute-state-color';
@@ -14,6 +14,11 @@ export class VscRangeItem extends VscBaseRange {
   constructor() {
     super();
   }
+  @property({
+    attribute: 'range-index',
+    type: Number,
+  })
+  public rangeIndex!: number;
   protected async firstUpdated(_changedProperties: PropertyValues): Promise<void> {
     super.firstUpdated(_changedProperties);
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -205,6 +210,8 @@ export class VscRangeItem extends VscBaseRange {
         return this._templateResults['charging_icon_template']?.result || undefined;
       case 'chargingIconColor':
         return this._templateResults['charging_icon_color_template']?.result || undefined;
+      case 'range-index':
+        return this.rangeIndex;
       default:
         return undefined;
     }

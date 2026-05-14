@@ -9,10 +9,15 @@ export class VscRangeBar extends LitElement {
 
   protected render(): TemplateResult {
     const dataTarget = this._targetChargeState !== undefined ? `Target: ${this._targetChargeState}%` : null;
-    const useTooltip = !!this._getValue?.('targetTooltip') && !!this._getValue?.('targetChargeVisibility');
+    const visibleTarget = this._getValue?.('targetChargeVisibility') === true;
+    const useTooltip = this._getValue?.('targetTooltip') === true;
+    const tooltipId = `target-${this._getValue!('range-index')}`;
     return html`
       <div class="fuel-container">
-        ${dataTarget && useTooltip ? html`<div class="charge-target tooltip" data-title=${dataTarget}></div>` : nothing}
+        ${dataTarget && visibleTarget
+          ? html`<div id=${tooltipId} class="charge-target"></div>
+              <ha-tooltip ?hidden=${!useTooltip} for=${tooltipId} placement="top"> ${dataTarget} </ha-tooltip> `
+          : nothing}
         <div class="fuel-wrapper">
           <slot name="energy-level"></slot>
           <slot name="range-level"></slot>
@@ -99,33 +104,8 @@ export class VscRangeBar extends LitElement {
         border: none;
         box-sizing: border-box;
       }
-      .charge-target.tooltip::after {
-        content: attr(data-title);
-        position: absolute;
-        top: 50%;
-        transform: translate(-108%, -55%);
-        background-color: var(--primary-text-color, #000000);
-        color: var(--card-background-color, #ffffff);
-        padding: 0 12px;
-        border-radius: 8px;
-        white-space: nowrap;
-        box-sizing: content-box;
-        opacity: 0;
-      }
-
-      .charge-target:hover::after {
-        animation: slideIn 0.3s ease-in-out forwards;
-      }
-
-      @keyframes slideIn {
-        from {
-          max-width: 0;
-          opacity: 0;
-        }
-        to {
-          max-width: 1000px;
-          opacity: 1;
-        }
+      ha-tooltip[hidden] {
+        display: none !important;
       }
     `;
   }
