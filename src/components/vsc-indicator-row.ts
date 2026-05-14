@@ -246,6 +246,9 @@ export class VscIndicatorRow extends BaseElement {
     return undefined;
   }
   get visibility(): boolean {
+    if (this.isBaseInEditor) {
+      return true;
+    }
     const val = this._getValue('row_visibility');
     if (val === undefined) return true;
     if (typeof val === 'boolean') return val;
