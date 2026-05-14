@@ -16,7 +16,9 @@ export class VscRangeBar extends LitElement {
       <div class="fuel-container">
         ${dataTarget && visibleTarget
           ? html`<div id=${tooltipId} class="charge-target"></div>
-              <ha-tooltip ?hidden=${!useTooltip} for=${tooltipId} placement="top"> ${dataTarget} </ha-tooltip> `
+              <ha-tooltip .disabled=${!useTooltip} for=${tooltipId} .withoutArrow=${false} placement="top">
+                ${dataTarget}
+              </ha-tooltip> `
           : nothing}
         <div class="fuel-wrapper">
           <slot name="energy-level"></slot>
@@ -31,6 +33,8 @@ export class VscRangeBar extends LitElement {
       :host {
         display: block;
         width: 100%;
+        --ha-tooltip-arrow-size: 6px;
+        --ha-tooltip-background-color: var(--vsc-bar-target-color);
       }
       :host([itemsinside]) .fuel-container {
         height: 100%;
@@ -103,9 +107,6 @@ export class VscRangeBar extends LitElement {
         inset: 50% calc(100% - var(--vsc-bar-charge-target)) auto auto;
         border: none;
         box-sizing: border-box;
-      }
-      ha-tooltip[hidden] {
-        display: none !important;
       }
     `;
   }

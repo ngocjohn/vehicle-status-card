@@ -137,7 +137,7 @@ export class VscRangeItem extends VscBaseRange {
       case 'targetChargeVisibility':
         return r.charge_target_visibility
           ? this._templateResults['charge_target_visibility']?.result.toString() === 'true'
-          : (r.charge_target_entity ?? false);
+          : r.charge_target_entity !== undefined;
 
       case 'targetTooltip':
         return r.charge_target_tooltip || false;
