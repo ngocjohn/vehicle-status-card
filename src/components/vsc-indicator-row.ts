@@ -1,13 +1,14 @@
+import { UnsubscribeFunc } from 'home-assistant-js-websocket';
 import { html, css, CSSResultGroup, TemplateResult, PropertyValues, nothing } from 'lit';
 import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
-import { repeat } from 'lit/directives/repeat.js';
 
 import '../components/shared/indicator-row/vsc-indicator-item';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { VscIndicatorItem } from '../components/shared/indicator-row/vsc-indicator-item';
 import { COMPONENT } from '../constants/const';
-import { fireEvent } from '../ha';
+import { fireEvent, hasTemplate, RenderTemplateResult, subscribeRenderTemplate } from '../ha';
 import { getGroupEntities, GroupEntity, isGroupEntity } from '../ha/data/group';
 import {
   IndicatorRowGroupConfig,
@@ -35,14 +36,21 @@ declare global {
   }
 }
 
+const TEMPLATE_KEYS = ['row_visibility'] as const;
+type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 @customElement(COMPONENT.INDICATOR_ROW)
 export class VscIndicatorRow extends BaseElement {
+  constructor() {
+    super();
+  }
   @property({ attribute: false }) private rowConfig!: IndicatorRowConfig;
   @property({ type: Boolean, reflect: true }) private active = false;
   @property({ type: Number, attribute: 'row-index', reflect: true }) public rowIndex?: number;
   @property({ type: Number, attribute: 'item-index', reflect: true }) public itemIndex?: number | null = null;
   @property({ type: Boolean, reflect: true, attribute: 'editor-dimmed' }) public dimmedInEditor = false;
-
+  @property({ type: Boolean, reflect: true }) private isVisible = true;
+  @state() protected _singleTemplateResults: Partial<Record<TemplateKey, RenderTemplateResult | undefined>> = {};
+  @state() protected _unsubSingleRenderTemplates: Map<TemplateKey, Promise<UnsubscribeFunc>> = new Map();
   @state() _selectedGroupId: number | null = null;
   @state() private _rowItems?: IndicatorRowItem[];
 
@@ -55,17 +63,86 @@ export class VscIndicatorRow extends BaseElement {
 
   @state() private _resizeObs?: ResizeObserver;
 
-  connectedCallback(): void {
+  connectedCallback() {
     super.connectedCallback();
+    this._tryConnect();
     if (this.rowConfig.no_wrap && this._rowEl) {
       // console.debug('Binding row events with connectedCallback');
       this._bindRowEvents();
       this._updateArrows();
     }
   }
-  disconnectedCallback(): void {
+  disconnectedCallback() {
+    this._tryDisconnect();
     this._unbindRowEvents();
     super.disconnectedCallback();
+  }
+
+  private async _tryConnect(): Promise<void> {
+    TEMPLATE_KEYS.forEach((key) => {
+      this._subscribeRenderTemplate(key);
+    });
+  }
+
+  private async _subscribeRenderTemplate(key: TemplateKey): Promise<void> {
+    if (this._unsubSingleRenderTemplates.get(key) !== undefined || !this._hass || !hasTemplate(this.rowConfig[key])) {
+      return;
+    }
+    try {
+      const sub = subscribeRenderTemplate(
+        this.hass.connection,
+        (result) => {
+          this._singleTemplateResults = { ...this._singleTemplateResults, [key]: result };
+        },
+        {
+          template: this.rowConfig[key] ?? '',
+          variables: {
+            user: this.hass.user!.name,
+          },
+          strict: true,
+        }
+      );
+      this._unsubSingleRenderTemplates.set(key, sub);
+      await sub;
+    } catch (e) {
+      console.warn('Error while rendering template', e);
+      const result = {
+        result: this.rowConfig[key] ?? '',
+        listeners: {
+          all: false,
+          domains: [],
+          entities: [],
+          time: false,
+        },
+      };
+      this._singleTemplateResults = { ...this._singleTemplateResults, [key]: result };
+      this._unsubSingleRenderTemplates.delete(key);
+    }
+  }
+
+  private async _tryDisconnect(): Promise<void> {
+    TEMPLATE_KEYS.forEach((key) => {
+      this._tryDisconnectKey(key);
+    });
+  }
+
+  private async _tryDisconnectKey(key: TemplateKey): Promise<void> {
+    const unsubRenderTemplate = this._unsubSingleRenderTemplates.get(key);
+    if (!unsubRenderTemplate) {
+      return;
+    }
+
+    try {
+      const unsub = await unsubRenderTemplate;
+      unsub();
+      this._unsubSingleRenderTemplates.delete(key);
+    } catch (err: any) {
+      if (err.code === 'not_found' || err.code === 'template_error') {
+        // If we get here, the connection was probably already closed. Ignore.
+      } else {
+        throw err;
+      }
+    }
   }
 
   protected async firstUpdated(changedProperties: PropertyValues): Promise<void> {
@@ -88,6 +165,9 @@ export class VscIndicatorRow extends BaseElement {
       if (!this.isBaseInEditor) return;
       // Notify editor if group active state changes
       fireEvent(this, 'group-active', this.active);
+    }
+    if (_changedProperties.has('_hass') && this._hass) {
+      this._tryConnect();
     }
   }
 
@@ -158,7 +238,24 @@ export class VscIndicatorRow extends BaseElement {
     if (this._showRightArrow !== showRight) this._showRightArrow = showRight;
   }
 
-  protected render(): TemplateResult {
+  private _getValue(key: TemplateKey): string | undefined {
+    const templateResult = this._singleTemplateResults[key];
+    if (templateResult) {
+      return templateResult.result;
+    }
+    return undefined;
+  }
+  get visibility(): boolean {
+    const val = this._getValue('row_visibility');
+    if (val === undefined) return true;
+    if (typeof val === 'boolean') return val;
+    return val === 'true';
+  }
+
+  protected render(): TemplateResult | typeof nothing {
+    if (this.visibility === false) {
+      return nothing;
+    }
     const rowItems = this._rowItems || [];
     const active = this.active;
     const noWrap = this.rowConfig.no_wrap;

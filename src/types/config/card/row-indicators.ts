@@ -91,6 +91,7 @@ export interface IndicatorRowConfig extends GlobalAppearanceConfig {
   row_items: IndicatorRowItem[]; // Array of indicator items in the row
   alignment?: Alignment;
   no_wrap?: boolean;
+  row_visibility?: string;
 }
 
 export interface LovelaceIndicatorRowItem extends HTMLElement {
