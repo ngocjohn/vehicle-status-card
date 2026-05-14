@@ -84,6 +84,7 @@ export class PanelIndicatorItem extends BaseEditor {
       global_icon_size: ROW_DATA?.global_icon_size,
       global_column_reverse: ROW_DATA?.global_column_reverse,
       global_row_reverse: ROW_DATA?.global_row_reverse,
+      row_visibility: ROW_DATA?.row_visibility,
     };
 
     const noWrapEl = this._createVscForm({ no_wrap: ROW_DATA?.no_wrap }, ROW_NO_WRAP_SCHEMA, 'icon_size_no_wrap');

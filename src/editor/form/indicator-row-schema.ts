@@ -62,21 +62,6 @@ export const ICON_SIZE_SCHEMA = [
     selector: { number: { min: 14, step: 1, mode: 'box', unit_of_measurement: 'px' } },
   },
 ] as const;
-// export const ICON_SIZE_SCHEMA = (helper?: string) => {
-//   if (!helper) {
-//     helper = 'Size for all icons in the row.';
-//   }
-//   return [
-//     {
-//       name: 'icon_size',
-//       label: 'Icon Size (px)',
-//       helper: helper,
-//       required: false,
-//       default: 21,
-//       selector: { number: { min: 14, step: 1, mode: 'box', unit_of_measurement: 'px' } },
-//     },
-//   ] as const;
-// };
 
 export interface BooleanItemSchema {
   type: 'boolean';
@@ -208,6 +193,61 @@ export const computeBooleanList = (keys?: BooleanKey[]) => {
   return list;
 };
 
+const TEMPLATES = [
+  {
+    name: 'visibility',
+    label: 'Visibility Template',
+    helper: 'Hide or show the indicator based on a template. The template should return true or false.',
+  },
+  {
+    name: 'state_template',
+    label: 'State Template',
+    helper: 'Customize the state based on a template. The template should return a valid state name.',
+  },
+  {
+    name: 'icon_template',
+    label: 'Icon Template',
+    helper: 'Template to override the icon. The template should return a valid icon name.',
+  },
+  {
+    name: 'color_template',
+    label: 'Color Template',
+    helper: 'Template to override the color. The template should return a valid CSS color (name, hex, rgb, hsl, etc.).',
+  },
+  {
+    name: 'row_visibility',
+    label: 'Row Visibility Template',
+    helper: 'Hide or show the entire row based on a template. False result hides whole row.',
+  },
+];
+
+const TemplateKeys = TEMPLATES.map((t) => t.name);
+type TemplateKey = (typeof TemplateKeys)[number];
+
+export const computeTemplateSchema = (type?: TemplateKey[], exclude?: TemplateKey[]) => {
+  if (!type) {
+    type = TemplateKeys;
+  }
+  if (exclude) {
+    type = type.filter((key) => !exclude.includes(key));
+  }
+  const list: TemplateItem[] = [];
+  type.forEach((key) => {
+    const t = TEMPLATES.find((tt) => tt.name === key);
+    if (t) {
+      list.push({
+        name: t.name,
+        label: t.label,
+        helper: t.helper,
+        selector: {
+          template: {},
+        },
+      });
+    }
+  });
+  return list;
+};
+
 export const ROW_ICON_SIZE_NO_WRAP_SCHEMA = [
   {
     title: 'Global Appearance (optional)',
@@ -231,6 +271,12 @@ export const ROW_ICON_SIZE_NO_WRAP_SCHEMA = [
           ...computeBooleanSchema(GLOBAL_BOOLEAN_KEYS as BooleanKey[]),
         ],
       },
+      {
+        type: 'expandable',
+        flatten: true,
+        title: 'Extra Templates (Advanced)',
+        schema: [...computeTemplateSchema(['row_visibility'])],
+      },
     ],
   },
 ] as const;
@@ -244,53 +290,6 @@ export const ROW_INTERACTON_BASE_SCHEMA = [
     schema: [...computeOptionalActionSchemaFull()],
   },
 ] as const;
-
-const TEMPLATES = [
-  {
-    name: 'visibility',
-    label: 'Visibility Template',
-    helper: 'Hide or show the indicator based on a template. The template should return true or false.',
-  },
-  {
-    name: 'state_template',
-    label: 'State Template',
-    helper: 'Customize the state based on a template. The template should return a valid state name.',
-  },
-  {
-    name: 'icon_template',
-    label: 'Icon Template',
-    helper: 'Template to override the icon. The template should return a valid icon name.',
-  },
-  {
-    name: 'color_template',
-    label: 'Color Template',
-    helper: 'Template to override the color. The template should return a valid CSS color (name, hex, rgb, hsl, etc.).',
-  },
-];
-
-const TemplateKeys = TEMPLATES.map((t) => t.name);
-type TemplateKey = (typeof TemplateKeys)[number];
-
-export const computeTemplateSchema = (type?: TemplateKey[]) => {
-  if (!type) {
-    type = TemplateKeys;
-  }
-  const list: TemplateItem[] = [];
-  type.forEach((key) => {
-    const t = TEMPLATES.find((tt) => tt.name === key);
-    if (t) {
-      list.push({
-        name: t.name,
-        label: t.label,
-        helper: t.helper,
-        selector: {
-          template: {},
-        },
-      });
-    }
-  });
-  return list;
-};
 
 // SINGLE ENTITY TYPE SCHEMA
 export const ROW_ITEM_CONTENT_SCHEMA = () =>
@@ -498,7 +497,7 @@ export const OPTIONAL_TEMPLATE_SCHEMA = [
         type: 'optional_actions',
         flatten: true,
         context: { isTemplate: true },
-        schema: [...computeTemplateSchema()],
+        schema: [...computeTemplateSchema(undefined, ['row_visibility'])],
       },
     ],
   },
