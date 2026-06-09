@@ -1,3 +1,14 @@
+## [1.25.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.24.2...v1.25.0) (2026-06-09)
+
+### Features
+
+* Add row_visibility property for dynamic visibility control ([#276](https://github.com/ngocjohn/vehicle-status-card/issues/276)) ([6b92d94](https://github.com/ngocjohn/vehicle-status-card/commit/6b92d940e6b1f35c023d65e5160ce89489e69185))
+
+### Bug Fixes
+
+* energy level parsing for accurate rendering in range bar ([#280](https://github.com/ngocjohn/vehicle-status-card/issues/280)) ([ea24e8a](https://github.com/ngocjohn/vehicle-status-card/commit/ea24e8a0cbddc2d7780d5046e52b1eb36d2af373))
+* **range-bar:** Update target charge visibility and tooltip handling in range components ([#275](https://github.com/ngocjohn/vehicle-status-card/issues/275)) ([599cfc4](https://github.com/ngocjohn/vehicle-status-card/commit/599cfc4ba706d8bbf701b61423e190d734e2e308))
+
 ## [1.25.0-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.25.0-dev.1...v1.25.0-dev.2) (2026-06-09)
 
 ### Bug Fixes
