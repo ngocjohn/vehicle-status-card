@@ -1,3 +1,9 @@
+## [1.25.0-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.25.0-dev.1...v1.25.0-dev.2) (2026-06-09)
+
+### Bug Fixes
+
+* energy level parsing for accurate rendering in range bar ([#280](https://github.com/ngocjohn/vehicle-status-card/issues/280)) ([ea24e8a](https://github.com/ngocjohn/vehicle-status-card/commit/ea24e8a0cbddc2d7780d5046e52b1eb36d2af373))
+
 ## [1.25.0-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.24.2...v1.25.0-dev.1) (2026-05-14)
 
 ### Features
