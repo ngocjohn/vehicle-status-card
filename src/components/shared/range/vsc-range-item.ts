@@ -8,6 +8,7 @@ import { VscBaseRange } from '../../../utils/base-range';
 import { generateColorBlocks, generateGradient, getColorForLevel, getNormalizedValue } from '../../../utils/colors';
 import './vsc-range-bar';
 import { addActions } from '../../../utils/lovelace/tap-action';
+import { parse } from 'node:path';
 
 @customElement('vsc-range-item')
 export class VscRangeItem extends VscBaseRange {
@@ -76,6 +77,13 @@ export class VscRangeItem extends VscBaseRange {
       ? r.energy_level.max_value
       : (hass.states?.[r.energy_level?.entity || '']?.attributes?.max ?? 100);
 
+    const getEntityStateRaw = (entity?: string, attr?: string) =>
+      entity && hass.states[entity]
+        ? attr
+          ? hass.states[entity].attributes?.[attr]
+          : hass.states[entity].state
+        : undefined;
+
     switch (key) {
       case 'icon':
         return r.energy_level?.icon;
@@ -95,7 +103,7 @@ export class VscRangeItem extends VscBaseRange {
         return getEntityState(r.range_level?.entity, r.range_level?.attribute);
 
       case 'level':
-        return parseInt(this.getValue('energyState'), 10) || 0;
+        return parseFloat(getEntityStateRaw(r.energy_level?.entity, r.energy_level?.attribute) ?? '0');
 
       case 'barColor':
         return this._templateResults['color_template']?.result ?? r.progress_color;
