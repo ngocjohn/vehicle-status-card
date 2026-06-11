@@ -649,21 +649,29 @@ export class VehicleStatusCard extends BaseElement implements LovelaceCard {
 
       const cardIndexNum = Number(this._activeCardIndex);
       console.log('Current card index:', cardIndexNum);
-      const totalCards = this._newButtonConfig!.filter((button) => !button.hide_button).length;
+      const totalCards = this._newButtonConfig!.length;
 
-      const isNotActionType = (index: number): boolean => this._newButtonConfig![index].button_type !== 'action';
+      const isValidCard = (index: number): boolean => {
+        if (index < 0 || index >= totalCards) return false;
+        const button = this._newButtonConfig![index];
+        return !button.hide_button && button.button_type !== 'action';
+      };
 
       let newCardIndex = cardIndexNum;
+      const maxIterations = totalCards;
+      let iterations = 0;
 
       if (action === 'next') {
         do {
           newCardIndex = newCardIndex === totalCards - 1 ? 0 : newCardIndex + 1;
-        } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
+          iterations++;
+        } while (!isValidCard(newCardIndex) && iterations < maxIterations);
         console.log('New card index:', newCardIndex);
       } else if (action === 'prev') {
         do {
           newCardIndex = newCardIndex === 0 ? totalCards - 1 : newCardIndex - 1;
-        } while (!isNotActionType(newCardIndex) && newCardIndex !== cardIndexNum);
+          iterations++;
+        } while (!isValidCard(newCardIndex) && iterations < maxIterations);
         console.log('New card index:', newCardIndex);
       } else {
         this._activeCardIndex = null;
