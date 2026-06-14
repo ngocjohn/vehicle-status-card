@@ -20,22 +20,11 @@ body:
       placeholder: Describe the bug in detail, including steps to reproduce, expected behavior.
     validations:
       required: true
-  - type: dropdown
+  - type: textarea
     id: version
     attributes:
       label: Version 📦
       description: The version of the application where the bug was found
-      options:
-        - v1.17.2-beta.0
-        - v1.17.1-beta.0
-        - v1.17.0
-        - v1.16.2-0
-        - v1.16.1
-        - v1.16.0
-        - v1.15.3-beta.2
-        - v1.15.2
-        - v1.15.1
-        - v1.14.0
     validations:
       required: true
   - type: input
