@@ -1,3 +1,9 @@
+## [1.26.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.25.0...v1.26.0) (2026-08-08)
+
+### Features
+
+* **mini-map:** add option to disable inline map interaction while scrolling ([#288](https://github.com/ngocjohn/vehicle-status-card/issues/288)) ([e62bdcb](https://github.com/ngocjohn/vehicle-status-card/commit/e62bdcbe95f44e7be7c0c2f206b5648edab013a9))
+
 ## [1.25.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.24.2...v1.25.0) (2026-06-09)
 
 ### Features
