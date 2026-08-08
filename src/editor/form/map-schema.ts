@@ -16,7 +16,19 @@ export const BASE_MAP_SCHEMA = [
   },
 ] as const;
 
-const LAYOUT_BOOL = ['enable_popup', 'us_format', 'hide_map_address', 'use_zone_name', 'user_location'] as const;
+const LAYOUT_BOOL = [
+  'enable_popup',
+  'us_format',
+  'hide_map_address',
+  'use_zone_name',
+  'user_location',
+  'disable_interaction',
+] as const;
+
+const LAYOUT_BOOL_HELPER: Partial<Record<(typeof LAYOUT_BOOL)[number], string>> = {
+  disable_interaction:
+    'Prevents dragging/panning and scroll-zoom on the inline map so it no longer intercepts dashboard scroll gestures. Tap the map to open the popup instead.',
+};
 
 export const MINI_MAP_LAYOUT_SCHEMA = [
   {
@@ -31,6 +43,7 @@ export const MINI_MAP_LAYOUT_SCHEMA = [
         schema: [
           ...LAYOUT_BOOL.map((name) => ({
             name,
+            helper: LAYOUT_BOOL_HELPER[name],
             selector: { boolean: {} },
           })),
         ] as const,

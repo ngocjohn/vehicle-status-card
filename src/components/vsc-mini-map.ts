@@ -82,6 +82,10 @@ export class MiniMapBox extends BaseElement {
     return this.mapConfig?.user_location || false;
   }
 
+  private get interactionDisabled(): boolean {
+    return this.mapConfig?.disable_interaction || false;
+  }
+
   private get _deviceState(): string {
     const deviceTracker = this.mapConfig.device_tracker!;
     const stateObj = this._hass.states[deviceTracker];
@@ -213,10 +217,16 @@ export class MiniMapBox extends BaseElement {
     console.log('Initializing map...');
     const { lat, lon } = this.mapData!;
     const defaultZoom = this.zoom;
+    const interactionDisabled = this.interactionDisabled;
     const mapOptions = {
-      dragging: true,
+      dragging: !interactionDisabled,
       zoomControl: false,
-      scrollWheelZoom: true,
+      scrollWheelZoom: !interactionDisabled,
+      doubleClickZoom: !interactionDisabled,
+      touchZoom: !interactionDisabled,
+      boxZoom: !interactionDisabled,
+      keyboard: !interactionDisabled,
+      tap: !interactionDisabled,
       zoom: defaultZoom,
     };
 
@@ -227,6 +237,18 @@ export class MiniMapBox extends BaseElement {
     this.latLon = this._getTargetLatLng(this.map);
     // Add tile layer to map
     this._createTileLayer(this.map);
+
+    if (interactionDisabled) {
+      // Preview mode: the map itself stays non-interactive so it doesn't
+      // capture drag/scroll gestures meant for the dashboard. A tap still
+      // opens the popup (mirrors the marker's own click handler) when enabled.
+      mapContainer.classList.add('interaction-disabled');
+      if (this.mapPopup) {
+        this.map.on('click', () => {
+          this._toggleDialog();
+        });
+      }
+    }
 
     this.map.on('moveend zoomend', () => {
       // check visibility of marker icon on view
@@ -520,6 +542,13 @@ export class MiniMapBox extends BaseElement {
           background-color: transparent !important;
           mask-image: var(--vic-map-mask-image);
           mask-composite: intersect;
+        }
+
+        #map.interaction-disabled {
+          /* Let vertical swipes fall through to the dashboard for scrolling
+             instead of being captured by Leaflet's drag handling. */
+          touch-action: pan-y;
+          cursor: pointer;
         }
 
         .map-tiles {

@@ -44,6 +44,7 @@ export interface MinimapLayoutConfig {
   map_zoom?: number;
   use_zone_name?: boolean;
   user_location?: boolean;
+  disable_interaction?: boolean;
 }
 
 export interface MapPopupSharedConfig {
