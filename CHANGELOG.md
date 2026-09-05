@@ -1,3 +1,11 @@
+## [1.26.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.26.0...v1.26.1) (2026-09-05)
+
+### Bug Fixes
+
+* improve address handling ([49d67fb](https://github.com/ngocjohn/vehicle-status-card/commit/49d67fbed0b4b3a1e102598e405f77d2b0064a82))
+* Integrate MapLibre GL and OpenFreemap into Mini-Map Component ([#291](https://github.com/ngocjohn/vehicle-status-card/issues/291)) ([8254fa7](https://github.com/ngocjohn/vehicle-status-card/commit/8254fa7fa1cf2af82a0d4275866cb28e582c89a8))
+* update worker URL to use CDN for MapLibre GL ([12b2150](https://github.com/ngocjohn/vehicle-status-card/commit/12b21503b6ef54c6010cf2a0b74d1a4901aa9fe6))
+
 ## [1.26.1-dev.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.26.1-dev.2...v1.26.1-dev.3) (2026-09-05)
 
 ### Bug Fixes
