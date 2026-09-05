@@ -2,6 +2,7 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import replace from '@rollup/plugin-replace';
 import serve from 'rollup-plugin-serve';
+import copy from 'rollup-plugin-copy';
 
 import { logCardInfo, defaultPlugins } from './rollup.config.helper.mjs';
 
@@ -39,7 +40,13 @@ const replaceOpts = {
   __DEBUG__: debug || false,
 };
 
-const plugins = [dev && serve(serveopts), !dev && terser(terserOpt)];
+const copyOpts = {
+  targets: [
+    { src: 'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs', dest: dev ? 'dist' : 'build' },
+    { src: 'node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs', dest: dev ? 'dist' : 'build' },
+  ],
+};
+const plugins = [dev && serve(serveopts), !dev && terser(terserOpt), copy(copyOpts)];
 
 export default [
   {
