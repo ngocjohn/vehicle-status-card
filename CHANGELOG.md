@@ -1,3 +1,9 @@
+## [1.26.1-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.26.1-dev.1...v1.26.1-dev.2) (2026-09-05)
+
+### Bug Fixes
+
+* update worker URL to use CDN for MapLibre GL ([12b2150](https://github.com/ngocjohn/vehicle-status-card/commit/12b21503b6ef54c6010cf2a0b74d1a4901aa9fe6))
+
 ## [1.26.1-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.26.0...v1.26.1-dev.1) (2026-09-05)
 
 ### Bug Fixes
