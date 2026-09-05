@@ -1,3 +1,9 @@
+## [1.26.1-dev.3](https://github.com/ngocjohn/vehicle-status-card/compare/v1.26.1-dev.2...v1.26.1-dev.3) (2026-09-05)
+
+### Bug Fixes
+
+* improve address handling ([49d67fb](https://github.com/ngocjohn/vehicle-status-card/commit/49d67fbed0b4b3a1e102598e405f77d2b0064a82))
+
 ## [1.26.1-dev.2](https://github.com/ngocjohn/vehicle-status-card/compare/v1.26.1-dev.1...v1.26.1-dev.2) (2026-09-05)
 
 ### Bug Fixes
