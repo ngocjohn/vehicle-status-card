@@ -46,8 +46,8 @@ export const _getMapAddress = async (config: MiniMapConfig, lat: number, lon: nu
       return maptilerKey
         ? getAddressFromMapTiler(lat, lon, maptilerKey)
         : apiKey
-        ? getAddressFromGoggle(lat, lon, apiKey)
-        : getAddressFromOpenStreet(lat, lon);
+          ? getAddressFromGoggle(lat, lon, apiKey)
+          : getAddressFromOpenStreet(lat, lon);
     }
   })();
 
@@ -74,7 +74,9 @@ export async function getAddressFromMapTiler(lat: number, lon: number, apiKey: s
   const filterParams: Record<string, keyof Address> = {
     address: 'streetName', // Street name
     locality: 'sublocality', // Sublocality
+    place: 'sublocality', // Place (used for sublocality)
     municipality: 'city', // City
+    subregion: 'city', // Subregion (used for city)
   };
 
   const url = `https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${apiKey}`;
