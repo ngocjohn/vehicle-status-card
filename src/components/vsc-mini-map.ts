@@ -3,11 +3,14 @@ import createDebug from '../utils/debugger';
 // eslint-disable-next-line
 const debuglog = createDebug('card', 'mini-map');
 
+import { maplibreGL } from '@maplibre/maplibre-gl-leaflet';
 import L from 'leaflet';
 import 'leaflet-providers/leaflet-providers.js';
 import mapstyle from 'leaflet/dist/leaflet.css';
 import { css, CSSResultGroup, html, nothing, PropertyValues, TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { setWorkerUrl } from 'maplibre-gl';
+import maplibreStyle from 'maplibre-gl/dist/maplibre-gl.css';
 
 import { COMPONENT } from '../constants/const';
 import { DecoratedMarker } from '../ha/common/map/decorated_marker';
@@ -38,6 +41,8 @@ const MARGIN_BLOCK: Record<CardMapPosition, string> = {
   bottom: 'auto calc(-1 * var(--vic-card-padding))',
   single: `calc(-1 * var(--vic-card-padding))`,
 };
+
+setWorkerUrl(new URL('./maplibre-gl-worker.mjs', import.meta.url).toString());
 
 @customElement(COMPONENT.MINI_MAP)
 export class MiniMapBox extends BaseElement {
@@ -234,9 +239,9 @@ export class MiniMapBox extends BaseElement {
     if (!mapContainer) return;
 
     this.map = L.map(mapContainer, mapOptions).setView([lat, lon]);
-    this.latLon = this._getTargetLatLng(this.map);
     // Add tile layer to map
-    this._createTileLayer(this.map);
+    this._addMaplibreLayer(this.map);
+    this.latLon = this._getTargetLatLng(this.map);
 
     if (interactionDisabled) {
       // Preview mode: the map itself stays non-interactive so it doesn't
@@ -323,19 +328,11 @@ export class MiniMapBox extends BaseElement {
     this._userLocationActive = true;
   };
 
-  private _createTileLayer(map: L.Map): L.TileLayer {
-    const retina = L.Browser.retina;
-    const tileOpts = {
-      className: 'map-tiles',
-      detectRetina: true,
-      tileSize: retina ? 512 : 256,
-      zoomOffset: retina ? -1 : 0,
-      transparent: true,
-      // opacity: 0.8,
-    };
-
-    const tileLayer = L.tileLayer.provider('CartoDB.Positron', tileOpts).addTo(map);
-    return tileLayer;
+  private _addMaplibreLayer(map: L.Map): void {
+    console.log('Adding Maplibre layer to map...');
+    maplibreGL({
+      style: 'https://tiles.openfreemap.org/styles/positron',
+    }).addTo(map);
   }
 
   private _createMarker(map: L.Map): L.Marker {
@@ -484,6 +481,7 @@ export class MiniMapBox extends BaseElement {
     return [
       super.styles,
       unsafeCSS(mapstyle),
+      unsafeCSS(maplibreStyle),
       css`
         :host {
           display: block;
@@ -550,7 +548,7 @@ export class MiniMapBox extends BaseElement {
           touch-action: pan-y;
           cursor: pointer;
         }
-
+        .leaflet-tile-pane,
         .map-tiles {
           filter: var(--vic-map-tiles-filter, none);
           position: relative;
