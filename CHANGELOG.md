@@ -1,3 +1,9 @@
+## [1.26.1-dev.1](https://github.com/ngocjohn/vehicle-status-card/compare/v1.26.0...v1.26.1-dev.1) (2026-09-05)
+
+### Bug Fixes
+
+* Integrate MapLibre GL and OpenFreemap into Mini-Map Component ([#291](https://github.com/ngocjohn/vehicle-status-card/issues/291)) ([8254fa7](https://github.com/ngocjohn/vehicle-status-card/commit/8254fa7fa1cf2af82a0d4275866cb28e582c89a8))
+
 ## [1.26.0](https://github.com/ngocjohn/vehicle-status-card/compare/v1.25.0...v1.26.0) (2026-08-08)
 
 ### Features
