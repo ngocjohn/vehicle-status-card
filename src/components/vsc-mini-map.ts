@@ -42,7 +42,11 @@ const MARGIN_BLOCK: Record<CardMapPosition, string> = {
   single: `calc(-1 * var(--vic-card-padding))`,
 };
 
-setWorkerUrl(new URL('./maplibre-gl-worker.mjs', import.meta.url).toString());
+// Generate a unified local pointer
+const MAPLIBRE_VERSION = '6.7.0';
+const cdnWorkerUrl = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl-worker.mjs`;
+
+setWorkerUrl(new URL(cdnWorkerUrl, import.meta.url).toString());
 
 @customElement(COMPONENT.MINI_MAP)
 export class MiniMapBox extends BaseElement {
